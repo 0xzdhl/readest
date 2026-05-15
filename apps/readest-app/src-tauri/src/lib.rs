@@ -73,6 +73,31 @@ fn allow_dir_in_scopes(app: &AppHandle, dir: &PathBuf) {
     }
 }
 
+#[cfg(all(desktop, feature = "webdriver"))]
+fn allow_webdriver_test_dirs_in_scopes(app: &AppHandle) {
+    let cwd = match std::env::current_dir() {
+        Ok(dir) => dir,
+        Err(e) => {
+            log::warn!("Failed to resolve cwd for webdriver test scopes: {e}");
+            return;
+        }
+    };
+
+    let candidates = [
+        cwd.join("src/__tests__/fixtures/data"),
+        cwd.join("../src/__tests__/fixtures/data"),
+    ];
+
+    if let Some(dir) = candidates.iter().find(|dir| dir.exists()) {
+        allow_dir_in_scopes(app, &dir.to_path_buf());
+    } else {
+        log::warn!(
+            "Webdriver fixture directory not found. Tried: {:?}",
+            candidates
+        );
+    }
+}
+
 #[cfg(desktop)]
 fn get_files_from_argv(argv: Vec<String>) -> Vec<PathBuf> {
     let mut files = Vec::new();
@@ -263,6 +288,11 @@ pub fn run() {
                         set_window_open_with_files(&app_handle, files.clone());
                     });
                 }
+            }
+
+            #[cfg(all(desktop, feature = "webdriver"))]
+            {
+                allow_webdriver_test_dirs_in_scopes(app.handle());
             }
 
             #[cfg(desktop)]
