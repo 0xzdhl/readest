@@ -2,7 +2,7 @@
   <a href="https://readest.com?utm_source=github&utm_medium=referral&utm_campaign=readme" target="_blank">
     <img src="https://github.com/readest/readest/blob/main/apps/readest-app/src-tauri/icons/icon.png?raw=true" alt="Readest Logo" width="20%" />
   </a>
-  <h1>Readest - Cloudflare selfhost (unofficial)</h1>
+  <h1>Readen - Cloudflare selfhost (unofficial)</h1>
   <br>
 
 This is a **unofficial version** of Readest, which makes you deploy Readest on Cloudflare. If you encounter any issues, report it on this repository, **DO NOT** open issue on Readest official repo.
@@ -17,17 +17,14 @@ This is a **unofficial version** of Readest, which makes you deploy Readest on C
 
 | Feature  | Description                    | Status |
 | -------- | ------------------------------ | ------ |
-| Auth     | From Supabase to better auth   | 🔄      |
-| Database | From Supabase to Cloudflare D1 | 🔄      |
-| Storage  | From Supabase to Cloudflare R2 | 🔄      |
-
+| Auth     | From Supabase to better auth   | 🔄     |
+| Database | From Supabase to Cloudflare D1 | 🔄     |
+| Storage  | From Supabase to Cloudflare R2 | 🔄     |
 
 ## Requirements
 
 - **Node.js** and **pnpm** for Next.js development
 - **Rust** and **Cargo** for Tauri development
-
-For the best experience to build Readest for yourself, use a recent version of Node.js and Rust. Refer to the [Tauri documentation](https://v2.tauri.app/start/prerequisites/) for details on setting up the development environment prerequisites on different platforms.
 
 ```bash
 nvm install v24
@@ -43,8 +40,8 @@ To get started with Readest, follow these steps to clone and build the project.
 ### 1. Clone the Repository
 
 ```bash
-git clone https://github.com/readest/readest.git
-cd readest
+git clone https://github.com/0x0501/readen.git
+cd readen
 ```
 
 ### 2. Install Dependencies
