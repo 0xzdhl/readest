@@ -3,6 +3,7 @@ packages:
   - packages/foliate-js
 
 allowBuilds:
+  '@swc/core': true
   core-js: true
   edgedriver: true
   esbuild: true

@@ -1,9 +1,23 @@
 import path from 'node:path';
-import vinext from 'vinext';
 import { defineConfig } from 'vite';
+import viteReact from '@vitejs/plugin-react-swc';
+import { cloudflare } from '@cloudflare/vite-plugin';
+import { tanstackStart } from '@tanstack/react-start/plugin/vite';
+import tailwindcss from '@tailwindcss/vite';
 
 export default defineConfig({
-  plugins: [vinext()],
+  plugins: [
+    tailwindcss(),
+    tanstackStart({
+      srcDirectory: './src',
+      router: {
+        routesDirectory: 'app',
+      },
+    }),
+    viteReact(),
+
+    cloudflare({ viteEnvironment: { name: 'ssr' } }),
+  ],
   resolve: {
     alias: {
       '@pdfjs': path.resolve('public/vendor/pdfjs'),

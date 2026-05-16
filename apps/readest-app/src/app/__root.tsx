@@ -1,76 +1,27 @@
-import * as React from 'react';
-import type { Metadata, Viewport } from 'next';
-import { ViewTransitions } from 'next-view-transitions';
-import { EnvProvider } from '@/context/EnvContext';
+import { createRootRoute, HeadContent, Outlet, Scripts } from '@tanstack/react-router';
 import Providers from '@/components/Providers';
+import { EnvProvider } from '@/context/EnvContext';
+import appCss from '@/styles/globals.css?url';
 
-import '../styles/globals.css';
-
-const url = 'https://web.readest.com/';
-const title = 'Readest — Where You Read, Digest and Get Insight';
-const description =
-  'Discover Readest, the ultimate online ebook reader for immersive and organized reading. ' +
-  'Enjoy seamless access to your digital library, powerful tools for highlighting, bookmarking, ' +
-  'and note-taking, and support for multiple book views. ' +
-  'Perfect for deep reading, analysis, and understanding. Explore now!';
-const previewImage = 'https://cdn.readest.com/images/open_graph_preview_read_now.png';
-
-export const metadata: Metadata = {
-  metadataBase: new URL(url),
-  title: {
-    default: title,
-    template: '%s | Readest',
-  },
-  description,
-  generator: 'Next.js',
-  manifest: '/manifest.json',
-  keywords: ['epub', 'pdf', 'ebook', 'reader', 'readest', 'pwa'],
-  authors: [
-    {
-      name: 'readest',
-      url: 'https://github.com/readest/readest',
-    },
-  ],
-  icons: {
-    icon: [{ url: '/icon.png' }, { url: '/favicon.ico' }],
-    apple: [{ url: '/apple-touch-icon.png', sizes: '180x180' }],
-  },
-  appleWebApp: {
-    capable: true,
-    title: 'Readest',
-    statusBarStyle: 'default',
-  },
-  openGraph: {
-    type: 'website',
-    url,
-    title,
-    description,
-    images: [previewImage],
-  },
-  twitter: {
-    card: 'summary_large_image',
-    title,
-    description,
-    images: [previewImage],
-  },
-  other: {
-    'apple-mobile-web-app-capable': 'yes',
-    'twitter:domain': 'web.readest.com',
-    'twitter:url': url,
-  },
-};
-
-export const viewport: Viewport = {
-  width: 'device-width',
-  initialScale: 1,
-  minimumScale: 1,
-  maximumScale: 1,
-  userScalable: false,
-  viewportFit: 'cover',
-  // `interactive-widget=resizes-content` is appended client-side on
-  // Android only — see Providers.tsx. Other browsers warn about the
-  // unrecognized key on every page load, so we keep it out of SSR.
-};
+export const Route = createRootRoute({
+  head: () => ({
+    meta: [
+      { charSet: 'utf-8' },
+      {
+        name: 'viewport',
+        content: 'width=device-width, initial-scale=1',
+      },
+      { title: 'TanStack Start Starter' },
+    ],
+    links: [
+      {
+        rel: 'stylesheet',
+        href: appCss,
+      },
+    ],
+  }),
+  component: RootLayout,
+});
 
 // In Tauri mobile dev the page origin doesn't match the dev server, so
 // Next.js's `getSocketUrl` builds an unreachable HMR URL (see
@@ -122,7 +73,7 @@ const devHmrPatchScript = `(${patchTauriHmrWebSocket.toString()})(${JSON.stringi
   process.env['TAURI_DEV_HOST'],
 )});`;
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+export default function RootLayout() {
   return (
     <html
       lang='en'
@@ -130,15 +81,18 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     >
       {shouldInjectDevHmrPatch ? (
         <head>
+          <HeadContent />
+          {/** biome-ignore lint/security/noDangerouslySetInnerHtml: Inject tauri */}
           <script dangerouslySetInnerHTML={{ __html: devHmrPatchScript }} />
         </head>
       ) : null}
       <body>
-        <ViewTransitions>
-          <EnvProvider>
-            <Providers>{children}</Providers>
-          </EnvProvider>
-        </ViewTransitions>
+        <EnvProvider>
+          <Providers>
+            <Outlet />
+            <Scripts />
+          </Providers>
+        </EnvProvider>
       </body>
     </html>
   );

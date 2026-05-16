@@ -2,11 +2,12 @@
   "$schema": "./node_modules/wrangler/config-schema.json",
   // Top-level configuration
   "name": "readen-web",
-  "main": ".open-next/worker.js",
+  "main": "@tanstack/react-start/server-entry",
   // Set this to today's date
   "compatibility_date": "2026-05-14",
   "compatibility_flags": [
-    "nodejs_compat"
+    "nodejs_compat",
+    "enable_nodejs_process_v2"
   ],
   "workers_dev": true,
   "observability": {
