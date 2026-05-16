@@ -1,34 +1,47 @@
 {
   "$schema": "./node_modules/wrangler/config-schema.json",
   // Top-level configuration
-  "name": "readest",
-  "main": "src/index.js",
+  "name": "readen-web",
+  "main": ".open-next/worker.js",
   // Set this to today's date
   "compatibility_date": "2026-05-14",
-  "workers_dev": false,
+  "compatibility_flags": [
+    "nodejs_compat"
+  ],
+  "workers_dev": true,
+  "observability": {
+    "enabled": true,
+    "traces": {
+      "enabled": true,
+      "head_sampling_rate": 0.05
+    },
+    "logs": {
+      "enabled": true,
+      "head_sampling_rate": 0.05
+    }
+  },
   "route": {
     "pattern": "example.org/*",
     "zone_name": "example.org",
+    "custom_domain": false
+  },
+  "assets": {
+    "directory": ".open-next/assets",
+    "binding": "ASSETS"
   },
   "kv_namespaces": [
     {
-      "binding": "<MY_NAMESPACE>",
-      "id": "<KV_ID>",
+      "binding": "TRANSLATIONS_KV",
+      "id": "fa6e3eb1988a424bbf3c952e01650ced",
     },
   ],
-  "env": {
-    "staging": {
-      "name": "my-worker-staging",
-      "route": {
-        "pattern": "staging.example.org/*",
-        "zone_name": "example.org",
-      },
-      "kv_namespaces": [
-        {
-          "binding": "<MY_NAMESPACE>",
-          "id": "<STAGING_KV_ID>",
-        },
-      ],
-    },
-  },
+  "r2_buckets": [
+    {
+      "binding": "NEXT_INC_CACHE_R2_BUCKET",
+      "bucket_name": "readen-next-inc-cache"
+    }
+  ],
+  "vars": {
+    "PNPM_VERSION": "10.28.1"
+  }
 }

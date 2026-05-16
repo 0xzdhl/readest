@@ -28,5 +28,11 @@
     "editor.defaultFormatter": "esbenp.prettier-vscode"
   },
   "prettier.requireConfig": true,
-  "prettier.documentSelectors": ["**/*.{js,jsx,ts,tsx,css,json,md,html,yml}"]
+  "prettier.documentSelectors": [
+    "**/*.{js,jsx,ts,tsx,css,json,md,html,yml}"
+  ],
+  "cSpell.words": [
+    "readen",
+    "readest"
+  ]
 }
