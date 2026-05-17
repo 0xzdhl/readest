@@ -17,8 +17,8 @@ vi.mock('@/hooks/useTranslation', () => ({
 const mountLog: Array<{ id: number; alive: boolean }> = [];
 let nextMountId = 0;
 
-vi.mock('react-color', () => ({
-  SketchPicker: ({
+vi.mock('react-color', () => {
+  const SketchPicker = ({
     color,
     onChange,
   }: {
@@ -45,9 +45,14 @@ vi.mock('react-color', () => ({
         onClick={() => onChange({ hex: '#112233' })}
       />
     );
-  },
-  ColorResult: undefined,
-}));
+  };
+
+  return {
+    default: { SketchPicker },
+    SketchPicker,
+    ColorResult: undefined,
+  };
+});
 
 afterEach(() => {
   cleanup();
