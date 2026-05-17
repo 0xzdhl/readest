@@ -23,7 +23,7 @@ patchedDependencies:
 overrides:
   glob: '>=11.1.0'
   jws: '>=4.0.1'
-  vite: '>=7.3.2 <8'
+  vite: '>=8.0.13 <9'
   srvx: '>=0.11.13'
   rollup: '>=4.59.0'
   undici: '>=7.24.0'
