@@ -1,16 +1,11 @@
 import path from 'node:path';
-import { defineConfig } from 'vite';
-import viteReact from '@vitejs/plugin-react-swc';
 import { cloudflare } from '@cloudflare/vite-plugin';
 import { tanstackStart } from '@tanstack/react-start/plugin/vite';
-import tsconfigPaths from 'vite-tsconfig-paths';
+import viteReact from '@vitejs/plugin-react';
+import { defineConfig } from 'vite';
 
 export default defineConfig(({ command }) => ({
   plugins: [
-    tsconfigPaths(),
-    // Cloudflare's dev runner currently collides with TanStack Start's SSR
-    // worker path in `pnpm run dev-web`, but it is still required for web
-    // build/deploy output.
     ...(command === 'build' ? [cloudflare({ viteEnvironment: { name: 'ssr' } })] : []),
     tanstackStart({
       srcDirectory: './src',
@@ -23,6 +18,7 @@ export default defineConfig(({ command }) => ({
     viteReact(),
   ],
   resolve: {
+    tsconfigPaths: true,
     alias: [
       {
         find: /^@\/components\/ui\/(.*)/,
@@ -54,5 +50,8 @@ export default defineConfig(({ command }) => ({
   },
   ssr: {
     noExternal: ['tinycolor2'],
+  },
+  optimizeDeps: {
+    include: ['react', 'react-dom'],
   },
 }));

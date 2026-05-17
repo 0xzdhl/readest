@@ -15,11 +15,12 @@ This is a **unofficial version** of Readest, which makes you deploy Readest on C
 
 <div align="left">✅ Implemented</div>
 
-| Feature  | Description                    | Status |
-| -------- | ------------------------------ | ------ |
-| Auth     | From Supabase to better auth   | 🔄     |
-| Database | From Supabase to Cloudflare D1 | 🔄     |
-| Storage  | From Supabase to Cloudflare R2 | 🔄     |
+| Changes   | Description                               | Status |
+| --------- | ----------------------------------------- | ------ |
+| Framework | From Next.js to Tanstack Start            | 🔄     |
+| Auth      | From Supabase to better auth              | 🔄     |
+| Database  | From Supabase postgreSQL to Cloudflare D1 | 🔄     |
+| Storage   | From Supabase storage to Cloudflare R2    | 🔄     |
 
 ## Requirements
 

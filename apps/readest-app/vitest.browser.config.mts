@@ -1,18 +1,18 @@
-import tsconfigPaths from 'vite-tsconfig-paths';
-import react from '@vitejs/plugin-react-swc';
-import { defineConfig } from 'vitest/config';
+import react from '@vitejs/plugin-react';
 import { playwright } from '@vitest/browser-playwright';
+import { defineConfig } from 'vitest/config';
 import { loadEnvFile } from './vitest.env.mts';
 
 // Load .env and .env.web so browser tests have the same env as the web app.
 const env = { ...loadEnvFile('.env'), ...loadEnvFile('.env.web') };
 
 export default defineConfig({
-  plugins: [tsconfigPaths(), react()],
+  plugins: [react()],
   define: {
     'process.env': JSON.stringify(env),
   },
   resolve: {
+    tsconfigPaths: true,
     conditions: ['development'],
   },
   optimizeDeps: {
