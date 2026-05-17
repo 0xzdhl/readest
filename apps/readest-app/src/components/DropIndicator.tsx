@@ -1,4 +1,4 @@
-import React from 'react';
+import type React from 'react';
 import { useTranslation } from '@/hooks/useTranslation';
 import { HiArrowDownTray } from 'react-icons/hi2';
 

@@ -1,6 +1,6 @@
-import React from 'react';
-import { FoliateView } from '@/types/view';
-import { Insets } from '@/types/misc';
+import type React from 'react';
+import type { FoliateView } from '@/types/view';
+import type { Insets } from '@/types/misc';
 import { useReaderStore } from '@/store/readerStore';
 import { useParagraphMode } from '../../hooks/useParagraphMode';
 import ParagraphBar from './ParagraphBar';

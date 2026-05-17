@@ -1,11 +1,11 @@
 import posthog from 'posthog-js';
-import Stripe from 'stripe';
-import { loadStripe, Stripe as StripeClient } from '@stripe/stripe-js';
+import type Stripe from 'stripe';
+import { loadStripe, type Stripe as StripeClient } from '@stripe/stripe-js';
 import { getAPIBaseUrl, isTauriAppPlatform, isWebAppPlatform } from '@/services/environment';
 import { openUrl } from '@tauri-apps/plugin-opener';
 import { getAccessToken } from '@/utils/access';
-import { StripeProductMetadata } from '@/types/payment';
-import { AvailablePlan, PlanType } from '@/types/quota';
+import type { StripeProductMetadata } from '@/types/payment';
+import type { AvailablePlan, PlanType } from '@/types/quota';
 import { readPublicEnv } from '@/utils/publicEnv';
 
 let stripePromise: Promise<StripeClient | null>;

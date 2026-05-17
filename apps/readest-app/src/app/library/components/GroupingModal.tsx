@@ -4,7 +4,7 @@ import { MdCheck, MdChevronRight, MdEdit } from 'react-icons/md';
 import { HiOutlineFolder, HiOutlineFolderAdd, HiOutlineFolderRemove } from 'react-icons/hi';
 import { IoMdArrowBack } from 'react-icons/io';
 
-import { Book, BookGroupType } from '@/types/book';
+import type { Book, BookGroupType } from '@/types/book';
 import { isMd5 } from '@/utils/md5';
 import { useEnv } from '@/context/EnvContext';
 import { useTranslation } from '@/hooks/useTranslation';

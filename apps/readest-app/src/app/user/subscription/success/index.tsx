@@ -6,8 +6,8 @@ import { useAuth } from '@/context/AuthContext';
 import { useTranslation } from '@/hooks/useTranslation';
 import { getAPIBaseUrl, getNodeAPIBaseUrl } from '@/services/environment';
 import { getAccessToken } from '@/utils/access';
-import { PlanType } from '@/types/quota';
-import { VerifiedIAP } from '@/libs/payment/iap/types';
+import type { PlanType } from '@/types/quota';
+import type { VerifiedIAP } from '@/libs/payment/iap/types';
 import Spinner from '@/components/Spinner';
 
 const STRIPE_CHECK_URL = `${getAPIBaseUrl()}/stripe/check`;

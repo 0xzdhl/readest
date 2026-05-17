@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { invoke } from '@tauri-apps/api/core';
-import { AppService } from '@/types/system';
+import type { AppService } from '@/types/system';
 
 const WINDOW_CONTROL_PAD_X = 10.0;
 const WINDOW_CONTROL_PAD_Y = 22.0;

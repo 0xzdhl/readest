@@ -7,7 +7,7 @@
 // far more sections than the TOC references, scan section HTMLs for <nav>
 // elements and merge their links as ordinary top-level TOC items.
 
-import { BookDoc, TOCItem } from '@/libs/document';
+import type { BookDoc, TOCItem } from '@/libs/document';
 import { collectAllTocItems } from './grouping';
 
 const NAV_ENRICH_MIN_SECTIONS = 64;

@@ -1,4 +1,4 @@
-import React from 'react';
+import type React from 'react';
 import { MdRadioButtonChecked, MdClose, MdAdd, MdPlayCircleOutline } from 'react-icons/md';
 import { useTranslation } from '@/hooks/useTranslation';
 import { useResponsiveSize } from '@/hooks/useResponsiveSize';

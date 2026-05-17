@@ -1,4 +1,4 @@
-import { BookConfig, BookSearchConfig, ViewSettings } from '@/types/book';
+import type { BookConfig, BookSearchConfig, ViewSettings } from '@/types/book';
 
 export const serializeConfig = (
   config: BookConfig,

@@ -1,7 +1,7 @@
 import Stripe from 'stripe';
-import { UserPlan } from '@/types/quota';
+import type { UserPlan } from '@/types/quota';
 import { createSupabaseAdminClient } from '@/utils/supabase';
-import { PaymentStatus, StripePaymentData, StripeProductMetadata } from '@/types/payment';
+import type { PaymentStatus, StripePaymentData, StripeProductMetadata } from '@/types/payment';
 import { updateUserStorage } from '../storage';
 
 let stripe: Stripe | null;

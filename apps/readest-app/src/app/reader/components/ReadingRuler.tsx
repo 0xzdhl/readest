@@ -1,7 +1,7 @@
 import clsx from 'clsx';
 import React, { useCallback, useRef, useState, useEffect } from 'react';
-import { Insets } from '@/types/misc';
-import { BookFormat, ViewSettings } from '@/types/book';
+import type { Insets } from '@/types/misc';
+import type { BookFormat, ViewSettings } from '@/types/book';
 import { useEnv } from '@/context/EnvContext';
 import { useReaderStore } from '@/store/readerStore';
 import { saveViewSettings } from '@/helpers/settings';

@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { AvailablePlan, PlanType, UserPlan } from '@/types/quota';
+import type { AvailablePlan, PlanType, UserPlan } from '@/types/quota';
 import { useEnv } from '@/context/EnvContext';
 import { debounce } from '@/utils/debounce';
 import { getPlanDetails } from '../utils/plan';

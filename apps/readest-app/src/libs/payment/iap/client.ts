@@ -1,5 +1,5 @@
-import { AvailablePlan } from '@/types/quota';
-import { IAPService, IAPPurchase, IAPProduct } from '@/utils/iap';
+import type { AvailablePlan } from '@/types/quota';
+import { IAPService, type IAPPurchase, type IAPProduct } from '@/utils/iap';
 import { mapProductIdToInterval, mapProductIdToUserPlan } from './utils';
 
 const SUBSCRIPTION_SUCCESS_PATH = '/user/subscription/success';

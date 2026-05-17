@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import {
   applyCustomTheme,
-  CustomTheme,
+  type CustomTheme,
   generateDarkPalette,
   generateLightPalette,
-  Theme,
+  type Theme,
   themes,
 } from '@/styles/themes';
 import { useEnv } from '@/context/EnvContext';
@@ -17,11 +17,11 @@ import { useCustomTextureStore } from '@/store/customTextureStore';
 import { queueReplicaBinaryUpload } from '@/services/sync/replicaBinaryUpload';
 import { saveViewSettings } from '@/helpers/settings';
 import { manageSyntaxHighlighting } from '@/utils/highlightjs';
-import { SettingsPanelPanelProp } from './SettingsDialog';
+import type { SettingsPanelPanelProp } from './SettingsDialog';
 import { useFileSelector } from '@/hooks/useFileSelector';
 import { PREDEFINED_TEXTURES } from '@/styles/textures';
 import { useAtmosphereStore } from '@/store/atmosphereStore';
-import { DefaultHighlightColor, HighlightColor, UserHighlightColor } from '@/types/book';
+import type { DefaultHighlightColor, HighlightColor, UserHighlightColor } from '@/types/book';
 import clsx from 'clsx';
 import { SettingLabel } from './primitives';
 import { HIGHLIGHT_COLOR_HEX } from '@/services/constants';

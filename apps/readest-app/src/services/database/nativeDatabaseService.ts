@@ -1,5 +1,10 @@
-import { Database, QueryResult } from 'tauri-plugin-turso';
-import { DatabaseService, DatabaseExecResult, DatabaseRow, DatabaseOpts } from '@/types/database';
+import { Database, type QueryResult } from 'tauri-plugin-turso';
+import type {
+  DatabaseService,
+  DatabaseExecResult,
+  DatabaseRow,
+  DatabaseOpts,
+} from '@/types/database';
 
 export class NativeDatabaseService implements DatabaseService {
   private db: Database;

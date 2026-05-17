@@ -1,4 +1,4 @@
-import { TTSMediaMetadataMode } from '@/services/tts/types';
+import type { TTSMediaMetadataMode } from '@/services/tts/types';
 
 interface BuildTTSMediaMetadataOptions {
   markText: string;

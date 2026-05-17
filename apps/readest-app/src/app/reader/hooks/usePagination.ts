@@ -1,7 +1,7 @@
 import { useEffect } from 'react';
 import { useEnv } from '@/context/EnvContext';
-import { FoliateView } from '@/types/view';
-import { ViewSettings } from '@/types/book';
+import type { FoliateView } from '@/types/view';
+import type { ViewSettings } from '@/types/book';
 import { useReaderStore } from '@/store/readerStore';
 import { useBookDataStore } from '@/store/bookDataStore';
 import { useDeviceControlStore } from '@/store/deviceStore';

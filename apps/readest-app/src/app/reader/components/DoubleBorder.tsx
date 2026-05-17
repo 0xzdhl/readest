@@ -1,4 +1,4 @@
-import { Insets } from '@/types/misc';
+import type { Insets } from '@/types/misc';
 
 interface DoubleBorderProps {
   borderColor: string;

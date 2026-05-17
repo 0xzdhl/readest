@@ -1,4 +1,4 @@
-import { CFI, TOCItem } from '@/libs/document';
+import { CFI, type TOCItem } from '@/libs/document';
 
 export const findParentPath = (toc: TOCItem[], href: string): TOCItem[] => {
   for (const item of toc) {

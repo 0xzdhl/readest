@@ -1,4 +1,4 @@
-import { TranslatorName } from './providers';
+import type { TranslatorName } from './providers';
 
 export interface TranslationProvider {
   name: string;

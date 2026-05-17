@@ -1,8 +1,8 @@
-import { FileSystem } from '@/types/system';
+import type { FileSystem } from '@/types/system';
 import { getFilename } from '@/utils/path';
 import { md5, partialMD5 } from '@/utils/md5';
 import { uniqueId } from '@/utils/misc';
-import { CustomTextureInfo, getTextureName } from '@/styles/textures';
+import { type CustomTextureInfo, getTextureName } from '@/styles/textures';
 
 /**
  * Build the cross-device content id for a texture:

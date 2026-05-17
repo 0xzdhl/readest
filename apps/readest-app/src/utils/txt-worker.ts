@@ -1,6 +1,6 @@
 import { TxtToEpubConverter } from './txt';
 import { getOSPlatform } from './misc';
-import { TxtConverterWorkerRequest, TxtConverterWorkerResponse } from './txt-worker-protocol';
+import type { TxtConverterWorkerRequest, TxtConverterWorkerResponse } from './txt-worker-protocol';
 
 interface ConvertTxtToEpubOptions {
   file: File;

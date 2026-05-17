@@ -1,4 +1,4 @@
-import { Book, BookConfig, BookNote, BookDataRecord } from '@/types/book';
+import type { Book, BookConfig, BookNote, BookDataRecord } from '@/types/book';
 import { getAPIBaseUrl } from '@/services/environment';
 import { getAccessToken } from '@/utils/access';
 import { fetchWithTimeout } from '@/utils/fetch';

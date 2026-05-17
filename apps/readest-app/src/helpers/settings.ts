@@ -1,6 +1,6 @@
-import { ViewSettings } from '@/types/book';
-import { SystemSettings } from '@/types/settings';
-import { EnvConfigType } from '@/services/environment';
+import type { ViewSettings } from '@/types/book';
+import type { SystemSettings } from '@/types/settings';
+import type { EnvConfigType } from '@/services/environment';
 import { useBookDataStore } from '@/store/bookDataStore';
 import { useReaderStore } from '@/store/readerStore';
 import { useSettingsStore } from '@/store/settingsStore';

@@ -1,8 +1,12 @@
-import { Book } from '@/types/book';
-import { AppService, BaseDir } from '@/types/system';
-import { useTransferStore, TransferItem, ReplicaTransferFile } from '@/store/transferStore';
-import { TranslationFunc } from '@/hooks/useTranslation';
-import { ProgressHandler, ProgressPayload } from '@/utils/transfer';
+import type { Book } from '@/types/book';
+import type { AppService, BaseDir } from '@/types/system';
+import {
+  useTransferStore,
+  type TransferItem,
+  type ReplicaTransferFile,
+} from '@/store/transferStore';
+import type { TranslationFunc } from '@/hooks/useTranslation';
+import type { ProgressHandler, ProgressPayload } from '@/utils/transfer';
 import { eventDispatcher } from '@/utils/event';
 import { getTransferMessages } from './transferMessages';
 

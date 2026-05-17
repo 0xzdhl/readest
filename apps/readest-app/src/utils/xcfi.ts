@@ -3,7 +3,7 @@
  * Converts between Readest (foliate-js) CFI format and KOReader CREngine XPointer format
  */
 
-import { BookDoc } from '@/libs/document';
+import type { BookDoc } from '@/libs/document';
 import { parse, fake, collapse, fromRange, toRange, toElement } from 'foliate-js/epubcfi.js';
 
 type XPointer = {

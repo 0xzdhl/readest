@@ -1,5 +1,5 @@
 import clsx from 'clsx';
-import React from 'react';
+import type React from 'react';
 import {
   MdOutlineCloudDownload,
   MdOutlineCloudUpload,
@@ -10,8 +10,8 @@ import {
   MdExpandLess,
 } from 'react-icons/md';
 
-import { Book } from '@/types/book';
-import { BookMetadata } from '@/libs/document';
+import type { Book } from '@/types/book';
+import type { BookMetadata } from '@/libs/document';
 import { useTranslation } from '@/hooks/useTranslation';
 import { useSettingsStore } from '@/store/settingsStore';
 import { useEnv } from '@/context/EnvContext';

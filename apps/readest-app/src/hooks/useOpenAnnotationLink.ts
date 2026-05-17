@@ -7,7 +7,7 @@ import { useReaderStore } from '@/store/readerStore';
 import { isTauriAppPlatform } from '@/services/environment';
 import { navigateToReader } from '@/utils/nav';
 import { eventDispatcher } from '@/utils/event';
-import { parseAnnotationDeepLink, AnnotationDeepLink } from '@/utils/deeplink';
+import { parseAnnotationDeepLink, type AnnotationDeepLink } from '@/utils/deeplink';
 import { useTranslation } from './useTranslation';
 
 // Module-scoped — survives hook remounts (library → reader → library on

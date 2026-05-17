@@ -1,9 +1,9 @@
 import clsx from 'clsx';
-import React from 'react';
+import type React from 'react';
 import Dialog from '@/components/Dialog';
 import { useTranslation } from '@/hooks/useTranslation';
 import { SectionTitle } from '@/components/settings/primitives';
-import { SyncDetails } from '../hooks/useKOSync';
+import type { SyncDetails } from '../hooks/useKOSync';
 
 interface KOSyncConflictResolverProps {
   details: SyncDetails | null;

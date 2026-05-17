@@ -1,6 +1,6 @@
 import * as CFI from 'foliate-js/epubcfi.js';
 import type { Transformer } from './types';
-import { ProofreadRule } from '@/types/book';
+import type { ProofreadRule } from '@/types/book';
 import { useSettingsStore } from '@/store/settingsStore';
 
 interface NormalizedPattern {

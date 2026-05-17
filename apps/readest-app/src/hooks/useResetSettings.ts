@@ -1,6 +1,6 @@
-import { Dispatch, SetStateAction } from 'react';
+import type { Dispatch, SetStateAction } from 'react';
 import { useEnv } from '@/context/EnvContext';
-import { ViewSettings } from '@/types/book';
+import type { ViewSettings } from '@/types/book';
 
 type SetterKey = keyof ViewSettings;
 type SetterValue = SetStateAction<string> & SetStateAction<number> & SetStateAction<boolean>;

@@ -1,4 +1,4 @@
-import { Book, BooksGroup } from '@/types/book';
+import type { Book, BooksGroup } from '@/types/book';
 import { LibraryGroupByType, LibrarySortByType } from '@/types/settings';
 import { formatAuthors, formatTitle } from '@/utils/book';
 import { md5Fingerprint } from '@/utils/md5';

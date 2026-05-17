@@ -1,4 +1,4 @@
-import React from 'react';
+import type React from 'react';
 import { LuNotebookPen } from 'react-icons/lu';
 
 import { useEnv } from '@/context/EnvContext';

@@ -13,12 +13,12 @@ import {
   type GridListProps,
   type ListProps,
 } from 'react-virtuoso';
-import { Book, BooksGroup, ReadingStatus } from '@/types/book';
+import type { Book, BooksGroup, ReadingStatus } from '@/types/book';
 import {
-  LibraryCoverFitType,
+  type LibraryCoverFitType,
   LibraryGroupByType,
   LibrarySortByType,
-  LibraryViewModeType,
+  type LibraryViewModeType,
 } from '@/types/settings';
 import { useEnv } from '@/context/EnvContext';
 import { useThemeStore } from '@/store/themeStore';

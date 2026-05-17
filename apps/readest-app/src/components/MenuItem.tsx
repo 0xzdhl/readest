@@ -1,9 +1,9 @@
 import clsx from 'clsx';
 import React from 'react';
-import { IconType } from 'react-icons';
+import type { IconType } from 'react-icons';
 import { MdCheck } from 'react-icons/md';
-import { useTranslation } from '@/hooks/useTranslation';
 import { useResponsiveSize } from '@/hooks/useResponsiveSize';
+import { useTranslation } from '@/hooks/useTranslation';
 
 interface MenuItemProps {
   label: string;

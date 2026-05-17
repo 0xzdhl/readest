@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { interceptKeys, getScreenBrightness, setScreenBrightness } from '@/utils/bridge';
 import { eventDispatcher } from '@/utils/event';
-import { NativeTouchEventType } from '@/types/system';
+import type { NativeTouchEventType } from '@/types/system';
 
 declare global {
   interface Window {

@@ -1,5 +1,6 @@
 import clsx from 'clsx';
-import React, { ReactNode, useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
+import type { ReactNode } from 'react';
 import { OverlayScrollbarsComponent } from 'overlayscrollbars-react';
 import 'overlayscrollbars/overlayscrollbars.css';
 import { MdArrowBackIosNew, MdArrowForwardIos } from 'react-icons/md';

@@ -1,8 +1,8 @@
 import clsx from 'clsx';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 
-import { BookNote, HighlightColor } from '@/types/book';
-import { Point, TextSelection } from '@/utils/sel';
+import type { BookNote, HighlightColor } from '@/types/book';
+import type { Point, TextSelection } from '@/utils/sel';
 import { useEnv } from '@/context/EnvContext';
 import { useThemeStore } from '@/store/themeStore';
 import { useReaderStore } from '@/store/readerStore';

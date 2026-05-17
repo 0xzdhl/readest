@@ -8,7 +8,7 @@ import {
 import { fetch as tauriFetch } from '@tauri-apps/plugin-http';
 import { READEST_OPDS_USER_AGENT } from '@/services/constants';
 import {
-  OPDSCustomHeaders,
+  type OPDSCustomHeaders,
   normalizeOPDSCustomHeaders,
   serializeOPDSCustomHeaders,
 } from './customHeaders';

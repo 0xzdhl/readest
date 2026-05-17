@@ -1,6 +1,6 @@
-import React from 'react';
+import type React from 'react';
 import { useTranslation } from '@/hooks/useTranslation';
-import { ReadingRulerColor } from '@/types/book';
+import type { ReadingRulerColor } from '@/types/book';
 import { BoxedList, SettingsRow, SettingsSwitchRow } from '../primitives';
 import NumberInput from '../NumberInput';
 

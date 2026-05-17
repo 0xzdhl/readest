@@ -9,7 +9,7 @@
  * `justify-between`, unwanted `flex-1` on the color strip).
  */
 
-import React from 'react';
+import type React from 'react';
 import { describe, it, expect, vi, beforeAll, beforeEach, afterEach } from 'vitest';
 import { render, cleanup } from '@testing-library/react';
 import { page } from 'vitest/browser';

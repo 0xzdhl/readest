@@ -1,9 +1,9 @@
 import clsx from 'clsx';
-import React from 'react';
+import type React from 'react';
 import { IoIosList, IoMdCloseCircle } from 'react-icons/io';
 import { MdChevronLeft, MdChevronRight } from 'react-icons/md';
 
-import { Insets } from '@/types/misc';
+import type { Insets } from '@/types/misc';
 import { useEnv } from '@/context/EnvContext';
 import { useTranslation } from '@/hooks/useTranslation';
 import { useResponsiveSize } from '@/hooks/useResponsiveSize';

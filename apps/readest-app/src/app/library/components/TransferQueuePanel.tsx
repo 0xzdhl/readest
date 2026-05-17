@@ -17,7 +17,7 @@ import { useTranslation } from '@/hooks/useTranslation';
 import { useResponsiveSize } from '@/hooks/useResponsiveSize';
 import { useKeyDownActions } from '@/hooks/useKeyDownActions';
 import { useLibraryStore } from '@/store/libraryStore';
-import { TransferItem, TransferStatus, useTransferStore } from '@/store/transferStore';
+import { type TransferItem, type TransferStatus, useTransferStore } from '@/store/transferStore';
 
 const formatBytes = (bytes: number): string => {
   if (bytes === 0) return '0 B';

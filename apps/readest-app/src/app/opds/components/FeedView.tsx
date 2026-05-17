@@ -2,7 +2,7 @@ import { useMemo, useCallback } from 'react';
 import { VirtuosoGrid } from 'react-virtuoso';
 import { IoChevronBack, IoChevronForward, IoFilter } from 'react-icons/io5';
 import { useTranslation } from '@/hooks/useTranslation';
-import { OPDSFeed, OPDSGenericLink } from '@/types/opds';
+import type { OPDSFeed, OPDSGenericLink } from '@/types/opds';
 import { PublicationCard } from './PublicationCard';
 import { NavigationCard } from './NavigationCard';
 import { groupByArray } from '../utils/opdsUtils';

@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'react';
-import { Book } from '@/types/book';
+import type { Book } from '@/types/book';
 import { useEnv } from '@/context/EnvContext';
 import { updateDiscordPresence, clearDiscordPresence } from '@/utils/discord';
 

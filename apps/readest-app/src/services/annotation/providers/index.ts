@@ -1,4 +1,4 @@
-import { AnnotationImportProvider } from '../types';
+import type { AnnotationImportProvider } from '../types';
 import { foliateProvider } from './foliate';
 
 function createProvider<T extends string>(

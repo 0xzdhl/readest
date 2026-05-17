@@ -1,13 +1,13 @@
 import { useEffect, useState } from 'react';
-import { BookMetadata } from '@/libs/document';
+import type { BookMetadata } from '@/libs/document';
 import {
   validateAndNormalizeDate,
   validateAndNormalizeLanguage,
   validateAndNormalizeSubjects,
   validateISBN,
-  ValidationResult,
 } from '@/utils/validation';
-import { MetadataSource } from './SourceSelector';
+import type { ValidationResult } from '@/utils/validation';
+import type { MetadataSource } from './SourceSelector';
 import { searchMetadata } from '@/libs/metadata';
 import { formatAuthors, formatTitle, getPrimaryLanguage } from '@/utils/book';
 

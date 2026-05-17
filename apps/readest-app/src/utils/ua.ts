@@ -1,4 +1,4 @@
-import { AppService } from '@/types/system';
+import type { AppService } from '@/types/system';
 
 export const parseWebViewInfo = (appService: AppService | null): string => {
   const ua = navigator.userAgent;

@@ -8,32 +8,34 @@
  * DICT instances + a couple of tiny in-test providers for navigation and
  * abort assertions).
  */
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { render, screen, cleanup, fireEvent, waitFor, act } from '@testing-library/react';
+
+import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import type { ReactNode } from 'react';
-
-import type { DictionaryProvider, DictionaryLookupOutcome } from '@/services/dictionaries/types';
-import { BUILTIN_WEB_SEARCH_IDS } from '@/services/dictionaries/types';
-import type { ImportedDictionary } from '@/services/dictionaries/types';
-import type { BaseDir } from '@/types/system';
-import { createStarDictProvider } from '@/services/dictionaries/providers/starDictProvider';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { createDictProvider } from '@/services/dictionaries/providers/dictProvider';
+import { createStarDictProvider } from '@/services/dictionaries/providers/starDictProvider';
+import type {
+  DictionaryLookupOutcome,
+  DictionaryProvider,
+  ImportedDictionary,
+} from '@/services/dictionaries/types';
+import { BUILTIN_WEB_SEARCH_IDS } from '@/services/dictionaries/types';
 import { useCustomDictionaryStore } from '@/store/customDictionaryStore';
-
+import type { BaseDir } from '@/types/system';
 import {
-  IFO_FIXTURE_NAME,
-  IDX_FIXTURE_NAME,
+  DICT_FIXTURE_NAME as DICTD_FIXTURE_NAME,
+  INDEX_FIXTURE_NAME,
+  readDictFile as readDictdFile,
+  readIndexFile,
+} from '../../../services/dictionaries/_dictFixtures';
+import {
   DICT_FIXTURE_NAME,
-  readIfoFile,
+  IDX_FIXTURE_NAME,
+  IFO_FIXTURE_NAME,
   readIdxFile,
+  readIfoFile,
   readDictFile as readStarDictFile,
 } from '../../../services/dictionaries/_stardictFixtures';
-import {
-  INDEX_FIXTURE_NAME,
-  DICT_FIXTURE_NAME as DICTD_FIXTURE_NAME,
-  readIndexFile,
-  readDictFile as readDictdFile,
-} from '../../../services/dictionaries/_dictFixtures';
 
 // ---------------------------------------------------------------------------
 // Mocks

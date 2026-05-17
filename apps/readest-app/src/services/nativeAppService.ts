@@ -10,8 +10,8 @@ import {
   copyFile,
   stat,
   BaseDirectory,
-  WriteFileOptions,
-  DirEntry,
+  type WriteFileOptions,
+  type DirEntry,
 } from '@tauri-apps/plugin-fs';
 import { invoke, convertFileSrc } from '@tauri-apps/api/core';
 import { open as openDialog, save as saveDialog, ask } from '@tauri-apps/plugin-dialog';
@@ -27,7 +27,7 @@ import {
 import { type as osType } from '@tauri-apps/plugin-os';
 import { shareFile } from '@choochmeque/tauri-plugin-sharekit-api';
 
-import {
+import type {
   FileSystem,
   BaseDir,
   AppPlatform,
@@ -43,8 +43,8 @@ import { copyFiles } from '@/utils/files';
 import { readPublicEnv, readPublicFlag } from '@/utils/publicEnv';
 
 import { BaseAppService } from './appService';
-import { DatabaseOpts, DatabaseService } from '@/types/database';
-import { SchemaType } from '@/services/database/migrate';
+import type { DatabaseOpts, DatabaseService } from '@/types/database';
+import type { SchemaType } from '@/services/database/migrate';
 import {
   DATA_SUBDIR,
   LOCAL_BOOKS_SUBDIR,

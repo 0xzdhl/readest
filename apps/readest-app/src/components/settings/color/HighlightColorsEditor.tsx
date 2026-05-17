@@ -3,9 +3,9 @@ import React, { useEffect, useRef, useState } from 'react';
 import { MdClose } from 'react-icons/md';
 import {
   DEFAULT_HIGHLIGHT_COLORS,
-  DefaultHighlightColor,
-  HighlightColor,
-  UserHighlightColor,
+  type DefaultHighlightColor,
+  type HighlightColor,
+  type UserHighlightColor,
 } from '@/types/book';
 import { useTranslation } from '@/hooks/useTranslation';
 import { BoxedList, SettingLabel } from '../primitives';

@@ -1,14 +1,14 @@
-import { SystemSettings } from '@/types/settings';
-import { FileSystem, AppPlatform, BaseDir } from '@/types/system';
+import type { SystemSettings } from '@/types/settings';
+import type { FileSystem, AppPlatform, BaseDir } from '@/types/system';
 import {
-  Book,
-  BookConfig,
-  BookContent,
-  BookFormat,
-  BookLookupIndex,
-  BookNote,
+  type Book,
+  type BookConfig,
+  type BookContent,
+  type BookFormat,
+  type BookLookupIndex,
+  type BookNote,
   FIXED_LAYOUT_FORMATS,
-  ImportBookOptions,
+  type ImportBookOptions,
 } from '@/types/book';
 import {
   getDir,
@@ -25,12 +25,12 @@ import {
 import type { BookNav } from '@/services/nav';
 import { partialMD5, md5 } from '@/utils/md5';
 import { getBaseFilename, getFilename } from '@/utils/path';
-import { BookDoc, DocumentLoader, EXTS } from '@/libs/document';
+import { type BookDoc, DocumentLoader, EXTS } from '@/libs/document';
 import { isPseStreamFileName, openPseStreamBook, parsePseStreamFileName } from './opds/pseStream';
 import { DEFAULT_BOOK_SEARCH_CONFIG, DEFAULT_FIXED_LAYOUT_VIEW_SETTINGS } from './constants';
 import { isContentURI, isValidURL, makeSafeFilename } from '@/utils/misc';
 import { deserializeConfig, serializeConfig } from '@/utils/serializer';
-import { ClosableFile } from '@/utils/file';
+import type { ClosableFile } from '@/utils/file';
 import { TxtToEpubConverter } from '@/utils/txt';
 import { svg2png } from '@/utils/svg';
 import { normalizeMetadataIsbn } from '@/utils/isbn';

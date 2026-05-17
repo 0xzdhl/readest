@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useEnv } from '@/context/EnvContext';
 import { useTranslation } from '@/hooks/useTranslation';
-import { UserPlan } from '@/types/quota';
+import type { UserPlan } from '@/types/quota';
 
 interface DeleteConfirmationModalProps {
   show: boolean;

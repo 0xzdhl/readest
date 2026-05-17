@@ -2,8 +2,14 @@ import clsx from 'clsx';
 import { useMemo, useState } from 'react';
 import { useRouter } from '@tanstack/react-router';
 import { IoPricetag } from 'react-icons/io5';
-import { Book } from '@/types/book';
-import { OPDSPublication, REL, SYMBOL, OPDSAcquisitionLink, OPDSStreamLink } from '@/types/opds';
+import type { Book } from '@/types/book';
+import {
+  type OPDSPublication,
+  REL,
+  SYMBOL,
+  type OPDSAcquisitionLink,
+  type OPDSStreamLink,
+} from '@/types/opds';
 import { useTranslation } from '@/hooks/useTranslation';
 import { getFileExtFromMimeType } from '@/libs/document';
 import { formatDate, formatLanguage } from '@/utils/book';

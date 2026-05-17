@@ -1,8 +1,8 @@
-import { CustomTheme } from '@/styles/themes';
-import { CustomFont } from '@/styles/fonts';
-import { CustomTexture } from '@/styles/textures';
-import { HighlightColor, HighlightStyle, UserHighlightColor, ViewSettings } from './book';
-import { OPDSCatalog } from './opds';
+import type { CustomTheme } from '@/styles/themes';
+import type { CustomFont } from '@/styles/fonts';
+import type { CustomTexture } from '@/styles/textures';
+import type { HighlightColor, HighlightStyle, UserHighlightColor, ViewSettings } from './book';
+import type { OPDSCatalog } from './opds';
 import type { AISettings } from '@/services/ai/types';
 import type { NotebookTab } from '@/store/notebookStore';
 import type { DictionarySettings, ImportedDictionary } from '@/services/dictionaries/types';

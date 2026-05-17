@@ -7,7 +7,7 @@ import { useTranslation } from '@/hooks/useTranslation';
 import { useSettingsStore } from '@/store/settingsStore';
 import { eventDispatcher } from '@/utils/event';
 import { KOSyncClient } from '@/services/sync/KOSyncClient';
-import { KOSyncChecksumMethod, KOSyncStrategy } from '@/types/settings';
+import type { KOSyncChecksumMethod, KOSyncStrategy } from '@/types/settings';
 import { debounce } from '@/utils/debounce';
 import { getOSPlatform } from '@/utils/misc';
 import SubPageHeader from '../SubPageHeader';

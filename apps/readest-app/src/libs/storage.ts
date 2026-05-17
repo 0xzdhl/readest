@@ -1,5 +1,5 @@
 import { getAPIBaseUrl, isWebAppPlatform } from '@/services/environment';
-import { AppService } from '@/types/system';
+import type { AppService } from '@/types/system';
 import { getUserID } from '@/utils/access';
 import { fetchWithAuth } from '@/utils/fetch';
 import {
@@ -7,8 +7,8 @@ import {
   tauriDownload,
   webUpload,
   webDownload,
-  ProgressHandler,
-  ProgressPayload,
+  type ProgressHandler,
+  type ProgressPayload,
 } from '@/utils/transfer';
 
 const API_ENDPOINTS = {

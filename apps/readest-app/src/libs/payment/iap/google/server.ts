@@ -1,4 +1,4 @@
-import { GooglePaymentData } from '@/types/payment';
+import type { GooglePaymentData } from '@/types/payment';
 import { createSupabaseAdminClient } from '@/utils/supabase';
 import { updateUserStorage } from '@/libs/payment/storage';
 import {
@@ -7,8 +7,8 @@ import {
   mapProductIdToUserPlan,
   parseStorageGB,
 } from '../utils';
-import { IAPError, VerifiedIAP } from '../types';
-import {
+import { IAPError, type VerifiedIAP } from '../types';
+import type {
   ProductPurchase,
   SubscriptionPurchase,
   VerificationResult,

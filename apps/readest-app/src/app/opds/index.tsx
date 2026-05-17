@@ -21,7 +21,7 @@ import { useLibrary } from '@/hooks/useLibrary';
 import { eventDispatcher } from '@/utils/event';
 import { navigateToReader } from '@/utils/nav';
 import { getFileExtFromMimeType } from '@/libs/document';
-import { OPDSFeed, OPDSPublication, OPDSSearch } from '@/types/opds';
+import type { OPDSFeed, OPDSPublication, OPDSSearch } from '@/types/opds';
 import {
   getFileExtFromPath,
   isSearchLink,

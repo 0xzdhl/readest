@@ -2,7 +2,7 @@ import { stubTranslation as _ } from '@/utils/misc';
 import { fetch as tauriFetch } from '@tauri-apps/plugin-http';
 import { isTauriAppPlatform } from '@/services/environment';
 import { normalizeToShortLang } from '@/utils/lang';
-import { TranslationProvider } from '../types';
+import type { TranslationProvider } from '../types';
 
 export const googleProvider: TranslationProvider = {
   name: 'google',

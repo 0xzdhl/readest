@@ -1,4 +1,4 @@
-import React from 'react';
+import type React from 'react';
 import { MdClose } from 'react-icons/md';
 import { useTranslation } from '@/hooks/useTranslation';
 import { BoxedList, SettingsRow, SettingsSelect } from '../primitives';

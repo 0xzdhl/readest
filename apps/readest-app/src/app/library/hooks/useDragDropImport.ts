@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { useEnv } from '@/context/EnvContext';
 import { impactFeedback } from '@tauri-apps/plugin-haptics';
 import { eventDispatcher } from '@/utils/event';
-import { SelectedFile } from '@/hooks/useFileSelector';
+import type { SelectedFile } from '@/hooks/useFileSelector';
 import { isTauriAppPlatform } from '@/services/environment';
 import { getCurrentWebview } from '@tauri-apps/api/webview';
 import { useTranslation } from '@/hooks/useTranslation';

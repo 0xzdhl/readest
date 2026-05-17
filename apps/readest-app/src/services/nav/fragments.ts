@@ -1,4 +1,4 @@
-import { CFI, SectionFragment, SectionItem, TOCItem } from '@/libs/document';
+import { CFI, type SectionFragment, type SectionItem, type TOCItem } from '@/libs/document';
 
 const findFragmentPosition = (html: string, fragmentId: string | undefined): number => {
   if (!fragmentId) return html.length;

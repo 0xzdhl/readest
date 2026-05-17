@@ -1,6 +1,6 @@
 import clsx from 'clsx';
 import React, { useCallback } from 'react';
-import { TOCItem } from '@/libs/document';
+import type { TOCItem } from '@/libs/document';
 import { getContentMd5 } from '@/utils/misc';
 
 const createExpanderIcon = (isExpanded: boolean) => {

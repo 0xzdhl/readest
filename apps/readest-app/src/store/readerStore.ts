@@ -1,18 +1,18 @@
 import { create } from 'zustand';
 
 import {
-  BookContent,
-  BookConfig,
-  PageInfo,
-  BookProgress,
-  ViewSettings,
-  TimeInfo,
+  type BookContent,
+  type BookConfig,
+  type PageInfo,
+  type BookProgress,
+  type ViewSettings,
+  type TimeInfo,
   FIXED_LAYOUT_FORMATS,
 } from '@/types/book';
-import { Insets } from '@/types/misc';
-import { EnvConfigType } from '@/services/environment';
-import { FoliateView } from '@/types/view';
-import { DocumentLoader, TOCItem } from '@/libs/document';
+import type { Insets } from '@/types/misc';
+import type { EnvConfigType } from '@/services/environment';
+import type { FoliateView } from '@/types/view';
+import { DocumentLoader, type TOCItem } from '@/libs/document';
 import {
   isPseStreamFileName,
   openPseStreamBook,
@@ -23,7 +23,7 @@ import { formatTitle, getMetadataHash, getPrimaryLanguage } from '@/utils/book';
 import { getBaseFilename } from '@/utils/path';
 import { SUPPORTED_LANGNAMES } from '@/services/constants';
 import { useSettingsStore } from './settingsStore';
-import { BookData, useBookDataStore } from './bookDataStore';
+import { type BookData, useBookDataStore } from './bookDataStore';
 import { useLibraryStore } from './libraryStore';
 import { uniqueId } from '@/utils/misc';
 

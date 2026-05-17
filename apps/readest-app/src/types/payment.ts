@@ -1,4 +1,4 @@
-import { QuotaFeature, UserPlan } from './quota';
+import type { QuotaFeature, UserPlan } from './quota';
 
 export type PaymentProvider = 'stripe' | 'apple' | 'google';
 

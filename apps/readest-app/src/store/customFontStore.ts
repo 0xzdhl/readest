@@ -1,12 +1,7 @@
 import { create } from 'zustand';
-import { EnvConfigType } from '@/services/environment';
-import {
-  CustomFont,
-  createCustomFont,
-  getFontFormat,
-  getMimeType,
-  mountCustomFont,
-} from '@/styles/fonts';
+import type { EnvConfigType } from '@/services/environment';
+import { createCustomFont, getFontFormat, getMimeType, mountCustomFont } from '@/styles/fonts';
+import type { CustomFont } from '@/styles/fonts';
 import { useSettingsStore } from './settingsStore';
 import { getReplicaPersistEnv } from '@/services/sync/replicaPersist';
 import { publishReplicaDelete, publishReplicaUpsert } from '@/services/sync/replicaPublish';

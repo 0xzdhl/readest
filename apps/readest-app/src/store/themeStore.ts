@@ -1,12 +1,12 @@
 import { create } from 'zustand';
-import { AppService } from '@/types/system';
-import { getThemeCode, ThemeCode } from '@/utils/style';
+import type { AppService } from '@/types/system';
+import { getThemeCode, type ThemeCode } from '@/utils/style';
 import { getSystemColorScheme } from '@/utils/bridge';
 import { getCurrentWindow } from '@tauri-apps/api/window';
-import { CustomTheme, Palette, ThemeMode } from '@/styles/themes';
-import { EnvConfigType, isWebAppPlatform } from '@/services/environment';
-import { SystemSettings } from '@/types/settings';
-import { Insets } from '@/types/misc';
+import type { CustomTheme, Palette, ThemeMode } from '@/styles/themes';
+import { type EnvConfigType, isWebAppPlatform } from '@/services/environment';
+import type { SystemSettings } from '@/types/settings';
+import type { Insets } from '@/types/misc';
 
 declare global {
   interface Window {

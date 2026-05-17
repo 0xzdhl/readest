@@ -1,6 +1,6 @@
 import { stubTranslation as _ } from '@/utils/misc';
 import { fetchWithTimeout } from '@/utils/fetch';
-import { Metadata } from '../types';
+import type { Metadata } from '../types';
 import { BaseMetadataProvider } from './base';
 import { code6392to6391, normalizedLangCode } from '@/utils/lang';
 

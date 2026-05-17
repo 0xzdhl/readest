@@ -1,4 +1,4 @@
-import { PlanInterval, PlanType, UserPlan } from '@/types/quota';
+import type { PlanInterval, PlanType, UserPlan } from '@/types/quota';
 
 export const mapProductIdToUserPlan = (productId: string, isSubscription = false): UserPlan => {
   if (productId.includes('.plus')) return 'plus';

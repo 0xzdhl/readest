@@ -1,7 +1,7 @@
-import { BookConfig } from '@/types/book';
-import { AppService } from '@/types/system';
+import type { BookConfig } from '@/types/book';
+import type { AppService } from '@/types/system';
 
-import { AnnotationProviderName } from './providers';
+import type { AnnotationProviderName } from './providers';
 
 export interface AnnotationImportProvider {
   name: string;

@@ -1,6 +1,6 @@
 import { useTranslation } from '@/hooks/useTranslation';
-import { UserPlan } from '@/types/quota';
-import { PlanDetails } from '../utils/plan';
+import type { UserPlan } from '@/types/quota';
+import type { PlanDetails } from '../utils/plan';
 
 interface PlanNavigationProps {
   allPlans: PlanDetails[];

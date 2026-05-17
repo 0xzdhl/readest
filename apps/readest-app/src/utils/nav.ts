@@ -1,10 +1,11 @@
 import { redirect } from '@tanstack/react-router';
 import type { AppRouter } from '@/router';
-import { getCurrentWindow, ScrollBarStyle } from '@tauri-apps/api/window';
+import { getCurrentWindow } from '@tauri-apps/api/window';
+import type { ScrollBarStyle } from '@tauri-apps/api/window';
 import { WebviewWindow } from '@tauri-apps/api/webviewWindow';
 import { isTauriAppPlatform } from '@/services/environment';
 import { BOOK_IDS_SEPARATOR } from '@/services/constants';
-import { AppService } from '@/types/system';
+import type { AppService } from '@/types/system';
 
 let readerWindowsCount = 0;
 const createReaderWindow = (appService: AppService, url: string) => {

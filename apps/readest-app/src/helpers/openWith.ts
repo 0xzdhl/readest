@@ -1,5 +1,5 @@
 import { isWebAppPlatform, hasCli } from '@/services/environment';
-import { AppService } from '@/types/system';
+import type { AppService } from '@/types/system';
 import { getCurrent } from '@tauri-apps/plugin-deep-link';
 
 declare global {

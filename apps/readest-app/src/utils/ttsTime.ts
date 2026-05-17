@@ -1,4 +1,4 @@
-import { BookProgress } from '@/types/book';
+import type { BookProgress } from '@/types/book';
 
 const toSeconds = (minutes?: number) => {
   if (typeof minutes !== 'number' || !Number.isFinite(minutes) || minutes < 0) return null;

@@ -5,10 +5,10 @@ import { useSettingsStore } from '@/store/settingsStore';
 import { useResetViewSettings } from '@/hooks/useResetSettings';
 import { useTranslation } from '@/hooks/useTranslation';
 import { saveViewSettings } from '@/helpers/settings';
-import { SettingsPanelPanelProp } from './SettingsDialog';
-import { TTSMediaMetadataMode } from '@/services/tts/types';
+import type { SettingsPanelPanelProp } from './SettingsDialog';
+import type { TTSMediaMetadataMode } from '@/services/tts/types';
 import { BoxedList, SettingsRow, SettingsSelect } from './primitives';
-import TTSHighlightStyleEditor, { TTSHighlightStyle } from './color/TTSHighlightStyleEditor';
+import TTSHighlightStyleEditor, { type TTSHighlightStyle } from './color/TTSHighlightStyleEditor';
 
 const TTSPanel: React.FC<SettingsPanelPanelProp> = ({ bookKey, onRegisterReset }) => {
   const _ = useTranslation();

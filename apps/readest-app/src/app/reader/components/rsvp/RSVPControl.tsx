@@ -6,16 +6,16 @@ import { useSettingsStore } from '@/store/settingsStore';
 import { useThemeStore } from '@/store/themeStore';
 import {
   RSVPController,
-  RsvpStartChoice,
-  RsvpStopPosition,
+  type RsvpStartChoice,
+  type RsvpStopPosition,
   buildRsvpExitConfigUpdate,
 } from '@/services/rsvp';
 import { eventDispatcher } from '@/utils/event';
 import { useEnv } from '@/context/EnvContext';
 import { useTranslation } from '@/hooks/useTranslation';
-import { BookNote, PageInfo } from '@/types/book';
-import { TOCItem } from '@/libs/document';
-import { Insets } from '@/types/misc';
+import type { BookNote, PageInfo } from '@/types/book';
+import type { TOCItem } from '@/libs/document';
+import type { Insets } from '@/types/misc';
 import { initJieba } from '@/utils/jieba';
 import RSVPOverlay from './RSVPOverlay';
 import RSVPStartDialog from './RSVPStartDialog';

@@ -1,7 +1,7 @@
 import { useCallback, useEffect } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { useSync } from '@/hooks/useSync';
-import { BookNote, FIXED_LAYOUT_FORMATS } from '@/types/book';
+import { type BookNote, FIXED_LAYOUT_FORMATS } from '@/types/book';
 import { useBookDataStore } from '@/store/bookDataStore';
 import { useReaderStore } from '@/store/readerStore';
 import { SYNC_NOTES_INTERVAL_SEC } from '@/services/constants';

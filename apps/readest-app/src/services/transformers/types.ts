@@ -1,4 +1,4 @@
-import { ViewSettings } from '@/types/book';
+import type { ViewSettings } from '@/types/book';
 
 export type TransformContext = {
   bookKey: string;

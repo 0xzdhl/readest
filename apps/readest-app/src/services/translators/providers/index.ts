@@ -1,4 +1,4 @@
-import { TranslationProvider } from '../types';
+import type { TranslationProvider } from '../types';
 import { deeplProvider } from './deepl';
 import { azureProvider } from './azure';
 import { googleProvider } from './google';

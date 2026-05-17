@@ -1,7 +1,7 @@
 import Stripe from 'stripe';
 import { createFileRoute } from '@tanstack/react-router';
 import { getStripe } from '@/libs/payment/stripe/server';
-import { StripeProductMetadata } from '@/types/payment';
+import type { StripeProductMetadata } from '@/types/payment';
 
 export const Route = createFileRoute('/api/stripe/plans')({
   server: {

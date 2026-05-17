@@ -1,8 +1,8 @@
-import React from 'react';
+import type React from 'react';
 import { CgColorPicker } from 'react-icons/cg';
 import { MdRadioButtonUnchecked, MdRadioButtonChecked } from 'react-icons/md';
 import { PiPlus } from 'react-icons/pi';
-import { Theme } from '@/styles/themes';
+import type { Theme } from '@/styles/themes';
 import { useTranslation } from '@/hooks/useTranslation';
 import { useResponsiveSize } from '@/hooks/useResponsiveSize';
 import { SectionTitle } from '../primitives';

@@ -1,5 +1,5 @@
-import { Insets } from '@/types/misc';
-import { ViewSettings } from '@/types/book';
+import type { Insets } from '@/types/misc';
+import type { ViewSettings } from '@/types/book';
 
 export const getViewInsets = (viewSettings: ViewSettings) => {
   const showHeader = viewSettings.showHeader!;

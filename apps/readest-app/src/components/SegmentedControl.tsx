@@ -1,5 +1,5 @@
 import clsx from 'clsx';
-import React from 'react';
+import type React from 'react';
 
 export interface SegmentedControlOption<T extends string | number> {
   value: T;

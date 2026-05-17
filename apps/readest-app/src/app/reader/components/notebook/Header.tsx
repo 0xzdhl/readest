@@ -1,5 +1,5 @@
 import clsx from 'clsx';
-import React from 'react';
+import type React from 'react';
 
 import { FiSearch } from 'react-icons/fi';
 import { LuNotebookPen } from 'react-icons/lu';

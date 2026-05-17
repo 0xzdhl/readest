@@ -7,16 +7,16 @@ import { isTauriAppPlatform } from '@/services/environment';
 import { tauriHandleSetAlwaysOnTop, tauriHandleToggleFullScreen } from '@/utils/window';
 import { setAboutDialogVisible } from '@/components/AboutWindow';
 import { saveSysSettings } from '@/helpers/settings';
-import { SettingsPanelType } from '@/components/settings/SettingsDialog';
+import type { SettingsPanelType } from '@/components/settings/SettingsDialog';
 import {
-  CommandItem,
+  type CommandItem,
   buildCommandRegistry,
   searchCommands,
-  CommandSearchResult,
+  type CommandSearchResult,
   groupResultsByCategory,
   trackCommandUsage,
   getRecentCommands,
-  CommandCategory,
+  type CommandCategory,
 } from '@/services/commandRegistry';
 
 interface CommandPaletteContextValue {

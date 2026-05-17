@@ -2,15 +2,15 @@ import { useCallback, useEffect, useState } from 'react';
 import { useRouter } from '@tanstack/react-router';
 import { useEnv } from '@/context/EnvContext';
 import { useSyncContext } from '@/context/SyncContext';
-import { SyncData, SyncOp, SyncResult, SyncType } from '@/libs/sync';
+import type { SyncData, SyncOp, SyncResult, SyncType } from '@/libs/sync';
 import { isSyncCategoryEnabled } from '@/services/sync/syncCategories';
 import { useSettingsStore } from '@/store/settingsStore';
 import { useBookDataStore } from '@/store/bookDataStore';
 import { transformBookConfigFromDB } from '@/utils/transform';
 import { transformBookNoteFromDB } from '@/utils/transform';
 import { transformBookFromDB } from '@/utils/transform';
-import { DBBook, DBBookConfig, DBBookNote } from '@/types/records';
-import { Book, BookConfig, BookDataRecord, BookNote } from '@/types/book';
+import type { DBBook, DBBookConfig, DBBookNote } from '@/types/records';
+import type { Book, BookConfig, BookDataRecord, BookNote } from '@/types/book';
 import { navigateToLogin } from '@/utils/nav';
 import { useReaderStore } from '@/store/readerStore';
 

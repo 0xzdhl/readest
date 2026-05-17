@@ -1,4 +1,4 @@
-import { TranslationCache } from './types';
+import type { TranslationCache } from './types';
 
 const DB_NAME = 'TranslationCache';
 const DB_VERSION = 1;

@@ -2,11 +2,11 @@ import React, { useEffect, useRef, useState } from 'react';
 import { useNotebookStore } from '@/store/notebookStore';
 import { useTranslation } from '@/hooks/useTranslation';
 import { useResponsiveSize } from '@/hooks/useResponsiveSize';
-import { TextSelection } from '@/utils/sel';
+import type { TextSelection } from '@/utils/sel';
 import { md5Fingerprint } from '@/utils/md5';
-import { BookNote } from '@/types/book';
+import type { BookNote } from '@/types/book';
 import useShortcuts from '@/hooks/useShortcuts';
-import TextEditor, { TextEditorRef } from '@/components/TextEditor';
+import TextEditor, { type TextEditorRef } from '@/components/TextEditor';
 import TextButton from '@/components/TextButton';
 
 interface NoteEditorProps {

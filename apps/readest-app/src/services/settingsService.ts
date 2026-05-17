@@ -1,6 +1,7 @@
-import { FileSystem } from '@/types/system';
-import { ReadSettings, SystemSettings } from '@/types/settings';
-import { DEFAULT_HIGHLIGHT_COLORS, UserHighlightColor, ViewSettings } from '@/types/book';
+import type { FileSystem } from '@/types/system';
+import type { ReadSettings, SystemSettings } from '@/types/settings';
+import { DEFAULT_HIGHLIGHT_COLORS } from '@/types/book';
+import type { UserHighlightColor, ViewSettings } from '@/types/book';
 import { v4 as uuidv4 } from 'uuid';
 import {
   DEFAULT_BOOK_LAYOUT,

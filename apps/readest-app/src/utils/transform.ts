@@ -1,4 +1,4 @@
-import {
+import type {
   Book,
   BookConfig,
   BookFormat,
@@ -8,7 +8,7 @@ import {
   HighlightStyle,
   ReadingStatus,
 } from '@/types/book';
-import { DBBookConfig, DBBook, DBBookNote } from '@/types/records';
+import type { DBBookConfig, DBBook, DBBookNote } from '@/types/records';
 import { sanitizeString } from './sanitize';
 
 export const transformBookConfigToDB = (bookConfig: unknown, userId: string): DBBookConfig => {

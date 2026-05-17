@@ -1,4 +1,4 @@
-import { PlanType } from '@/types/quota';
+import type { PlanType } from '@/types/quota';
 
 export type IAPStatus =
   | 'active'

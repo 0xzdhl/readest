@@ -1,5 +1,5 @@
-import { AppService, FileSystem, BaseDir, DeleteAction } from '@/types/system';
-import { Book } from '@/types/book';
+import type { AppService, FileSystem, BaseDir, DeleteAction } from '@/types/system';
+import type { Book } from '@/types/book';
 import {
   getDir,
   getLocalBookFilename,
@@ -14,8 +14,8 @@ import {
   createProgressHandler,
   batchGetDownloadUrls,
 } from '@/libs/storage';
-import { ClosableFile } from '@/utils/file';
-import { ProgressHandler } from '@/utils/transfer';
+import type { ClosableFile } from '@/utils/file';
+import type { ProgressHandler } from '@/utils/transfer';
 import { CLOUD_BOOKS_SUBDIR, CLOUD_REPLICAS_SUBDIR } from './constants';
 
 export async function deleteBook(

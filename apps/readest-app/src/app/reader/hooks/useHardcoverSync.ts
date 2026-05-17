@@ -5,7 +5,7 @@ import { useBookDataStore } from '@/store/bookDataStore';
 import { useTranslation } from '@/hooks/useTranslation';
 import { eventDispatcher } from '@/utils/event';
 import { HardcoverClient, HardcoverSyncMapStore } from '@/services/hardcover';
-import { BookNote } from '@/types/book';
+import type { BookNote } from '@/types/book';
 
 export const useHardcoverSync = (bookKey: string) => {
   const _ = useTranslation();

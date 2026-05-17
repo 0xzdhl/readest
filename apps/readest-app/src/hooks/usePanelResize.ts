@@ -1,4 +1,4 @@
-import { DragKey, useDrag } from '@/hooks/useDrag';
+import { type DragKey, useDrag } from '@/hooks/useDrag';
 
 interface PanelResizeOptions {
   side: 'start' | 'end';

@@ -1,4 +1,5 @@
-import { RefObject, useEffect, useRef } from 'react';
+import { useEffect, useRef } from 'react';
+import type { RefObject } from 'react';
 import { useEnv } from '@/context/EnvContext';
 import { useDeviceControlStore } from '@/store/deviceStore';
 import { eventDispatcher } from '@/utils/event';

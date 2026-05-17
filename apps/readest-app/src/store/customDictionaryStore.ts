@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { EnvConfigType } from '@/services/environment';
+import type { EnvConfigType } from '@/services/environment';
 import type {
   DictionarySettings,
   ImportedDictionary,

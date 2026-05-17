@@ -1,7 +1,7 @@
 import { create } from 'zustand';
-import { ProofreadRule, ProofreadScope, ViewSettings } from '@/types/book';
-import { SystemSettings } from '@/types/settings';
-import { EnvConfigType } from '@/services/environment';
+import type { ProofreadRule, ProofreadScope, ViewSettings } from '@/types/book';
+import type { SystemSettings } from '@/types/settings';
+import type { EnvConfigType } from '@/services/environment';
 import { useReaderStore } from '@/store/readerStore';
 import { useSettingsStore } from '@/store/settingsStore';
 import { useBookDataStore } from '@/store/bookDataStore';

@@ -1,4 +1,4 @@
-import { ApplePaymentData } from '@/types/payment';
+import type { ApplePaymentData } from '@/types/payment';
 import { createSupabaseAdminClient } from '@/utils/supabase';
 import { updateUserStorage } from '@/libs/payment/storage';
 import {
@@ -7,8 +7,8 @@ import {
   mapProductIdToUserPlan,
   parseStorageGB,
 } from '../utils';
-import { IAPError, VerifiedIAP } from '../types';
-import { VerificationResult } from './verifier';
+import { IAPError, type VerifiedIAP } from '../types';
+import type { VerificationResult } from './verifier';
 
 export type VerifiedPurchase = VerifiedIAP & {
   transactionId: string;

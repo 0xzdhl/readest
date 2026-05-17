@@ -2,8 +2,8 @@ import clsx from 'clsx';
 import React, { useState } from 'react';
 import { MdEdit, MdDelete, MdLock, MdLockOpen, MdOutlineSearch } from 'react-icons/md';
 
-import { Book } from '@/types/book';
-import { BookMetadata } from '@/libs/document';
+import type { Book } from '@/types/book';
+import type { BookMetadata } from '@/libs/document';
 import { useEnv } from '@/context/EnvContext';
 import { useTranslation } from '@/hooks/useTranslation';
 import { flattenContributors, formatAuthors, formatPublisher, formatTitle } from '@/utils/book';

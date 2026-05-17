@@ -1,15 +1,15 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Virtuoso, VirtuosoHandle } from 'react-virtuoso';
+import { Virtuoso, type VirtuosoHandle } from 'react-virtuoso';
 import { useOverlayScrollbars } from 'overlayscrollbars-react';
 import 'overlayscrollbars/overlayscrollbars.css';
 
-import { TOCItem } from '@/libs/document';
+import type { TOCItem } from '@/libs/document';
 import { useReaderStore } from '@/store/readerStore';
 import { useSidebarStore } from '@/store/sidebarStore';
 import { findParentPath } from '@/services/nav';
 import { eventDispatcher } from '@/utils/event';
 import { useTextTranslation } from '../../hooks/useTextTranslation';
-import { FlatTOCItem, StaticListRow } from './TOCItem';
+import { type FlatTOCItem, StaticListRow } from './TOCItem';
 
 const getItemIdentifier = (item: TOCItem) => {
   const href = item.href || '';

@@ -1,7 +1,7 @@
-import React from 'react';
+import type React from 'react';
 
 import Popup from '@/components/Popup';
-import { Position } from '@/utils/sel';
+import type { Position } from '@/utils/sel';
 import {
   useDictionaryResults,
   DictionaryResultsHeader,

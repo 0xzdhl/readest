@@ -1,7 +1,7 @@
 import { useTranslation } from '@/hooks/useTranslation';
-import { PlanType } from '@/types/quota';
+import type { PlanType } from '@/types/quota';
 import { getLocale } from '@/utils/misc';
-import { PlanDetails } from '../utils/plan';
+import type { PlanDetails } from '../utils/plan';
 
 interface PurchaseCallToActionsProps {
   plan: PlanDetails;

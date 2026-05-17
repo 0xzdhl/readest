@@ -1,6 +1,6 @@
 import clsx from 'clsx';
 import React, { useEffect, useRef } from 'react';
-import { Insets } from '@/types/misc';
+import type { Insets } from '@/types/misc';
 import { useEnv } from '@/context/EnvContext';
 import { useThemeStore } from '@/store/themeStore';
 import { eventDispatcher } from '@/utils/event';

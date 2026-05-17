@@ -4,7 +4,7 @@ import { marked } from 'marked';
 import { useEnv } from '@/context/EnvContext';
 import { useTranslation } from '@/hooks/useTranslation';
 import { useReaderStore } from '@/store/readerStore';
-import { BookNote, BooknoteGroup, NoteExportConfig } from '@/types/book';
+import type { BookNote, BooknoteGroup, NoteExportConfig } from '@/types/book';
 import { DEFAULT_NOTE_EXPORT_CONFIG } from '@/services/constants';
 import { saveViewSettings } from '@/helpers/settings';
 import { renderNoteTemplate, formatBlockQuote } from '@/utils/note';

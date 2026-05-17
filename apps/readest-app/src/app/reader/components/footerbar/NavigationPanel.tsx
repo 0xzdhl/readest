@@ -6,7 +6,7 @@ import { RiArrowLeftDoubleLine, RiArrowRightDoubleLine } from 'react-icons/ri';
 import { useEnv } from '@/context/EnvContext';
 import { useReaderStore } from '@/store/readerStore';
 import { useTranslation } from '@/hooks/useTranslation';
-import { NavigationHandlers } from './types';
+import type { NavigationHandlers } from './types';
 import { getNavigationIcon } from './utils';
 import Button from '@/components/Button';
 import Slider from '@/components/Slider';

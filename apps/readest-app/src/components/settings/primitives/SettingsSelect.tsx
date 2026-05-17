@@ -1,4 +1,4 @@
-import React from 'react';
+import type React from 'react';
 import { MdArrowDropDown } from 'react-icons/md';
 
 interface SettingsSelectOption {

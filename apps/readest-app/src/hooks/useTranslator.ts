@@ -5,9 +5,9 @@ import {
   getTranslator,
   getTranslators,
   isTranslatorAvailable,
-  TranslatorName,
+  type TranslatorName,
 } from '@/services/translators';
-import { getFromCache, storeInCache, UseTranslatorOptions } from '@/services/translators';
+import { getFromCache, storeInCache, type UseTranslatorOptions } from '@/services/translators';
 import { polish, preprocess } from '@/services/translators';
 import { eventDispatcher } from '@/utils/event';
 import { getLocale } from '@/utils/misc';

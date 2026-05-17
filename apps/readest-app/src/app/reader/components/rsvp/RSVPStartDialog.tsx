@@ -1,5 +1,5 @@
-import React from 'react';
-import { RsvpStartChoice } from '@/services/rsvp';
+import type React from 'react';
+import type { RsvpStartChoice } from '@/services/rsvp';
 import { useThemeStore } from '@/store/themeStore';
 import { useTranslation } from '@/hooks/useTranslation';
 import { IoBookmark, IoPlayCircle, IoLocation, IoText } from 'react-icons/io5';

@@ -2,9 +2,9 @@ import { useEffect, useCallback, useMemo } from 'react';
 import { useEnv } from '@/context/EnvContext';
 import { useTranslation } from './useTranslation';
 import { useLibraryStore } from '@/store/libraryStore';
-import { useTransferStore, TransferType } from '@/store/transferStore';
+import { useTransferStore, type TransferType } from '@/store/transferStore';
 import { transferManager } from '@/services/transferManager';
-import { Book } from '@/types/book';
+import type { Book } from '@/types/book';
 
 export function useTransferQueue(libraryLoaded = true, delayInit = 0) {
   const { envConfig, appService } = useEnv();

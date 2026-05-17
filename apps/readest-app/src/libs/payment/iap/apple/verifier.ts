@@ -1,12 +1,13 @@
-import { PlanType } from '@/types/quota';
+import type { PlanType } from '@/types/quota';
 import {
   AppStoreServerAPI,
   Environment,
-  JWSTransactionDecodedPayload,
   TransactionType,
   decodeTransaction,
 } from 'app-store-server-api';
-import { IAPError, IAPStatus } from '../types';
+import type { JWSTransactionDecodedPayload } from 'app-store-server-api';
+import { IAPError } from '../types';
+import type { IAPStatus } from '../types';
 
 export interface AppleIAPConfig {
   keyId: string;

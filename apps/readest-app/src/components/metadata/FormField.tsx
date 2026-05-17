@@ -1,4 +1,4 @@
-import React from 'react';
+import type React from 'react';
 import clsx from 'clsx';
 import { MdOutlineInfo, MdLock, MdLockOpen, MdError } from 'react-icons/md';
 import { useTranslation } from '@/hooks/useTranslation';

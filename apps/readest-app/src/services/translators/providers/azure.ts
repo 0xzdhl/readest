@@ -1,7 +1,7 @@
 import { stubTranslation as _ } from '@/utils/misc';
 import { fetch as tauriFetch } from '@tauri-apps/plugin-http';
 import { isTauriAppPlatform } from '@/services/environment';
-import { TranslationProvider } from '../types';
+import type { TranslationProvider } from '../types';
 import { normalizeToFullLang } from '@/utils/lang';
 
 interface TokenCache {

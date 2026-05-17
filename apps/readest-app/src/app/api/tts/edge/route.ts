@@ -1,5 +1,5 @@
 import { createFileRoute } from '@tanstack/react-router';
-import { EdgeSpeechTTS, EdgeTTSPayload } from '@/libs/edgeTTS';
+import { EdgeSpeechTTS, type EdgeTTSPayload } from '@/libs/edgeTTS';
 import { validateUserAndToken } from '@/utils/access';
 
 const getLangFromVoice = (voiceId: string): string => {

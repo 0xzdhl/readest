@@ -1,8 +1,11 @@
 import { z } from 'zod';
 import { createFileRoute } from '@tanstack/react-router';
 import { validateUserAndToken } from '@/utils/access';
-import { getGoogleIAPVerifier, VerifyPurchaseParams } from '@/libs/payment/iap/google/verifier';
-import { processPurchaseData, VerifiedPurchase } from '@/libs/payment/iap/google/server';
+import {
+  getGoogleIAPVerifier,
+  type VerifyPurchaseParams,
+} from '@/libs/payment/iap/google/verifier';
+import { processPurchaseData, type VerifiedPurchase } from '@/libs/payment/iap/google/server';
 import { IAPError } from '@/libs/payment/iap/types';
 
 const iapVerificationSchema = z.object({

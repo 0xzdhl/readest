@@ -1,5 +1,5 @@
-import { ConvertChineseVariant } from '@/types/book';
-import { BookDoc, SectionFragment, TOCItem } from '@/libs/document';
+import type { ConvertChineseVariant } from '@/types/book';
+import type { BookDoc, SectionFragment, TOCItem } from '@/libs/document';
 import { initSimpleCC, runSimpleCC } from '@/utils/simplecc';
 import {
   cloneSectionFragments,

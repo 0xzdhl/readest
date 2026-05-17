@@ -1,4 +1,4 @@
-import { ViewSettings } from '@/types/book';
+import type { ViewSettings } from '@/types/book';
 
 export type ParagraphNavAction = 'next' | 'prev';
 export type ParagraphNavDirection = 'left' | 'right' | 'up' | 'down';

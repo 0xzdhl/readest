@@ -1,11 +1,11 @@
 import clsx from 'clsx';
-import React from 'react';
+import type React from 'react';
 import { PiNotePencil, PiRobot } from 'react-icons/pi';
 
 import { useEnv } from '@/context/EnvContext';
 import { useTranslation } from '@/hooks/useTranslation';
 import { useSettingsStore } from '@/store/settingsStore';
-import { NotebookTab } from '@/store/notebookStore';
+import type { NotebookTab } from '@/store/notebookStore';
 
 interface NotebookTabNavigationProps {
   activeTab: NotebookTab;

@@ -1,4 +1,4 @@
-import { FoliateView } from '@/types/view';
+import type { FoliateView } from '@/types/view';
 
 export const handleA11yNavigation = (
   view: FoliateView | null,

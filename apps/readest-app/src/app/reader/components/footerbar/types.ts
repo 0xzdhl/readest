@@ -1,5 +1,5 @@
-import { PageInfo } from '@/types/book';
-import { Insets } from '@/types/misc';
+import type { PageInfo } from '@/types/book';
+import type { Insets } from '@/types/misc';
 
 export interface FooterBarProps {
   bookKey: string;

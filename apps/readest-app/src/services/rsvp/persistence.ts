@@ -1,5 +1,5 @@
-import { BookConfig } from '@/types/book';
-import { RsvpPosition } from './types';
+import type { BookConfig } from '@/types/book';
+import type { RsvpPosition } from './types';
 
 // Builds the BookConfig delta to persist when leaving RSVP. Pinning `location`
 // to the RSVP word's CFI is what stops the next normal-mode load from resuming

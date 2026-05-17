@@ -1,4 +1,4 @@
-import { LocaleWithTextInfo } from '@/types/misc';
+import type { LocaleWithTextInfo } from '@/types/misc';
 import { franc } from 'franc-min';
 import { iso6392 } from 'iso-639-2';
 import { iso6393To1 } from 'iso-639-3';

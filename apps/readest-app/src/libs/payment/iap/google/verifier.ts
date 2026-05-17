@@ -1,6 +1,8 @@
-import { google, androidpublisher_v3 } from 'googleapis';
-import { GoogleAuth, GoogleAuthOptions } from 'google-auth-library';
-import { IAPStatus } from '../types';
+import { google } from 'googleapis';
+import type { androidpublisher_v3 } from 'googleapis';
+import { GoogleAuth } from 'google-auth-library';
+import type { GoogleAuthOptions } from 'google-auth-library';
+import type { IAPStatus } from '../types';
 
 export interface VerifyPurchaseParams {
   orderId: string;

@@ -1,4 +1,4 @@
-import { TextChunk } from '../types';
+import type { TextChunk } from '../types';
 
 // same formula as toc.ts - 1500 chars = 1 page
 export const SIZE_PER_PAGE = 1500;

@@ -4,7 +4,7 @@ import { useBookDataStore } from '@/store/bookDataStore';
 import { debounce } from '@/utils/debounce';
 import { eventDispatcher } from '@/utils/event';
 import { MAX_ZOOM_LEVEL, MIN_ZOOM_LEVEL } from '@/services/constants';
-import { dispatchTouchInterceptors, TouchDetail } from './useTouchInterceptor';
+import { dispatchTouchInterceptors, type TouchDetail } from './useTouchInterceptor';
 
 export const useMouseEvent = (
   bookKey: string,

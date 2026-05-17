@@ -3,7 +3,7 @@ import { createFileRoute } from '@tanstack/react-router';
 import { IAPError } from '@/libs/payment/iap/types';
 import { validateUserAndToken } from '@/utils/access';
 import { getAppleIAPVerifier } from '@/libs/payment/iap/apple/verifier';
-import { processPurchaseData, VerifiedPurchase } from '@/libs/payment/iap/apple/server';
+import { processPurchaseData, type VerifiedPurchase } from '@/libs/payment/iap/apple/server';
 
 const iapVerificationSchema = z.object({
   transactionId: z.string().min(1, 'Transaction ID is required'),

@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 
 import { useEnv } from '@/context/EnvContext';
-import { Book } from '@/types/book';
+import type { Book } from '@/types/book';
 import { getUserLang } from '@/utils/misc';
 import { isWebAppPlatform } from '@/services/environment';
 

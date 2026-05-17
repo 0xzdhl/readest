@@ -1,10 +1,10 @@
 import clsx from 'clsx';
 import React, { useEffect, useRef, useState, useCallback } from 'react';
-import { convertBlobUrlToDataUrl, BookDoc, getDirection } from '@/libs/document';
+import { convertBlobUrlToDataUrl, type BookDoc, getDirection } from '@/libs/document';
 import { BOOK_IDS_SEPARATOR } from '@/services/constants';
-import { BookConfig, PageInfo } from '@/types/book';
-import { FoliateView, wrappedFoliateView } from '@/types/view';
-import { Insets } from '@/types/misc';
+import type { BookConfig, PageInfo } from '@/types/book';
+import { type FoliateView, wrappedFoliateView } from '@/types/view';
+import type { Insets } from '@/types/misc';
 import { useEnv } from '@/context/EnvContext';
 import { useThemeStore } from '@/store/themeStore';
 import { useReaderStore } from '@/store/readerStore';
@@ -55,7 +55,7 @@ import {
 import { getMaxInlineSize } from '@/utils/config';
 import { getDirFromUILanguage } from '@/utils/rtl';
 import { isTauriAppPlatform } from '@/services/environment';
-import { TransformContext } from '@/services/transformers/types';
+import type { TransformContext } from '@/services/transformers/types';
 import { transformContent } from '@/services/transformService';
 import { lockScreenOrientation } from '@/utils/bridge';
 import { useTextTranslation } from '../hooks/useTextTranslation';

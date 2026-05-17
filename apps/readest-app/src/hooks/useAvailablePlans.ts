@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { fetchAndTransformIAPPlans, isIAPAvailable } from '@/libs/payment/iap/client';
 import { fetchStripePlans } from '@/libs/payment/stripe/client';
-import { AvailablePlan } from '@/types/quota';
+import type { AvailablePlan } from '@/types/quota';
 import { stubTranslation as _ } from '@/utils/misc';
 
 const IAP_PRODUCT_IDS = [

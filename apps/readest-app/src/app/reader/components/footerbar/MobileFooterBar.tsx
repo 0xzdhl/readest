@@ -1,6 +1,6 @@
-import React from 'react';
+import type React from 'react';
 import { useResponsiveSize } from '@/hooks/useResponsiveSize';
-import { FooterBarChildProps } from './types';
+import type { FooterBarChildProps } from './types';
 import { NavigationPanel } from './NavigationPanel';
 import { FontLayoutPanel } from './FontLayoutPanel';
 import { ColorPanel } from './ColorPanel';

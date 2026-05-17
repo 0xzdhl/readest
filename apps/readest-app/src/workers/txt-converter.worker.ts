@@ -1,5 +1,5 @@
 import { TxtToEpubConverter } from '../utils/txt';
-import {
+import type {
   TxtConverterWorkerRequest,
   TxtConverterWorkerResponse,
 } from '../utils/txt-worker-protocol';

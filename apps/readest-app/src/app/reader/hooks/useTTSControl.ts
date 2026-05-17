@@ -5,10 +5,15 @@ import { useThemeStore } from '@/store/themeStore';
 import { useBookDataStore } from '@/store/bookDataStore';
 import { useReaderStore } from '@/store/readerStore';
 import { useProofreadStore } from '@/store/proofreadStore';
-import { TransformContext } from '@/services/transformers/types';
+import type { TransformContext } from '@/services/transformers/types';
 import { proofreadTransformer } from '@/services/transformers/proofread';
 import { useTranslation } from '@/hooks/useTranslation';
-import { TTSController, TTSMark, TTSHighlightOptions, TTSVoicesGroup } from '@/services/tts';
+import {
+  TTSController,
+  type TTSMark,
+  type TTSHighlightOptions,
+  type TTSVoicesGroup,
+} from '@/services/tts';
 import { TauriMediaSession } from '@/libs/mediaSession';
 import { eventDispatcher } from '@/utils/event';
 import { genSSMLRaw, parseSSMLLang } from '@/utils/ssml';

@@ -5,14 +5,15 @@ import { useState, useRef, useEffect, Suspense, useCallback } from 'react';
 import { createFileRoute, stripSearchParams } from '@tanstack/react-router';
 import { z } from 'zod';
 
-import type { Book, BookMetadata } from '@/types/book';
+import type { Book } from '@/types/book';
+import type { BookMetadata } from '@/libs/document';
 import type { AppService, DeleteAction } from '@/types/system';
 import { buildBookLookupIndex } from '@/services/bookService';
 import { navigateToLibrary, navigateToReader } from '@/utils/nav';
 import { formatAuthors, formatTitle, getPrimaryLanguage, listFormater } from '@/utils/book';
 import { getImportErrorMessage } from '@/services/errors';
 import { eventDispatcher } from '@/utils/event';
-import { ProgressPayload } from '@/utils/transfer';
+import type { ProgressPayload } from '@/utils/transfer';
 import { throttle } from '@/utils/throttle';
 import { transferManager } from '@/services/transferManager';
 import { getDirPath, getFilename, joinPaths } from '@/utils/path';

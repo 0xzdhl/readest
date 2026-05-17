@@ -1,4 +1,4 @@
-import React from 'react';
+import type React from 'react';
 import { TbLayoutSidebar, TbLayoutSidebarFilled } from 'react-icons/tb';
 
 import { useSidebarStore } from '@/store/sidebarStore';

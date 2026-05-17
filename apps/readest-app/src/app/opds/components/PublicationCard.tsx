@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
 import { useTranslation } from '@/hooks/useTranslation';
 import { CachedImage } from '@/components/CachedImage';
-import { OPDSPublication, REL } from '@/types/opds';
+import { type OPDSPublication, REL } from '@/types/opds';
 import { groupByArray } from '../utils/opdsUtils';
 
 interface PublicationCardProps {

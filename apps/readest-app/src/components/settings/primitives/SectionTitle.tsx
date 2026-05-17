@@ -1,5 +1,5 @@
 import clsx from 'clsx';
-import React from 'react';
+import type React from 'react';
 import { isCaselessUILang } from '@/utils/misc';
 
 type SectionTitleProps<T extends React.ElementType = 'h3'> = {

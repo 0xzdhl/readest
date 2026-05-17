@@ -1,12 +1,12 @@
 import React, { useEffect, useRef } from 'react';
 import { MdOutlineCheck, MdOutlineEdit } from 'react-icons/md';
 
-import { BookMetadata } from '@/libs/document';
+import type { BookMetadata } from '@/libs/document';
 import { useTranslation } from '@/hooks/useTranslation';
 import { formatAuthors, formatTitle, getPrimaryLanguage } from '@/utils/book';
 import BookCover from '../BookCover';
-import { Metadata } from '@/services/metadata/types';
-import { Book } from '@/types/book';
+import type { Metadata } from '@/services/metadata/types';
+import type { Book } from '@/types/book';
 
 export interface MetadataSource {
   sourceName: string;

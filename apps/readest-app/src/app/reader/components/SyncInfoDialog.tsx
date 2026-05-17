@@ -1,7 +1,7 @@
-import React from 'react';
+import type React from 'react';
 import Dialog from '@/components/Dialog';
 import { useTranslation } from '@/hooks/useTranslation';
-import { BookMetadata } from '@/libs/document';
+import type { BookMetadata } from '@/libs/document';
 import { formatLocaleDateTime, getMetadataHashInfo } from '@/utils/book';
 
 interface SyncInfoDialogProps {

@@ -1,4 +1,4 @@
-import { MetadataProvider, SearchRequest, MetadataResult, Metadata } from '../types';
+import type { MetadataProvider, SearchRequest, MetadataResult, Metadata } from '../types';
 
 export abstract class BaseMetadataProvider implements MetadataProvider {
   abstract name: string;

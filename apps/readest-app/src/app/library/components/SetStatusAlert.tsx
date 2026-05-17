@@ -1,7 +1,7 @@
 import clsx from 'clsx';
 import * as React from 'react';
 import { PiX } from 'react-icons/pi';
-import { ReadingStatus } from '@/types/book';
+import type { ReadingStatus } from '@/types/book';
 import { useTranslation } from '@/hooks/useTranslation';
 import { useKeyDownActions } from '@/hooks/useKeyDownActions';
 

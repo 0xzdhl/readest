@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { loadShortcuts, ShortcutConfig } from '../helpers/shortcuts';
+import { loadShortcuts, type ShortcutConfig } from '../helpers/shortcuts';
 
 export type KeyActionHandlers = {
   [K in keyof ShortcutConfig]?: (event?: KeyboardEvent | MessageEvent) => void;

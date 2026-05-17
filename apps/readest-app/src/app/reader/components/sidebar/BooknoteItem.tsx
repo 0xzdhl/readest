@@ -5,7 +5,7 @@ import { MdEdit, MdDelete } from 'react-icons/md';
 
 import { marked } from 'marked';
 import { useEnv } from '@/context/EnvContext';
-import { BookNote, HighlightColor } from '@/types/book';
+import type { BookNote, HighlightColor } from '@/types/book';
 import { useSettingsStore } from '@/store/settingsStore';
 import { useReaderStore } from '@/store/readerStore';
 import { useNotebookStore } from '@/store/notebookStore';
@@ -16,7 +16,7 @@ import { eventDispatcher } from '@/utils/event';
 import { removeBookNoteOverlays } from '../../utils/annotatorUtil';
 import useScrollToItem from '../../hooks/useScrollToItem';
 import TextButton from '@/components/TextButton';
-import TextEditor, { TextEditorRef } from '@/components/TextEditor';
+import TextEditor, { type TextEditorRef } from '@/components/TextEditor';
 
 interface BooknoteItemProps {
   bookKey: string;

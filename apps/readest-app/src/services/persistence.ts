@@ -1,4 +1,4 @@
-import { FileSystem, BaseDir } from '@/types/system';
+import type { FileSystem, BaseDir } from '@/types/system';
 
 async function loadJSONFile(
   fs: FileSystem,

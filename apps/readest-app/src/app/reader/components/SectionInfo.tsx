@@ -1,6 +1,6 @@
 import clsx from 'clsx';
-import React from 'react';
-import { Insets } from '@/types/misc';
+import type React from 'react';
+import type { Insets } from '@/types/misc';
 import { useEnv } from '@/context/EnvContext';
 import { useThemeStore } from '@/store/themeStore';
 import { useReaderStore } from '@/store/readerStore';

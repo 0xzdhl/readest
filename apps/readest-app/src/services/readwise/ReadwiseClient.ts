@@ -1,5 +1,5 @@
-import { Book, BookNote, HighlightColor } from '@/types/book';
-import { ReadwiseSettings } from '@/types/settings';
+import type { Book, BookNote, HighlightColor } from '@/types/book';
+import type { ReadwiseSettings } from '@/types/settings';
 import { READWISE_API_BASE_URL } from '@/services/constants';
 import { buildAnnotationWebUrl } from '@/utils/deeplink';
 

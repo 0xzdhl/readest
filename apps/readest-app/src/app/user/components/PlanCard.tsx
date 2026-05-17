@@ -1,8 +1,8 @@
 import { IoCheckmark } from 'react-icons/io5';
 import { useTranslation } from '@/hooks/useTranslation';
 import { getLocale } from '@/utils/misc';
-import { PlanDetails } from '../utils/plan';
-import { PlanType } from '@/types/quota';
+import type { PlanDetails } from '../utils/plan';
+import type { PlanType } from '@/types/quota';
 import PlanActionButton from './PlanActionButton';
 import PurchaseCallToActions from './PurchaseCallToActions';
 

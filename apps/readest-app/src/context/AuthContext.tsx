@@ -1,13 +1,6 @@
-import {
-  createContext,
-  useState,
-  useContext,
-  useCallback,
-  useMemo,
-  ReactNode,
-  useEffect,
-} from 'react';
-import { User } from '@supabase/supabase-js';
+import { createContext, useState, useContext, useCallback, useMemo, useEffect } from 'react';
+import type { ReactNode } from 'react';
+import type { User } from '@supabase/supabase-js';
 import { supabase } from '@/utils/supabase';
 import posthog from 'posthog-js';
 

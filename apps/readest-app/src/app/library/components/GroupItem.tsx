@@ -4,8 +4,8 @@ import { MdCheckCircle, MdCheckCircleOutline, MdChevronRight, MdChevronLeft } fr
 import { useEnv } from '@/context/EnvContext';
 import { useTranslation } from '@/hooks/useTranslation';
 import { useResponsiveSize } from '@/hooks/useResponsiveSize';
-import { BooksGroup } from '@/types/book';
-import { LibraryViewModeType } from '@/types/settings';
+import type { BooksGroup } from '@/types/book';
+import type { LibraryViewModeType } from '@/types/settings';
 import BookCover from '@/components/BookCover';
 
 interface GroupItemProps {

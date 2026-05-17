@@ -3,7 +3,7 @@ import { FaSearch, FaTimes } from 'react-icons/fa';
 
 import { useBookDataStore } from '@/store/bookDataStore';
 import { useTranslation } from '@/hooks/useTranslation';
-import { BookNote } from '@/types/book';
+import type { BookNote } from '@/types/book';
 import { useResponsiveSize } from '@/hooks/useResponsiveSize';
 
 interface SearchBarProps {

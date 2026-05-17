@@ -1,6 +1,6 @@
 import { invoke } from '@tauri-apps/api/core';
-import { Book } from '@/types/book';
-import { AppService } from '@/types/system';
+import type { Book } from '@/types/book';
+import type { AppService } from '@/types/system';
 import { getCoverFilename } from './book';
 import { processDiscordCover } from './image';
 

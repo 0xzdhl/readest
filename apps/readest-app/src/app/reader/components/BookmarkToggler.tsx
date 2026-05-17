@@ -6,7 +6,7 @@ import { useBookDataStore } from '@/store/bookDataStore';
 import { useReaderStore } from '@/store/readerStore';
 import { useTranslation } from '@/hooks/useTranslation';
 import { useEnv } from '@/context/EnvContext';
-import { BookNote } from '@/types/book';
+import type { BookNote } from '@/types/book';
 import { uniqueId } from '@/utils/misc';
 import Button from '@/components/Button';
 import { getCurrentPage } from '@/utils/book';

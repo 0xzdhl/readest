@@ -1,5 +1,5 @@
 import { useTranslation } from '@/hooks/useTranslation';
-import { PlanDetails } from '../utils/plan';
+import type { PlanDetails } from '../utils/plan';
 
 interface PlanActionButtonProps {
   plan: PlanDetails;

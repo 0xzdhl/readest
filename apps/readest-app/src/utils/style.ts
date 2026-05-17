@@ -6,11 +6,11 @@ import {
   CJK_SANS_SERIF_FONTS,
   CJK_SERIF_FONTS,
 } from '@/services/constants';
-import { ViewSettings } from '@/types/book';
+import type { ViewSettings } from '@/types/book';
 import {
   themes,
-  Palette,
-  CustomTheme,
+  type Palette,
+  type CustomTheme,
   generateLightPalette,
   generateDarkPalette,
 } from '@/styles/themes';

@@ -1,4 +1,4 @@
-import { TTSGranularity, TTSVoice, TTSVoicesGroup } from './types';
+import type { TTSGranularity, TTSVoice, TTSVoicesGroup } from './types';
 
 type TTSMessageCode = 'boundary' | 'error' | 'end';
 

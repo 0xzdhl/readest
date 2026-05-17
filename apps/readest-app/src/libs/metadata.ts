@@ -1,4 +1,4 @@
-import { MetadataResult, SearchRequest } from '@/services/metadata/types';
+import type { MetadataResult, SearchRequest } from '@/services/metadata/types';
 import { getAPIBaseUrl } from '@/services/environment';
 import { fetchWithAuth } from '@/utils/fetch';
 

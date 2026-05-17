@@ -13,8 +13,8 @@ import {
 } from '@/services/translators';
 import { useResetViewSettings } from '@/hooks/useResetSettings';
 import { TRANSLATED_LANGS, TRANSLATOR_LANGS } from '@/services/constants';
-import { ConvertChineseVariant } from '@/types/book';
-import { SettingsPanelPanelProp } from './SettingsDialog';
+import type { ConvertChineseVariant } from '@/types/book';
+import type { SettingsPanelPanelProp } from './SettingsDialog';
 import { getDirFromLanguage } from '@/utils/rtl';
 import { isCJKEnv } from '@/utils/misc';
 import {

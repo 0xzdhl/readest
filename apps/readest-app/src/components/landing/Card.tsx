@@ -1,4 +1,4 @@
-import React from 'react';
+import type React from 'react';
 
 // Card primitive shared by /o (annotation deeplink) and /s (share link)
 // landing pages. Mirrors the visual reference in src/app/o/page.tsx so the

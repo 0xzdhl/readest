@@ -1,8 +1,8 @@
-import { FileSystem } from '@/types/system';
+import type { FileSystem } from '@/types/system';
 import { getFilename } from '@/utils/path';
 import { md5, partialMD5 } from '@/utils/md5';
 import { uniqueId } from '@/utils/misc';
-import { CustomFont, CustomFontInfo } from '@/styles/fonts';
+import type { CustomFont, CustomFontInfo } from '@/styles/fonts';
 import { parseFontInfo } from '@/utils/font';
 
 /**

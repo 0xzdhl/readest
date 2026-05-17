@@ -1,4 +1,4 @@
-import React from 'react';
+import type React from 'react';
 import { MdOutlineLightMode, MdOutlineDarkMode } from 'react-icons/md';
 import { TbSunMoon } from 'react-icons/tb';
 import { useTranslation } from '@/hooks/useTranslation';

@@ -5,8 +5,8 @@ import { useReaderStore } from '@/store/readerStore';
 import { useSidebarStore } from '@/store/sidebarStore';
 import { findTocItemBS } from '@/services/nav';
 import { findNearestCfi } from '@/utils/cfi';
-import { TOCItem } from '@/libs/document';
-import { BooknoteGroup, BookNoteType } from '@/types/book';
+import type { TOCItem } from '@/libs/document';
+import type { BooknoteGroup, BookNoteType } from '@/types/book';
 import BooknoteItem from './BooknoteItem';
 
 const BooknoteView: React.FC<{

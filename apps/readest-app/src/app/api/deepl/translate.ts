@@ -3,8 +3,12 @@ import { createFileRoute } from '@tanstack/react-router';
 
 // TODO: use t3-env
 async function getCloudflareContext(): Promise<{ env: Record<string, unknown> }> {
-  const workersModule = await import('cloudflare:workers');
-  return { env: workersModule.env as Record<string, unknown> };
+  try {
+    const workersModule = await import(/* @vite-ignore */ 'cloudflare:workers');
+    return { env: workersModule.env as Record<string, unknown> };
+  } catch {
+    throw new Error('Cloudflare context not available');
+  }
 }
 import {
   getDailyTranslationPlanData,

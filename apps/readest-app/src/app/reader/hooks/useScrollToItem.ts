@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef } from 'react';
-import { BookProgress } from '@/types/book';
+import type { BookProgress } from '@/types/book';
 import { isCfiInLocation } from '@/utils/cfi';
 
 const useScrollToItem = (

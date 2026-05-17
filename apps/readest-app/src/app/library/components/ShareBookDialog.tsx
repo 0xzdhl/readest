@@ -10,7 +10,7 @@ import SegmentedControl from '@/components/SegmentedControl';
 import { useEnv } from '@/context/EnvContext';
 import { useTranslation } from '@/hooks/useTranslation';
 import { eventDispatcher } from '@/utils/event';
-import { Book } from '@/types/book';
+import type { Book } from '@/types/book';
 import { SHARE_DEFAULT_EXPIRATION_DAYS, SHARE_EXPIRATION_DAYS } from '@/services/constants';
 import { ShareApiError, createShare, revokeShare } from '@/libs/share';
 import { formatBytes } from '@/utils/book';

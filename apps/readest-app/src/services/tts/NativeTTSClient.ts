@@ -3,8 +3,8 @@ import { addPluginListener, PluginListener } from '@tauri-apps/api/core';
 import { getUserLocale } from '@/utils/misc';
 import { parseSSMLMarks } from '@/utils/ssml';
 import { stubTranslation as _ } from '@/utils/misc';
-import { TTSClient, TTSMessageEvent } from './TTSClient';
-import { TTSGranularity, TTSMark, TTSVoice, TTSVoicesGroup } from './types';
+import type { TTSClient, TTSMessageEvent } from './TTSClient';
+import type { TTSGranularity, TTSMark, TTSVoice, TTSVoicesGroup } from './types';
 import { TTSUtils } from './TTSUtils';
 import { TTSController } from './TTSController';
 

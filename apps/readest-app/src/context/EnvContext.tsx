@@ -1,12 +1,11 @@
-import React, { createContext, useContext, useState, useMemo, ReactNode } from 'react';
-import { EnvConfigType } from '../services/environment';
-import { AppService } from '@/types/system';
-import env from '../services/environment';
+import React, { createContext, type ReactNode, useContext, useMemo, useState } from 'react';
 import { bootstrapReplicaAdapters } from '@/services/sync/replicaBootstrap';
-import { initReplicaSync } from '@/services/sync/replicaSync';
 import { createSettingsCursorStore } from '@/services/sync/replicaCursorStore';
-import { startReplicaTransferIntegration } from '@/services/sync/replicaTransferIntegration';
 import { enableReplicaAutoPersist } from '@/services/sync/replicaPersist';
+import { initReplicaSync } from '@/services/sync/replicaSync';
+import { startReplicaTransferIntegration } from '@/services/sync/replicaTransferIntegration';
+import type { AppService } from '@/types/system';
+import env, { type EnvConfigType } from '../services/environment';
 
 interface EnvContextType {
   envConfig: EnvConfigType;
@@ -54,6 +53,14 @@ export const EnvProvider = ({ children }: { children: ReactNode }) => {
 
 export const useEnv = (): EnvContextType => {
   const context = useContext(EnvContext);
-  if (!context) throw new Error('useEnv must be used within EnvProvider');
+  if (!context) {
+    if (typeof document === 'undefined') {
+      // SSR: return a bare-minimum fallback instead of throwing.
+      // EnvProvider's useEffect doesn't run during SSR, so the real
+      // appService is never available on the server.
+      return { envConfig: {} as EnvConfigType, appService: null };
+    }
+    throw new Error('useEnv must be used within EnvProvider');
+  }
   return context;
 };

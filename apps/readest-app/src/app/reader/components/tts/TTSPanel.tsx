@@ -1,13 +1,15 @@
 import clsx from 'clsx';
-import { useState, ChangeEvent, useEffect } from 'react';
+import { useState, useEffect } from 'react';
+import type { ChangeEvent } from 'react';
 import { MdPlayCircle, MdPauseCircle, MdFastRewind, MdFastForward, MdAlarm } from 'react-icons/md';
 import { TbChevronCompactDown, TbChevronCompactUp } from 'react-icons/tb';
 import { RiVoiceAiFill } from 'react-icons/ri';
 import { MdCheck } from 'react-icons/md';
-import { TTSVoicesGroup } from '@/services/tts';
+import type { TTSVoicesGroup } from '@/services/tts';
 import { useEnv } from '@/context/EnvContext';
 import { useReaderStore } from '@/store/readerStore';
-import { TranslationFunc, useTranslation } from '@/hooks/useTranslation';
+import { useTranslation } from '@/hooks/useTranslation';
+import type { TranslationFunc } from '@/hooks/useTranslation';
 import { useSettingsStore } from '@/store/settingsStore';
 import { useDefaultIconSize, useResponsiveSize } from '@/hooks/useResponsiveSize';
 import { getLanguageName } from '@/utils/lang';

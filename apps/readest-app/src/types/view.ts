@@ -1,8 +1,8 @@
-import { BookDoc } from '@/libs/document';
-import { BookNote, BookSearchConfig, BookSearchResult } from '@/types/book';
-import { TTSGranularity } from '@/services/tts';
+import type { BookDoc } from '@/libs/document';
+import type { BookNote, BookSearchConfig, BookSearchResult } from '@/types/book';
+import type { TTSGranularity } from '@/services/tts';
 import { TTS } from 'foliate-js/tts.js';
-import { LocaleWithTextInfo } from './misc';
+import type { LocaleWithTextInfo } from './misc';
 
 export const NOTE_PREFIX = 'foliate-note:';
 

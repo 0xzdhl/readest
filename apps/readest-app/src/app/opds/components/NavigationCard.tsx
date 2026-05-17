@@ -1,6 +1,6 @@
 import { IoChevronForward } from 'react-icons/io5';
 import { useTranslation } from '@/hooks/useTranslation';
-import { OPDSNavigationItem, SYMBOL } from '@/types/opds';
+import { type OPDSNavigationItem, SYMBOL } from '@/types/opds';
 
 interface NavigationCardProps {
   item: OPDSNavigationItem;

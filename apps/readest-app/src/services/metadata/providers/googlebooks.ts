@@ -1,7 +1,7 @@
 import { stubTranslation as _ } from '@/utils/misc';
 import { fetchWithTimeout } from '@/utils/fetch';
 import { normalizedLangCode } from '@/utils/lang';
-import { Metadata } from '../types';
+import type { Metadata } from '../types';
 import { BaseMetadataProvider } from './base';
 
 interface GoogleBooksImageLinks {

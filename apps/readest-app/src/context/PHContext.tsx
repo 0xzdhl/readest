@@ -1,5 +1,6 @@
 import posthog from 'posthog-js';
-import { ReactNode, useEffect } from 'react';
+import { useEffect } from 'react';
+import type { ReactNode } from 'react';
 import { PostHogProvider } from 'posthog-js/react';
 import { TELEMETRY_OPT_OUT_KEY } from '@/utils/telemetry';
 import { getAppVersion } from '@/utils/version';

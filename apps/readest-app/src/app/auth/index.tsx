@@ -25,7 +25,7 @@ import { invoke } from '@tauri-apps/api/core';
 import { handleAuthCallback } from '@/helpers/auth';
 import { getUserProfilePlan } from '@/utils/access';
 import { readPublicFlag } from '@/utils/publicEnv';
-import { getAppleIdAuth, Scope } from './utils/appleIdAuth';
+import { getAppleIdAuth, type Scope } from './utils/appleIdAuth';
 import { authWithCustomTab, authWithSafari } from './utils/nativeAuth';
 import WindowButtons from '@/components/WindowButtons';
 

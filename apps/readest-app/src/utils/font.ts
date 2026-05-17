@@ -1,4 +1,4 @@
-import { FontStyle } from '@/styles/fonts';
+import type { FontStyle } from '@/styles/fonts';
 import { getUserLang } from './misc';
 
 function parseUnicodeString(dataView: DataView, offset: number, length: number): string {

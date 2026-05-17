@@ -1,7 +1,7 @@
 import clsx from 'clsx';
-import React from 'react';
-import { Position } from '@/utils/sel';
-import { BookNote, HighlightColor, HighlightStyle } from '@/types/book';
+import type React from 'react';
+import type { Position } from '@/utils/sel';
+import type { BookNote, HighlightColor, HighlightStyle } from '@/types/book';
 import Popup from '@/components/Popup';
 import AnnotationToolButton from './AnnotationToolButton';
 import AnnotationNotes from './AnnotationNotes';

@@ -1,5 +1,5 @@
 import clsx from 'clsx';
-import React from 'react';
+import type React from 'react';
 
 type SettingLabelProps<T extends React.ElementType = 'span'> = {
   /** Element/component to render. Defaults to `<span>`; pass `'label'` for

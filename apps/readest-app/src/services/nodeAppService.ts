@@ -4,9 +4,16 @@ import * as nodePath from 'node:path';
 import * as os from 'node:os';
 import { pathToFileURL } from 'node:url';
 
-import { FileSystem, BaseDir, OsPlatform, ResolvedPath, FileItem, FileInfo } from '@/types/system';
-import { DatabaseOpts, DatabaseService } from '@/types/database';
-import { SchemaType } from '@/services/database/migrate';
+import type {
+  FileSystem,
+  BaseDir,
+  OsPlatform,
+  ResolvedPath,
+  FileItem,
+  FileInfo,
+} from '@/types/system';
+import type { DatabaseOpts, DatabaseService } from '@/types/database';
+import type { SchemaType } from '@/services/database/migrate';
 import { BaseAppService } from './appService';
 import {
   DATA_SUBDIR,

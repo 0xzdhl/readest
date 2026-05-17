@@ -21,7 +21,7 @@ import { useCustomOPDSStore } from '@/store/customOPDSStore';
 import { ensurePassphraseUnlocked } from '@/services/sync/passphraseGate';
 import { isCredentialsSyncEnabled } from '@/services/sync/syncCategories';
 import { isSyncError } from '@/libs/errors';
-import { OPDSCatalog } from '@/types/opds';
+import type { OPDSCatalog } from '@/types/opds';
 import { isLanAddress } from '@/utils/network';
 import { eventDispatcher } from '@/utils/event';
 import { SectionTitle } from '@/components/settings/primitives';

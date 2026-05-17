@@ -1,4 +1,4 @@
-import { DatabaseService } from '@/types/database';
+import type { DatabaseService } from '@/types/database';
 
 export interface MigrationEntry {
   /** Migration name, e.g. "2026030601_initial_schema" */

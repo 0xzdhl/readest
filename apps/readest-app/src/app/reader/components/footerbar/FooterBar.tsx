@@ -8,7 +8,7 @@ import { useBookDataStore } from '@/store/bookDataStore';
 import { useTranslation } from '@/hooks/useTranslation';
 import { useDeviceControlStore } from '@/store/deviceStore';
 import { eventDispatcher } from '@/utils/event';
-import { FooterBarProps, NavigationHandlers, FooterBarChildProps } from './types';
+import type { FooterBarProps, NavigationHandlers, FooterBarChildProps } from './types';
 import { debounce } from '@/utils/debounce';
 import { RSVPControl } from '../rsvp';
 import MobileFooterBar from './MobileFooterBar';

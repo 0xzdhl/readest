@@ -1,5 +1,6 @@
-import React from 'react';
-import { CODE_LANGUAGES, CodeLanguage } from '@/utils/highlightjs';
+import type React from 'react';
+import { CODE_LANGUAGES } from '@/utils/highlightjs';
+import type { CodeLanguage } from '@/utils/highlightjs';
 import { useTranslation } from '@/hooks/useTranslation';
 import { BoxedList, SettingsRow, SettingsSelect, SettingsSwitchRow } from '../primitives';
 

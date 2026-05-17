@@ -1,5 +1,6 @@
 import clsx from 'clsx';
-import React, { useState, isValidElement, ReactElement, ReactNode, useRef, useId } from 'react';
+import React, { useState, isValidElement, useRef, useId } from 'react';
+import type { ReactElement, ReactNode } from 'react';
 import { useDropdownContext } from '@/context/DropdownContext';
 import { Overlay } from './Overlay';
 import MenuItem from './MenuItem';

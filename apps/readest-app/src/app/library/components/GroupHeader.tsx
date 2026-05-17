@@ -1,4 +1,4 @@
-import React from 'react';
+import type React from 'react';
 import { useRouter, useLocation } from '@tanstack/react-router';
 import { MdArrowBack } from 'react-icons/md';
 import { useTranslation } from '@/hooks/useTranslation';

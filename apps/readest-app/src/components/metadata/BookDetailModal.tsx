@@ -1,13 +1,13 @@
 import clsx from 'clsx';
 import React, { useEffect, useState } from 'react';
 
-import { Book } from '@/types/book';
-import { BookMetadata } from '@/libs/document';
+import type { Book } from '@/types/book';
+import type { BookMetadata } from '@/libs/document';
 import { useEnv } from '@/context/EnvContext';
 import { useThemeStore } from '@/store/themeStore';
 import { useTranslation } from '@/hooks/useTranslation';
 import { useMetadataEdit } from './useMetadataEdit';
-import { DeleteAction } from '@/types/system';
+import type { DeleteAction } from '@/types/system';
 import { eventDispatcher } from '@/utils/event';
 import { isWebAppPlatform } from '@/services/environment';
 import Alert from '@/components/Alert';

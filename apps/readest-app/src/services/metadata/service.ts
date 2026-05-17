@@ -1,4 +1,4 @@
-import { MetadataProvider, SearchRequest, MetadataResult } from './types';
+import type { MetadataProvider, SearchRequest, MetadataResult } from './types';
 import { OpenLibraryProvider, GoogleBooksProvider } from './providers';
 
 interface MetadataServiceConfig {

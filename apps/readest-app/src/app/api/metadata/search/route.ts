@@ -1,6 +1,6 @@
 import { createFileRoute } from '@tanstack/react-router';
 import { MetadataService } from '@/services/metadata/service';
-import { SearchRequest } from '@/services/metadata/types';
+import type { SearchRequest } from '@/services/metadata/types';
 import { validateUserAndToken } from '@/utils/access';
 
 interface ApiResponse<T> {

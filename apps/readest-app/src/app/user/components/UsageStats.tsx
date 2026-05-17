@@ -1,5 +1,5 @@
 import Quota from '@/components/Quota';
-import { QuotaType } from '@/types/quota';
+import type { QuotaType } from '@/types/quota';
 
 interface UsageStatsProps {
   quotas: QuotaType[];

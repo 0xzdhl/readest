@@ -1,7 +1,8 @@
-import { useState, FormEvent } from 'react';
+import { useState } from 'react';
+import type { FormEvent } from 'react';
 import { IoSearch } from 'react-icons/io5';
 import { useTranslation } from '@/hooks/useTranslation';
-import { OPDSSearch } from '@/types/opds';
+import type { OPDSSearch } from '@/types/opds';
 
 interface SearchViewProps {
   search: OPDSSearch;

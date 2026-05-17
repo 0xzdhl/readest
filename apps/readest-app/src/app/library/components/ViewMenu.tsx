@@ -1,11 +1,11 @@
-import React from 'react';
+import type React from 'react';
 import { useRouter, useLocation } from '@tanstack/react-router';
 import { useEnv } from '@/context/EnvContext';
 import { useSettingsStore } from '@/store/settingsStore';
 import { useTranslation } from '@/hooks/useTranslation';
 import {
-  LibraryCoverFitType,
-  LibraryViewModeType,
+  type LibraryCoverFitType,
+  type LibraryViewModeType,
   LibraryGroupByType,
   LibrarySortByType,
 } from '@/types/settings';

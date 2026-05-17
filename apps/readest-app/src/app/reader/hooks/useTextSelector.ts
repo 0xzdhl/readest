@@ -1,11 +1,11 @@
 import { useEffect, useRef } from 'react';
-import { BookNote } from '@/types/book';
+import type { BookNote } from '@/types/book';
 import { useEnv } from '@/context/EnvContext';
 import { useReaderStore } from '@/store/readerStore';
 import { useBookDataStore } from '@/store/bookDataStore';
 import { getOSPlatform } from '@/utils/misc';
 import { eventDispatcher } from '@/utils/event';
-import { isPointerInsideSelection, Point, TextSelection } from '@/utils/sel';
+import { isPointerInsideSelection, type Point, type TextSelection } from '@/utils/sel';
 import { useInstantAnnotation } from './useInstantAnnotation';
 
 export const useTextSelector = (

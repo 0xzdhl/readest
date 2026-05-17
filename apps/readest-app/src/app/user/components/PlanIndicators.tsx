@@ -1,4 +1,4 @@
-import { PlanDetails } from '../utils/plan';
+import type { PlanDetails } from '../utils/plan';
 
 interface PlanIndicatorsProps {
   allPlans: PlanDetails[];

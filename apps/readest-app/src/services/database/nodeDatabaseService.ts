@@ -1,4 +1,9 @@
-import { DatabaseService, DatabaseExecResult, DatabaseRow, DatabaseOpts } from '@/types/database';
+import type {
+  DatabaseService,
+  DatabaseExecResult,
+  DatabaseRow,
+  DatabaseOpts,
+} from '@/types/database';
 
 interface TursoRunResult {
   changes: number;

@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef } from 'react';
-import { Book } from '@/types/book';
+import type { Book } from '@/types/book';
 import { useSync } from '@/hooks/useSync';
 import { useEnv } from '@/context/EnvContext';
 import { useAuth } from '@/context/AuthContext';

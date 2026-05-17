@@ -2,7 +2,7 @@ import clsx from 'clsx';
 import React, { useState, useRef, useEffect } from 'react';
 import { useTranslation } from '@/hooks/useTranslation';
 import { useKeyDownActions } from '@/hooks/useKeyDownActions';
-import { Insets } from '@/types/misc';
+import type { Insets } from '@/types/misc';
 import ZoomControls from './ZoomControls';
 
 interface TableViewerProps {

@@ -1,5 +1,5 @@
 import init, { simplecc } from '@simplecc/simplecc_wasm';
-import { ConvertChineseVariant } from '@/types/book';
+import type { ConvertChineseVariant } from '@/types/book';
 
 let initialized = false;
 

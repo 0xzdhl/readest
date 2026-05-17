@@ -1,6 +1,6 @@
 import { useCallback, useRef, useState } from 'react';
-import { BookNote } from '@/types/book';
-import { Point, TextSelection, snapRangeToWords } from '@/utils/sel';
+import type { BookNote } from '@/types/book';
+import { type Point, type TextSelection, snapRangeToWords } from '@/utils/sel';
 import { useEnv } from '@/context/EnvContext';
 import { useReaderStore } from '@/store/readerStore';
 import { useSettingsStore } from '@/store/settingsStore';

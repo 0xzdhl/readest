@@ -1,4 +1,4 @@
-import { AppService, FileItem } from '@/types/system';
+import type { AppService, FileItem } from '@/types/system';
 
 export const copyFiles = async (appService: AppService, srcDir: string, dstDir: string) => {
   let filesToCopy: FileItem[] = [];

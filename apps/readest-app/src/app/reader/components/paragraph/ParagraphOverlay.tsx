@@ -1,14 +1,14 @@
 import clsx from 'clsx';
 import React, { useEffect, useState, useCallback, useRef, useMemo } from 'react';
-import { ViewSettings } from '@/types/book';
-import { Insets } from '@/types/misc';
+import type { ViewSettings } from '@/types/book';
+import type { Insets } from '@/types/misc';
 import { useEnv } from '@/context/EnvContext';
 import { eventDispatcher } from '@/utils/event';
 import {
   getParagraphActionForKey,
   getParagraphActionForZone,
   getParagraphLayoutContext,
-  ParagraphPresentation,
+  type ParagraphPresentation,
 } from '@/utils/paragraphPresentation';
 
 interface ParagraphOverlayProps {

@@ -1,4 +1,4 @@
-import {
+import type {
   AnnotatorConfig,
   BookFont,
   BookLanguage,
@@ -17,15 +17,15 @@ import {
   ViewSettingsConfig,
 } from '@/types/book';
 import {
-  HardcoverSettings,
-  KOSyncSettings,
+  type HardcoverSettings,
+  type KOSyncSettings,
   LibraryGroupByType,
   LibrarySortByType,
-  ReadSettings,
-  ReadwiseSettings,
-  SystemSettings,
+  type ReadSettings,
+  type ReadwiseSettings,
+  type SystemSettings,
 } from '@/types/settings';
-import { UserStorageQuota, UserDailyTranslationQuota } from '@/types/quota';
+import type { UserStorageQuota, UserDailyTranslationQuota } from '@/types/quota';
 import { getDefaultMaxBlockSize, getDefaultMaxInlineSize } from '@/utils/config';
 import { stubTranslation as _ } from '@/utils/misc';
 import { DEFAULT_AI_SETTINGS } from './ai/constants';

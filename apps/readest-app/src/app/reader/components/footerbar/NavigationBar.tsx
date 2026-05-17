@@ -1,5 +1,5 @@
 import clsx from 'clsx';
-import React from 'react';
+import type React from 'react';
 import { IoIosList as TOCIcon } from 'react-icons/io';
 import { RxSlider as SliderIcon } from 'react-icons/rx';
 import { RiFontFamily as FontIcon } from 'react-icons/ri';
@@ -10,7 +10,7 @@ import { useReaderStore } from '@/store/readerStore';
 import { useTranslation } from '@/hooks/useTranslation';
 import { useResponsiveSize } from '@/hooks/useResponsiveSize';
 import Button from '@/components/Button';
-import { Insets } from '@/types/misc';
+import type { Insets } from '@/types/misc';
 
 interface NavigationBarProps {
   bookKey: string;

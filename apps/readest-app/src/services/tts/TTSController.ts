@@ -1,14 +1,14 @@
-import { FoliateView } from '@/types/view';
-import { AppService } from '@/types/system';
+import type { FoliateView } from '@/types/view';
+import type { AppService } from '@/types/system';
 import { filterSSMLWithLang, parseSSMLMarks } from '@/utils/ssml';
 import { Overlayer } from 'foliate-js/overlayer.js';
-import { TTSGranularity, TTSHighlightOptions, TTSMark, TTSVoice } from './types';
+import type { TTSGranularity, TTSHighlightOptions, TTSMark, TTSVoice } from './types';
 import { createRejectFilter } from '@/utils/node';
 import { WebSpeechClient } from './WebSpeechClient';
 import { NativeTTSClient } from './NativeTTSClient';
 import { EdgeTTSClient } from './EdgeTTSClient';
 import { TTSUtils } from './TTSUtils';
-import { TTSClient } from './TTSClient';
+import type { TTSClient } from './TTSClient';
 import { isValidLang } from '@/utils/lang';
 
 type TTSState =
