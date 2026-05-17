@@ -7,7 +7,7 @@ import { isTauriAppPlatform } from '@/services/environment';
 import { getCurrentWebview } from '@tauri-apps/api/webview';
 import { useTranslation } from '@/hooks/useTranslation';
 import { BOOK_ACCEPT_FORMATS, SUPPORTED_BOOK_EXTS } from '@/services/constants';
-import { useSearchParams } from 'next/navigation';
+import { useLocation } from '@tanstack/react-router';
 
 const hasSupportedBookExt = (name: string) => {
   const ext = name.split('.').pop()?.toLowerCase();
@@ -16,7 +16,8 @@ const hasSupportedBookExt = (name: string) => {
 
 export const useDragDropImport = () => {
   const _ = useTranslation();
-  const searchParams = useSearchParams();
+  const location = useLocation();
+  const searchParams = new URLSearchParams(location.searchStr);
   const group = searchParams?.get('group') || '';
 
   const { appService } = useEnv();

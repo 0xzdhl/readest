@@ -24,20 +24,20 @@ beforeEach(() => {
 describe('environment', () => {
   // ── isTauriAppPlatform ─────────────────────────────────────────
   describe('isTauriAppPlatform', () => {
-    test('returns true when NEXT_PUBLIC_APP_PLATFORM is tauri', async () => {
-      env['NEXT_PUBLIC_APP_PLATFORM'] = 'tauri';
+    test('returns true when VITE_APP_PLATFORM is tauri', async () => {
+      env['VITE_APP_PLATFORM'] = 'tauri';
       const { isTauriAppPlatform } = await import('@/services/environment');
       expect(isTauriAppPlatform()).toBe(true);
     });
 
-    test('returns false when NEXT_PUBLIC_APP_PLATFORM is web', async () => {
-      env['NEXT_PUBLIC_APP_PLATFORM'] = 'web';
+    test('returns false when VITE_APP_PLATFORM is web', async () => {
+      env['VITE_APP_PLATFORM'] = 'web';
       const { isTauriAppPlatform } = await import('@/services/environment');
       expect(isTauriAppPlatform()).toBe(false);
     });
 
-    test('returns false when NEXT_PUBLIC_APP_PLATFORM is not set', async () => {
-      delete env['NEXT_PUBLIC_APP_PLATFORM'];
+    test('returns false when VITE_APP_PLATFORM is not set', async () => {
+      delete env['VITE_APP_PLATFORM'];
       const { isTauriAppPlatform } = await import('@/services/environment');
       expect(isTauriAppPlatform()).toBe(false);
     });
@@ -45,20 +45,20 @@ describe('environment', () => {
 
   // ── isWebAppPlatform ───────────────────────────────────────────
   describe('isWebAppPlatform', () => {
-    test('returns true when NEXT_PUBLIC_APP_PLATFORM is web', async () => {
-      env['NEXT_PUBLIC_APP_PLATFORM'] = 'web';
+    test('returns true when VITE_APP_PLATFORM is web', async () => {
+      env['VITE_APP_PLATFORM'] = 'web';
       const { isWebAppPlatform } = await import('@/services/environment');
       expect(isWebAppPlatform()).toBe(true);
     });
 
-    test('returns false when NEXT_PUBLIC_APP_PLATFORM is tauri', async () => {
-      env['NEXT_PUBLIC_APP_PLATFORM'] = 'tauri';
+    test('returns false when VITE_APP_PLATFORM is tauri', async () => {
+      env['VITE_APP_PLATFORM'] = 'tauri';
       const { isWebAppPlatform } = await import('@/services/environment');
       expect(isWebAppPlatform()).toBe(false);
     });
 
-    test('returns false when NEXT_PUBLIC_APP_PLATFORM is not set', async () => {
-      delete env['NEXT_PUBLIC_APP_PLATFORM'];
+    test('returns false when VITE_APP_PLATFORM is not set', async () => {
+      delete env['VITE_APP_PLATFORM'];
       const { isWebAppPlatform } = await import('@/services/environment');
       expect(isWebAppPlatform()).toBe(false);
     });
@@ -106,14 +106,14 @@ describe('environment', () => {
 
   // ── getBaseUrl ─────────────────────────────────────────────────
   describe('getBaseUrl', () => {
-    test('returns NEXT_PUBLIC_API_BASE_URL when set', async () => {
-      env['NEXT_PUBLIC_API_BASE_URL'] = 'https://custom-api.example.com';
+    test('returns VITE_API_BASE_URL when set', async () => {
+      env['VITE_API_BASE_URL'] = 'https://custom-api.example.com';
       const { getBaseUrl } = await import('@/services/environment');
       expect(getBaseUrl()).toBe('https://custom-api.example.com');
     });
 
     test('falls back to READEST_WEB_BASE_URL when env var not set', async () => {
-      delete env['NEXT_PUBLIC_API_BASE_URL'];
+      delete env['VITE_API_BASE_URL'];
       const { getBaseUrl } = await import('@/services/environment');
       expect(getBaseUrl()).toBe('https://web.readest.com');
     });
@@ -121,14 +121,14 @@ describe('environment', () => {
 
   // ── getNodeBaseUrl ─────────────────────────────────────────────
   describe('getNodeBaseUrl', () => {
-    test('returns NEXT_PUBLIC_NODE_BASE_URL when set', async () => {
-      env['NEXT_PUBLIC_NODE_BASE_URL'] = 'https://custom-node.example.com';
+    test('returns VITE_NODE_BASE_URL when set', async () => {
+      env['VITE_NODE_BASE_URL'] = 'https://custom-node.example.com';
       const { getNodeBaseUrl } = await import('@/services/environment');
       expect(getNodeBaseUrl()).toBe('https://custom-node.example.com');
     });
 
     test('falls back to READEST_NODE_BASE_URL when env var not set', async () => {
-      delete env['NEXT_PUBLIC_NODE_BASE_URL'];
+      delete env['VITE_NODE_BASE_URL'];
       const { getNodeBaseUrl } = await import('@/services/environment');
       expect(getNodeBaseUrl()).toBe('https://node.readest.com');
     });
@@ -192,23 +192,23 @@ describe('environment', () => {
   describe('getAPIBaseUrl', () => {
     test('returns /api in web development mode', async () => {
       env['NODE_ENV'] = 'development';
-      env['NEXT_PUBLIC_APP_PLATFORM'] = 'web';
+      env['VITE_APP_PLATFORM'] = 'web';
       const { getAPIBaseUrl } = await import('@/services/environment');
       expect(getAPIBaseUrl()).toBe('/api');
     });
 
     test('returns full URL in production', async () => {
       env['NODE_ENV'] = 'production';
-      env['NEXT_PUBLIC_APP_PLATFORM'] = 'web';
-      delete env['NEXT_PUBLIC_API_BASE_URL'];
+      env['VITE_APP_PLATFORM'] = 'web';
+      delete env['VITE_API_BASE_URL'];
       const { getAPIBaseUrl } = await import('@/services/environment');
       expect(getAPIBaseUrl()).toBe('https://web.readest.com/api');
     });
 
     test('returns full URL for tauri platform even in development', async () => {
       env['NODE_ENV'] = 'development';
-      env['NEXT_PUBLIC_APP_PLATFORM'] = 'tauri';
-      delete env['NEXT_PUBLIC_API_BASE_URL'];
+      env['VITE_APP_PLATFORM'] = 'tauri';
+      delete env['VITE_API_BASE_URL'];
       const { getAPIBaseUrl } = await import('@/services/environment');
       expect(getAPIBaseUrl()).toBe('https://web.readest.com/api');
     });
@@ -218,23 +218,23 @@ describe('environment', () => {
   describe('getNodeAPIBaseUrl', () => {
     test('returns /api in web development mode', async () => {
       env['NODE_ENV'] = 'development';
-      env['NEXT_PUBLIC_APP_PLATFORM'] = 'web';
+      env['VITE_APP_PLATFORM'] = 'web';
       const { getNodeAPIBaseUrl } = await import('@/services/environment');
       expect(getNodeAPIBaseUrl()).toBe('/api');
     });
 
     test('returns full node URL in production', async () => {
       env['NODE_ENV'] = 'production';
-      env['NEXT_PUBLIC_APP_PLATFORM'] = 'web';
-      delete env['NEXT_PUBLIC_NODE_BASE_URL'];
+      env['VITE_APP_PLATFORM'] = 'web';
+      delete env['VITE_NODE_BASE_URL'];
       const { getNodeAPIBaseUrl } = await import('@/services/environment');
       expect(getNodeAPIBaseUrl()).toBe('https://node.readest.com/api');
     });
 
     test('returns full node URL for tauri platform even in development', async () => {
       env['NODE_ENV'] = 'development';
-      env['NEXT_PUBLIC_APP_PLATFORM'] = 'tauri';
-      delete env['NEXT_PUBLIC_NODE_BASE_URL'];
+      env['VITE_APP_PLATFORM'] = 'tauri';
+      delete env['VITE_NODE_BASE_URL'];
       const { getNodeAPIBaseUrl } = await import('@/services/environment');
       expect(getNodeAPIBaseUrl()).toBe('https://node.readest.com/api');
     });

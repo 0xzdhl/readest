@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 #
-# Starts a Next.js dev server, launches the Tauri app with webdriver
+# Starts a Vite dev server, launches the Tauri app with webdriver
 # (no file watcher, no built-in dev server), waits for the WebDriver
 # server on port 4445, runs tests, then tears down everything cleanly.
 #
@@ -28,8 +28,8 @@ cleanup() {
 
 trap cleanup EXIT INT TERM
 
-echo "Starting Next.js dev server..."
-dotenv -e .env.tauri -- next dev &
+echo "Starting Vite dev server..."
+dotenv -e .env.tauri -- vite dev &
 DEV_PID=$!
 
 echo "Waiting for dev server on port $DEV_PORT..."

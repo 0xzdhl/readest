@@ -1,6 +1,18 @@
+<!-- intent-skills:start -->
+
+## Skill Loading
+
+Before substantial work:
+
+- Skill check: run `pnpm dlx @tanstack/intent@latest list`, or use skills already listed in context.
+- Skill guidance: if one local skill clearly matches the task, run `pnpm dlx @tanstack/intent@latest load <package>#<skill>` and follow the returned `SKILL.md`.
+- Monorepos: when working across packages, run the skill check from the workspace root and prefer the local skill for the package being changed.
+- Multiple matches: prefer the most specific local skill for the package or concern you are changing; load additional skills only when the task spans multiple packages or concerns.
+<!-- intent-skills:end -->
+
 ## Project Overview
 
-Readest is a cross-platform ebook reader built as a **Next.js 16 + Tauri v2** hybrid app. It's part of a pnpm monorepo at `/apps/readest-app/`. The app runs on web (CloudFlare Workers), desktop (macOS/Windows/Linux via Tauri), and mobile (iOS/Android via Tauri).
+Readest is a cross-platform ebook reader built as a **TanStack Start + Tauri v2** hybrid app. It's part of a pnpm monorepo at `/apps/readest-app/`. The app runs on web (CloudFlare Workers), desktop (macOS/Windows/Linux via Tauri), and mobile (iOS/Android via Tauri).
 
 ## Common Commands
 
@@ -10,8 +22,8 @@ pnpm dev-web               # Web-only dev server (no Rust compilation needed)
 pnpm tauri dev             # Desktop dev with Tauri (compiles Rust backend)
 
 # Building
-pnpm build                 # Build Next.js for Tauri
-pnpm build-web             # Build Next.js for web deployment
+pnpm build                 # Build TanStack Start for Tauri
+pnpm build-web             # Build TanStack Start for web deployment
 
 # Testing (see [docs/testing.md](docs/testing.md) for full details)
 pnpm test                  # Unit tests (vitest + jsdom)
@@ -35,7 +47,7 @@ pnpm clippy:check          # Lint Rust code (src-tauri)
 
 | Directory         | Purpose                                                       |
 | ----------------- | ------------------------------------------------------------- |
-| `src/app/`        | Next.js App Router pages and API routes                       |
+| `src/app/`        | TanStack Start file routes and server routes                  |
 | `src/components/` | React components (reader, settings, library, assistant, etc.) |
 | `src/services/`   | Business logic: TTS, translators, OPDS, sync, AI, metadata    |
 | `src/store/`      | Zustand state stores                                          |

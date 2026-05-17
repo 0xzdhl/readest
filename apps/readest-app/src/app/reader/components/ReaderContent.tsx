@@ -1,50 +1,50 @@
-'use client';
-
-import React, { useEffect, useRef, useState } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
-
-import { Book } from '@/types/book';
+import { useRouter } from '@tanstack/react-router';
+import type { UnlistenFn } from '@tauri-apps/api/event';
+import { getCurrentWindow } from '@tauri-apps/api/window';
+import type React from 'react';
+import { useEffect, useRef, useState } from 'react';
+import ShareBookDialog from '@/app/library/components/ShareBookDialog';
+import { BookDetailModal } from '@/components/metadata';
+import Spinner from '@/components/Spinner';
+import SettingsDialog from '@/components/settings/SettingsDialog';
+import { useAuth } from '@/context/AuthContext';
 import { useEnv } from '@/context/EnvContext';
-import { useSettingsStore } from '@/store/settingsStore';
-import { useBookDataStore } from '@/store/bookDataStore';
-import { useReaderStore } from '@/store/readerStore';
-import { useSidebarStore } from '@/store/sidebarStore';
+import { parseOpenWithFiles } from '@/helpers/openWith';
 import { useGamepad } from '@/hooks/useGamepad';
 import { useTranslation } from '@/hooks/useTranslation';
-import { SystemSettings } from '@/types/settings';
-import { parseOpenWithFiles } from '@/helpers/openWith';
-import { getCurrentWindow } from '@tauri-apps/api/window';
-import { UnlistenFn } from '@tauri-apps/api/event';
-import { tauriHandleClose, tauriHandleOnCloseWindow } from '@/utils/window';
+import { BOOK_IDS_SEPARATOR } from '@/services/constants';
 import { isTauriAppPlatform } from '@/services/environment';
-import { uniqueId } from '@/utils/misc';
-import { throttle } from '@/utils/throttle';
+import { useBookDataStore } from '@/store/bookDataStore';
+import { useReaderStore } from '@/store/readerStore';
+import { useSettingsStore } from '@/store/settingsStore';
+import { useSidebarStore } from '@/store/sidebarStore';
+import type { Book } from '@/types/book';
+import type { SystemSettings } from '@/types/settings';
+import { clearDiscordPresence } from '@/utils/discord';
 import { eventDispatcher } from '@/utils/event';
+import { uniqueId } from '@/utils/misc';
 import {
   closeReaderWindowOrGoToLibrary,
   ensureMainLibraryWindow,
   navigateToLibrary,
 } from '@/utils/nav';
-import { clearDiscordPresence } from '@/utils/discord';
-import { BOOK_IDS_SEPARATOR } from '@/services/constants';
-import { BookDetailModal } from '@/components/metadata';
-import ShareBookDialog from '@/app/library/components/ShareBookDialog';
-import { useAuth } from '@/context/AuthContext';
-
-import useBooksManager from '../hooks/useBooksManager';
+import { throttle } from '@/utils/throttle';
+import { tauriHandleClose, tauriHandleOnCloseWindow } from '@/utils/window';
 import useBookShortcuts from '../hooks/useBookShortcuts';
-import Spinner from '@/components/Spinner';
-import SideBar from './sidebar/SideBar';
-import Notebook from './notebook/Notebook';
+import useBooksManager from '../hooks/useBooksManager';
 import BooksGrid from './BooksGrid';
-import SettingsDialog from '@/components/settings/SettingsDialog';
+import Notebook from './notebook/Notebook';
+import SideBar from './sidebar/SideBar';
 
-const ReaderContent: React.FC<{ ids?: string; settings: SystemSettings }> = ({ ids, settings }) => {
+const ReaderContent: React.FC<{ ids: string; cfi?: string; settings: SystemSettings }> = ({
+  ids,
+  cfi,
+  settings,
+}) => {
   const _ = useTranslation();
   const router = useRouter();
-  const searchParams = useSearchParams();
   const { envConfig, appService } = useEnv();
-  const { bookKeys, dismissBook, getNextBookKey } = useBooksManager();
+  const { bookKeys, dismissBook, getNextBookKey } = useBooksManager(cfi);
   const { sideBarBookKey, setSideBarBookKey } = useSidebarStore();
   const { saveSettings } = useSettingsStore();
   const { getConfig, getBookData, saveConfig } = useBookDataStore();
@@ -68,9 +68,7 @@ const ReaderContent: React.FC<{ ids?: string; settings: SystemSettings }> = ({ i
     if (isInitiating.current) return;
     isInitiating.current = true;
 
-    const pathname = window.location.pathname;
-    const bookIds = ids || searchParams?.get('ids') || pathname.split('/reader/')[1] || '';
-    const initialIds = bookIds.split(BOOK_IDS_SEPARATOR).filter(Boolean);
+    const initialIds = ids.split(BOOK_IDS_SEPARATOR).filter(Boolean);
     const initialBookKeys = initialIds.map((id) => `${id}-${uniqueId()}`);
     setBookKeys(initialBookKeys);
     const uniqueIds = new Set<string>();
@@ -266,6 +264,8 @@ const ReaderContent: React.FC<{ ids?: string; settings: SystemSettings }> = ({ i
     <div className='reader-content full-height flex'>
       <SideBar />
       <BooksGrid
+        ids={ids}
+        cfi={cfi}
         bookKeys={bookKeys}
         onCloseBook={handleCloseBook}
         onGoToLibrary={handleCloseBooksToLibrary}

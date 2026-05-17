@@ -1,5 +1,4 @@
 import { useEffect, useState } from 'react';
-import Image from 'next/image';
 import { useEnv } from '@/context/EnvContext';
 import { useTranslation } from '@/hooks/useTranslation';
 import { checkForAppUpdates, checkAppReleaseNotes } from '@/helpers/updater';
@@ -90,7 +89,14 @@ export const AboutWindow = () => {
         <div className='about-content flex flex-col items-center justify-center gap-4 pb-10 sm:pb-0'>
           <div className='flex flex-1 flex-col items-center justify-end gap-2 px-8 py-2'>
             <div className='mb-2 mt-6'>
-              <Image src='/icon.png' alt='App Logo' className='h-20 w-20' width={64} height={64} />
+              <img
+                src='/icon.png'
+                alt='App Logo'
+                className='h-20 w-20'
+                width={64}
+                height={64}
+                loading='lazy'
+              />
             </div>
             <div className='flex select-text flex-col items-center'>
               <h2 className='mb-2 text-2xl font-bold'>Readest</h2>

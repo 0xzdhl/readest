@@ -1,5 +1,3 @@
-'use client';
-
 import React from 'react';
 import { FoliateView } from '@/types/view';
 import { Insets } from '@/types/misc';

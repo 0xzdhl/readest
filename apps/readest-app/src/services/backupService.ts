@@ -1,13 +1,12 @@
 import type { Configuration, ZipWriter } from '@zip.js/zip.js';
-import { AppService } from '@/types/system';
-import { EXTS } from '@/libs/document';
+import type { AppService } from '@/types/system';
 import { isTauriAppPlatform } from '@/services/environment';
-import { Book, BookConfig, BookNote } from '@/types/book';
+import type { Book, BookConfig, BookNote } from '@/types/book';
 import { getLibraryFilename } from '@/utils/book';
 import { configureZip } from '@/utils/zip';
 
 /** Book file extensions for identifying book files in backup directories. */
-const BOOK_EXTS = new Set(Object.values(EXTS));
+const BOOK_EXTS = new Set(['epub', 'pdf', 'mobi', 'azw', 'azw3', 'cbz', 'fb2', 'fbz', 'txt', 'md']);
 
 /**
  * Merge two BookConfigs: uses the config with higher reading progress as base,

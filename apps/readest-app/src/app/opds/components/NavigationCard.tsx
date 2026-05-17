@@ -1,5 +1,3 @@
-'use client';
-
 import { IoChevronForward } from 'react-icons/io5';
 import { useTranslation } from '@/hooks/useTranslation';
 import { OPDSNavigationItem, SYMBOL } from '@/types/opds';

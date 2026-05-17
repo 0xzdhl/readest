@@ -1,5 +1,3 @@
-'use client';
-
 import { useEffect, useRef } from 'react';
 import { useAtmosphereStore } from '@/store/atmosphereStore';
 import { useThemeStore } from '@/store/themeStore';

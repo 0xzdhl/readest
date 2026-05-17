@@ -1,8 +1,14 @@
 import { describe, it, expect, vi } from 'vitest';
-import { POST as applePost } from '@/app/api/apple/iap-verify/route';
-import { POST as googlePost } from '@/app/api/google/iap-verify/route';
-import { NextRequest } from 'next/server';
+import { Route as AppleRoute } from '@/app/api/apple/iap-verify/route';
+import { Route as GoogleRoute } from '@/app/api/google/iap-verify/route';
 import { setupSupabaseMocks } from '../helpers/supabase-mock';
+
+type ApiRouteDef = {
+  options: { server: { handlers: { POST: (ctx: { request: Request }) => Promise<Response> } } };
+};
+
+const applePost = (AppleRoute as unknown as ApiRouteDef).options.server.handlers.POST;
+const googlePost = (GoogleRoute as unknown as ApiRouteDef).options.server.handlers.POST;
 
 const SKIP_IAP_API_TESTS = !process.env['ENABLE_IAP_API_TESTS'];
 vi.mock('@/utils/supabase', () => ({
@@ -19,7 +25,7 @@ vi.mock('@/utils/supabase', () => ({
 describe.skipIf(SKIP_IAP_API_TESTS)('/api/apple/iap-verify', () => {
   it('should verify a valid Apple IAP transaction', async () => {
     setupSupabaseMocks();
-    const request = new NextRequest('http://localhost:3000/api/apple/iap-verify', {
+    const request = new Request('http://localhost:3000/api/apple/iap-verify', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -31,7 +37,7 @@ describe.skipIf(SKIP_IAP_API_TESTS)('/api/apple/iap-verify', () => {
       }),
     });
 
-    const response = await applePost(request);
+    const response = await applePost({ request });
     const data = await response.json();
     console.log('Response:', data);
 
@@ -43,7 +49,7 @@ describe.skipIf(SKIP_IAP_API_TESTS)('/api/apple/iap-verify', () => {
 describe.skipIf(SKIP_IAP_API_TESTS)('/api/google/iap-verify', () => {
   it('should verify a valid Google IAP purchase', async () => {
     setupSupabaseMocks();
-    const request = new NextRequest('http://localhost:3000/api/google/iap-verify', {
+    const request = new Request('http://localhost:3000/api/google/iap-verify', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -58,7 +64,7 @@ describe.skipIf(SKIP_IAP_API_TESTS)('/api/google/iap-verify', () => {
       }),
     });
 
-    const response = await googlePost(request);
+    const response = await googlePost({ request });
     const data = await response.json();
     console.log('Response:', data);
 

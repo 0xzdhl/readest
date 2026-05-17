@@ -2,7 +2,7 @@ import clsx from 'clsx';
 import React from 'react';
 
 import { MdCheck } from 'react-icons/md';
-import { useRouter } from 'next/navigation';
+import { useRouter } from '@tanstack/react-router';
 import { useEnv } from '@/context/EnvContext';
 import { useAuth } from '@/context/AuthContext';
 import { useReaderStore } from '@/store/readerStore';

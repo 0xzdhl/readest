@@ -63,7 +63,7 @@ export const objectExists = async (fileKey: string, bucketName?: string): Promis
   }
 };
 
-// Server-side byte copy used by /api/share/[token]/import to clone a shared
+// Server-side byte copy used by /api/share/$token/import to clone a shared
 // book into the recipient's namespace without egress.
 export const copyObject = async (
   sourceFileKey: string,

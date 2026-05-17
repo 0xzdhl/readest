@@ -1,5 +1,3 @@
-'use client';
-
 import React from 'react';
 import { RsvpStartChoice } from '@/services/rsvp';
 import { useThemeStore } from '@/store/themeStore';

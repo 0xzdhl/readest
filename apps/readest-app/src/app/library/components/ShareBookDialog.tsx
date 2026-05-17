@@ -1,5 +1,3 @@
-'use client';
-
 import React, { useEffect, useMemo, useState } from 'react';
 import {
   IoCheckmarkCircle,
@@ -242,7 +240,6 @@ const ShareBookDialog: React.FC<ShareBookDialogProps> = ({ isOpen, book, cfi, on
             collapse into a single muted line for cleaner hierarchy. */}
         <div className='flex items-center gap-4'>
           {book.coverImageUrl ? (
-            // eslint-disable-next-line @next/next/no-img-element
             <img
               src={book.coverImageUrl}
               alt=''

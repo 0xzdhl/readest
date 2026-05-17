@@ -1,5 +1,3 @@
-'use client';
-
 import { useMemo } from 'react';
 import { useTranslation } from '@/hooks/useTranslation';
 import { CachedImage } from '@/components/CachedImage';

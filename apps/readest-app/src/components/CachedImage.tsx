@@ -1,6 +1,3 @@
-'use client';
-
-import Image from 'next/image';
 import { useState, useEffect, memo } from 'react';
 
 interface CachedImageProps {
@@ -120,11 +117,19 @@ const CachedImageComponent = ({
   }
 
   if (fill) {
-    return <Image src={cachedUrl} alt={alt} fill className={className} sizes={sizes} />;
+    return (
+      <img
+        src={cachedUrl}
+        alt={alt}
+        className={className}
+        sizes={sizes}
+        style={{ position: 'absolute', height: '100%', width: '100%', inset: 0 }}
+      />
+    );
   }
 
   return (
-    <Image
+    <img
       src={cachedUrl}
       alt={alt}
       width={width}

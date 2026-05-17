@@ -12,16 +12,7 @@ import { useFileSelector } from '@/hooks/useFileSelector';
 import { restoreFromBackupZip, saveBackupFile } from '@/services/backupService';
 import { useLibraryStore } from '@/store/libraryStore';
 import Dialog from '@/components/Dialog';
-
-export const setBackupDialogVisible = (visible: boolean) => {
-  const dialog = document.getElementById('backup_window');
-  if (dialog) {
-    const event = new CustomEvent('setDialogVisibility', {
-      detail: { visible },
-    });
-    dialog.dispatchEvent(event);
-  }
-};
+import { BACKUP_DIALOG_EVENT } from './backupDialog';
 
 type BackupStatus = 'idle' | 'backing-up' | 'restoring' | 'completed' | 'error';
 
@@ -39,14 +30,18 @@ interface BackupResult {
 
 interface BackupWindowProps {
   onPullLibrary: (fullRefresh?: boolean, verbose?: boolean) => void;
+  initialVisible?: boolean;
 }
 
-export const BackupWindow: React.FC<BackupWindowProps> = ({ onPullLibrary }) => {
+export const BackupWindow: React.FC<BackupWindowProps> = ({
+  onPullLibrary,
+  initialVisible = false,
+}) => {
   const _ = useTranslation();
   const { appService } = useEnv();
   const { setLibrary } = useLibraryStore();
   const { selectFiles } = useFileSelector(appService, _);
-  const [isOpen, setIsOpen] = useState(false);
+  const [isOpen, setIsOpen] = useState(initialVisible);
   const [status, setStatus] = useState<BackupStatus>('idle');
   const [progress, setProgress] = useState<BackupProgress>({ current: 0, total: 0 });
   const [errorMessage, setErrorMessage] = useState('');
@@ -67,15 +62,10 @@ export const BackupWindow: React.FC<BackupWindowProps> = ({ onPullLibrary }) => 
       }
     };
 
-    const el = document.getElementById('backup_window');
-    if (el) {
-      el.addEventListener('setDialogVisibility', handleCustomEvent as EventListener);
-    }
+    window.addEventListener(BACKUP_DIALOG_EVENT, handleCustomEvent as EventListener);
 
     return () => {
-      if (el) {
-        el.removeEventListener('setDialogVisibility', handleCustomEvent as EventListener);
-      }
+      window.removeEventListener(BACKUP_DIALOG_EVENT, handleCustomEvent as EventListener);
     };
   }, []);
 

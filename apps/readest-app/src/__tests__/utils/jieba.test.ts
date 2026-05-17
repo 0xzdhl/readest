@@ -1,7 +1,7 @@
 import { describe, test, expect, beforeAll } from 'vitest';
 // Import the web build directly. Vitest runs in Node, which would otherwise
 // pick the `node` export — that build has no async `init()` and instantiates
-// the WASM via Node FS. In production (Next.js / Tauri) the `browser` export
+// the WASM via Node FS. In production (web / Tauri) the `browser` export
 // is selected and matches what `src/utils/jieba.ts` uses.
 import init, { cut, cut_all, cut_for_search, tokenize } from 'jieba-wasm/web';
 import { readFile } from 'fs/promises';

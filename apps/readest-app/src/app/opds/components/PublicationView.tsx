@@ -1,8 +1,6 @@
-'use client';
-
 import clsx from 'clsx';
 import { useMemo, useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter } from '@tanstack/react-router';
 import { IoPricetag } from 'react-icons/io5';
 import { Book } from '@/types/book';
 import { OPDSPublication, REL, SYMBOL, OPDSAcquisitionLink, OPDSStreamLink } from '@/types/opds';

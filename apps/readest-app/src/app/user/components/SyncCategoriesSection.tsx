@@ -1,5 +1,3 @@
-'use client';
-
 import clsx from 'clsx';
 import { useEnv } from '@/context/EnvContext';
 import { useTranslation } from '@/hooks/useTranslation';

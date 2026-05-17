@@ -1,5 +1,3 @@
-'use client';
-
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { MdArrowBack, MdChevronRight, MdSettings } from 'react-icons/md';
 import clsx from 'clsx';

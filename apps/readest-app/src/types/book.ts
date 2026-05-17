@@ -1,7 +1,7 @@
-import { BookMetadata } from '@/libs/document';
-import { TTSHighlightOptions } from '@/services/tts/types';
-import { TTSMediaMetadataMode } from '@/services/tts/types';
-import { AnnotationToolType } from './annotator';
+import type { BookMetadata } from '@/libs/document';
+import type { TTSHighlightOptions } from '@/services/tts/types';
+import type { TTSMediaMetadataMode } from '@/services/tts/types';
+import type { AnnotationToolType } from './annotator';
 
 export type BookFormat =
   | 'EPUB'

@@ -1,5 +1,5 @@
 import Stripe from 'stripe';
-import { NextRequest, NextResponse } from 'next/server';
+import { createFileRoute } from '@tanstack/react-router';
 import {
   getStripe,
   createOrUpdateSubscription,
@@ -7,72 +7,78 @@ import {
 } from '@/libs/payment/stripe/server';
 import { createSupabaseAdminClient } from '@/utils/supabase';
 
-export async function POST(request: NextRequest) {
-  try {
-    const body = await request.text();
-    const signature = request.headers.get('stripe-signature');
+export const Route = createFileRoute('/api/stripe/webhook')({
+  server: {
+    handlers: {
+      POST: async ({ request }) => {
+        try {
+          const body = await request.text();
+          const signature = request.headers.get('stripe-signature');
 
-    if (!signature) {
-      return NextResponse.json({ error: 'Missing Stripe signature' }, { status: 401 });
-    }
-
-    const stripe = getStripe();
-
-    let event;
-    try {
-      event = stripe.webhooks.constructEvent(
-        body,
-        signature,
-        process.env['STRIPE_WEBHOOK_SECRET']!,
-      );
-    } catch (err) {
-      const message = err instanceof Error ? err.message : 'Unknown error';
-      console.error(`Webhook signature verification failed: ${message}`);
-      return NextResponse.json(
-        {
-          error: `Webhook signature verification failed: ${message}`,
-        },
-        { status: 400 },
-      );
-    }
-
-    switch (event.type) {
-      case 'checkout.session.completed':
-        const session = event.data.object;
-        const userId = session.metadata?.['userId'];
-        if (userId) {
-          if (session.mode === 'subscription') {
-            await handleSuccessfulSubscription(session, userId);
-          } else {
-            await handleSuccessfulPayment(session, userId);
+          if (!signature) {
+            return Response.json({ error: 'Missing Stripe signature' }, { status: 401 });
           }
+
+          const stripe = getStripe();
+
+          let event;
+          try {
+            event = stripe.webhooks.constructEvent(
+              body,
+              signature,
+              process.env['STRIPE_WEBHOOK_SECRET']!,
+            );
+          } catch (err) {
+            const message = err instanceof Error ? err.message : 'Unknown error';
+            console.error(`Webhook signature verification failed: ${message}`);
+            return Response.json(
+              {
+                error: `Webhook signature verification failed: ${message}`,
+              },
+              { status: 400 },
+            );
+          }
+
+          switch (event.type) {
+            case 'checkout.session.completed':
+              const session = event.data.object;
+              const userId = session.metadata?.['userId'];
+              if (userId) {
+                if (session.mode === 'subscription') {
+                  await handleSuccessfulSubscription(session, userId);
+                } else {
+                  await handleSuccessfulPayment(session, userId);
+                }
+              }
+              break;
+
+            case 'invoice.payment_succeeded':
+              await handleSuccessfulInvoice(event.data.object);
+              break;
+
+            case 'invoice.payment_failed':
+              await handleFailedInvoice(event.data.object);
+              break;
+
+            case 'customer.subscription.updated':
+              await handleSubscriptionUpdated(event.data.object);
+              break;
+
+            case 'customer.subscription.deleted':
+              await handleSubscriptionCancelled(event.data.object);
+              break;
+          }
+
+          return Response.json({ received: true });
+        } catch (error) {
+          const message = error instanceof Error ? error.message : 'Unknown error';
+          console.error('Webhook error:', message);
+          return Response.json({ error: message }, { status: 500 });
         }
-        break;
-
-      case 'invoice.payment_succeeded':
-        await handleSuccessfulInvoice(event.data.object);
-        break;
-
-      case 'invoice.payment_failed':
-        await handleFailedInvoice(event.data.object);
-        break;
-
-      case 'customer.subscription.updated':
-        await handleSubscriptionUpdated(event.data.object);
-        break;
-
-      case 'customer.subscription.deleted':
-        await handleSubscriptionCancelled(event.data.object);
-        break;
-    }
-
-    return NextResponse.json({ received: true });
-  } catch (error) {
-    const message = error instanceof Error ? error.message : 'Unknown error';
-    console.error('Webhook error:', message);
-    return NextResponse.json({ error: message }, { status: 500 });
-  }
-}
+      },
+    },
+  },
+});
 
 async function handleSuccessfulPayment(session: Stripe.Checkout.Session, userId: string) {
   const customerId = session.customer as string;

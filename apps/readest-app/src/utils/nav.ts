@@ -1,7 +1,8 @@
-import { redirect, useRouter } from 'next/navigation';
+import { redirect } from '@tanstack/react-router';
+import type { AppRouter } from '@/router';
 import { getCurrentWindow, ScrollBarStyle } from '@tauri-apps/api/window';
 import { WebviewWindow } from '@tauri-apps/api/webviewWindow';
-import { isPWA, isTauriAppPlatform, isWebAppPlatform } from '@/services/environment';
+import { isTauriAppPlatform } from '@/services/environment';
 import { BOOK_IDS_SEPARATOR } from '@/services/constants';
 import { AppService } from '@/types/system';
 
@@ -21,7 +22,6 @@ const createReaderWindow = (appService: AppService, url: string) => {
     transparent: !appService.isMacOSApp,
     shadow: appService.isMacOSApp ? undefined : true,
     titleBarStyle: appService.isMacOSApp ? 'overlay' : undefined,
-    // Enum ScrollBarStyle is exported as type by tauri, so it cannot be used directly.
     scrollBarStyle: (appService.osPlatform === 'windows'
       ? 'fluentOverlay'
       : 'default') as unknown as ScrollBarStyle,
@@ -40,9 +40,7 @@ const createReaderWindow = (appService: AppService, url: string) => {
 
 export const showReaderWindow = (appService: AppService, bookIds: string[]) => {
   const ids = bookIds.join(BOOK_IDS_SEPARATOR);
-  const params = new URLSearchParams('');
-  params.set('ids', ids);
-  const url = `/reader?${params.toString()}`;
+  const url = `/reader/${ids}`;
   createReaderWindow(appService, url);
 };
 
@@ -53,11 +51,6 @@ export const showLibraryWindow = (appService: AppService, filenames: string[]) =
   createReaderWindow(appService, url);
 };
 
-// Bring the main library window back when a reader window asks to "go to library".
-// If main was hidden (macOS close-to-hide) we re-show it. If it was destroyed
-// (Windows/Linux default close), we recreate a window with the same 'main'
-// label so the existing emitTo('main', 'close-reader-window', ...) wiring
-// continues to work.
 export const ensureMainLibraryWindow = async (appService: AppService) => {
   const existing = await WebviewWindow.getByLabel('main');
   if (existing) {
@@ -87,56 +80,53 @@ export const ensureMainLibraryWindow = async (appService: AppService) => {
 };
 
 export const navigateToReader = (
-  router: ReturnType<typeof useRouter>,
+  router: AppRouter,
   bookIds: string[],
   queryParams?: string,
   navOptions?: { scroll?: boolean },
 ) => {
   const ids = bookIds.join(BOOK_IDS_SEPARATOR);
-  if (isWebAppPlatform() && !isPWA()) {
-    router.push(`/reader/${ids}${queryParams ? `?${queryParams}` : ''}`, navOptions);
-  } else {
-    const params = new URLSearchParams(queryParams || '');
-    params.set('ids', ids);
-    router.push(`/reader?${params.toString()}`, navOptions);
-  }
+  router.navigate({
+    to: `/reader/${ids}${queryParams ? `?${queryParams}` : ''}`,
+    ...navOptions,
+  });
 };
 
-export const navigateToLogin = (router: ReturnType<typeof useRouter>) => {
+export const navigateToLogin = (router: AppRouter) => {
   const pathname = window.location.pathname;
   const search = window.location.search;
   const currentPath = pathname !== '/auth' ? pathname + search : '/';
-  router.push(`/auth?redirect=${encodeURIComponent(currentPath)}`);
+  router.navigate({ to: '/auth', search: { redirect: currentPath } });
 };
 
-export const navigateToProfile = (router: ReturnType<typeof useRouter>) => {
-  router.push('/user');
+export const navigateToProfile = (router: AppRouter) => {
+  router.navigate({ to: '/user', search: { section: '' } });
 };
 
 export const navigateToLibrary = (
-  router: ReturnType<typeof useRouter>,
+  router: AppRouter,
   queryParams?: string,
   navOptions?: { scroll?: boolean },
   navBack?: boolean,
 ) => {
-  const lastLibraryParams =
-    typeof window !== 'undefined' ? sessionStorage.getItem('lastLibraryParams') : null;
-  if (navBack && lastLibraryParams) {
-    queryParams = lastLibraryParams;
+  let params = queryParams;
+  if (navBack) {
+    const lastLibraryParams =
+      typeof window !== 'undefined' ? sessionStorage.getItem('lastLibraryParams') : null;
+    if (lastLibraryParams) {
+      params = lastLibraryParams;
+    }
   }
-
-  router.replace(`/library${queryParams ? `?${queryParams}` : ''}`, navOptions);
+  router.navigate({
+    to: `/library${params ? `?${params}` : ''}`,
+    replace: true,
+    ...navOptions,
+  });
 };
 
-// Recovery action when a reader has nothing to display — e.g. all books were
-// closed, or a book failed to load in a freshly-opened reader window.
-// In a dedicated reader window we close the window itself, ensuring the main
-// library window is visible first; routing the reader window to /library
-// instead would leave a leftover window the user has to close manually.
-// In the main window or on web, fall back to /library navigation.
 export const closeReaderWindowOrGoToLibrary = async (
   appService: AppService | null,
-  router: ReturnType<typeof useRouter>,
+  router: AppRouter,
 ) => {
   if (isTauriAppPlatform() && appService?.hasWindow) {
     const currentWindow = getCurrentWindow();
@@ -150,19 +140,19 @@ export const closeReaderWindowOrGoToLibrary = async (
 };
 
 export const redirectToLibrary = () => {
-  redirect('/library');
+  throw redirect({ to: '/library' });
 };
 
-export const navigateToResetPassword = (router: ReturnType<typeof useRouter>) => {
+export const navigateToResetPassword = (router: AppRouter) => {
   const pathname = window.location.pathname;
   const search = window.location.search;
   const currentPath = pathname !== '/auth' ? pathname + search : '/';
-  router.push(`/auth/recovery?redirect=${encodeURIComponent(currentPath)}`);
+  router.navigate({ to: '/auth/recovery', search: { redirect: currentPath } });
 };
 
-export const navigateToUpdatePassword = (router: ReturnType<typeof useRouter>) => {
+export const navigateToUpdatePassword = (router: AppRouter) => {
   const pathname = window.location.pathname;
   const search = window.location.search;
   const currentPath = pathname !== '/auth' ? pathname + search : '/';
-  router.push(`/auth/update?redirect=${encodeURIComponent(currentPath)}`);
+  router.navigate({ to: '/auth/update', search: { redirect: currentPath } });
 };

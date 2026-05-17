@@ -1,6 +1,6 @@
 import clsx from 'clsx';
 import React, { useCallback, useRef, useState } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useRouter, useLocation } from '@tanstack/react-router';
 import { FaSearch } from 'react-icons/fa';
 import { PiPlus } from 'react-icons/pi';
 import { PiSelectionAll, PiSelectionAllFill } from 'react-icons/pi';
@@ -15,6 +15,7 @@ import { useLibraryStore } from '@/store/libraryStore';
 import { useTrafficLight } from '@/hooks/useTrafficLight';
 import { useResponsiveSize } from '@/hooks/useResponsiveSize';
 import { debounce } from '@/utils/debounce';
+import { navigateToLibrary } from '@/utils/nav';
 import useShortcuts from '@/hooks/useShortcuts';
 import WindowButtons from '@/components/WindowButtons';
 import Dropdown from '@/components/Dropdown';
@@ -47,7 +48,8 @@ const LibraryHeader: React.FC<LibraryHeaderProps> = ({
 }) => {
   const _ = useTranslation();
   const router = useRouter();
-  const searchParams = useSearchParams();
+  const location = useLocation();
+  const searchParams = new URLSearchParams(location.searchStr);
   const { appService } = useEnv();
   const { systemUIVisible, statusBarHeight } = useThemeStore();
   const { currentBookshelf } = useLibraryStore();
@@ -71,7 +73,7 @@ const LibraryHeader: React.FC<LibraryHeaderProps> = ({
       } else {
         params.delete('q');
       }
-      router.push(`?${params.toString()}`);
+      navigateToLibrary(router, params.toString());
     }, 500),
     [searchParams],
   );

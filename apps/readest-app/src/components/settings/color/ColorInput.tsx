@@ -1,6 +1,8 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { SketchPicker, ColorResult } from 'react-color';
+import React, { useEffect, useRef, useState } from 'react';
+import reactColor, { type ColorResult } from 'react-color';
 import { CgColorPicker } from 'react-icons/cg';
+
+const { SketchPicker } = reactColor;
 
 type ColorInputProps = {
   label: string;

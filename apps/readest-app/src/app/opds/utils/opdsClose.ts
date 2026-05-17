@@ -1,4 +1,4 @@
-import type { ReadonlyURLSearchParams, useRouter } from 'next/navigation';
+import type { Router } from '@tanstack/react-router';
 import { navigateToLibrary } from '@/utils/nav';
 import { useSettingsStore } from '@/store/settingsStore';
 
@@ -11,12 +11,12 @@ import { useSettingsStore } from '@/store/settingsStore';
  * landing on the panel's top level.
  *
  * Call this **before** the navigation that returns to /library — works
- * with both `router.back()` (used by failure paths so the user can resume
+ * with both `router.history.back()` (used by failure paths so the user can resume
  * their browser history) and `navigateToLibrary` (used by the manual
  * close button which doesn't need history-back semantics).
  */
-export const stashOPDSReturnTarget = (searchParams: ReadonlyURLSearchParams | null) => {
-  if (searchParams?.get('from') !== 'settings-integrations') return;
+export const stashOPDSReturnTarget = (searchParams: { from?: string } | null) => {
+  if (searchParams?.from !== 'settings-integrations') return;
   const { setRequestedPanel, setRequestedSubPage, setSettingsDialogOpen } =
     useSettingsStore.getState();
   setRequestedPanel('Integrations');
@@ -37,15 +37,12 @@ export const stashOPDSReturnTarget = (searchParams: ReadonlyURLSearchParams | nu
  *   who entered the browser via the library's own OPDS button.
  *
  * Used by the manual close button (Navigation). Failure paths in page.tsx
- * use `stashOPDSReturnTarget` + `router.back()` instead so the user can
+ * use `stashOPDSReturnTarget` + `router.history.back()` instead so the user can
  * resume their browser history (e.g. retry the catalog or step further
  * back) — `navigateToLibrary` would clobber that history.
  */
-export const closeOPDSBrowser = (
-  router: ReturnType<typeof useRouter>,
-  searchParams: ReadonlyURLSearchParams | null,
-) => {
-  if (searchParams?.get('from') === 'settings-integrations') {
+export const closeOPDSBrowser = (router: Router, searchParams: { from?: string } | null) => {
+  if (searchParams?.from === 'settings-integrations') {
     stashOPDSReturnTarget(searchParams);
     navigateToLibrary(router, '', undefined, true);
     return;

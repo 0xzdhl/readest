@@ -4,6 +4,7 @@ import { UserPlan } from '@/types/quota';
 import { DEFAULT_DAILY_TRANSLATION_QUOTA, DEFAULT_STORAGE_QUOTA } from '@/services/constants';
 import { isWebAppPlatform } from '@/services/environment';
 import { getDailyUsage } from '@/services/translators/utils';
+import { readPublicEnv } from '@/utils/publicEnv';
 
 interface Token {
   plan: UserPlan;
@@ -36,7 +37,7 @@ export const getStoragePlanData = (token: string) => {
   const plan = data['plan'] || 'free';
   const usage = data['storage_usage_bytes'] || 0;
   const purchasedQuota = data['storage_purchased_bytes'] || 0;
-  const fixedQuota = parseInt(process.env['NEXT_PUBLIC_STORAGE_FIXED_QUOTA'] || '0');
+  const fixedQuota = parseInt(readPublicEnv('VITE_STORAGE_FIXED_QUOTA') || '0');
   const planQuota = fixedQuota || DEFAULT_STORAGE_QUOTA[plan] || DEFAULT_STORAGE_QUOTA['free'];
   const quota = planQuota + purchasedQuota;
 
@@ -48,7 +49,7 @@ export const getStoragePlanData = (token: string) => {
 };
 
 export const getTranslationQuota = (plan: UserPlan): number => {
-  const fixedQuota = parseInt(process.env['NEXT_PUBLIC_TRANSLATION_FIXED_QUOTA'] || '0');
+  const fixedQuota = parseInt(readPublicEnv('VITE_TRANSLATION_FIXED_QUOTA') || '0');
   return (
     fixedQuota || DEFAULT_DAILY_TRANSLATION_QUOTA[plan] || DEFAULT_DAILY_TRANSLATION_QUOTA['free']
   );

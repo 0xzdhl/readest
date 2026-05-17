@@ -1,8 +1,8 @@
 import { HIGHLIGHT_COLOR_HEX } from '@/services/constants';
-import { BookNote, DEFAULT_HIGHLIGHT_COLORS, HighlightColor } from '@/types/book';
-import { SystemSettings } from '@/types/settings';
-import { FoliateView, NOTE_PREFIX } from '@/types/view';
-import { Point } from '@/utils/sel';
+import { type BookNote, DEFAULT_HIGHLIGHT_COLORS, type HighlightColor } from '@/types/book';
+import type { SystemSettings } from '@/types/settings';
+import { type FoliateView, NOTE_PREFIX } from '@/types/view';
+import type { Point } from '@/utils/sel';
 
 export const isDefaultHighlightColor = (
   color: HighlightColor,

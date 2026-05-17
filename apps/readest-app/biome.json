@@ -9,8 +9,6 @@
     "enabled": true,
     "includes": [
       "**",
-      "!.next/**",
-      "!.open-next/**",
       "!.wrangler/**",
       "!.claude/**",
       "!dist/**",
@@ -18,7 +16,6 @@
       "!build/**",
       "!public/**",
       "!src-tauri/**",
-      "!next-env.d.ts",
       "!i18next-scanner.config.cjs"
     ],
     "rules": {

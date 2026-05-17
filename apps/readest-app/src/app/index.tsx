@@ -1,6 +1,9 @@
-import { createFileRoute } from '@tanstack/react-router';
-import LibraryPage from './library/page';
+import { createFileRoute, redirect } from '@tanstack/react-router';
 
-export const route = createFileRoute('/')({
-  component: LibraryPage,
+export const Route = createFileRoute('/')({
+  beforeLoad: () => {
+    throw redirect({
+      to: '/library',
+    });
+  },
 });

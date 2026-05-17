@@ -1,5 +1,3 @@
-'use client';
-
 import clsx from 'clsx';
 import React, { useCallback } from 'react';
 import { EmbeddedCheckoutProvider, EmbeddedCheckout } from '@stripe/react-stripe-js';

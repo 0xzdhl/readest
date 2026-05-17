@@ -1,5 +1,3 @@
-'use client';
-
 import { useState, FormEvent } from 'react';
 import { IoSearch } from 'react-icons/io5';
 import { useTranslation } from '@/hooks/useTranslation';

@@ -1,4 +1,4 @@
-import { Configuration } from '@zip.js/zip.js';
+import type { Configuration } from '@zip.js/zip.js';
 
 export const configureZip = async (configuration?: Partial<Configuration>) => {
   const { configure } = await import('@zip.js/zip.js');

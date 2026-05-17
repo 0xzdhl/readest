@@ -1,5 +1,3 @@
-'use client';
-
 import { useMemo, useCallback } from 'react';
 import { VirtuosoGrid } from 'react-virtuoso';
 import { IoChevronBack, IoChevronForward, IoFilter } from 'react-icons/io5';

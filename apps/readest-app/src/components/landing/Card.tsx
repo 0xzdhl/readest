@@ -1,5 +1,3 @@
-'use client';
-
 import React from 'react';
 
 // Card primitive shared by /o (annotation deeplink) and /s (share link)

@@ -1,5 +1,5 @@
 import React from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useRouter, useLocation } from '@tanstack/react-router';
 import { MdArrowBack } from 'react-icons/md';
 import { useTranslation } from '@/hooks/useTranslation';
 import { useResponsiveSize } from '@/hooks/useResponsiveSize';
@@ -18,7 +18,8 @@ interface GroupHeaderProps {
 const GroupHeader: React.FC<GroupHeaderProps> = ({ groupBy, groupName }) => {
   const _ = useTranslation();
   const router = useRouter();
-  const searchParams = useSearchParams();
+  const location = useLocation();
+  const searchParams = new URLSearchParams(location.searchStr);
   const iconSize = useResponsiveSize(20);
 
   const handleBack = () => {

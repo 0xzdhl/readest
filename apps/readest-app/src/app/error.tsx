@@ -1,18 +1,51 @@
-'use client';
-
 import posthog from 'posthog-js';
 import { useEffect, useState } from 'react';
+import { ArrowLeft, House, LifeBuoy, RefreshCw, TriangleAlert } from 'lucide-react';
+import { createFileRoute, useRouter } from '@tanstack/react-router';
 import { useEnv } from '@/context/EnvContext';
 import { useTranslation } from '@/hooks/useTranslation';
+import { StatusPage } from '@/components/status/StatusPage';
 import { parseWebViewInfo } from '@/utils/ua';
 import { handleGlobalError } from '@/utils/error';
 
-interface ErrorPageProps {
+// TanStack Router error component props — compatible with createFileRoute errorComponent
+export interface ErrorComponentProps {
   error: Error & { digest?: string };
   reset: () => void;
+  info?: { componentStack: string };
 }
 
-export default function ErrorPage({ error, reset }: ErrorPageProps) {
+export const Route = createFileRoute('/error')({
+  errorComponent: ErrorPageComponent,
+  component: ErrorPageComponent,
+});
+
+function ErrorPageComponent() {
+  // This is a standalone error page. When used as a route, the error state
+  // is managed by the router. Direct navigation shows the generic error UI.
+  return (
+    <ErrorPageUI
+      error={new Error('An unexpected error occurred')}
+      reset={() => window.location.reload()}
+    />
+  );
+}
+
+export function DefaultRouterErrorComponent(props: ErrorComponentProps) {
+  const router = useRouter();
+
+  return (
+    <ErrorPageUI
+      {...props}
+      reset={() => {
+        void router.invalidate();
+        props.reset();
+      }}
+    />
+  );
+}
+
+export function ErrorPageUI({ error, reset, info: _info }: ErrorComponentProps) {
   const _ = useTranslation();
   const { appService } = useEnv();
   const [browserInfo, setBrowserInfo] = useState('');
@@ -39,95 +72,101 @@ export default function ErrorPage({ error, reset }: ErrorPageProps) {
   };
 
   return (
-    <div className='hero bg-base-200 min-h-screen'>
-      <div className='hero-content text-center'>
-        <div className='w-full max-w-2xl p-1'>
-          <div className='mb-8 mt-6'>
-            <div className='text-error animate-pulse text-8xl'>⚠️</div>
-          </div>
-
-          <h1 className='text-base-content mb-4 text-5xl font-bold'>Oops!</h1>
-
-          <p className='text-base-content/70 mb-8 text-lg'>
-            {_(
-              "Something went wrong. Don't worry, our team has been notified and we're working on a fix.",
-            )}
-          </p>
-
-          <div className='alert alert-error mb-8 overflow-hidden'>
-            <div className='w-full min-w-0 flex-col items-start text-left'>
-              <h3 className='mb-2 font-bold'>{_('Error Details:')}</h3>
-              <p className='overflow-wrap-anywhere w-full break-words font-mono text-sm'>
+    <StatusPage
+      badge={<TriangleAlert className='text-error h-7 w-7' strokeWidth={1.8} />}
+      eyebrow={_('Unexpected error')}
+      title={_('This view could not be loaded')}
+      description={_(
+        'Readest hit a runtime error while opening this screen. You can retry now or return to your library.',
+      )}
+      details={
+        <div className='space-y-4'>
+          <div className='space-y-1.5'>
+            <h3 className='text-base-content text-sm font-semibold'>{_('Error details')}</h3>
+            <div className='eink-bordered bg-base-100/70 border-base-200 max-h-36 overflow-y-auto rounded-xl border px-3 py-2.5'>
+              <p className='text-base-content/75 break-words font-mono text-sm leading-6'>
                 {error.message}
               </p>
-              {browserInfo && (
-                <p className='overflow-wrap-anywhere mt-2 w-full break-words font-mono text-sm'>
-                  Browser: {browserInfo}
-                </p>
-              )}
-              {error.stack && (
-                <p className='overflow-wrap-anywhere mt-2 w-full whitespace-pre-wrap break-words font-mono text-sm'>
-                  {error.stack.split('\n').slice(0, 3).join('\n')}
-                </p>
-              )}
-              {error.digest && (
-                <p className='overflow-wrap-anywhere mt-2 w-full break-words text-xs opacity-70'>
-                  Error ID: {error.digest}
-                </p>
-              )}
             </div>
           </div>
 
-          <div className='flex flex-col gap-4'>
-            <button onClick={reset} className='btn btn-primary btn-lg'>
-              <svg className='mr-2 h-5 w-5' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
-                <path
-                  strokeLinecap='round'
-                  strokeLinejoin='round'
-                  strokeWidth={2}
-                  d='M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15'
-                />
-              </svg>
-              {_('Try Again')}
-            </button>
+          {browserInfo || error.stack || error.digest ? (
+            <div className='border-base-300/80 grid gap-3 border-t pt-4 text-sm'>
+              {browserInfo ? (
+                <div className='grid gap-1 sm:grid-cols-[7rem_minmax(0,1fr)] sm:gap-3'>
+                  <span className='text-base-content/55 font-medium'>{_('Browser')}</span>
+                  <span className='text-base-content/75 min-w-0 break-words font-mono'>
+                    {browserInfo}
+                  </span>
+                </div>
+              ) : null}
 
-            <div className='flex gap-3'>
-              <button onClick={handleGoBack} className='btn btn-outline flex-1'>
-                <svg className='mr-2 h-4 w-4' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
-                  <path
-                    strokeLinecap='round'
-                    strokeLinejoin='round'
-                    strokeWidth={2}
-                    d='M10 19l-7-7m0 0l7-7m-7 7h18'
-                  />
-                </svg>
-                {_('Go Back')}
-              </button>
+              {error.digest ? (
+                <div className='grid gap-1 sm:grid-cols-[7rem_minmax(0,1fr)] sm:gap-3'>
+                  <span className='text-base-content/55 font-medium'>{_('Error ID')}</span>
+                  <span className='text-base-content/75 min-w-0 break-words font-mono'>
+                    {error.digest}
+                  </span>
+                </div>
+              ) : null}
 
-              <button onClick={handleGoHome} className='btn btn-outline flex-1'>
-                <svg className='mr-2 h-4 w-4' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
-                  <path
-                    strokeLinecap='round'
-                    strokeLinejoin='round'
-                    strokeWidth={2}
-                    d='M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6'
-                  />
-                </svg>
-                {_('Your Library')}
-              </button>
+              {error.stack ? (
+                <div className='grid gap-1 sm:grid-cols-[7rem_minmax(0,1fr)] sm:gap-3'>
+                  <span className='text-base-content/55 font-medium'>{_('Trace')}</span>
+                  <div className='eink-bordered bg-base-100/70 border-base-200 min-w-0 rounded-xl border'>
+                    <pre className='text-base-content/65 max-h-56 overflow-auto whitespace-pre-wrap break-words px-3 py-2.5 font-mono text-xs leading-6'>
+                      {error.stack}
+                    </pre>
+                  </div>
+                </div>
+              ) : null}
             </div>
-          </div>
-
-          <div className='border-base-300 mt-8 border-t pt-6'>
-            <p className='text-base-content/60 text-sm'>
-              {_('Need help?')}{' '}
-              <a href='mailto:support@readest.com' className='link link-primary'>
-                {_('Contact Support')}
-              </a>
-            </p>
-          </div>
+          ) : null}
         </div>
-      </div>
-    </div>
+      }
+      actions={
+        <>
+          <button onClick={reset} className='btn btn-primary gap-2'>
+            <RefreshCw className='h-4 w-4' strokeWidth={1.8} />
+            {_('Try Again')}
+          </button>
+
+          <button onClick={handleGoBack} className='btn btn-ghost eink-bordered gap-2'>
+            <ArrowLeft className='h-4 w-4' strokeWidth={1.8} />
+            {_('Go Back')}
+          </button>
+
+          <button onClick={handleGoHome} className='btn btn-ghost eink-bordered gap-2'>
+            <House className='h-4 w-4' strokeWidth={1.8} />
+            {_('Your Library')}
+          </button>
+        </>
+      }
+      asideTitle={_('What you can do')}
+      asideBody={_(
+        'Start with a retry. If the issue keeps happening, return to the library and reopen the book or contact support.',
+      )}
+      asideItems={[
+        _('Retry this screen to rerun the failed route loader or component render.'),
+        _(
+          'Go back if you were navigating from another page and want to keep your current session.',
+        ),
+        _('Return to your library to reopen the book from a stable entry point.'),
+      ]}
+      footer={
+        <div className='flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between'>
+          <p className='text-base-content/60 text-sm leading-6'>
+            {_('Need help with a persistent crash? Include the error details when reporting it.')}
+          </p>
+          <a
+            href='mailto:support@readest.com'
+            className='btn btn-ghost eink-bordered gap-2 self-start'
+          >
+            <LifeBuoy className='h-4 w-4' strokeWidth={1.8} />
+            {_('Contact Support')}
+          </a>
+        </div>
+      }
+    />
   );
 }

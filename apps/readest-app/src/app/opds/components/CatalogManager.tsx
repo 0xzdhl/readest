@@ -1,5 +1,3 @@
-'use client';
-
 import clsx from 'clsx';
 import dayjs from 'dayjs';
 import { useCallback, useEffect, useRef, useState } from 'react';
@@ -15,7 +13,7 @@ import { MdChevronRight } from 'react-icons/md';
 import Dropdown from '@/components/Dropdown';
 import Menu from '@/components/Menu';
 import MenuItem from '@/components/MenuItem';
-import { useRouter } from 'next/navigation';
+import { useRouter } from '@tanstack/react-router';
 import { useEnv } from '@/context/EnvContext';
 import { useTranslation } from '@/hooks/useTranslation';
 import { isWebAppPlatform } from '@/services/environment';
@@ -379,7 +377,7 @@ export function CatalogManager({ inSubPage = false }: CatalogManagerProps = {}) 
     if (inSubPage) {
       params.set('from', 'settings-integrations');
     }
-    router.push(`/opds?${params.toString()}`);
+    router.navigate({ to: `/opds?${params.toString()}` });
   };
 
   const handleCloseDialog = () => {

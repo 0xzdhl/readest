@@ -6,16 +6,34 @@ import { openUrl } from '@tauri-apps/plugin-opener';
 import { getAccessToken } from '@/utils/access';
 import { StripeProductMetadata } from '@/types/payment';
 import { AvailablePlan, PlanType } from '@/types/quota';
+import { readPublicEnv } from '@/utils/publicEnv';
 
 let stripePromise: Promise<StripeClient | null>;
+
+const tryDecodeBase64 = (value: string | undefined) => {
+  if (!value) return undefined;
+  try {
+    return atob(value);
+  } catch {
+    return undefined;
+  }
+};
 
 export const getStripe = () => {
   if (!stripePromise) {
     const publishableKey =
       process.env.NODE_ENV === 'production'
-        ? process.env['NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY_BASE64']
-        : process.env['NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY_DEV_BASE64'];
-    stripePromise = loadStripe(atob(publishableKey!));
+        ? tryDecodeBase64(readPublicEnv('VITE_STRIPE_PUBLISHABLE_KEY_BASE64'))
+        : tryDecodeBase64(readPublicEnv('VITE_STRIPE_PUBLISHABLE_KEY_DEV_BASE64'));
+
+    if (!publishableKey) {
+      console.warn(
+        'Stripe publishable key is missing. Set VITE_STRIPE_PUBLISHABLE_KEY_BASE64 or VITE_STRIPE_PUBLISHABLE_KEY_DEV_BASE64 to enable checkout.',
+      );
+      stripePromise = Promise.resolve(null);
+    } else {
+      stripePromise = loadStripe(publishableKey);
+    }
   }
   return stripePromise;
 };

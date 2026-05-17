@@ -11,8 +11,6 @@
 .test-sandbox-node/
 .vitest-attachments/
 
-# next.js
-/.next/
 /out/
 
 # production
@@ -42,14 +40,10 @@ tauri.*.conf.json
 # vercel
 .vercel
 
-# open-next
-.open-next
 .wrangler
 
 # typescript
 *.tsbuildinfo
-next-env.d.ts
-
 # eslint
 .eslintcache
 

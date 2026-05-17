@@ -1,5 +1,3 @@
-'use client';
-
 import clsx from 'clsx';
 import React, { useEffect, useRef, useCallback, useMemo, useState } from 'react';
 import { FiSearch } from 'react-icons/fi';

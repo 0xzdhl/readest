@@ -1,8 +1,5 @@
-'use client';
-
 import { useEffect, useState } from 'react';
-import Image from 'next/image';
-import { usePathname, useRouter, useSearchParams } from 'next/navigation';
+import { useRouter, useLocation } from '@tanstack/react-router';
 import {
   IoAlertCircleOutline,
   IoBookOutline,
@@ -33,17 +30,15 @@ const formatExpiry = (iso: string, _: TranslationFunc): string => {
 const ShareLanding = () => {
   const _ = useTranslation();
   const router = useRouter();
-  const searchParams = useSearchParams();
-  const pathname = usePathname();
+  const { pathname, searchStr } = useLocation();
+  const searchParams = new URLSearchParams(searchStr);
   const { user } = useAuth();
   const { appService } = useEnv();
 
-  // Resolve the token from either the rewritten query (?token=) or the pretty
-  // path (/s/{token}). The next.config.mjs rewrite handles the web build; the
-  // pathname fallback handles Tauri (output: 'export', no rewrites), dev
-  // sessions where the rewrite isn't picked up without a server restart, and
-  // any deploy where the rewrite gets misconfigured. Mirrors src/app/o/page.tsx.
-  let token = searchParams?.get('token') ?? '';
+  // Resolve the token from either the query fallback (?token=) or the pretty
+  // path (/s/{token}). The pathname fallback still matters for static Tauri
+  // builds and for direct visits before the router has hydrated.
+  let token = searchParams.get('token') ?? '';
   if (!token && pathname) {
     const segments = pathname.split('/').filter(Boolean);
     if (segments[0] === 's' && segments[1]) {
@@ -102,10 +97,9 @@ const ShareLanding = () => {
         meta: meta ?? undefined,
         onProgress: setImportProgress,
       });
-      // navigateToReader routes web to /reader/{hash} (Pages Router page that
-      // actually renders) and Tauri to /reader?ids={hash}. Building the URL
-      // by hand here lands on the App Router /reader page instead, which is
-      // a stub for this flow and renders blank.
+      // Reader URLs are canonicalized through TanStack Router as
+      // /reader/{hash}?cfi=..., so navigation stays aligned with the actual
+      // dynamic route instead of relying on a legacy query-only entrypoint.
       const queryParams = result.cfi ? `cfi=${encodeURIComponent(result.cfi)}` : undefined;
       navigateToReader(router, [result.bookHash], queryParams);
     } catch (err) {
@@ -190,12 +184,12 @@ const ShareLanding = () => {
             the card still fits on common viewports without scroll, but
             gives the page identity at a glance. */}
         <div className='flex flex-col items-center gap-2 px-5 pb-2 pt-5 sm:px-7 sm:pb-3 sm:pt-7'>
-          <Image
+          <img
             src='/icon.png'
             alt={_('Readest logo')}
             width={40}
             height={40}
-            priority
+            loading='lazy'
             className='rounded-lg'
           />
           <span className='text-base-content text-base font-semibold'>{_('Shared with you')}</span>
@@ -208,8 +202,7 @@ const ShareLanding = () => {
           <div className='aspect-[2/3] w-32 shrink-0 overflow-hidden rounded-lg shadow-lg sm:w-40 sm:self-center'>
             {coverSrc ? (
               // Plain <img>: source is a presigned URL that varies per
-              // request, so next/image's loader gives no win.
-              // eslint-disable-next-line @next/next/no-img-element
+              // request, so a static image loader gives no benefit.
               <img src={coverSrc} alt='' className='h-full w-full object-cover' loading='eager' />
             ) : (
               <div className='bg-base-200 flex h-full w-full items-center justify-center'>
@@ -236,7 +229,7 @@ const ShareLanding = () => {
                 page for now (rights / abuse risk). Recipients open the share
                 inside the app — logged-in via "Add to my library", anonymous
                 via the readest:// deep link with a "Get Readest" footnote
-                fallback. The /api/share/[token]/download route still exists
+                fallback. The /api/share/$token/download route still exists
                 so we can re-enable the button without a server change. */}
             <div className='mt-4 flex w-full flex-col gap-2 sm:mt-5'>
               {user ? (

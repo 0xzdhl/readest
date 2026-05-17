@@ -1,5 +1,3 @@
-'use client';
-
 import dayjs from 'dayjs';
 import { useEffect, useState } from 'react';
 import { IoClose, IoRefresh } from 'react-icons/io5';

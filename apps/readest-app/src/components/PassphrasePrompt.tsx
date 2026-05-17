@@ -1,5 +1,3 @@
-'use client';
-
 import { useEffect, useRef, useState } from 'react';
 import ModalPortal from '@/components/ModalPortal';
 import { useTranslation } from '@/hooks/useTranslation';

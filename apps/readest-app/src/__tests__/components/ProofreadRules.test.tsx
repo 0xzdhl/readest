@@ -15,17 +15,11 @@ import { useBookDataStore } from '@/store/bookDataStore';
 import { ProofreadRule } from '@/types/book';
 
 // ------------------------------
-// NEXT.JS ROUTER MOCK
+// TANSTACK ROUTER MOCK
 // ------------------------------
-vi.mock('next/navigation', () => ({
+vi.mock('@tanstack/react-router', () => ({
   useRouter: () => ({
-    push: vi.fn(),
-    replace: vi.fn(),
-    prefetch: vi.fn(),
-  }),
-  useSearchParams: () => ({
-    get: () => null,
-    toString: () => '',
+    navigate: vi.fn(),
   }),
 }));
 

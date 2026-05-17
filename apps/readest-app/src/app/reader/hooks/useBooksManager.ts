@@ -1,15 +1,15 @@
 import { useEffect, useState } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useRouter } from '@tanstack/react-router';
 import { useEnv } from '@/context/EnvContext';
 import { useReaderStore } from '@/store/readerStore';
 import { useSidebarStore } from '@/store/sidebarStore';
 import { uniqueId } from '@/utils/misc';
 import { useParallelViewStore } from '@/store/parallelViewStore';
 import { navigateToReader } from '@/utils/nav';
+import { buildReaderQueryParams } from '../readerSearch';
 
-const useBooksManager = () => {
+const useBooksManager = (cfi = '') => {
   const router = useRouter();
-  const searchParams = useSearchParams();
   const { envConfig } = useEnv();
   const { bookKeys } = useReaderStore();
   const { setBookKeys, initViewState } = useReaderStore();
@@ -21,7 +21,8 @@ const useBooksManager = () => {
     if (shouldUpdateSearchParams) {
       const ids = bookKeys.map((key) => key.split('-')[0]!);
       if (ids.length > 0) {
-        navigateToReader(router, ids, searchParams?.toString() || '', { scroll: false });
+        const queryParams = buildReaderQueryParams({ cfi });
+        navigateToReader(router, ids, queryParams || undefined, { scroll: false });
       }
       setShouldUpdateSearchParams(false);
     }

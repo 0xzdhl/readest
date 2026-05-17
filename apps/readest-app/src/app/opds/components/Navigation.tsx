@@ -1,8 +1,6 @@
-'use client';
-
 import clsx from 'clsx';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useRouter, useLocation } from '@tanstack/react-router';
 import { FaSearch } from 'react-icons/fa';
 import { IoMdCloseCircle } from 'react-icons/io';
 import { IoChevronBack, IoChevronForward, IoHome } from 'react-icons/io5';
@@ -37,7 +35,8 @@ export function Navigation({
 }: NavigationProps) {
   const _ = useTranslation();
   const router = useRouter();
-  const searchParams = useSearchParams();
+  const location = useLocation();
+  const searchParams = new URLSearchParams(location.searchStr);
   const { appService } = useEnv();
   const { settings } = useSettingsStore();
   const viewSettings = settings.globalViewSettings;
@@ -57,7 +56,7 @@ export function Navigation({
   }, [hasSearch]);
 
   const handleGoLibrary = useCallback(() => {
-    closeOPDSBrowser(router, searchParams);
+    closeOPDSBrowser(router, searchParams.get('from') ? { from: searchParams.get('from')! } : null);
   }, [router, searchParams]);
 
   // eslint-disable-next-line react-hooks/exhaustive-deps

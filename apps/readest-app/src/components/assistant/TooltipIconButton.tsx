@@ -1,5 +1,3 @@
-'use client';
-
 import { forwardRef, type ComponentPropsWithRef } from 'react';
 import { Slottable } from '@radix-ui/react-slot';
 import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from '@/components/ui/tooltip';

@@ -25,12 +25,20 @@ import ReadingRuler from './ReadingRuler';
 import DoubleBorder from './DoubleBorder';
 
 interface BooksGridProps {
+  ids: string;
+  cfi?: string;
   bookKeys: string[];
   onCloseBook: (bookKey: string) => void;
   onGoToLibrary: () => void;
 }
 
-const BooksGrid: React.FC<BooksGridProps> = ({ bookKeys, onCloseBook, onGoToLibrary }) => {
+const BooksGrid: React.FC<BooksGridProps> = ({
+  ids,
+  cfi,
+  bookKeys,
+  onCloseBook,
+  onGoToLibrary,
+}) => {
   const _ = useTranslation();
   const { appService } = useEnv();
   const { getConfig, getBookData } = useBookDataStore();
@@ -131,6 +139,8 @@ const BooksGrid: React.FC<BooksGridProps> = ({ bookKeys, onCloseBook, onGoToLibr
             <FoliateViewer
               key={viewerKey}
               bookKey={bookKey}
+              readerIds={ids}
+              cfi={cfi}
               bookDoc={bookDoc}
               config={config}
               gridInsets={gridInsets}

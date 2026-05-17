@@ -1,5 +1,3 @@
-'use client';
-
 import React, { useCallback, useEffect, useState } from 'react';
 import {
   IoBookOutline,
@@ -55,7 +53,6 @@ const ShareCover: React.FC<{ token: string; alt: string }> = ({ token, alt }) =>
     );
   }
   return (
-    // eslint-disable-next-line @next/next/no-img-element
     <img
       src={`/api/share/${encodeURIComponent(token)}/cover`}
       alt={alt}

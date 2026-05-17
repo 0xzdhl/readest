@@ -1,5 +1,3 @@
-'use client';
-
 import { useEffect, useRef, type FC } from 'react';
 import {
   ActionBarPrimitive,

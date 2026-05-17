@@ -1,6 +1,6 @@
 import clsx from 'clsx';
 import * as React from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useRouter, useLocation } from '@tanstack/react-router';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { PiPlus } from 'react-icons/pi';
 import { useOverlayScrollbars } from 'overlayscrollbars-react';
@@ -146,7 +146,8 @@ const Bookshelf: React.FC<BookshelfProps> = ({
 }) => {
   const _ = useTranslation();
   const router = useRouter();
-  const searchParams = useSearchParams();
+  const location = useLocation();
+  const searchParams = new URLSearchParams(location.searchStr);
   const { envConfig, appService } = useEnv();
   const { settings } = useSettingsStore();
   const { safeAreaInsets } = useThemeStore();

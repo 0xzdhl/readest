@@ -16,7 +16,7 @@ features get touched.
 ### 1. Identity & lineage
 
 Readest's visual language descends from **Adwaita / libadwaita** — GNOME's design system —
-adapted for a cross-platform Tauri + Next.js app that also runs on iOS, Android, web, and
+adapted for a cross-platform Tauri + TanStack Start app that also runs on iOS, Android, web, and
 e-ink readers.
 
 What we take from Adwaita:

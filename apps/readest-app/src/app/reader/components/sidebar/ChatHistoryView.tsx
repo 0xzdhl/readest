@@ -1,5 +1,3 @@
-'use client';
-
 import clsx from 'clsx';
 import dayjs from 'dayjs';
 import React, { useEffect, useState, useCallback } from 'react';

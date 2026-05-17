@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { createFileRoute } from '@tanstack/react-router';
 import { EdgeSpeechTTS, EdgeTTSPayload } from '@/libs/edgeTTS';
 import { validateUserAndToken } from '@/utils/access';
 
@@ -11,121 +11,137 @@ const isValidVoice = (voiceId: string): boolean => {
   return EdgeSpeechTTS.voices.some((v) => v.id === voiceId);
 };
 
-export async function POST(request: NextRequest) {
-  const { user, token } = await validateUserAndToken(request.headers.get('authorization'));
-  if (!user || !token) {
-    return NextResponse.json({ error: 'Not authenticated' }, { status: 403 });
-  }
+export const Route = createFileRoute('/api/tts/edge')({
+  server: {
+    handlers: {
+      POST: async ({ request }) => {
+        const { user, token } = await validateUserAndToken(request.headers.get('authorization'));
+        if (!user || !token) {
+          return Response.json({ error: 'Not authenticated' }, { status: 403 });
+        }
 
-  try {
-    const body = await request.json();
-    const { input: text, voice, speed = 1.0 } = body;
-    let { rate, lang } = body;
+        try {
+          const body = await request.json();
+          const { input: text, voice, speed = 1.0 } = body;
+          let { rate, lang } = body;
 
-    if (!text || typeof text !== 'string') {
-      return NextResponse.json(
-        { error: { message: 'Missing or invalid "input" field', type: 'invalid_request_error' } },
-        { status: 400 },
-      );
-    }
+          if (!text || typeof text !== 'string') {
+            return Response.json(
+              {
+                error: {
+                  message: 'Missing or invalid "input" field',
+                  type: 'invalid_request_error',
+                },
+              },
+              { status: 400 },
+            );
+          }
 
-    if (!voice || typeof voice !== 'string') {
-      return NextResponse.json(
-        { error: { message: 'Missing or invalid "voice" field', type: 'invalid_request_error' } },
-        { status: 400 },
-      );
-    }
+          if (!voice || typeof voice !== 'string') {
+            return Response.json(
+              {
+                error: {
+                  message: 'Missing or invalid "voice" field',
+                  type: 'invalid_request_error',
+                },
+              },
+              { status: 400 },
+            );
+          }
 
-    if (!isValidVoice(voice)) {
-      return NextResponse.json(
-        {
-          error: {
-            message: `Invalid voice "${voice}". Use GET /api/tts/edge to list available voices.`,
-            type: 'invalid_request_error',
-          },
-        },
-        { status: 400 },
-      );
-    }
+          if (!isValidVoice(voice)) {
+            return Response.json(
+              {
+                error: {
+                  message: `Invalid voice "${voice}". Use GET /api/tts/edge to list available voices.`,
+                  type: 'invalid_request_error',
+                },
+              },
+              { status: 400 },
+            );
+          }
 
-    lang = lang || getLangFromVoice(voice);
+          lang = lang || getLangFromVoice(voice);
 
-    // Calculate rate (OpenAI speed ranges from 0.25 to 4.0, Edge TTS rate is 0.5 to 2.0)
-    const clampedSpeed = Math.max(0.25, Math.min(4.0, speed));
-    let mappedSpeed: number;
-    if (clampedSpeed <= 1.0) {
-      mappedSpeed = 0.5 + ((clampedSpeed - 0.25) / (1.0 - 0.25)) * (1.0 - 0.5);
-    } else {
-      mappedSpeed = 1.0 + ((clampedSpeed - 1.0) / (4.0 - 1.0)) * (2.0 - 1.0);
-    }
-    rate = rate || mappedSpeed;
+          // Calculate rate (OpenAI speed ranges from 0.25 to 4.0, Edge TTS rate is 0.5 to 2.0)
+          const clampedSpeed = Math.max(0.25, Math.min(4.0, speed));
+          let mappedSpeed: number;
+          if (clampedSpeed <= 1.0) {
+            mappedSpeed = 0.5 + ((clampedSpeed - 0.25) / (1.0 - 0.25)) * (1.0 - 0.5);
+          } else {
+            mappedSpeed = 1.0 + ((clampedSpeed - 1.0) / (4.0 - 1.0)) * (2.0 - 1.0);
+          }
+          rate = rate || mappedSpeed;
 
-    const payload: EdgeTTSPayload = {
-      lang,
-      text,
-      voice,
-      rate,
-      pitch: 1.0,
-    };
+          const payload: EdgeTTSPayload = {
+            lang,
+            text,
+            voice,
+            rate,
+            pitch: 1.0,
+          };
 
-    const tts = new EdgeSpeechTTS();
-    const response = await tts.create(payload);
-    const arrayBuffer = await response.arrayBuffer();
+          const tts = new EdgeSpeechTTS();
+          const response = await tts.create(payload);
+          const arrayBuffer = await response.arrayBuffer();
 
-    return new NextResponse(arrayBuffer, {
-      status: 200,
-      headers: {
-        'Content-Type': 'audio/mpeg',
-        'Content-Length': arrayBuffer.byteLength.toString(),
+          return new Response(arrayBuffer, {
+            status: 200,
+            headers: {
+              'Content-Type': 'audio/mpeg',
+              'Content-Length': arrayBuffer.byteLength.toString(),
+            },
+          });
+        } catch (error) {
+          console.error('Edge TTS API error:', error);
+          return Response.json(
+            {
+              error: {
+                message: error instanceof Error ? error.message : 'Internal server error',
+                type: 'internal_error',
+              },
+            },
+            { status: 500 },
+          );
+        }
       },
-    });
-  } catch (error) {
-    console.error('Edge TTS API error:', error);
-    return NextResponse.json(
-      {
-        error: {
-          message: error instanceof Error ? error.message : 'Internal server error',
-          type: 'internal_error',
-        },
+
+      GET: async ({ request }) => {
+        const { user, token } = await validateUserAndToken(request.headers.get('authorization'));
+        if (!user || !token) {
+          return Response.json({ error: 'Not authenticated' }, { status: 403 });
+        }
+
+        try {
+          const url = new URL(request.url);
+          const lang = url.searchParams.get('lang') || '';
+          let voices = EdgeSpeechTTS.voices;
+          if (lang) {
+            voices = voices.filter((v) => v.lang.toLowerCase().includes(lang.toLowerCase()));
+          }
+
+          const formattedVoices = voices.map((voice) => ({
+            id: voice.id,
+            name: voice.name,
+            language: voice.lang,
+          }));
+
+          return Response.json({
+            voices: formattedVoices,
+          });
+        } catch (error) {
+          console.error('Error listing voices:', error);
+          return Response.json(
+            {
+              error: {
+                message: 'Failed to list voices',
+                type: 'internal_error',
+              },
+            },
+            { status: 500 },
+          );
+        }
       },
-      { status: 500 },
-    );
-  }
-}
-
-export async function GET(request: NextRequest) {
-  const { user, token } = await validateUserAndToken(request.headers.get('authorization'));
-  if (!user || !token) {
-    return NextResponse.json({ error: 'Not authenticated' }, { status: 403 });
-  }
-
-  try {
-    const query = request.nextUrl.searchParams;
-    const lang = query.get('lang') || '';
-    let voices = EdgeSpeechTTS.voices;
-    if (lang) {
-      voices = voices.filter((v) => v.lang.toLowerCase().includes(lang.toLowerCase()));
-    }
-
-    const formattedVoices = voices.map((voice) => ({
-      id: voice.id,
-      name: voice.name,
-      language: voice.lang,
-    }));
-
-    return NextResponse.json({
-      voices: formattedVoices,
-    });
-  } catch (error) {
-    console.error('Error listing voices:', error);
-    return NextResponse.json(
-      {
-        error: {
-          message: 'Failed to list voices',
-          type: 'internal_error',
-        },
-      },
-      { status: 500 },
-    );
-  }
-}
+    },
+  },
+});

@@ -1,5 +1,5 @@
-import { SystemSettings } from '@/types/settings';
-import {
+import type { SystemSettings } from '@/types/settings';
+import type {
   AppPlatform,
   AppService,
   BaseDir,
@@ -11,22 +11,22 @@ import {
   ResolvedPath,
   SelectDirectoryMode,
 } from '@/types/system';
-import { DatabaseOpts, DatabaseService } from '@/types/database';
-import { SchemaType } from '@/services/database/migrate';
-import { Book, BookConfig, BookContent, ImportBookOptions, ViewSettings } from '@/types/book';
+import type { DatabaseOpts, DatabaseService } from '@/types/database';
+import type { SchemaType } from '@/services/database/migrate';
+import type { Book, BookConfig, BookContent, ImportBookOptions, ViewSettings } from '@/types/book';
 import type { BookNav } from '@/services/nav';
 import { getLibraryFilename, getLibraryBackupFilename } from '@/utils/book';
 
 import { getOSPlatform } from '@/utils/misc';
-import { ProgressHandler } from '@/utils/transfer';
-import { CustomTextureInfo } from '@/styles/textures';
-import { CustomFont, CustomFontInfo } from '@/styles/fonts';
+import type { ProgressHandler } from '@/utils/transfer';
+import type { CustomTextureInfo } from '@/styles/textures';
+import type { CustomFont, CustomFontInfo } from '@/styles/fonts';
 import type { ImportedDictionary } from './dictionaries/types';
+import type { ImportDictionariesResult } from './dictionaries/dictionaryService';
 import type { SelectedFile } from '@/hooks/useFileSelector';
 
 import * as BookSvc from './bookService';
 import * as CloudSvc from './cloudService';
-import * as DictSvc from './dictionaries/dictionaryService';
 import * as FontSvc from './fontService';
 import * as ImageSvc from './imageService';
 import * as LibrarySvc from './libraryService';
@@ -244,12 +244,14 @@ export abstract class BaseAppService implements AppService {
   async importDictionaries(
     files: SelectedFile[],
     existingDictionaries: ImportedDictionary[] = [],
-  ): Promise<DictSvc.ImportDictionariesResult> {
-    return DictSvc.importDictionaries(this.fs, files, existingDictionaries);
+  ): Promise<ImportDictionariesResult> {
+    const dictionaryService = await import('./dictionaries/dictionaryService');
+    return dictionaryService.importDictionaries(this.fs, files, existingDictionaries);
   }
 
   async deleteDictionary(dict: ImportedDictionary): Promise<void> {
-    return DictSvc.deleteDictionary(this.fs, dict);
+    const dictionaryService = await import('./dictionaries/dictionaryService');
+    return dictionaryService.deleteDictionary(this.fs, dict);
   }
 
   async importBook(

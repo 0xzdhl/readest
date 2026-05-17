@@ -1,5 +1,3 @@
-'use client';
-
 import clsx from 'clsx';
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useEnv } from '@/context/EnvContext';

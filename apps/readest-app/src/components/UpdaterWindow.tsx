@@ -1,6 +1,5 @@
 import clsx from 'clsx';
 import semver from 'semver';
-import Image from 'next/image';
 import { useEnv } from '@/context/EnvContext';
 import { useEffect, useState } from 'react';
 import { type as osType, arch as osArch } from '@tauri-apps/plugin-os';
@@ -13,7 +12,6 @@ import { desktopDir } from '@tauri-apps/api/path';
 import { isTauriAppPlatform } from '@/services/environment';
 import { useTranslator } from '@/hooks/useTranslator';
 import { useTranslation } from '@/hooks/useTranslation';
-import { useSearchParams } from 'next/navigation';
 import { getAppVersion } from '@/utils/version';
 import { tauriDownload } from '@/utils/transfer';
 import { installPackage } from '@/utils/bridge';
@@ -82,13 +80,16 @@ export const UpdaterContent = ({
     targetLang,
   });
   const { appService } = useEnv();
-  const searchParams = useSearchParams();
+  const searchParams =
+    typeof window === 'undefined'
+      ? new URLSearchParams()
+      : new URLSearchParams(window.location.search);
   const currentVersion = getAppVersion();
   const [newVersion, setNewVersion] = useState(
-    latestVersion ?? searchParams?.get('latestVersion') ?? '',
+    latestVersion ?? searchParams.get('latestVersion') ?? '',
   );
   const [oldVersion, setOldVersion] = useState(
-    lastVersion ?? searchParams?.get('lastVersion') ?? '',
+    lastVersion ?? searchParams.get('lastVersion') ?? '',
   );
   const [update, setUpdate] = useState<GenericUpdate | Update | null>(null);
   const [changelogs, setChangelogs] = useState<Changelog[]>([]);
@@ -428,7 +429,14 @@ export const UpdaterContent = ({
       <div className='flex w-full max-w-2xl flex-col gap-4'>
         <div className='flex flex-col justify-center gap-4 sm:flex-row sm:items-start'>
           <div className='flex items-center justify-center'>
-            <Image src='/icon.png' alt='Logo' className='h-20 w-20' width={64} height={64} />
+            <img
+              src='/icon.png'
+              alt='Logo'
+              className='h-20 w-20'
+              width={64}
+              height={64}
+              loading='lazy'
+            />
           </div>
 
           {checkUpdate ? (

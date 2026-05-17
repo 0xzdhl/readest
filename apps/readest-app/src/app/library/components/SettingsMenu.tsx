@@ -1,6 +1,6 @@
 import clsx from 'clsx';
 import React, { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter } from '@tanstack/react-router';
 import { PiUserCircle, PiUserCircleCheck, PiGear } from 'react-icons/pi';
 import { PiSun, PiMoon } from 'react-icons/pi';
 import { TbSunMoon } from 'react-icons/tb';
@@ -9,7 +9,7 @@ import { MdCloudSync, MdSync, MdSyncProblem } from 'react-icons/md';
 import { invoke, PermissionState } from '@tauri-apps/api/core';
 import { isTauriAppPlatform, isWebAppPlatform } from '@/services/environment';
 import { DOWNLOAD_READEST_URL } from '@/services/constants';
-import { setBackupDialogVisible } from '@/app/library/components/BackupWindow';
+import { setBackupDialogVisible } from '@/app/library/components/backupDialog';
 import { useAuth } from '@/context/AuthContext';
 import { useEnv } from '@/context/EnvContext';
 import { useThemeStore } from '@/store/themeStore';
@@ -105,7 +105,7 @@ const SettingsMenu: React.FC<SettingsMenuProps> = ({ onPullLibrary, setIsDropdow
   };
 
   const handleManageSync = () => {
-    router.push('/user?section=sync');
+    router.navigate({ to: '/user', search: { section: 'sync' } });
     setIsDropdownOpen?.(false);
   };
 

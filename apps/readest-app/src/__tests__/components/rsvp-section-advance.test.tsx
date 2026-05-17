@@ -1,5 +1,3 @@
-'use client';
-
 import { render, act, cleanup } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
 

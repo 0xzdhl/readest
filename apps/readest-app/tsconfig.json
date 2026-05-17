@@ -16,11 +16,6 @@
     "verbatimModuleSyntax": true,
     "jsx": "react-jsx",
     "incremental": true,
-    "plugins": [
-      {
-        "name": "next"
-      }
-    ],
     "types": ["vite/client", "./cloudflare-env.d.ts"],
     "paths": {
       "@/*": ["./src/*"],
@@ -32,13 +27,6 @@
       "tauri-plugin-turso": ["./src-tauri/plugins/tauri-plugin-turso/guest-js"]
     }
   },
-  "include": [
-    "next-env.d.ts",
-    "src/**/*.ts",
-    "src/**/*.tsx",
-    "raw-loader.d.ts",
-    ".next/types/**/*.ts",
-    "scripts/**/*.ts"
-  ],
+  "include": ["src/**/*.ts", "src/**/*.tsx", "raw-loader.d.ts", "scripts/**/*.ts"],
   "exclude": ["node_modules", "out"]
 }

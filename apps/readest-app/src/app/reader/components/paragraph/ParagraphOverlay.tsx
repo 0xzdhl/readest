@@ -1,5 +1,3 @@
-'use client';
-
 import clsx from 'clsx';
 import React, { useEffect, useState, useCallback, useRef, useMemo } from 'react';
 import { ViewSettings } from '@/types/book';

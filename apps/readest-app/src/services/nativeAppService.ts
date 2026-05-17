@@ -40,6 +40,7 @@ import { getDirPath, getFilename } from '@/utils/path';
 import { NativeFile, RemoteFile } from '@/utils/file';
 import { copyURIToPath, getStorefrontRegionCode } from '@/utils/bridge';
 import { copyFiles } from '@/utils/files';
+import { readPublicEnv, readPublicFlag } from '@/utils/publicEnv';
 
 import { BaseAppService } from './appService';
 import { DatabaseOpts, DatabaseService } from '@/types/database';
@@ -417,7 +418,7 @@ export const nativeFileSystem: FileSystem = {
   },
 };
 
-const DIST_CHANNEL = (process.env['NEXT_PUBLIC_DIST_CHANNEL'] || 'readest') as DistChannel;
+const DIST_CHANNEL = (readPublicEnv('VITE_DIST_CHANNEL') || 'readest') as DistChannel;
 
 export class NativeAppService extends BaseAppService {
   fs = nativeFileSystem;
@@ -441,7 +442,7 @@ export class NativeAppService extends BaseAppService {
   override hasHaptics = OS_TYPE === 'ios' || OS_TYPE === 'android';
   override hasUpdater =
     OS_TYPE !== 'ios' &&
-    !process.env['NEXT_PUBLIC_DISABLE_UPDATER'] &&
+    !readPublicFlag('VITE_DISABLE_UPDATER') &&
     !window.__READEST_UPDATER_DISABLED;
   // orientation lock is not supported on iPad
   override hasOrientationLock =
@@ -472,7 +473,7 @@ export class NativeAppService extends BaseAppService {
     const execDir = await invoke<string>('get_executable_dir');
     this.execDir = execDir;
     if (
-      process.env['NEXT_PUBLIC_PORTABLE_APP'] ||
+      readPublicFlag('VITE_PORTABLE_APP') ||
       (await this.fs.exists(`${execDir}/${SETTINGS_FILENAME}`, 'None'))
     ) {
       this.isPortableApp = true;

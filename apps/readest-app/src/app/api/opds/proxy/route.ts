@@ -1,8 +1,8 @@
 import { READEST_OPDS_USER_AGENT } from '@/services/constants';
-import { NextRequest, NextResponse } from 'next/server';
+import { createFileRoute } from '@tanstack/react-router';
 import { deserializeOPDSCustomHeaders } from '@/app/opds/utils/customHeaders';
 
-async function handleRequest(request: NextRequest, method: 'GET' | 'HEAD') {
+async function handleRequest(request: Request, method: 'GET' | 'HEAD') {
   // Cloudflare Workers incorrectly decodes %26 to & in the url parameter value,
   // causing query parameters within the proxied URL (like &start_index=26) to be
   // treated as separate top-level parameters instead of part of the url value.
@@ -19,12 +19,13 @@ async function handleRequest(request: NextRequest, method: 'GET' | 'HEAD') {
   );
   const encodedUrl = fullUrl.substring(urlParamStart, urlParamEnd);
   const url = decodeURIComponent(encodedUrl);
-  const auth = request.nextUrl.searchParams.get('auth');
-  const stream = request.nextUrl.searchParams.get('stream');
-  const customHeaders = deserializeOPDSCustomHeaders(request.nextUrl.searchParams.get('headers'));
+  const parsedUrl = new URL(request.url);
+  const auth = parsedUrl.searchParams.get('auth');
+  const stream = parsedUrl.searchParams.get('stream');
+  const customHeaders = deserializeOPDSCustomHeaders(parsedUrl.searchParams.get('headers'));
 
   if (!url) {
-    return NextResponse.json(
+    return Response.json(
       { error: 'Missing URL parameter. Usage: /api/opds/proxy?url=YOUR_OPDS_URL' },
       { status: 400 },
     );
@@ -33,7 +34,7 @@ async function handleRequest(request: NextRequest, method: 'GET' | 'HEAD') {
   try {
     new URL(url);
   } catch {
-    return NextResponse.json({ error: 'Invalid URL format' }, { status: 400 });
+    return Response.json({ error: 'Invalid URL format' }, { status: 400 });
   }
 
   try {
@@ -66,7 +67,7 @@ async function handleRequest(request: NextRequest, method: 'GET' | 'HEAD') {
       console.error(`[OPDS Proxy] HTTP ${response.status} for ${url}`);
       if (method === 'HEAD') {
         if (response.status === 401) {
-          return new NextResponse(null, {
+          return new Response(null, {
             status: 403,
             headers: {
               ...Object.fromEntries(response.headers.entries()),
@@ -82,7 +83,7 @@ async function handleRequest(request: NextRequest, method: 'GET' | 'HEAD') {
 
       const data = await response.text();
       if (response.status === 401) {
-        return new NextResponse(data, {
+        return new Response(data, {
           status: 403,
           headers: {
             ...Object.fromEntries(response.headers.entries()),
@@ -93,7 +94,7 @@ async function handleRequest(request: NextRequest, method: 'GET' | 'HEAD') {
           },
         });
       }
-      return new NextResponse(data, {
+      return new Response(data, {
         status: response.status,
         headers: {
           ...Object.fromEntries(response.headers.entries()),
@@ -165,7 +166,7 @@ async function handleRequest(request: NextRequest, method: 'GET' | 'HEAD') {
 
     if (method === 'HEAD') {
       console.log(`[OPDS Proxy] HEAD Success: ${url}`);
-      return new NextResponse(null, {
+      return new Response(null, {
         status: 200,
         headers: buildResponseHeaders({
           'Content-Type': contentType,
@@ -180,16 +181,16 @@ async function handleRequest(request: NextRequest, method: 'GET' | 'HEAD') {
         'Content-Type': contentType,
         // Surface the upstream length to the client without setting the real
         // Content-Length header (which must match the streamed bytes — and
-        // we let Next.js / the runtime compute that).
+        // we let the runtime compute that).
         'X-Content-Length': contentLength,
         'Access-Control-Expose-Headers': 'X-Content-Length',
       });
-      return new NextResponse(response.body, { status: 200, headers });
+      return new Response(response.body, { status: 200, headers });
     } else {
       const buf = await response.arrayBuffer();
       const length = buf.byteLength;
       console.log(`[OPDS Proxy] Buffered Success: ${url} (${length} bytes)`);
-      return new NextResponse(buf, {
+      return new Response(buf, {
         status: 200,
         headers: buildResponseHeaders({
           'Content-Type': contentType,
@@ -202,13 +203,15 @@ async function handleRequest(request: NextRequest, method: 'GET' | 'HEAD') {
 
     if (error instanceof Error) {
       if (error.name === 'AbortError') {
-        return NextResponse.json(
-          { error: 'Request timeout - the OPDS server took too long to respond' },
+        return Response.json(
+          {
+            error: 'Request timeout - the OPDS server took too long to respond',
+          },
           { status: 504 },
         );
       }
 
-      return NextResponse.json(
+      return Response.json(
         {
           error: error.message,
           url: url,
@@ -218,25 +221,29 @@ async function handleRequest(request: NextRequest, method: 'GET' | 'HEAD') {
       );
     }
 
-    return NextResponse.json({ error: 'Failed to fetch OPDS feed', url: url }, { status: 500 });
+    return Response.json({ error: 'Failed to fetch OPDS feed', url: url }, { status: 500 });
   }
 }
 
-export async function GET(request: NextRequest) {
-  return handleRequest(request, 'GET');
-}
-
-export async function HEAD(request: NextRequest) {
-  return handleRequest(request, 'HEAD');
-}
-
-export async function OPTIONS(_: NextRequest) {
-  return new NextResponse(null, {
-    status: 200,
-    headers: {
-      'Access-Control-Allow-Origin': '*',
-      'Access-Control-Allow-Methods': 'GET, HEAD, OPTIONS',
-      'Access-Control-Allow-Headers': 'Content-Type',
+export const Route = createFileRoute('/api/opds/proxy')({
+  server: {
+    handlers: {
+      GET: async ({ request }) => {
+        return handleRequest(request, 'GET');
+      },
+      HEAD: async ({ request }) => {
+        return handleRequest(request, 'HEAD');
+      },
+      OPTIONS: async () => {
+        return new Response(null, {
+          status: 200,
+          headers: {
+            'Access-Control-Allow-Origin': '*',
+            'Access-Control-Allow-Methods': 'GET, HEAD, OPTIONS',
+            'Access-Control-Allow-Headers': 'Content-Type',
+          },
+        });
+      },
     },
-  });
-}
+  },
+});

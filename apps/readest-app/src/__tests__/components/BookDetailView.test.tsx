@@ -37,14 +37,6 @@ vi.mock('@/hooks/useResponsiveSize', () => ({
   useDefaultIconSize: () => 20,
 }));
 
-vi.mock('next/image', () => ({
-  __esModule: true,
-  default: (props: Record<string, unknown>) => {
-    // biome-ignore lint/a11y/useAltText: test mock
-    return <img {...props} />;
-  },
-}));
-
 afterEach(() => cleanup());
 
 const makeBook = (overrides?: Partial<Book>): Book =>

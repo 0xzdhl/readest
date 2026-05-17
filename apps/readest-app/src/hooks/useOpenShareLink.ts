@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter } from '@tanstack/react-router';
 import { getCurrent } from '@tauri-apps/plugin-deep-link';
 import { useEnv } from '@/context/EnvContext';
 import { useLibraryStore } from '@/store/libraryStore';
@@ -33,7 +33,7 @@ let coldStartConsumed = false;
  *   https://web.readest.com/s/{token}
  *
  * Auth-gated paths:
- *   - Logged-in: POST /api/share/[token]/import (server-side R2 byte-copy),
+ *   - Logged-in: POST /api/share/$token/import (server-side R2 byte-copy),
  *     navigate to the new fileId in the reader at the sharer's cfi.
  *   - Logged-out: surface a toast directing the user to the web landing
  *     page where they can download anonymously. We don't try to do an

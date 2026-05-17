@@ -1,5 +1,4 @@
 import clsx from 'clsx';
-import Image from 'next/image';
 import { useEffect, useState } from 'react';
 import { IconType } from 'react-icons';
 
@@ -15,7 +14,7 @@ interface UserAvatarProps {
    * constrains the avatar with its own (responsive) classes — otherwise the
    * inline style overrides the parent box and the avatar can overflow on
    * smaller breakpoints. `size` is still used as the intrinsic dimension
-   * for next/image and the fallback icon.
+   * for the image and the fallback icon.
    */
   fillContainer?: boolean;
 }
@@ -78,13 +77,14 @@ const UserAvatar: React.FC<UserAvatarProps> = ({
     >
       {url ? (
         <div>
-          <Image
+          <img
             src={cachedImageUrl || url}
             alt='User Avatar'
             className={clsx('rounded-full', className, borderClassName)}
             referrerPolicy='no-referrer'
             width={size}
             height={size}
+            loading='lazy'
             onError={(e) => {
               (e.target as HTMLImageElement).style.display = 'none';
               (e.target as HTMLImageElement).nextElementSibling?.classList.remove('invisible');

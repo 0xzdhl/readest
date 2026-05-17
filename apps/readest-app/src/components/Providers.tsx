@@ -1,5 +1,3 @@
-'use client';
-
 import '@/utils/polyfill';
 import i18n from '@/i18n/i18n';
 import { useEffect } from 'react';
@@ -120,15 +118,14 @@ const Providers = ({ children }: { children: React.ReactNode }) => {
     if (updated) meta.content = updated;
   }, []);
 
-  // Make sure appService is available in all children components
-  if (!appService) return;
-
-  // App-lock gate. While the lock store is uninitialized we render
-  // nothing — without this guard the library would flash on screen
-  // for a few hundred ms before `loadSettings` resolved and let the
-  // lock store decide whether to lock.
-  const showAppLockScreen = isLockInitialized && !isUnlocked;
-  const appShellHidden = !isLockInitialized || !isUnlocked;
+  // Preserve SSR and the first client paint even before appService has
+  // resolved. Hooks/components that depend on appService already guard
+  // themselves with optional chaining or early returns.
+  //
+  // Once appService is ready, re-enable the app-lock gate so protected
+  // sessions still hide the shell until the persisted PIN state loads.
+  const showAppLockScreen = !!appService && isLockInitialized && !isUnlocked;
+  const appShellHidden = !!appService && (!isLockInitialized || !isUnlocked);
 
   return (
     <CSPostHogProvider>

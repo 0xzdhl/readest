@@ -42,7 +42,7 @@ export const ensureSharedBookLocal = async ({
   const storeState = useLibraryStore.getState();
   const { setLibrary } = storeState;
   // When the share landing runs this helper, `libraryLoaded` is false because
-  // /s/[token] doesn't mount useLibrary(). We load fresh from disk and only
+  // /s/$token doesn't mount useLibrary(). We load fresh from disk and only
   // push the result back into the store if the store had already been hydrated
   // by useLibrary somewhere else (e.g. /library, /reader, /opds). Otherwise we
   // *must not* set libraryLoaded ourselves: useLibrary's init block loads BOTH
