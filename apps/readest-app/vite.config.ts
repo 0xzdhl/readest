@@ -13,6 +13,14 @@ export default defineConfig(({ command }) => ({
         routesDirectory: 'app',
         routeFileIgnorePattern:
           '(components|utils|hooks|services|context|store|types|helpers|libs)|ShareLanding.tsx|SharePage.tsx|shareRoute.ts|OpenAnnotationPage.tsx|ReaderContent.tsx|ReaderRoutePage.tsx|readerSearch.ts|not-found.tsx|render.tsx',
+        // Bundle all UI components (component, pending, error, notFound) for a
+        // route into one chunk separate from the route definition + loader.
+        // Reduces the per-route waterfall and shrinks the eager route shell.
+        codeSplittingOptions: {
+          defaultBehavior: [
+            ['component', 'pendingComponent', 'errorComponent', 'notFoundComponent'],
+          ],
+        },
       },
     }),
     viteReact(),

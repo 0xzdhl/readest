@@ -20,7 +20,6 @@
     "paths": {
       "@/*": ["./src/*"],
       "@/components/ui/*": ["./src/components/primitives/*"],
-      "fflate": ["./node_modules/fflate/lib/index.d.ts"],
       "@pdfjs/*": ["./public/vendor/pdfjs/*"],
       "@simplecc/*": ["./public/vendor/simplecc/*"],
       "js-mdict": ["./src/types/js-mdict.d.ts"],
