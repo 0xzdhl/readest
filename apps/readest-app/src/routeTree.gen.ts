@@ -54,6 +54,7 @@ import { Route as ApiAppleIapVerifyRouteRouteImport } from './app/api/apple/iap-
 import { Route as ApiAiEmbedRouteRouteImport } from './app/api/ai/embed/route'
 import { Route as ApiAiChatRouteRouteImport } from './app/api/ai/chat/route'
 import { Route as UserSubscriptionSuccessIndexRouteImport } from './app/user/subscription/success/index'
+import { Route as ApiShareTokenOgDotpngRouteRouteImport } from './app/api/share/$token/og[.]png/route'
 
 const UserRoute = UserRouteImport.update({
   id: '/user',
@@ -282,6 +283,12 @@ const UserSubscriptionSuccessIndexRoute =
     path: '/subscription/success/',
     getParentRoute: () => UserRoute,
   } as any)
+const ApiShareTokenOgDotpngRouteRoute =
+  ApiShareTokenOgDotpngRouteRouteImport.update({
+    id: '/api/share/$token/og.png',
+    path: '/api/share/$token/og.png',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -328,6 +335,7 @@ export interface FileRoutesByFullPath {
   '/auth/error/': typeof AuthErrorIndexRoute
   '/auth/recovery/': typeof AuthRecoveryIndexRoute
   '/auth/update/': typeof AuthUpdateIndexRoute
+  '/api/share/$token/og.png': typeof ApiShareTokenOgDotpngRouteRoute
   '/user/subscription/success/': typeof UserSubscriptionSuccessIndexRoute
 }
 export interface FileRoutesByTo {
@@ -374,6 +382,7 @@ export interface FileRoutesByTo {
   '/auth/error': typeof AuthErrorIndexRoute
   '/auth/recovery': typeof AuthRecoveryIndexRoute
   '/auth/update': typeof AuthUpdateIndexRoute
+  '/api/share/$token/og.png': typeof ApiShareTokenOgDotpngRouteRoute
   '/user/subscription/success': typeof UserSubscriptionSuccessIndexRoute
 }
 export interface FileRoutesById {
@@ -422,6 +431,7 @@ export interface FileRoutesById {
   '/auth/error/': typeof AuthErrorIndexRoute
   '/auth/recovery/': typeof AuthRecoveryIndexRoute
   '/auth/update/': typeof AuthUpdateIndexRoute
+  '/api/share/$token/og.png': typeof ApiShareTokenOgDotpngRouteRoute
   '/user/subscription/success/': typeof UserSubscriptionSuccessIndexRoute
 }
 export interface FileRouteTypes {
@@ -471,6 +481,7 @@ export interface FileRouteTypes {
     | '/auth/error/'
     | '/auth/recovery/'
     | '/auth/update/'
+    | '/api/share/$token/og.png'
     | '/user/subscription/success/'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -517,6 +528,7 @@ export interface FileRouteTypes {
     | '/auth/error'
     | '/auth/recovery'
     | '/auth/update'
+    | '/api/share/$token/og.png'
     | '/user/subscription/success'
   id:
     | '__root__'
@@ -564,6 +576,7 @@ export interface FileRouteTypes {
     | '/auth/error/'
     | '/auth/recovery/'
     | '/auth/update/'
+    | '/api/share/$token/og.png'
     | '/user/subscription/success/'
   fileRoutesById: FileRoutesById
 }
@@ -609,6 +622,7 @@ export interface RootRouteChildren {
   AuthErrorIndexRoute: typeof AuthErrorIndexRoute
   AuthRecoveryIndexRoute: typeof AuthRecoveryIndexRoute
   AuthUpdateIndexRoute: typeof AuthUpdateIndexRoute
+  ApiShareTokenOgDotpngRouteRoute: typeof ApiShareTokenOgDotpngRouteRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -928,6 +942,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof UserSubscriptionSuccessIndexRouteImport
       parentRoute: typeof UserRoute
     }
+    '/api/share/$token/og.png': {
+      id: '/api/share/$token/og.png'
+      path: '/api/share/$token/og.png'
+      fullPath: '/api/share/$token/og.png'
+      preLoaderRoute: typeof ApiShareTokenOgDotpngRouteRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -998,6 +1019,7 @@ const rootRouteChildren: RootRouteChildren = {
   AuthErrorIndexRoute: AuthErrorIndexRoute,
   AuthRecoveryIndexRoute: AuthRecoveryIndexRoute,
   AuthUpdateIndexRoute: AuthUpdateIndexRoute,
+  ApiShareTokenOgDotpngRouteRoute: ApiShareTokenOgDotpngRouteRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
