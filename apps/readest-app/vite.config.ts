@@ -52,6 +52,6 @@ export default defineConfig(({ command }) => ({
     noExternal: ['tinycolor2'],
   },
   optimizeDeps: {
-    include: ['react', 'react-dom'],
+    include: ['react', 'react-dom', 'fflate'],
   },
 }));
