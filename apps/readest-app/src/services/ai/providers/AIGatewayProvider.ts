@@ -5,6 +5,7 @@ import { aiLogger } from '../logger';
 import { GATEWAY_MODELS } from '../constants';
 import { AI_TIMEOUTS } from '../utils/retry';
 import { createProxiedEmbeddingModel } from './ProxiedGatewayEmbedding';
+import { getJsonErrorMessage } from '@/utils/unknown';
 
 export class AIGatewayProvider implements AIProvider {
   id: AIProviderName = 'ai-gateway';
@@ -68,7 +69,7 @@ export class AIGatewayProvider implements AIProvider {
 
       if (!response.ok) {
         const error = await response.json().catch(() => ({ error: 'Unknown error' }));
-        throw new Error(error.error || `Health check failed: ${response.status}`);
+        throw new Error(getJsonErrorMessage(error) || `Health check failed: ${response.status}`);
       }
 
       aiLogger.provider.init('ai-gateway', 'healthCheck success');

@@ -4,10 +4,6 @@ import { UpdaterContent } from '@/components/UpdaterWindow';
 import { useTheme } from '@/hooks/useTheme';
 import Spinner from '@/components/Spinner';
 
-export const Route = createFileRoute('/updater/')({
-  component: UpdaterPage,
-});
-
 const UpdaterPage = () => {
   useTheme();
 
@@ -25,3 +21,7 @@ const UpdaterPage = () => {
     </Suspense>
   );
 };
+
+export const Route = createFileRoute('/updater/')({
+  component: UpdaterPage,
+});

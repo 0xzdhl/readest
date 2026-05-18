@@ -211,7 +211,7 @@ const useBookShortcuts = ({ sideBarBookKey, bookKeys }: UseBookShortcutsProps) =
     const bookData = getBookData(sideBarBookKey);
     const viewSettings = getViewSettings(sideBarBookKey)!;
     if (bookData?.isFixedLayout) {
-      view?.renderer.setAttribute('scale-factor', zoomLevel);
+      view?.renderer.setAttribute('scale-factor', String(zoomLevel));
       viewSettings!.zoomLevel = zoomLevel;
       setViewSettings(sideBarBookKey, viewSettings!);
     }

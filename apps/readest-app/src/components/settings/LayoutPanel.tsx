@@ -267,7 +267,7 @@ const LayoutPanel: React.FC<SettingsPanelPanelProp> = ({ bookKey, onRegisterRese
     if (maxColumnCount === viewSettings.maxColumnCount) return;
     saveViewSettings(envConfig, bookKey, 'maxColumnCount', maxColumnCount, false, false);
     const newViewSettings = getViewSettings(bookKey)!;
-    view?.renderer.setAttribute('max-column-count', maxColumnCount);
+    view?.renderer.setAttribute('max-column-count', String(maxColumnCount));
     view?.renderer.setAttribute('max-inline-size', `${getMaxInlineSize(newViewSettings)}px`);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [maxColumnCount]);

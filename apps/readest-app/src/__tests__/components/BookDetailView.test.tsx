@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, afterEach } from 'vitest';
 import { render, cleanup, fireEvent } from '@testing-library/react';
 
-import { Book } from '@/types/book';
+import type { Book } from '@/types/book';
 import BookDetailView from '@/components/metadata/BookDetailView';
 import { DropdownProvider } from '@/context/DropdownContext';
 

@@ -12,7 +12,7 @@ import { useSettingsStore } from '@/store/settingsStore';
 import { useReaderStore } from '@/store/readerStore';
 import { useSidebarStore } from '@/store/sidebarStore';
 import { useBookDataStore } from '@/store/bookDataStore';
-import { ProofreadRule } from '@/types/book';
+import type { ProofreadRule } from '@/types/book';
 
 // ------------------------------
 // TANSTACK ROUTER MOCK

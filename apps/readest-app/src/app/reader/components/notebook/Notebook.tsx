@@ -280,7 +280,7 @@ const Notebook: React.FC = ({}) => {
             : '0px',
         }}
       >
-        <style jsx>{`
+        <style>{`
           @media (max-width: 640px) {
             .notebook-container {
               border-top-left-radius: 16px;

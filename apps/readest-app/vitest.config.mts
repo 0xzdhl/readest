@@ -11,7 +11,10 @@ export default defineConfig({
 			// source files.  foliate-js/pdf.js lives outside that scope, so Vite
 			// needs an explicit alias to find the vendored pdfjs build.
 			"@pdfjs": path.resolve(__dirname, "public/vendor/pdfjs"),
-			// `js-mdict` is consumed via tsconfig paths from `packages/js-mdict/src/`.
+			// tsconfig maps `js-mdict` to a `.d.ts` stub (types only) for typecheck;
+			// at runtime tests must resolve to the actual implementation. Mirror
+			// vite.config.ts so vitest can execute `MDX.create()` etc.
+			"js-mdict": path.resolve(__dirname, "../../packages/js-mdict/src/index.ts"),
 			// Its sources `import 'fflate'` directly — without an alias, vite's
 			// import-analysis walks up from the redirected file location and fails
 			// to find fflate (it's installed only in this app's node_modules).
@@ -23,6 +26,10 @@ export default defineConfig({
 	test: {
 		environment: "jsdom",
 		setupFiles: ["./vitest.setup.ts"],
+		// jsdom env startup is ~6s per file; under concurrent load individual
+		// tests can exceed the 5s default. Raise the per-test timeout so
+		// jsdom-heavy suites (e.g. edgeTTS WebSocket flows) don't flake.
+		testTimeout: 15000,
 		exclude: [
 			"**/node_modules/**",
 			"**/dist/**",

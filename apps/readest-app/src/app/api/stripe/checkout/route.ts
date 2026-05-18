@@ -2,17 +2,50 @@ import { createFileRoute } from '@tanstack/react-router';
 import { getStripe } from '@/libs/payment/stripe/server';
 import { validateUserAndToken } from '@/utils/access';
 import { createSupabaseAdminClient } from '@/utils/supabase';
+import type { PlanType } from '@/types/quota';
+
+interface StripeCheckoutRequest {
+  priceId: string;
+  planType: PlanType;
+  embedded: boolean;
+  metadata: Record<string, string>;
+}
+
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+  typeof value === 'object' && value !== null;
+
+const isStringRecord = (value: unknown): value is Record<string, string> =>
+  isRecord(value) && Object.values(value).every((item) => typeof item === 'string');
+
+const parseStripeCheckoutRequest = (body: unknown): StripeCheckoutRequest | null => {
+  if (!isRecord(body) || typeof body['priceId'] !== 'string' || !body['priceId']) {
+    return null;
+  }
+
+  const planType = body['planType'] === 'purchase' ? 'purchase' : 'subscription';
+  const embedded = typeof body['embedded'] === 'boolean' ? body['embedded'] : true;
+  const metadata = body['metadata'] === undefined ? {} : body['metadata'];
+  if (!isStringRecord(metadata)) {
+    return null;
+  }
+
+  return {
+    priceId: body['priceId'],
+    planType,
+    embedded,
+    metadata,
+  };
+};
 
 export const Route = createFileRoute('/api/stripe/checkout')({
   server: {
     handlers: {
       POST: async ({ request }) => {
-        const {
-          priceId,
-          planType = 'subscription',
-          embedded = true,
-          metadata = {},
-        } = await request.json();
+        const body = parseStripeCheckoutRequest(await request.json());
+        if (!body) {
+          return Response.json({ error: 'Invalid checkout request' }, { status: 400 });
+        }
+        const { priceId, planType, embedded, metadata } = body;
 
         const { user, token } = await validateUserAndToken(request.headers.get('authorization'));
         if (!user || !token) {

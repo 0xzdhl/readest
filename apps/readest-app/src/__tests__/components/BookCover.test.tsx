@@ -1,8 +1,8 @@
-import { describe, it, expect, vi, afterEach } from 'vitest';
+import { describe, it, expect, afterEach } from 'vitest';
 import { render, cleanup } from '@testing-library/react';
 
 import BookCover from '@/components/BookCover';
-import { Book } from '@/types/book';
+import type { Book } from '@/types/book';
 
 afterEach(cleanup);
 

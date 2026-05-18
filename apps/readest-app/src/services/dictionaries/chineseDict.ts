@@ -11,11 +11,19 @@ export type ChineseEntry = {
 
 const WIKTIONARY_API = 'https://en.wiktionary.org/w/api.php';
 
+type WiktionaryParseResponse = {
+  parse?: {
+    wikitext?: {
+      '*': string;
+    };
+  };
+};
+
 async function fetchWikitext(word: string): Promise<string | null> {
   const url = `${WIKTIONARY_API}?action=parse&page=${encodeURIComponent(word)}&prop=wikitext&format=json&origin=*`;
   const response = await fetch(url);
   if (!response.ok) return null;
-  const json = await response.json();
+  const json = (await response.json()) as WiktionaryParseResponse;
   return json?.parse?.wikitext?.['*'] ?? null;
 }
 

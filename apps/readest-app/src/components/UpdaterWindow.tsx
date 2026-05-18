@@ -19,6 +19,7 @@ import { join } from '@tauri-apps/api/path';
 import { getLocale } from '@/utils/misc';
 import { setLastShownReleaseNotesVersion } from '@/helpers/updater';
 import { READEST_UPDATER_FILE, READEST_CHANGELOG_FILE } from '@/services/constants';
+import { getUpdaterManifest } from '@/types/updater';
 import Dialog from '@/components/Dialog';
 import Link from './Link';
 
@@ -114,12 +115,13 @@ export const UpdaterContent = ({
       if (!appService) return;
       const fetch = isTauriAppPlatform() ? tauriFetch : window.fetch;
       const response = await fetch(READEST_UPDATER_FILE);
-      const data = await response.json();
+      const data = await getUpdaterManifest(response);
       if (semver.gt(data.version, currentVersion)) {
         const OS_ARCH = osArch();
         const platformKey = OS_ARCH === 'aarch64' ? 'android-arm64' : 'android-universal';
         const arch = OS_ARCH === 'aarch64' ? 'arm64' : 'universal';
-        const downloadUrl = data.platforms[platformKey]?.url as string;
+        const downloadUrl = data.platforms[platformKey]?.url;
+        if (!downloadUrl) return;
         const apkFilePath = await appService.resolveFilePath(
           `Readest_${data.version}_${arch}.apk`,
           'Cache',
@@ -211,13 +213,14 @@ export const UpdaterContent = ({
       if (!appService) return;
       const fetch = isTauriAppPlatform() ? tauriFetch : window.fetch;
       const response = await fetch(READEST_UPDATER_FILE);
-      const data = await response.json();
+      const data = await getUpdaterManifest(response);
       if (semver.gt(data.version, currentVersion)) {
         const OS_ARCH = osArch();
         const platformKey =
           OS_ARCH === 'x86_64' ? 'windows-x86_64-portable' : 'windows-aarch64-portable';
         const arch = OS_ARCH === 'x86_64' ? 'x64' : 'arm64';
-        const downloadUrl = data.platforms[platformKey]?.url as string;
+        const downloadUrl = data.platforms[platformKey]?.url;
+        if (!downloadUrl) return;
         const execDir = await invoke<string>('get_executable_dir');
         const exeFileName = `Readest_${data.version}_${arch}-portable.exe`;
         const exeFilePath = await join(execDir, exeFileName);
@@ -247,13 +250,14 @@ export const UpdaterContent = ({
       if (!appService) return;
       const fetch = isTauriAppPlatform() ? tauriFetch : window.fetch;
       const response = await fetch(READEST_UPDATER_FILE);
-      const data = await response.json();
+      const data = await getUpdaterManifest(response);
       if (semver.gt(data.version, currentVersion)) {
         const OS_ARCH = osArch();
         const platformKey =
           OS_ARCH === 'x86_64' ? 'linux-x86_64-appimage' : 'linux-aarch64-appimage';
         const arch = OS_ARCH === 'x86_64' ? 'x86_64' : 'aarch64';
-        const downloadUrl = data.platforms[platformKey]?.url as string;
+        const downloadUrl = data.platforms[platformKey]?.url;
+        if (!downloadUrl) return;
         const appImageFileName = `Readest_${data.version}_${arch}.AppImage`;
         const appImageFilePath = await join(await desktopDir(), appImageFileName);
         setUpdate({
@@ -415,7 +419,7 @@ export const UpdaterContent = ({
       }
     });
     console.log('package installed');
-    if (!appService?.isAndroidApp && process.env.NODE_ENV === 'production') {
+    if (!appService?.isAndroidApp && process.env['NODE_ENV'] === 'production') {
       await relaunch();
     }
   };

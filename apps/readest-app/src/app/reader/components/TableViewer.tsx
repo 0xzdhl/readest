@@ -233,7 +233,7 @@ const TableViewer: React.FC<TableViewerProps> = ({ gridInsets, html, isDarkMode,
         </div>
       )}
 
-      <style jsx>{`
+      <style>{`
         .table-viewer-content :global(table) {
           border-collapse: collapse;
           border: 1px solid ${isDarkMode ? '#444444' : '#cccccc'};

@@ -1,11 +1,11 @@
 import { z } from 'zod';
 
 export const readerSearchSchema = z.object({
-  cfi: z.string().default('').catch(''),
+  cfi: z.string().optional().catch(undefined),
 });
 
 export const legacyReaderSearchSchema = readerSearchSchema.extend({
-  ids: z.string().default('').catch(''),
+  ids: z.string().optional().catch(undefined),
 });
 
 export type ReaderSearch = z.infer<typeof readerSearchSchema>;

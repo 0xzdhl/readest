@@ -8,8 +8,9 @@ vi.mock('@/utils/misc', async (importOriginal) => {
   };
 });
 
-import { getStyles, ThemeCode } from '@/utils/style';
-import { ViewSettings } from '@/types/book';
+import { getStyles } from '@/utils/style';
+import type { ThemeCode } from '@/utils/style';
+import type { ViewSettings } from '@/types/book';
 import {
   DEFAULT_BOOK_FONT,
   DEFAULT_BOOK_LAYOUT,

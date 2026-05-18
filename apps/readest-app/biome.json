@@ -16,7 +16,9 @@
       "!build/**",
       "!public/**",
       "!src-tauri/**",
-      "!i18next-scanner.config.cjs"
+      "!i18next-scanner.config.cjs",
+      "!cloudflare-env.d.ts",
+      "!src/routeTree.gen.ts"
     ],
     "rules": {
       "recommended": true,
@@ -57,7 +59,7 @@
         "useHookAtTopLevel": "error",
         "useJsxKeyInIterable": "error",
         "noChildrenProp": "error",
-        "noNextAsyncClientComponent": "warn",
+        "noNextAsyncClientComponent": "off",
         "noSwitchDeclarations": "off",
         "noUndeclaredVariables": "off",
         "noEmptyCharacterClassInRegex": "off",
@@ -65,15 +67,15 @@
         "noEmptyPattern": "off"
       },
       "nursery": {
-        "noBeforeInteractiveScriptOutsideDocument": "warn",
+        "noBeforeInteractiveScriptOutsideDocument": "off",
         "noDuplicateEnumValues": "error",
-        "noSyncScripts": "warn",
-        "useInlineScriptId": "error"
+        "noSyncScripts": "off",
+        "useInlineScriptId": "off"
       },
       "performance": {
         "noImgElement": "off",
-        "noUnwantedPolyfillio": "warn",
-        "useGoogleFontPreconnect": "warn"
+        "noUnwantedPolyfillio": "off",
+        "useGoogleFontPreconnect": "off"
       },
       "security": {
         "noBlankTarget": "off",
@@ -86,7 +88,7 @@
         "noParameterAssign": "off",
         "useDefaultParameterLast": "off",
         "noUselessElse": "off",
-        "noHeadElement": "warn",
+        "noHeadElement": "off",
         "noCommonJs": "off",
         "useFilenamingConvention": "off",
         "useNamingConvention": "off",
@@ -100,9 +102,9 @@
         "noArrayIndexKey": "off",
         "noAssignInExpressions": "off",
         "noDoubleEquals": "off",
-        "noDocumentImportInPage": "error",
-        "noHeadImportInDocument": "error",
-        "useGoogleFontDisplay": "warn",
+        "noDocumentImportInPage": "off",
+        "noHeadImportInDocument": "off",
+        "useGoogleFontDisplay": "off",
         "noCommentText": "error",
         "noDuplicateJsxProps": "error",
         "noAsyncPromiseExecutor": "off",

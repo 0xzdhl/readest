@@ -1,7 +1,7 @@
 import { describe, test, expect, beforeEach } from 'vitest';
 import { useNotebookStore } from '@/store/notebookStore';
-import { BookNote } from '@/types/book';
-import { TextSelection } from '@/utils/sel';
+import type { BookNote } from '@/types/book';
+import type { TextSelection } from '@/utils/sel';
 
 beforeEach(() => {
   useNotebookStore.setState({
@@ -16,7 +16,7 @@ beforeEach(() => {
 });
 
 describe('notebookStore', () => {
-  // ── Visibility ─────────────────────────────────────────────────
+  // 鈹€鈹€ Visibility 鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€
   describe('toggleNotebook', () => {
     test('toggles visibility from false to true', () => {
       useNotebookStore.getState().toggleNotebook();
@@ -51,7 +51,7 @@ describe('notebookStore', () => {
     });
   });
 
-  // ── Pin ────────────────────────────────────────────────────────
+  // 鈹€鈹€ Pin 鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€
   describe('toggleNotebookPin', () => {
     test('toggles pin from false to true', () => {
       useNotebookStore.getState().toggleNotebookPin();
@@ -78,7 +78,7 @@ describe('notebookStore', () => {
     });
   });
 
-  // ── Width ──────────────────────────────────────────────────────
+  // 鈹€鈹€ Width 鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€
   describe('setNotebookWidth / getNotebookWidth', () => {
     test('sets and gets width', () => {
       useNotebookStore.getState().setNotebookWidth('400px');
@@ -90,7 +90,7 @@ describe('notebookStore', () => {
     });
   });
 
-  // ── Active tab ─────────────────────────────────────────────────
+  // 鈹€鈹€ Active tab 鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€
   describe('setNotebookActiveTab', () => {
     test('sets active tab to ai', () => {
       useNotebookStore.getState().setNotebookActiveTab('ai');
@@ -108,7 +108,7 @@ describe('notebookStore', () => {
     });
   });
 
-  // ── New annotation ─────────────────────────────────────────────
+  // 鈹€鈹€ New annotation 鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€
   describe('setNotebookNewAnnotation', () => {
     test('sets a new annotation selection', () => {
       const selection: TextSelection = {
@@ -137,7 +137,7 @@ describe('notebookStore', () => {
     });
   });
 
-  // ── Edit annotation ────────────────────────────────────────────
+  // 鈹€鈹€ Edit annotation 鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€
   describe('setNotebookEditAnnotation', () => {
     test('sets a note for editing', () => {
       const note: BookNote = {
@@ -167,7 +167,7 @@ describe('notebookStore', () => {
     });
   });
 
-  // ── Annotation drafts ──────────────────────────────────────────
+  // 鈹€鈹€ Annotation drafts 鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€
   describe('saveNotebookAnnotationDraft / getNotebookAnnotationDraft', () => {
     test('saves and retrieves a draft by key', () => {
       useNotebookStore.getState().saveNotebookAnnotationDraft('note-1', 'Draft text');
@@ -207,7 +207,7 @@ describe('notebookStore', () => {
     });
   });
 
-  // ── Initial state ──────────────────────────────────────────────
+  // 鈹€鈹€ Initial state 鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€
   describe('initial state', () => {
     test('has correct defaults', () => {
       const state = useNotebookStore.getState();

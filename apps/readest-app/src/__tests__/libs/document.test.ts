@@ -13,8 +13,6 @@ if (!customElements.get('foliate-paginator')) {
   customElements.define(
     'foliate-paginator',
     class extends HTMLElement {
-      override setAttribute() {}
-      override addEventListener() {}
       open() {}
     },
   );

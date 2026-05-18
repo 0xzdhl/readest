@@ -3,6 +3,16 @@ import type { LanguageModel, EmbeddingModel } from 'ai';
 import type { AIProvider, AISettings, AIProviderName } from '../types';
 import { aiLogger } from '../logger';
 import { AI_TIMEOUTS } from '../utils/retry';
+import { isRecord } from '@/utils/unknown';
+
+const isOllamaTagsResponse = (value: unknown): value is { models?: Array<{ name: string }> } => {
+  if (!isRecord(value)) return false;
+  if (value['models'] === undefined) return true;
+  return (
+    Array.isArray(value['models']) &&
+    value['models'].every((model) => isRecord(model) && typeof model['name'] === 'string')
+  );
+};
 
 export class OllamaProvider implements AIProvider {
   id: AIProviderName = 'ollama';
@@ -51,12 +61,13 @@ export class OllamaProvider implements AIProvider {
       });
       clearTimeout(timeout);
       if (!response.ok) return false;
-      const data = await response.json();
+      const data: unknown = await response.json();
+      if (!isOllamaTagsResponse(data)) return false;
       const modelName = this.settings.ollamaModel?.split(':')[0] ?? '';
       const embeddingModelName = this.settings.ollamaEmbeddingModel?.split(':')[0] ?? '';
       return (
-        data.models?.some((m: { name: string }) => m.name.includes(modelName)) &&
-        data.models?.some((m: { name: string }) => m.name.includes(embeddingModelName))
+        (data.models?.some((m) => m.name.includes(modelName)) ?? false) &&
+        (data.models?.some((m) => m.name.includes(embeddingModelName)) ?? false)
       );
     } catch (e) {
       aiLogger.provider.error('ollama', (e as Error).message);

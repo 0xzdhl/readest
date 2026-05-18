@@ -42,17 +42,17 @@ export const createWebSearchProvider = ({
     const h1 = document.createElement('h1');
     h1.textContent = trimmed;
     h1.className = 'text-lg font-bold';
-    hgroup.append(h1);
+    hgroup.appendChild(h1);
     const sub = document.createElement('p');
     sub.textContent = template.name;
     sub.className = 'text-sm italic not-eink:opacity-75';
-    hgroup.append(sub);
-    ctx.container.append(hgroup);
+    hgroup.appendChild(sub);
+    ctx.container.appendChild(hgroup);
 
     const description = document.createElement('p');
     description.className = 'mt-3 text-sm';
     description.textContent = _('Open the search result in your browser:');
-    ctx.container.append(description);
+    ctx.container.appendChild(description);
 
     const linkWrapper = document.createElement('p');
     linkWrapper.className = 'mt-3';
@@ -67,13 +67,13 @@ export const createWebSearchProvider = ({
     // `stubTranslation` is just an extraction marker — the runtime value is
     // the key itself. We interpolate the provider name manually.
     link.textContent = _('Open in {{name}}').replace('{{name}}', template.name);
-    linkWrapper.append(link);
-    ctx.container.append(linkWrapper);
+    linkWrapper.appendChild(link);
+    ctx.container.appendChild(linkWrapper);
 
     const urlPreview = document.createElement('p');
     urlPreview.className = 'mt-3 text-base-content/60 break-all text-xs';
     urlPreview.textContent = url;
-    ctx.container.append(urlPreview);
+    ctx.container.appendChild(urlPreview);
 
     return { ok: true, headword: trimmed, sourceLabel: template.name };
   },

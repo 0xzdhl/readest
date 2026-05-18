@@ -1,4 +1,5 @@
 import type { EmbeddingModel } from 'ai';
+import { getJsonErrorMessage, isRecord } from '@/utils/unknown';
 
 interface ProxiedEmbeddingOptions {
   apiKey: string;
@@ -28,16 +29,20 @@ export function createProxiedEmbeddingModel(options: ProxiedEmbeddingOptions): E
 
       if (!response.ok) {
         const error = await response.json().catch(() => ({ error: 'Unknown error' }));
-        throw new Error(error.error || `Embedding failed: ${response.status}`);
+        throw new Error(getJsonErrorMessage(error) || `Embedding failed: ${response.status}`);
       }
 
-      const data = await response.json();
+      const data: unknown = await response.json();
 
-      if (values.length === 1 && data.embedding) {
-        return { embeddings: [data.embedding], warnings: [] as const };
+      if (values.length === 1 && isRecord(data) && Array.isArray(data['embedding'])) {
+        return { embeddings: [data['embedding'] as number[]], warnings: [] as const };
       }
 
-      return { embeddings: data.embeddings, warnings: [] as const };
+      if (isRecord(data) && Array.isArray(data['embeddings'])) {
+        return { embeddings: data['embeddings'] as number[][], warnings: [] as const };
+      }
+
+      throw new Error('Invalid embedding response');
     },
   } as EmbeddingModel;
 }

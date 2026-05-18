@@ -25,7 +25,7 @@ vi.mock('@tauri-apps/api/core', () => ({
 
 import { useTrafficLightStore } from '@/store/trafficLightStore';
 import { invoke } from '@tauri-apps/api/core';
-import { AppService } from '@/types/system';
+import type { AppService } from '@/types/system';
 
 function createMockAppService(hasTrafficLight: boolean): AppService {
   return {

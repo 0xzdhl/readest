@@ -44,6 +44,8 @@ import {
   getCategoryLabel,
   getRecentCommands,
   trackCommandUsage,
+} from '@/services/commandRegistry';
+import type {
   CommandItem,
   CommandRegistryOptions,
   CommandCategory,

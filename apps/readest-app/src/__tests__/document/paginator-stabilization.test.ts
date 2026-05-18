@@ -66,7 +66,10 @@ describe('Paginator stabilization', () => {
       await Promise.race([Promise.all([neverResolves]), wait(timeout)]);
       const elapsed = Date.now() - start;
 
-      expect(elapsed).toBeLessThan(timeout + 50);
+      // Under concurrent test load the timer can drift well past 50ms.
+      // Generous tolerance keeps the suite stable while still proving the
+      // race short-circuits the never-resolving promise.
+      expect(elapsed).toBeLessThan(timeout + 1000);
     });
 
     it('should resolve immediately if fonts are already loaded', async () => {

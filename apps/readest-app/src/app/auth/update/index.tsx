@@ -28,7 +28,7 @@ function UpdateEmailPage() {
 
   useEffect(() => {
     if (!user) {
-      router.navigate({ to: '/login' });
+      router.navigate({ to: '/auth' });
     }
   }, [user, router]);
 

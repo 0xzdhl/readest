@@ -13,6 +13,7 @@ import {
   READEST_CHANGELOG_FILE,
   READEST_UPDATER_FILE,
 } from '@/services/constants';
+import { getUpdaterManifest } from '@/types/updater';
 
 const LAST_CHECK_KEY = 'lastAppUpdateCheck';
 
@@ -59,10 +60,10 @@ export const checkForAppUpdates = async (
   } else if (OS_TYPE === 'android') {
     try {
       const response = await fetch(READEST_UPDATER_FILE, { connectTimeout: 5000 });
-      const data = await response.json();
+      const data = await getUpdaterManifest(response);
       const isNewer = semver.gt(data.version, getAppVersion());
       if (isNewer && ('android-arm64' in data.platforms || 'android-universal' in data.platforms)) {
-        setUpdaterWindowVisible(true, data.version!, getAppVersion());
+        setUpdaterWindowVisible(true, data.version, getAppVersion());
       }
       return isNewer;
     } catch (err) {

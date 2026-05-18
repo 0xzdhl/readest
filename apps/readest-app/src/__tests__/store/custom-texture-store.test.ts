@@ -1,9 +1,9 @@
 import { describe, test, expect, beforeEach, vi } from 'vitest';
 import { useCustomTextureStore } from '@/store/customTextureStore';
 import { useSettingsStore } from '@/store/settingsStore';
-import { CustomTexture } from '@/styles/textures';
-import { SystemSettings } from '@/types/settings';
-import { EnvConfigType } from '@/services/environment';
+import type { CustomTexture } from '@/styles/textures';
+import type { SystemSettings } from '@/types/settings';
+import type { EnvConfigType } from '@/services/environment';
 
 // Mock textures module - we need createCustomTexture, and the mount/unmount functions
 vi.mock('@/styles/textures', async (importOriginal) => {
@@ -41,7 +41,7 @@ beforeEach(() => {
 });
 
 describe('customTextureStore', () => {
-  // ── setTextures ────────────────────────────────────────────────
+  // 鈹€鈹€ setTextures 鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€
   describe('setTextures', () => {
     test('sets textures array', () => {
       const textures: CustomTexture[] = [
@@ -62,7 +62,7 @@ describe('customTextureStore', () => {
     });
   });
 
-  // ── addTexture ─────────────────────────────────────────────────
+  // 鈹€鈹€ addTexture 鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€
   describe('addTexture', () => {
     test('adds a new texture from a path', () => {
       const texture = useCustomTextureStore.getState().addTexture('/images/wood.png');
@@ -102,7 +102,7 @@ describe('customTextureStore', () => {
     });
   });
 
-  // ── removeTexture ──────────────────────────────────────────────
+  // 鈹€鈹€ removeTexture 鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€
   describe('removeTexture', () => {
     test('marks a texture as deleted', () => {
       const tex = useCustomTextureStore.getState().addTexture('/images/water.png');
@@ -130,7 +130,7 @@ describe('customTextureStore', () => {
     });
   });
 
-  // ── updateTexture ──────────────────────────────────────────────
+  // 鈹€鈹€ updateTexture 鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€
   describe('updateTexture', () => {
     test('updates fields on an existing texture', () => {
       const tex = useCustomTextureStore.getState().addTexture('/images/sky.png');
@@ -150,7 +150,7 @@ describe('customTextureStore', () => {
     });
   });
 
-  // ── getTexture ─────────────────────────────────────────────────
+  // 鈹€鈹€ getTexture 鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€
   describe('getTexture', () => {
     test('returns the texture by id', () => {
       const tex = useCustomTextureStore.getState().addTexture('/images/grass.png');
@@ -163,7 +163,7 @@ describe('customTextureStore', () => {
     });
   });
 
-  // ── getAllTextures ─────────────────────────────────────────────
+  // 鈹€鈹€ getAllTextures 鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€
   describe('getAllTextures', () => {
     test('returns all textures including deleted', () => {
       const t1 = useCustomTextureStore.getState().addTexture('/a.png');
@@ -173,7 +173,7 @@ describe('customTextureStore', () => {
     });
   });
 
-  // ── getAvailableTextures ───────────────────────────────────────
+  // 鈹€鈹€ getAvailableTextures 鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€
   describe('getAvailableTextures', () => {
     test('excludes deleted textures', () => {
       const t1 = useCustomTextureStore.getState().addTexture('/a.png');
@@ -191,7 +191,7 @@ describe('customTextureStore', () => {
     });
   });
 
-  // ── clearAllTextures ───────────────────────────────────────────
+  // 鈹€鈹€ clearAllTextures 鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€
   describe('clearAllTextures', () => {
     test('removes all textures', () => {
       useCustomTextureStore.getState().addTexture('/a.png');
@@ -201,7 +201,7 @@ describe('customTextureStore', () => {
     });
   });
 
-  // ── unloadTexture ──────────────────────────────────────────────
+  // 鈹€鈹€ unloadTexture 鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€
   describe('unloadTexture', () => {
     test('clears loaded state and blobUrl', () => {
       const tex = useCustomTextureStore.getState().addTexture('/a.png');
@@ -222,7 +222,7 @@ describe('customTextureStore', () => {
     });
   });
 
-  // ── unloadAllTextures ──────────────────────────────────────────
+  // 鈹€鈹€ unloadAllTextures 鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€
   describe('unloadAllTextures', () => {
     test('unloads all textures', () => {
       const t1 = useCustomTextureStore.getState().addTexture('/a.png');
@@ -240,7 +240,7 @@ describe('customTextureStore', () => {
     });
   });
 
-  // ── getLoadedTextures / isTextureLoaded ────────────────────────
+  // 鈹€鈹€ getLoadedTextures / isTextureLoaded 鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€
   describe('getLoadedTextures', () => {
     test('returns only loaded non-deleted textures', () => {
       const t1 = useCustomTextureStore.getState().addTexture('/a.png');
@@ -290,7 +290,7 @@ describe('customTextureStore', () => {
     });
   });
 
-  // ── loadTexture ────────────────────────────────────────────────
+  // 鈹€鈹€ loadTexture 鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€
   describe('loadTexture', () => {
     test('throws for non-existent texture', async () => {
       const envConfig = createMockEnvConfig();
@@ -322,7 +322,7 @@ describe('customTextureStore', () => {
     });
   });
 
-  // ── saveCustomTextures ─────────────────────────────────────────
+  // 鈹€鈹€ saveCustomTextures 鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€
   describe('saveCustomTextures', () => {
     test('saves textures to settings store (without blobUrl/loaded/error)', async () => {
       useCustomTextureStore.getState().addTexture('/images/marble.png');
@@ -358,7 +358,7 @@ describe('customTextureStore', () => {
     });
   });
 
-  // ── applyTexture ───────────────────────────────────────────────
+  // 鈹€鈹€ applyTexture 鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€
   describe('applyTexture', () => {
     test('calls unmountBackgroundTexture for "none" id', async () => {
       const { unmountBackgroundTexture } = await import('@/styles/textures');

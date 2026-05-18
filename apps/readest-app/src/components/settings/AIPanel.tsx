@@ -8,6 +8,7 @@ import { useEnv } from '@/context/EnvContext';
 import { getAIProvider } from '@/services/ai/providers';
 import { DEFAULT_AI_SETTINGS, GATEWAY_MODELS, MODEL_PRICING } from '@/services/ai/constants';
 import type { AISettings, AIProviderName } from '@/services/ai/types';
+import { isRecord } from '@/utils/unknown';
 import { BoxedList, SettingLabel, SettingsRow, SettingsSwitchRow } from './primitives';
 
 type ConnectionStatus = 'idle' | 'testing' | 'success' | 'error';
@@ -126,8 +127,14 @@ const AIPanel: React.FC = () => {
     try {
       const response = await fetch(`${ollamaUrl}/api/tags`);
       if (!response.ok) throw new Error('Failed to fetch models');
-      const data = await response.json();
-      const models = data.models?.map((m: { name: string }) => m.name) || [];
+      const data: unknown = await response.json();
+      const rawModels = isRecord(data) && Array.isArray(data['models']) ? data['models'] : [];
+      const models = rawModels
+        .filter(
+          (model): model is { name: string } =>
+            isRecord(model) && typeof model['name'] === 'string',
+        )
+        .map((model) => model.name);
 
       setOllamaModels(models);
       if (models.length > 0 && !models.includes(ollamaModel)) {

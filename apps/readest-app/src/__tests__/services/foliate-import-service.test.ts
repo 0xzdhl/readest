@@ -6,11 +6,10 @@ import {
   convertFoliateBookmark,
   convertFoliateData,
   parseFoliateData,
-  FoliateAnnotation,
-  FoliateData,
 } from '@/services/annotation/providers/foliate';
+import type { FoliateAnnotation, FoliateData } from '@/services/annotation/providers/foliate';
 import { mergeBookConfigs } from '@/services/backupService';
-import { BookConfig, BookNote } from '@/types/book';
+import type { BookConfig, BookNote } from '@/types/book';
 
 const BOOK_HASH = 'abc123';
 

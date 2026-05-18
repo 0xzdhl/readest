@@ -8,6 +8,8 @@ import { BOOK_IDS_SEPARATOR } from '@/services/constants';
 import type { AppService } from '@/types/system';
 
 let readerWindowsCount = 0;
+
+type AppNavigator = Pick<AppRouter, 'navigate'>;
 const createReaderWindow = (appService: AppService, url: string) => {
   const currentWindow = getCurrentWindow();
   const label = currentWindow.label;
@@ -81,7 +83,7 @@ export const ensureMainLibraryWindow = async (appService: AppService) => {
 };
 
 export const navigateToReader = (
-  router: AppRouter,
+  router: AppNavigator,
   bookIds: string[],
   queryParams?: string,
   navOptions?: { scroll?: boolean },
@@ -93,19 +95,19 @@ export const navigateToReader = (
   });
 };
 
-export const navigateToLogin = (router: AppRouter) => {
+export const navigateToLogin = (router: AppNavigator) => {
   const pathname = window.location.pathname;
   const search = window.location.search;
   const currentPath = pathname !== '/auth' ? pathname + search : '/';
   router.navigate({ to: '/auth', search: { redirect: currentPath } });
 };
 
-export const navigateToProfile = (router: AppRouter) => {
+export const navigateToProfile = (router: AppNavigator) => {
   router.navigate({ to: '/user', search: { section: '' } });
 };
 
 export const navigateToLibrary = (
-  router: AppRouter,
+  router: AppNavigator,
   queryParams?: string,
   navOptions?: { scroll?: boolean },
   navBack?: boolean,
@@ -127,7 +129,7 @@ export const navigateToLibrary = (
 
 export const closeReaderWindowOrGoToLibrary = async (
   appService: AppService | null,
-  router: AppRouter,
+  router: AppNavigator,
 ) => {
   if (isTauriAppPlatform() && appService?.hasWindow) {
     const currentWindow = getCurrentWindow();
@@ -144,14 +146,14 @@ export const redirectToLibrary = () => {
   throw redirect({ to: '/library' });
 };
 
-export const navigateToResetPassword = (router: AppRouter) => {
+export const navigateToResetPassword = (router: AppNavigator) => {
   const pathname = window.location.pathname;
   const search = window.location.search;
   const currentPath = pathname !== '/auth' ? pathname + search : '/';
   router.navigate({ to: '/auth/recovery', search: { redirect: currentPath } });
 };
 
-export const navigateToUpdatePassword = (router: AppRouter) => {
+export const navigateToUpdatePassword = (router: AppNavigator) => {
   const pathname = window.location.pathname;
   const search = window.location.search;
   const currentPath = pathname !== '/auth' ? pathname + search : '/';

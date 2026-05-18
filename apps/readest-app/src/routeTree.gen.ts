@@ -8,424 +8,485 @@
 // You should NOT make any changes in this file as it will be overwritten.
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
-import { Route as rootRouteImport } from './app/__root'
-import { Route as UserRouteImport } from './app/user'
-import { Route as ErrorRouteImport } from './app/error'
-import { Route as IndexRouteImport } from './app/index'
-import { Route as UserIndexRouteImport } from './app/user/index'
-import { Route as UpdaterIndexRouteImport } from './app/updater/index'
-import { Route as SIndexRouteImport } from './app/s/index'
-import { Route as ReaderIndexRouteImport } from './app/reader/index'
-import { Route as OpdsIndexRouteImport } from './app/opds/index'
-import { Route as OfflineIndexRouteImport } from './app/offline/index'
-import { Route as OIndexRouteImport } from './app/o/index'
-import { Route as LibraryIndexRouteImport } from './app/library/index'
-import { Route as AuthIndexRouteImport } from './app/auth/index'
-import { Route as ReaderIdsRouteImport } from './app/reader/$ids'
-import { Route as ApiSyncRouteImport } from './app/api/sync'
-import { Route as ApiKosyncRouteImport } from './app/api/kosync'
-import { Route as AuthUpdateIndexRouteImport } from './app/auth/update/index'
-import { Route as AuthRecoveryIndexRouteImport } from './app/auth/recovery/index'
-import { Route as AuthErrorIndexRouteImport } from './app/auth/error/index'
-import { Route as AuthCallbackIndexRouteImport } from './app/auth/callback/index'
-import { Route as ApiUserDeleteRouteImport } from './app/api/user/delete'
-import { Route as ApiSyncReplicasRouteImport } from './app/api/sync/replicas'
-import { Route as ApiSyncReplicaKeysRouteImport } from './app/api/sync/replica-keys'
-import { Route as ApiStorageUploadRouteImport } from './app/api/storage/upload'
-import { Route as ApiStorageStatsRouteImport } from './app/api/storage/stats'
-import { Route as ApiStoragePurgeRouteImport } from './app/api/storage/purge'
-import { Route as ApiStorageListRouteImport } from './app/api/storage/list'
-import { Route as ApiStorageDownloadRouteImport } from './app/api/storage/download'
-import { Route as ApiStorageDeleteRouteImport } from './app/api/storage/delete'
-import { Route as ApiDeeplTranslateRouteImport } from './app/api/deepl/translate'
-import { Route as ApiTtsEdgeRouteRouteImport } from './app/api/tts/edge/route'
-import { Route as ApiStripeWebhookRouteRouteImport } from './app/api/stripe/webhook/route'
-import { Route as ApiStripePortalRouteRouteImport } from './app/api/stripe/portal/route'
-import { Route as ApiStripePlansRouteRouteImport } from './app/api/stripe/plans/route'
-import { Route as ApiStripeCheckoutRouteRouteImport } from './app/api/stripe/checkout/route'
-import { Route as ApiStripeCheckRouteRouteImport } from './app/api/stripe/check/route'
-import { Route as ApiShareListRouteRouteImport } from './app/api/share/list/route'
-import { Route as ApiShareCreateRouteRouteImport } from './app/api/share/create/route'
-import { Route as ApiOpdsProxyRouteRouteImport } from './app/api/opds/proxy/route'
-import { Route as ApiMetadataSearchRouteRouteImport } from './app/api/metadata/search/route'
-import { Route as ApiHardcoverGraphqlRouteRouteImport } from './app/api/hardcover/graphql/route'
-import { Route as ApiGoogleIapVerifyRouteRouteImport } from './app/api/google/iap-verify/route'
-import { Route as ApiAppleIapVerifyRouteRouteImport } from './app/api/apple/iap-verify/route'
-import { Route as ApiAiEmbedRouteRouteImport } from './app/api/ai/embed/route'
-import { Route as ApiAiChatRouteRouteImport } from './app/api/ai/chat/route'
-import { Route as UserSubscriptionSuccessIndexRouteImport } from './app/user/subscription/success/index'
+import { Route as rootRouteImport } from './app/__root';
+import { Route as UserRouteImport } from './app/user';
+import { Route as ErrorRouteImport } from './app/error';
+import { Route as IndexRouteImport } from './app/index';
+import { Route as UserIndexRouteImport } from './app/user/index';
+import { Route as UpdaterIndexRouteImport } from './app/updater/index';
+import { Route as SIndexRouteImport } from './app/s/index';
+import { Route as ReaderIndexRouteImport } from './app/reader/index';
+import { Route as OpdsIndexRouteImport } from './app/opds/index';
+import { Route as OfflineIndexRouteImport } from './app/offline/index';
+import { Route as OIndexRouteImport } from './app/o/index';
+import { Route as LibraryIndexRouteImport } from './app/library/index';
+import { Route as AuthIndexRouteImport } from './app/auth/index';
+import { Route as ReaderIdsRouteImport } from './app/reader/$ids';
+import { Route as ApiSyncRouteImport } from './app/api/sync';
+import { Route as ApiKosyncRouteImport } from './app/api/kosync';
+import { Route as AuthUpdateIndexRouteImport } from './app/auth/update/index';
+import { Route as AuthRecoveryIndexRouteImport } from './app/auth/recovery/index';
+import { Route as AuthErrorIndexRouteImport } from './app/auth/error/index';
+import { Route as AuthCallbackIndexRouteImport } from './app/auth/callback/index';
+import { Route as ApiUserDeleteRouteImport } from './app/api/user/delete';
+import { Route as ApiSyncReplicasRouteImport } from './app/api/sync/replicas';
+import { Route as ApiSyncReplicaKeysRouteImport } from './app/api/sync/replica-keys';
+import { Route as ApiStorageUploadRouteImport } from './app/api/storage/upload';
+import { Route as ApiStorageStatsRouteImport } from './app/api/storage/stats';
+import { Route as ApiStoragePurgeRouteImport } from './app/api/storage/purge';
+import { Route as ApiStorageListRouteImport } from './app/api/storage/list';
+import { Route as ApiStorageDownloadRouteImport } from './app/api/storage/download';
+import { Route as ApiStorageDeleteRouteImport } from './app/api/storage/delete';
+import { Route as ApiDeeplTranslateRouteImport } from './app/api/deepl/translate';
+import { Route as ApiTtsEdgeRouteRouteImport } from './app/api/tts/edge/route';
+import { Route as ApiStripeWebhookRouteRouteImport } from './app/api/stripe/webhook/route';
+import { Route as ApiStripePortalRouteRouteImport } from './app/api/stripe/portal/route';
+import { Route as ApiStripePlansRouteRouteImport } from './app/api/stripe/plans/route';
+import { Route as ApiStripeCheckoutRouteRouteImport } from './app/api/stripe/checkout/route';
+import { Route as ApiStripeCheckRouteRouteImport } from './app/api/stripe/check/route';
+import { Route as ApiShareListRouteRouteImport } from './app/api/share/list/route';
+import { Route as ApiShareCreateRouteRouteImport } from './app/api/share/create/route';
+import { Route as ApiShareTokenRouteRouteImport } from './app/api/share/$token/route';
+import { Route as ApiOpdsProxyRouteRouteImport } from './app/api/opds/proxy/route';
+import { Route as ApiMetadataSearchRouteRouteImport } from './app/api/metadata/search/route';
+import { Route as ApiHardcoverGraphqlRouteRouteImport } from './app/api/hardcover/graphql/route';
+import { Route as ApiGoogleIapVerifyRouteRouteImport } from './app/api/google/iap-verify/route';
+import { Route as ApiAppleIapVerifyRouteRouteImport } from './app/api/apple/iap-verify/route';
+import { Route as ApiAiEmbedRouteRouteImport } from './app/api/ai/embed/route';
+import { Route as ApiAiChatRouteRouteImport } from './app/api/ai/chat/route';
+import { Route as UserSubscriptionSuccessIndexRouteImport } from './app/user/subscription/success/index';
+import { Route as ApiShareTokenRevokeRouteRouteImport } from './app/api/share/$token/revoke/route';
+import { Route as ApiShareTokenOgDotpngRouteRouteImport } from './app/api/share/$token/og[.]png/route';
+import { Route as ApiShareTokenImportRouteRouteImport } from './app/api/share/$token/import/route';
+import { Route as ApiShareTokenDownloadRouteRouteImport } from './app/api/share/$token/download/route';
+import { Route as ApiShareTokenCoverRouteRouteImport } from './app/api/share/$token/cover/route';
+import { Route as ApiShareTokenDownloadConfirmRouteRouteImport } from './app/api/share/$token/download/confirm/route';
 
 const UserRoute = UserRouteImport.update({
   id: '/user',
   path: '/user',
   getParentRoute: () => rootRouteImport,
-} as any)
+} as any);
 const ErrorRoute = ErrorRouteImport.update({
   id: '/error',
   path: '/error',
   getParentRoute: () => rootRouteImport,
-} as any)
+} as any);
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
-} as any)
+} as any);
 const UserIndexRoute = UserIndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => UserRoute,
-} as any)
+} as any);
 const UpdaterIndexRoute = UpdaterIndexRouteImport.update({
   id: '/updater/',
   path: '/updater/',
   getParentRoute: () => rootRouteImport,
-} as any)
+} as any);
 const SIndexRoute = SIndexRouteImport.update({
   id: '/s/',
   path: '/s/',
   getParentRoute: () => rootRouteImport,
-} as any)
+} as any);
 const ReaderIndexRoute = ReaderIndexRouteImport.update({
   id: '/reader/',
   path: '/reader/',
   getParentRoute: () => rootRouteImport,
-} as any)
+} as any);
 const OpdsIndexRoute = OpdsIndexRouteImport.update({
   id: '/opds/',
   path: '/opds/',
   getParentRoute: () => rootRouteImport,
-} as any)
+} as any);
 const OfflineIndexRoute = OfflineIndexRouteImport.update({
   id: '/offline/',
   path: '/offline/',
   getParentRoute: () => rootRouteImport,
-} as any)
+} as any);
 const OIndexRoute = OIndexRouteImport.update({
   id: '/o/',
   path: '/o/',
   getParentRoute: () => rootRouteImport,
-} as any)
+} as any);
 const LibraryIndexRoute = LibraryIndexRouteImport.update({
   id: '/library/',
   path: '/library/',
   getParentRoute: () => rootRouteImport,
-} as any)
+} as any);
 const AuthIndexRoute = AuthIndexRouteImport.update({
   id: '/auth/',
   path: '/auth/',
   getParentRoute: () => rootRouteImport,
-} as any)
+} as any);
 const ReaderIdsRoute = ReaderIdsRouteImport.update({
   id: '/reader/$ids',
   path: '/reader/$ids',
   getParentRoute: () => rootRouteImport,
-} as any)
+} as any);
 const ApiSyncRoute = ApiSyncRouteImport.update({
   id: '/api/sync',
   path: '/api/sync',
   getParentRoute: () => rootRouteImport,
-} as any)
+} as any);
 const ApiKosyncRoute = ApiKosyncRouteImport.update({
   id: '/api/kosync',
   path: '/api/kosync',
   getParentRoute: () => rootRouteImport,
-} as any)
+} as any);
 const AuthUpdateIndexRoute = AuthUpdateIndexRouteImport.update({
   id: '/auth/update/',
   path: '/auth/update/',
   getParentRoute: () => rootRouteImport,
-} as any)
+} as any);
 const AuthRecoveryIndexRoute = AuthRecoveryIndexRouteImport.update({
   id: '/auth/recovery/',
   path: '/auth/recovery/',
   getParentRoute: () => rootRouteImport,
-} as any)
+} as any);
 const AuthErrorIndexRoute = AuthErrorIndexRouteImport.update({
   id: '/auth/error/',
   path: '/auth/error/',
   getParentRoute: () => rootRouteImport,
-} as any)
+} as any);
 const AuthCallbackIndexRoute = AuthCallbackIndexRouteImport.update({
   id: '/auth/callback/',
   path: '/auth/callback/',
   getParentRoute: () => rootRouteImport,
-} as any)
+} as any);
 const ApiUserDeleteRoute = ApiUserDeleteRouteImport.update({
   id: '/api/user/delete',
   path: '/api/user/delete',
   getParentRoute: () => rootRouteImport,
-} as any)
+} as any);
 const ApiSyncReplicasRoute = ApiSyncReplicasRouteImport.update({
   id: '/replicas',
   path: '/replicas',
   getParentRoute: () => ApiSyncRoute,
-} as any)
+} as any);
 const ApiSyncReplicaKeysRoute = ApiSyncReplicaKeysRouteImport.update({
   id: '/replica-keys',
   path: '/replica-keys',
   getParentRoute: () => ApiSyncRoute,
-} as any)
+} as any);
 const ApiStorageUploadRoute = ApiStorageUploadRouteImport.update({
   id: '/api/storage/upload',
   path: '/api/storage/upload',
   getParentRoute: () => rootRouteImport,
-} as any)
+} as any);
 const ApiStorageStatsRoute = ApiStorageStatsRouteImport.update({
   id: '/api/storage/stats',
   path: '/api/storage/stats',
   getParentRoute: () => rootRouteImport,
-} as any)
+} as any);
 const ApiStoragePurgeRoute = ApiStoragePurgeRouteImport.update({
   id: '/api/storage/purge',
   path: '/api/storage/purge',
   getParentRoute: () => rootRouteImport,
-} as any)
+} as any);
 const ApiStorageListRoute = ApiStorageListRouteImport.update({
   id: '/api/storage/list',
   path: '/api/storage/list',
   getParentRoute: () => rootRouteImport,
-} as any)
+} as any);
 const ApiStorageDownloadRoute = ApiStorageDownloadRouteImport.update({
   id: '/api/storage/download',
   path: '/api/storage/download',
   getParentRoute: () => rootRouteImport,
-} as any)
+} as any);
 const ApiStorageDeleteRoute = ApiStorageDeleteRouteImport.update({
   id: '/api/storage/delete',
   path: '/api/storage/delete',
   getParentRoute: () => rootRouteImport,
-} as any)
+} as any);
 const ApiDeeplTranslateRoute = ApiDeeplTranslateRouteImport.update({
   id: '/api/deepl/translate',
   path: '/api/deepl/translate',
   getParentRoute: () => rootRouteImport,
-} as any)
+} as any);
 const ApiTtsEdgeRouteRoute = ApiTtsEdgeRouteRouteImport.update({
   id: '/api/tts/edge',
   path: '/api/tts/edge',
   getParentRoute: () => rootRouteImport,
-} as any)
+} as any);
 const ApiStripeWebhookRouteRoute = ApiStripeWebhookRouteRouteImport.update({
   id: '/api/stripe/webhook',
   path: '/api/stripe/webhook',
   getParentRoute: () => rootRouteImport,
-} as any)
+} as any);
 const ApiStripePortalRouteRoute = ApiStripePortalRouteRouteImport.update({
   id: '/api/stripe/portal',
   path: '/api/stripe/portal',
   getParentRoute: () => rootRouteImport,
-} as any)
+} as any);
 const ApiStripePlansRouteRoute = ApiStripePlansRouteRouteImport.update({
   id: '/api/stripe/plans',
   path: '/api/stripe/plans',
   getParentRoute: () => rootRouteImport,
-} as any)
+} as any);
 const ApiStripeCheckoutRouteRoute = ApiStripeCheckoutRouteRouteImport.update({
   id: '/api/stripe/checkout',
   path: '/api/stripe/checkout',
   getParentRoute: () => rootRouteImport,
-} as any)
+} as any);
 const ApiStripeCheckRouteRoute = ApiStripeCheckRouteRouteImport.update({
   id: '/api/stripe/check',
   path: '/api/stripe/check',
   getParentRoute: () => rootRouteImport,
-} as any)
+} as any);
 const ApiShareListRouteRoute = ApiShareListRouteRouteImport.update({
   id: '/api/share/list',
   path: '/api/share/list',
   getParentRoute: () => rootRouteImport,
-} as any)
+} as any);
 const ApiShareCreateRouteRoute = ApiShareCreateRouteRouteImport.update({
   id: '/api/share/create',
   path: '/api/share/create',
   getParentRoute: () => rootRouteImport,
-} as any)
+} as any);
+const ApiShareTokenRouteRoute = ApiShareTokenRouteRouteImport.update({
+  id: '/api/share/$token',
+  path: '/api/share/$token',
+  getParentRoute: () => rootRouteImport,
+} as any);
 const ApiOpdsProxyRouteRoute = ApiOpdsProxyRouteRouteImport.update({
   id: '/api/opds/proxy',
   path: '/api/opds/proxy',
   getParentRoute: () => rootRouteImport,
-} as any)
+} as any);
 const ApiMetadataSearchRouteRoute = ApiMetadataSearchRouteRouteImport.update({
   id: '/api/metadata/search',
   path: '/api/metadata/search',
   getParentRoute: () => rootRouteImport,
-} as any)
-const ApiHardcoverGraphqlRouteRoute =
-  ApiHardcoverGraphqlRouteRouteImport.update({
-    id: '/api/hardcover/graphql',
-    path: '/api/hardcover/graphql',
-    getParentRoute: () => rootRouteImport,
-  } as any)
+} as any);
+const ApiHardcoverGraphqlRouteRoute = ApiHardcoverGraphqlRouteRouteImport.update({
+  id: '/api/hardcover/graphql',
+  path: '/api/hardcover/graphql',
+  getParentRoute: () => rootRouteImport,
+} as any);
 const ApiGoogleIapVerifyRouteRoute = ApiGoogleIapVerifyRouteRouteImport.update({
   id: '/api/google/iap-verify',
   path: '/api/google/iap-verify',
   getParentRoute: () => rootRouteImport,
-} as any)
+} as any);
 const ApiAppleIapVerifyRouteRoute = ApiAppleIapVerifyRouteRouteImport.update({
   id: '/api/apple/iap-verify',
   path: '/api/apple/iap-verify',
   getParentRoute: () => rootRouteImport,
-} as any)
+} as any);
 const ApiAiEmbedRouteRoute = ApiAiEmbedRouteRouteImport.update({
   id: '/api/ai/embed',
   path: '/api/ai/embed',
   getParentRoute: () => rootRouteImport,
-} as any)
+} as any);
 const ApiAiChatRouteRoute = ApiAiChatRouteRouteImport.update({
   id: '/api/ai/chat',
   path: '/api/ai/chat',
   getParentRoute: () => rootRouteImport,
-} as any)
-const UserSubscriptionSuccessIndexRoute =
-  UserSubscriptionSuccessIndexRouteImport.update({
-    id: '/subscription/success/',
-    path: '/subscription/success/',
-    getParentRoute: () => UserRoute,
-  } as any)
+} as any);
+const UserSubscriptionSuccessIndexRoute = UserSubscriptionSuccessIndexRouteImport.update({
+  id: '/subscription/success/',
+  path: '/subscription/success/',
+  getParentRoute: () => UserRoute,
+} as any);
+const ApiShareTokenRevokeRouteRoute = ApiShareTokenRevokeRouteRouteImport.update({
+  id: '/revoke',
+  path: '/revoke',
+  getParentRoute: () => ApiShareTokenRouteRoute,
+} as any);
+const ApiShareTokenOgDotpngRouteRoute = ApiShareTokenOgDotpngRouteRouteImport.update({
+  id: '/og.png',
+  path: '/og.png',
+  getParentRoute: () => ApiShareTokenRouteRoute,
+} as any);
+const ApiShareTokenImportRouteRoute = ApiShareTokenImportRouteRouteImport.update({
+  id: '/import',
+  path: '/import',
+  getParentRoute: () => ApiShareTokenRouteRoute,
+} as any);
+const ApiShareTokenDownloadRouteRoute = ApiShareTokenDownloadRouteRouteImport.update({
+  id: '/download',
+  path: '/download',
+  getParentRoute: () => ApiShareTokenRouteRoute,
+} as any);
+const ApiShareTokenCoverRouteRoute = ApiShareTokenCoverRouteRouteImport.update({
+  id: '/cover',
+  path: '/cover',
+  getParentRoute: () => ApiShareTokenRouteRoute,
+} as any);
+const ApiShareTokenDownloadConfirmRouteRoute = ApiShareTokenDownloadConfirmRouteRouteImport.update({
+  id: '/confirm',
+  path: '/confirm',
+  getParentRoute: () => ApiShareTokenDownloadRouteRoute,
+} as any);
 
 export interface FileRoutesByFullPath {
-  '/': typeof IndexRoute
-  '/error': typeof ErrorRoute
-  '/user': typeof UserRouteWithChildren
-  '/api/kosync': typeof ApiKosyncRoute
-  '/api/sync': typeof ApiSyncRouteWithChildren
-  '/reader/$ids': typeof ReaderIdsRoute
-  '/auth/': typeof AuthIndexRoute
-  '/library/': typeof LibraryIndexRoute
-  '/o/': typeof OIndexRoute
-  '/offline/': typeof OfflineIndexRoute
-  '/opds/': typeof OpdsIndexRoute
-  '/reader/': typeof ReaderIndexRoute
-  '/s/': typeof SIndexRoute
-  '/updater/': typeof UpdaterIndexRoute
-  '/user/': typeof UserIndexRoute
-  '/api/ai/chat': typeof ApiAiChatRouteRoute
-  '/api/ai/embed': typeof ApiAiEmbedRouteRoute
-  '/api/apple/iap-verify': typeof ApiAppleIapVerifyRouteRoute
-  '/api/google/iap-verify': typeof ApiGoogleIapVerifyRouteRoute
-  '/api/hardcover/graphql': typeof ApiHardcoverGraphqlRouteRoute
-  '/api/metadata/search': typeof ApiMetadataSearchRouteRoute
-  '/api/opds/proxy': typeof ApiOpdsProxyRouteRoute
-  '/api/share/create': typeof ApiShareCreateRouteRoute
-  '/api/share/list': typeof ApiShareListRouteRoute
-  '/api/stripe/check': typeof ApiStripeCheckRouteRoute
-  '/api/stripe/checkout': typeof ApiStripeCheckoutRouteRoute
-  '/api/stripe/plans': typeof ApiStripePlansRouteRoute
-  '/api/stripe/portal': typeof ApiStripePortalRouteRoute
-  '/api/stripe/webhook': typeof ApiStripeWebhookRouteRoute
-  '/api/tts/edge': typeof ApiTtsEdgeRouteRoute
-  '/api/deepl/translate': typeof ApiDeeplTranslateRoute
-  '/api/storage/delete': typeof ApiStorageDeleteRoute
-  '/api/storage/download': typeof ApiStorageDownloadRoute
-  '/api/storage/list': typeof ApiStorageListRoute
-  '/api/storage/purge': typeof ApiStoragePurgeRoute
-  '/api/storage/stats': typeof ApiStorageStatsRoute
-  '/api/storage/upload': typeof ApiStorageUploadRoute
-  '/api/sync/replica-keys': typeof ApiSyncReplicaKeysRoute
-  '/api/sync/replicas': typeof ApiSyncReplicasRoute
-  '/api/user/delete': typeof ApiUserDeleteRoute
-  '/auth/callback/': typeof AuthCallbackIndexRoute
-  '/auth/error/': typeof AuthErrorIndexRoute
-  '/auth/recovery/': typeof AuthRecoveryIndexRoute
-  '/auth/update/': typeof AuthUpdateIndexRoute
-  '/user/subscription/success/': typeof UserSubscriptionSuccessIndexRoute
+  '/': typeof IndexRoute;
+  '/error': typeof ErrorRoute;
+  '/user': typeof UserRouteWithChildren;
+  '/api/kosync': typeof ApiKosyncRoute;
+  '/api/sync': typeof ApiSyncRouteWithChildren;
+  '/reader/$ids': typeof ReaderIdsRoute;
+  '/auth/': typeof AuthIndexRoute;
+  '/library/': typeof LibraryIndexRoute;
+  '/o/': typeof OIndexRoute;
+  '/offline/': typeof OfflineIndexRoute;
+  '/opds/': typeof OpdsIndexRoute;
+  '/reader/': typeof ReaderIndexRoute;
+  '/s/': typeof SIndexRoute;
+  '/updater/': typeof UpdaterIndexRoute;
+  '/user/': typeof UserIndexRoute;
+  '/api/ai/chat': typeof ApiAiChatRouteRoute;
+  '/api/ai/embed': typeof ApiAiEmbedRouteRoute;
+  '/api/apple/iap-verify': typeof ApiAppleIapVerifyRouteRoute;
+  '/api/google/iap-verify': typeof ApiGoogleIapVerifyRouteRoute;
+  '/api/hardcover/graphql': typeof ApiHardcoverGraphqlRouteRoute;
+  '/api/metadata/search': typeof ApiMetadataSearchRouteRoute;
+  '/api/opds/proxy': typeof ApiOpdsProxyRouteRoute;
+  '/api/share/$token': typeof ApiShareTokenRouteRouteWithChildren;
+  '/api/share/create': typeof ApiShareCreateRouteRoute;
+  '/api/share/list': typeof ApiShareListRouteRoute;
+  '/api/stripe/check': typeof ApiStripeCheckRouteRoute;
+  '/api/stripe/checkout': typeof ApiStripeCheckoutRouteRoute;
+  '/api/stripe/plans': typeof ApiStripePlansRouteRoute;
+  '/api/stripe/portal': typeof ApiStripePortalRouteRoute;
+  '/api/stripe/webhook': typeof ApiStripeWebhookRouteRoute;
+  '/api/tts/edge': typeof ApiTtsEdgeRouteRoute;
+  '/api/deepl/translate': typeof ApiDeeplTranslateRoute;
+  '/api/storage/delete': typeof ApiStorageDeleteRoute;
+  '/api/storage/download': typeof ApiStorageDownloadRoute;
+  '/api/storage/list': typeof ApiStorageListRoute;
+  '/api/storage/purge': typeof ApiStoragePurgeRoute;
+  '/api/storage/stats': typeof ApiStorageStatsRoute;
+  '/api/storage/upload': typeof ApiStorageUploadRoute;
+  '/api/sync/replica-keys': typeof ApiSyncReplicaKeysRoute;
+  '/api/sync/replicas': typeof ApiSyncReplicasRoute;
+  '/api/user/delete': typeof ApiUserDeleteRoute;
+  '/auth/callback/': typeof AuthCallbackIndexRoute;
+  '/auth/error/': typeof AuthErrorIndexRoute;
+  '/auth/recovery/': typeof AuthRecoveryIndexRoute;
+  '/auth/update/': typeof AuthUpdateIndexRoute;
+  '/api/share/$token/cover': typeof ApiShareTokenCoverRouteRoute;
+  '/api/share/$token/download': typeof ApiShareTokenDownloadRouteRouteWithChildren;
+  '/api/share/$token/import': typeof ApiShareTokenImportRouteRoute;
+  '/api/share/$token/og.png': typeof ApiShareTokenOgDotpngRouteRoute;
+  '/api/share/$token/revoke': typeof ApiShareTokenRevokeRouteRoute;
+  '/user/subscription/success/': typeof UserSubscriptionSuccessIndexRoute;
+  '/api/share/$token/download/confirm': typeof ApiShareTokenDownloadConfirmRouteRoute;
 }
 export interface FileRoutesByTo {
-  '/': typeof IndexRoute
-  '/error': typeof ErrorRoute
-  '/api/kosync': typeof ApiKosyncRoute
-  '/api/sync': typeof ApiSyncRouteWithChildren
-  '/reader/$ids': typeof ReaderIdsRoute
-  '/auth': typeof AuthIndexRoute
-  '/library': typeof LibraryIndexRoute
-  '/o': typeof OIndexRoute
-  '/offline': typeof OfflineIndexRoute
-  '/opds': typeof OpdsIndexRoute
-  '/reader': typeof ReaderIndexRoute
-  '/s': typeof SIndexRoute
-  '/updater': typeof UpdaterIndexRoute
-  '/user': typeof UserIndexRoute
-  '/api/ai/chat': typeof ApiAiChatRouteRoute
-  '/api/ai/embed': typeof ApiAiEmbedRouteRoute
-  '/api/apple/iap-verify': typeof ApiAppleIapVerifyRouteRoute
-  '/api/google/iap-verify': typeof ApiGoogleIapVerifyRouteRoute
-  '/api/hardcover/graphql': typeof ApiHardcoverGraphqlRouteRoute
-  '/api/metadata/search': typeof ApiMetadataSearchRouteRoute
-  '/api/opds/proxy': typeof ApiOpdsProxyRouteRoute
-  '/api/share/create': typeof ApiShareCreateRouteRoute
-  '/api/share/list': typeof ApiShareListRouteRoute
-  '/api/stripe/check': typeof ApiStripeCheckRouteRoute
-  '/api/stripe/checkout': typeof ApiStripeCheckoutRouteRoute
-  '/api/stripe/plans': typeof ApiStripePlansRouteRoute
-  '/api/stripe/portal': typeof ApiStripePortalRouteRoute
-  '/api/stripe/webhook': typeof ApiStripeWebhookRouteRoute
-  '/api/tts/edge': typeof ApiTtsEdgeRouteRoute
-  '/api/deepl/translate': typeof ApiDeeplTranslateRoute
-  '/api/storage/delete': typeof ApiStorageDeleteRoute
-  '/api/storage/download': typeof ApiStorageDownloadRoute
-  '/api/storage/list': typeof ApiStorageListRoute
-  '/api/storage/purge': typeof ApiStoragePurgeRoute
-  '/api/storage/stats': typeof ApiStorageStatsRoute
-  '/api/storage/upload': typeof ApiStorageUploadRoute
-  '/api/sync/replica-keys': typeof ApiSyncReplicaKeysRoute
-  '/api/sync/replicas': typeof ApiSyncReplicasRoute
-  '/api/user/delete': typeof ApiUserDeleteRoute
-  '/auth/callback': typeof AuthCallbackIndexRoute
-  '/auth/error': typeof AuthErrorIndexRoute
-  '/auth/recovery': typeof AuthRecoveryIndexRoute
-  '/auth/update': typeof AuthUpdateIndexRoute
-  '/user/subscription/success': typeof UserSubscriptionSuccessIndexRoute
+  '/': typeof IndexRoute;
+  '/error': typeof ErrorRoute;
+  '/api/kosync': typeof ApiKosyncRoute;
+  '/api/sync': typeof ApiSyncRouteWithChildren;
+  '/reader/$ids': typeof ReaderIdsRoute;
+  '/auth': typeof AuthIndexRoute;
+  '/library': typeof LibraryIndexRoute;
+  '/o': typeof OIndexRoute;
+  '/offline': typeof OfflineIndexRoute;
+  '/opds': typeof OpdsIndexRoute;
+  '/reader': typeof ReaderIndexRoute;
+  '/s': typeof SIndexRoute;
+  '/updater': typeof UpdaterIndexRoute;
+  '/user': typeof UserIndexRoute;
+  '/api/ai/chat': typeof ApiAiChatRouteRoute;
+  '/api/ai/embed': typeof ApiAiEmbedRouteRoute;
+  '/api/apple/iap-verify': typeof ApiAppleIapVerifyRouteRoute;
+  '/api/google/iap-verify': typeof ApiGoogleIapVerifyRouteRoute;
+  '/api/hardcover/graphql': typeof ApiHardcoverGraphqlRouteRoute;
+  '/api/metadata/search': typeof ApiMetadataSearchRouteRoute;
+  '/api/opds/proxy': typeof ApiOpdsProxyRouteRoute;
+  '/api/share/$token': typeof ApiShareTokenRouteRouteWithChildren;
+  '/api/share/create': typeof ApiShareCreateRouteRoute;
+  '/api/share/list': typeof ApiShareListRouteRoute;
+  '/api/stripe/check': typeof ApiStripeCheckRouteRoute;
+  '/api/stripe/checkout': typeof ApiStripeCheckoutRouteRoute;
+  '/api/stripe/plans': typeof ApiStripePlansRouteRoute;
+  '/api/stripe/portal': typeof ApiStripePortalRouteRoute;
+  '/api/stripe/webhook': typeof ApiStripeWebhookRouteRoute;
+  '/api/tts/edge': typeof ApiTtsEdgeRouteRoute;
+  '/api/deepl/translate': typeof ApiDeeplTranslateRoute;
+  '/api/storage/delete': typeof ApiStorageDeleteRoute;
+  '/api/storage/download': typeof ApiStorageDownloadRoute;
+  '/api/storage/list': typeof ApiStorageListRoute;
+  '/api/storage/purge': typeof ApiStoragePurgeRoute;
+  '/api/storage/stats': typeof ApiStorageStatsRoute;
+  '/api/storage/upload': typeof ApiStorageUploadRoute;
+  '/api/sync/replica-keys': typeof ApiSyncReplicaKeysRoute;
+  '/api/sync/replicas': typeof ApiSyncReplicasRoute;
+  '/api/user/delete': typeof ApiUserDeleteRoute;
+  '/auth/callback': typeof AuthCallbackIndexRoute;
+  '/auth/error': typeof AuthErrorIndexRoute;
+  '/auth/recovery': typeof AuthRecoveryIndexRoute;
+  '/auth/update': typeof AuthUpdateIndexRoute;
+  '/api/share/$token/cover': typeof ApiShareTokenCoverRouteRoute;
+  '/api/share/$token/download': typeof ApiShareTokenDownloadRouteRouteWithChildren;
+  '/api/share/$token/import': typeof ApiShareTokenImportRouteRoute;
+  '/api/share/$token/og.png': typeof ApiShareTokenOgDotpngRouteRoute;
+  '/api/share/$token/revoke': typeof ApiShareTokenRevokeRouteRoute;
+  '/user/subscription/success': typeof UserSubscriptionSuccessIndexRoute;
+  '/api/share/$token/download/confirm': typeof ApiShareTokenDownloadConfirmRouteRoute;
 }
 export interface FileRoutesById {
-  __root__: typeof rootRouteImport
-  '/': typeof IndexRoute
-  '/error': typeof ErrorRoute
-  '/user': typeof UserRouteWithChildren
-  '/api/kosync': typeof ApiKosyncRoute
-  '/api/sync': typeof ApiSyncRouteWithChildren
-  '/reader/$ids': typeof ReaderIdsRoute
-  '/auth/': typeof AuthIndexRoute
-  '/library/': typeof LibraryIndexRoute
-  '/o/': typeof OIndexRoute
-  '/offline/': typeof OfflineIndexRoute
-  '/opds/': typeof OpdsIndexRoute
-  '/reader/': typeof ReaderIndexRoute
-  '/s/': typeof SIndexRoute
-  '/updater/': typeof UpdaterIndexRoute
-  '/user/': typeof UserIndexRoute
-  '/api/ai/chat': typeof ApiAiChatRouteRoute
-  '/api/ai/embed': typeof ApiAiEmbedRouteRoute
-  '/api/apple/iap-verify': typeof ApiAppleIapVerifyRouteRoute
-  '/api/google/iap-verify': typeof ApiGoogleIapVerifyRouteRoute
-  '/api/hardcover/graphql': typeof ApiHardcoverGraphqlRouteRoute
-  '/api/metadata/search': typeof ApiMetadataSearchRouteRoute
-  '/api/opds/proxy': typeof ApiOpdsProxyRouteRoute
-  '/api/share/create': typeof ApiShareCreateRouteRoute
-  '/api/share/list': typeof ApiShareListRouteRoute
-  '/api/stripe/check': typeof ApiStripeCheckRouteRoute
-  '/api/stripe/checkout': typeof ApiStripeCheckoutRouteRoute
-  '/api/stripe/plans': typeof ApiStripePlansRouteRoute
-  '/api/stripe/portal': typeof ApiStripePortalRouteRoute
-  '/api/stripe/webhook': typeof ApiStripeWebhookRouteRoute
-  '/api/tts/edge': typeof ApiTtsEdgeRouteRoute
-  '/api/deepl/translate': typeof ApiDeeplTranslateRoute
-  '/api/storage/delete': typeof ApiStorageDeleteRoute
-  '/api/storage/download': typeof ApiStorageDownloadRoute
-  '/api/storage/list': typeof ApiStorageListRoute
-  '/api/storage/purge': typeof ApiStoragePurgeRoute
-  '/api/storage/stats': typeof ApiStorageStatsRoute
-  '/api/storage/upload': typeof ApiStorageUploadRoute
-  '/api/sync/replica-keys': typeof ApiSyncReplicaKeysRoute
-  '/api/sync/replicas': typeof ApiSyncReplicasRoute
-  '/api/user/delete': typeof ApiUserDeleteRoute
-  '/auth/callback/': typeof AuthCallbackIndexRoute
-  '/auth/error/': typeof AuthErrorIndexRoute
-  '/auth/recovery/': typeof AuthRecoveryIndexRoute
-  '/auth/update/': typeof AuthUpdateIndexRoute
-  '/user/subscription/success/': typeof UserSubscriptionSuccessIndexRoute
+  __root__: typeof rootRouteImport;
+  '/': typeof IndexRoute;
+  '/error': typeof ErrorRoute;
+  '/user': typeof UserRouteWithChildren;
+  '/api/kosync': typeof ApiKosyncRoute;
+  '/api/sync': typeof ApiSyncRouteWithChildren;
+  '/reader/$ids': typeof ReaderIdsRoute;
+  '/auth/': typeof AuthIndexRoute;
+  '/library/': typeof LibraryIndexRoute;
+  '/o/': typeof OIndexRoute;
+  '/offline/': typeof OfflineIndexRoute;
+  '/opds/': typeof OpdsIndexRoute;
+  '/reader/': typeof ReaderIndexRoute;
+  '/s/': typeof SIndexRoute;
+  '/updater/': typeof UpdaterIndexRoute;
+  '/user/': typeof UserIndexRoute;
+  '/api/ai/chat': typeof ApiAiChatRouteRoute;
+  '/api/ai/embed': typeof ApiAiEmbedRouteRoute;
+  '/api/apple/iap-verify': typeof ApiAppleIapVerifyRouteRoute;
+  '/api/google/iap-verify': typeof ApiGoogleIapVerifyRouteRoute;
+  '/api/hardcover/graphql': typeof ApiHardcoverGraphqlRouteRoute;
+  '/api/metadata/search': typeof ApiMetadataSearchRouteRoute;
+  '/api/opds/proxy': typeof ApiOpdsProxyRouteRoute;
+  '/api/share/$token': typeof ApiShareTokenRouteRouteWithChildren;
+  '/api/share/create': typeof ApiShareCreateRouteRoute;
+  '/api/share/list': typeof ApiShareListRouteRoute;
+  '/api/stripe/check': typeof ApiStripeCheckRouteRoute;
+  '/api/stripe/checkout': typeof ApiStripeCheckoutRouteRoute;
+  '/api/stripe/plans': typeof ApiStripePlansRouteRoute;
+  '/api/stripe/portal': typeof ApiStripePortalRouteRoute;
+  '/api/stripe/webhook': typeof ApiStripeWebhookRouteRoute;
+  '/api/tts/edge': typeof ApiTtsEdgeRouteRoute;
+  '/api/deepl/translate': typeof ApiDeeplTranslateRoute;
+  '/api/storage/delete': typeof ApiStorageDeleteRoute;
+  '/api/storage/download': typeof ApiStorageDownloadRoute;
+  '/api/storage/list': typeof ApiStorageListRoute;
+  '/api/storage/purge': typeof ApiStoragePurgeRoute;
+  '/api/storage/stats': typeof ApiStorageStatsRoute;
+  '/api/storage/upload': typeof ApiStorageUploadRoute;
+  '/api/sync/replica-keys': typeof ApiSyncReplicaKeysRoute;
+  '/api/sync/replicas': typeof ApiSyncReplicasRoute;
+  '/api/user/delete': typeof ApiUserDeleteRoute;
+  '/auth/callback/': typeof AuthCallbackIndexRoute;
+  '/auth/error/': typeof AuthErrorIndexRoute;
+  '/auth/recovery/': typeof AuthRecoveryIndexRoute;
+  '/auth/update/': typeof AuthUpdateIndexRoute;
+  '/api/share/$token/cover': typeof ApiShareTokenCoverRouteRoute;
+  '/api/share/$token/download': typeof ApiShareTokenDownloadRouteRouteWithChildren;
+  '/api/share/$token/import': typeof ApiShareTokenImportRouteRoute;
+  '/api/share/$token/og.png': typeof ApiShareTokenOgDotpngRouteRoute;
+  '/api/share/$token/revoke': typeof ApiShareTokenRevokeRouteRoute;
+  '/user/subscription/success/': typeof UserSubscriptionSuccessIndexRoute;
+  '/api/share/$token/download/confirm': typeof ApiShareTokenDownloadConfirmRouteRoute;
 }
 export interface FileRouteTypes {
-  fileRoutesByFullPath: FileRoutesByFullPath
+  fileRoutesByFullPath: FileRoutesByFullPath;
   fullPaths:
     | '/'
     | '/error'
@@ -449,6 +510,7 @@ export interface FileRouteTypes {
     | '/api/hardcover/graphql'
     | '/api/metadata/search'
     | '/api/opds/proxy'
+    | '/api/share/$token'
     | '/api/share/create'
     | '/api/share/list'
     | '/api/stripe/check'
@@ -471,8 +533,14 @@ export interface FileRouteTypes {
     | '/auth/error/'
     | '/auth/recovery/'
     | '/auth/update/'
+    | '/api/share/$token/cover'
+    | '/api/share/$token/download'
+    | '/api/share/$token/import'
+    | '/api/share/$token/og.png'
+    | '/api/share/$token/revoke'
     | '/user/subscription/success/'
-  fileRoutesByTo: FileRoutesByTo
+    | '/api/share/$token/download/confirm';
+  fileRoutesByTo: FileRoutesByTo;
   to:
     | '/'
     | '/error'
@@ -495,6 +563,7 @@ export interface FileRouteTypes {
     | '/api/hardcover/graphql'
     | '/api/metadata/search'
     | '/api/opds/proxy'
+    | '/api/share/$token'
     | '/api/share/create'
     | '/api/share/list'
     | '/api/stripe/check'
@@ -517,7 +586,13 @@ export interface FileRouteTypes {
     | '/auth/error'
     | '/auth/recovery'
     | '/auth/update'
+    | '/api/share/$token/cover'
+    | '/api/share/$token/download'
+    | '/api/share/$token/import'
+    | '/api/share/$token/og.png'
+    | '/api/share/$token/revoke'
     | '/user/subscription/success'
+    | '/api/share/$token/download/confirm';
   id:
     | '__root__'
     | '/'
@@ -542,6 +617,7 @@ export interface FileRouteTypes {
     | '/api/hardcover/graphql'
     | '/api/metadata/search'
     | '/api/opds/proxy'
+    | '/api/share/$token'
     | '/api/share/create'
     | '/api/share/list'
     | '/api/stripe/check'
@@ -564,397 +640,483 @@ export interface FileRouteTypes {
     | '/auth/error/'
     | '/auth/recovery/'
     | '/auth/update/'
+    | '/api/share/$token/cover'
+    | '/api/share/$token/download'
+    | '/api/share/$token/import'
+    | '/api/share/$token/og.png'
+    | '/api/share/$token/revoke'
     | '/user/subscription/success/'
-  fileRoutesById: FileRoutesById
+    | '/api/share/$token/download/confirm';
+  fileRoutesById: FileRoutesById;
 }
 export interface RootRouteChildren {
-  IndexRoute: typeof IndexRoute
-  ErrorRoute: typeof ErrorRoute
-  UserRoute: typeof UserRouteWithChildren
-  ApiKosyncRoute: typeof ApiKosyncRoute
-  ApiSyncRoute: typeof ApiSyncRouteWithChildren
-  ReaderIdsRoute: typeof ReaderIdsRoute
-  AuthIndexRoute: typeof AuthIndexRoute
-  LibraryIndexRoute: typeof LibraryIndexRoute
-  OIndexRoute: typeof OIndexRoute
-  OfflineIndexRoute: typeof OfflineIndexRoute
-  OpdsIndexRoute: typeof OpdsIndexRoute
-  ReaderIndexRoute: typeof ReaderIndexRoute
-  SIndexRoute: typeof SIndexRoute
-  UpdaterIndexRoute: typeof UpdaterIndexRoute
-  ApiAiChatRouteRoute: typeof ApiAiChatRouteRoute
-  ApiAiEmbedRouteRoute: typeof ApiAiEmbedRouteRoute
-  ApiAppleIapVerifyRouteRoute: typeof ApiAppleIapVerifyRouteRoute
-  ApiGoogleIapVerifyRouteRoute: typeof ApiGoogleIapVerifyRouteRoute
-  ApiHardcoverGraphqlRouteRoute: typeof ApiHardcoverGraphqlRouteRoute
-  ApiMetadataSearchRouteRoute: typeof ApiMetadataSearchRouteRoute
-  ApiOpdsProxyRouteRoute: typeof ApiOpdsProxyRouteRoute
-  ApiShareCreateRouteRoute: typeof ApiShareCreateRouteRoute
-  ApiShareListRouteRoute: typeof ApiShareListRouteRoute
-  ApiStripeCheckRouteRoute: typeof ApiStripeCheckRouteRoute
-  ApiStripeCheckoutRouteRoute: typeof ApiStripeCheckoutRouteRoute
-  ApiStripePlansRouteRoute: typeof ApiStripePlansRouteRoute
-  ApiStripePortalRouteRoute: typeof ApiStripePortalRouteRoute
-  ApiStripeWebhookRouteRoute: typeof ApiStripeWebhookRouteRoute
-  ApiTtsEdgeRouteRoute: typeof ApiTtsEdgeRouteRoute
-  ApiDeeplTranslateRoute: typeof ApiDeeplTranslateRoute
-  ApiStorageDeleteRoute: typeof ApiStorageDeleteRoute
-  ApiStorageDownloadRoute: typeof ApiStorageDownloadRoute
-  ApiStorageListRoute: typeof ApiStorageListRoute
-  ApiStoragePurgeRoute: typeof ApiStoragePurgeRoute
-  ApiStorageStatsRoute: typeof ApiStorageStatsRoute
-  ApiStorageUploadRoute: typeof ApiStorageUploadRoute
-  ApiUserDeleteRoute: typeof ApiUserDeleteRoute
-  AuthCallbackIndexRoute: typeof AuthCallbackIndexRoute
-  AuthErrorIndexRoute: typeof AuthErrorIndexRoute
-  AuthRecoveryIndexRoute: typeof AuthRecoveryIndexRoute
-  AuthUpdateIndexRoute: typeof AuthUpdateIndexRoute
+  IndexRoute: typeof IndexRoute;
+  ErrorRoute: typeof ErrorRoute;
+  UserRoute: typeof UserRouteWithChildren;
+  ApiKosyncRoute: typeof ApiKosyncRoute;
+  ApiSyncRoute: typeof ApiSyncRouteWithChildren;
+  ReaderIdsRoute: typeof ReaderIdsRoute;
+  AuthIndexRoute: typeof AuthIndexRoute;
+  LibraryIndexRoute: typeof LibraryIndexRoute;
+  OIndexRoute: typeof OIndexRoute;
+  OfflineIndexRoute: typeof OfflineIndexRoute;
+  OpdsIndexRoute: typeof OpdsIndexRoute;
+  ReaderIndexRoute: typeof ReaderIndexRoute;
+  SIndexRoute: typeof SIndexRoute;
+  UpdaterIndexRoute: typeof UpdaterIndexRoute;
+  ApiAiChatRouteRoute: typeof ApiAiChatRouteRoute;
+  ApiAiEmbedRouteRoute: typeof ApiAiEmbedRouteRoute;
+  ApiAppleIapVerifyRouteRoute: typeof ApiAppleIapVerifyRouteRoute;
+  ApiGoogleIapVerifyRouteRoute: typeof ApiGoogleIapVerifyRouteRoute;
+  ApiHardcoverGraphqlRouteRoute: typeof ApiHardcoverGraphqlRouteRoute;
+  ApiMetadataSearchRouteRoute: typeof ApiMetadataSearchRouteRoute;
+  ApiOpdsProxyRouteRoute: typeof ApiOpdsProxyRouteRoute;
+  ApiShareTokenRouteRoute: typeof ApiShareTokenRouteRouteWithChildren;
+  ApiShareCreateRouteRoute: typeof ApiShareCreateRouteRoute;
+  ApiShareListRouteRoute: typeof ApiShareListRouteRoute;
+  ApiStripeCheckRouteRoute: typeof ApiStripeCheckRouteRoute;
+  ApiStripeCheckoutRouteRoute: typeof ApiStripeCheckoutRouteRoute;
+  ApiStripePlansRouteRoute: typeof ApiStripePlansRouteRoute;
+  ApiStripePortalRouteRoute: typeof ApiStripePortalRouteRoute;
+  ApiStripeWebhookRouteRoute: typeof ApiStripeWebhookRouteRoute;
+  ApiTtsEdgeRouteRoute: typeof ApiTtsEdgeRouteRoute;
+  ApiDeeplTranslateRoute: typeof ApiDeeplTranslateRoute;
+  ApiStorageDeleteRoute: typeof ApiStorageDeleteRoute;
+  ApiStorageDownloadRoute: typeof ApiStorageDownloadRoute;
+  ApiStorageListRoute: typeof ApiStorageListRoute;
+  ApiStoragePurgeRoute: typeof ApiStoragePurgeRoute;
+  ApiStorageStatsRoute: typeof ApiStorageStatsRoute;
+  ApiStorageUploadRoute: typeof ApiStorageUploadRoute;
+  ApiUserDeleteRoute: typeof ApiUserDeleteRoute;
+  AuthCallbackIndexRoute: typeof AuthCallbackIndexRoute;
+  AuthErrorIndexRoute: typeof AuthErrorIndexRoute;
+  AuthRecoveryIndexRoute: typeof AuthRecoveryIndexRoute;
+  AuthUpdateIndexRoute: typeof AuthUpdateIndexRoute;
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
     '/user': {
-      id: '/user'
-      path: '/user'
-      fullPath: '/user'
-      preLoaderRoute: typeof UserRouteImport
-      parentRoute: typeof rootRouteImport
-    }
+      id: '/user';
+      path: '/user';
+      fullPath: '/user';
+      preLoaderRoute: typeof UserRouteImport;
+      parentRoute: typeof rootRouteImport;
+    };
     '/error': {
-      id: '/error'
-      path: '/error'
-      fullPath: '/error'
-      preLoaderRoute: typeof ErrorRouteImport
-      parentRoute: typeof rootRouteImport
-    }
+      id: '/error';
+      path: '/error';
+      fullPath: '/error';
+      preLoaderRoute: typeof ErrorRouteImport;
+      parentRoute: typeof rootRouteImport;
+    };
     '/': {
-      id: '/'
-      path: '/'
-      fullPath: '/'
-      preLoaderRoute: typeof IndexRouteImport
-      parentRoute: typeof rootRouteImport
-    }
+      id: '/';
+      path: '/';
+      fullPath: '/';
+      preLoaderRoute: typeof IndexRouteImport;
+      parentRoute: typeof rootRouteImport;
+    };
     '/user/': {
-      id: '/user/'
-      path: '/'
-      fullPath: '/user/'
-      preLoaderRoute: typeof UserIndexRouteImport
-      parentRoute: typeof UserRoute
-    }
+      id: '/user/';
+      path: '/';
+      fullPath: '/user/';
+      preLoaderRoute: typeof UserIndexRouteImport;
+      parentRoute: typeof UserRoute;
+    };
     '/updater/': {
-      id: '/updater/'
-      path: '/updater'
-      fullPath: '/updater/'
-      preLoaderRoute: typeof UpdaterIndexRouteImport
-      parentRoute: typeof rootRouteImport
-    }
+      id: '/updater/';
+      path: '/updater';
+      fullPath: '/updater/';
+      preLoaderRoute: typeof UpdaterIndexRouteImport;
+      parentRoute: typeof rootRouteImport;
+    };
     '/s/': {
-      id: '/s/'
-      path: '/s'
-      fullPath: '/s/'
-      preLoaderRoute: typeof SIndexRouteImport
-      parentRoute: typeof rootRouteImport
-    }
+      id: '/s/';
+      path: '/s';
+      fullPath: '/s/';
+      preLoaderRoute: typeof SIndexRouteImport;
+      parentRoute: typeof rootRouteImport;
+    };
     '/reader/': {
-      id: '/reader/'
-      path: '/reader'
-      fullPath: '/reader/'
-      preLoaderRoute: typeof ReaderIndexRouteImport
-      parentRoute: typeof rootRouteImport
-    }
+      id: '/reader/';
+      path: '/reader';
+      fullPath: '/reader/';
+      preLoaderRoute: typeof ReaderIndexRouteImport;
+      parentRoute: typeof rootRouteImport;
+    };
     '/opds/': {
-      id: '/opds/'
-      path: '/opds'
-      fullPath: '/opds/'
-      preLoaderRoute: typeof OpdsIndexRouteImport
-      parentRoute: typeof rootRouteImport
-    }
+      id: '/opds/';
+      path: '/opds';
+      fullPath: '/opds/';
+      preLoaderRoute: typeof OpdsIndexRouteImport;
+      parentRoute: typeof rootRouteImport;
+    };
     '/offline/': {
-      id: '/offline/'
-      path: '/offline'
-      fullPath: '/offline/'
-      preLoaderRoute: typeof OfflineIndexRouteImport
-      parentRoute: typeof rootRouteImport
-    }
+      id: '/offline/';
+      path: '/offline';
+      fullPath: '/offline/';
+      preLoaderRoute: typeof OfflineIndexRouteImport;
+      parentRoute: typeof rootRouteImport;
+    };
     '/o/': {
-      id: '/o/'
-      path: '/o'
-      fullPath: '/o/'
-      preLoaderRoute: typeof OIndexRouteImport
-      parentRoute: typeof rootRouteImport
-    }
+      id: '/o/';
+      path: '/o';
+      fullPath: '/o/';
+      preLoaderRoute: typeof OIndexRouteImport;
+      parentRoute: typeof rootRouteImport;
+    };
     '/library/': {
-      id: '/library/'
-      path: '/library'
-      fullPath: '/library/'
-      preLoaderRoute: typeof LibraryIndexRouteImport
-      parentRoute: typeof rootRouteImport
-    }
+      id: '/library/';
+      path: '/library';
+      fullPath: '/library/';
+      preLoaderRoute: typeof LibraryIndexRouteImport;
+      parentRoute: typeof rootRouteImport;
+    };
     '/auth/': {
-      id: '/auth/'
-      path: '/auth'
-      fullPath: '/auth/'
-      preLoaderRoute: typeof AuthIndexRouteImport
-      parentRoute: typeof rootRouteImport
-    }
+      id: '/auth/';
+      path: '/auth';
+      fullPath: '/auth/';
+      preLoaderRoute: typeof AuthIndexRouteImport;
+      parentRoute: typeof rootRouteImport;
+    };
     '/reader/$ids': {
-      id: '/reader/$ids'
-      path: '/reader/$ids'
-      fullPath: '/reader/$ids'
-      preLoaderRoute: typeof ReaderIdsRouteImport
-      parentRoute: typeof rootRouteImport
-    }
+      id: '/reader/$ids';
+      path: '/reader/$ids';
+      fullPath: '/reader/$ids';
+      preLoaderRoute: typeof ReaderIdsRouteImport;
+      parentRoute: typeof rootRouteImport;
+    };
     '/api/sync': {
-      id: '/api/sync'
-      path: '/api/sync'
-      fullPath: '/api/sync'
-      preLoaderRoute: typeof ApiSyncRouteImport
-      parentRoute: typeof rootRouteImport
-    }
+      id: '/api/sync';
+      path: '/api/sync';
+      fullPath: '/api/sync';
+      preLoaderRoute: typeof ApiSyncRouteImport;
+      parentRoute: typeof rootRouteImport;
+    };
     '/api/kosync': {
-      id: '/api/kosync'
-      path: '/api/kosync'
-      fullPath: '/api/kosync'
-      preLoaderRoute: typeof ApiKosyncRouteImport
-      parentRoute: typeof rootRouteImport
-    }
+      id: '/api/kosync';
+      path: '/api/kosync';
+      fullPath: '/api/kosync';
+      preLoaderRoute: typeof ApiKosyncRouteImport;
+      parentRoute: typeof rootRouteImport;
+    };
     '/auth/update/': {
-      id: '/auth/update/'
-      path: '/auth/update'
-      fullPath: '/auth/update/'
-      preLoaderRoute: typeof AuthUpdateIndexRouteImport
-      parentRoute: typeof rootRouteImport
-    }
+      id: '/auth/update/';
+      path: '/auth/update';
+      fullPath: '/auth/update/';
+      preLoaderRoute: typeof AuthUpdateIndexRouteImport;
+      parentRoute: typeof rootRouteImport;
+    };
     '/auth/recovery/': {
-      id: '/auth/recovery/'
-      path: '/auth/recovery'
-      fullPath: '/auth/recovery/'
-      preLoaderRoute: typeof AuthRecoveryIndexRouteImport
-      parentRoute: typeof rootRouteImport
-    }
+      id: '/auth/recovery/';
+      path: '/auth/recovery';
+      fullPath: '/auth/recovery/';
+      preLoaderRoute: typeof AuthRecoveryIndexRouteImport;
+      parentRoute: typeof rootRouteImport;
+    };
     '/auth/error/': {
-      id: '/auth/error/'
-      path: '/auth/error'
-      fullPath: '/auth/error/'
-      preLoaderRoute: typeof AuthErrorIndexRouteImport
-      parentRoute: typeof rootRouteImport
-    }
+      id: '/auth/error/';
+      path: '/auth/error';
+      fullPath: '/auth/error/';
+      preLoaderRoute: typeof AuthErrorIndexRouteImport;
+      parentRoute: typeof rootRouteImport;
+    };
     '/auth/callback/': {
-      id: '/auth/callback/'
-      path: '/auth/callback'
-      fullPath: '/auth/callback/'
-      preLoaderRoute: typeof AuthCallbackIndexRouteImport
-      parentRoute: typeof rootRouteImport
-    }
+      id: '/auth/callback/';
+      path: '/auth/callback';
+      fullPath: '/auth/callback/';
+      preLoaderRoute: typeof AuthCallbackIndexRouteImport;
+      parentRoute: typeof rootRouteImport;
+    };
     '/api/user/delete': {
-      id: '/api/user/delete'
-      path: '/api/user/delete'
-      fullPath: '/api/user/delete'
-      preLoaderRoute: typeof ApiUserDeleteRouteImport
-      parentRoute: typeof rootRouteImport
-    }
+      id: '/api/user/delete';
+      path: '/api/user/delete';
+      fullPath: '/api/user/delete';
+      preLoaderRoute: typeof ApiUserDeleteRouteImport;
+      parentRoute: typeof rootRouteImport;
+    };
     '/api/sync/replicas': {
-      id: '/api/sync/replicas'
-      path: '/replicas'
-      fullPath: '/api/sync/replicas'
-      preLoaderRoute: typeof ApiSyncReplicasRouteImport
-      parentRoute: typeof ApiSyncRoute
-    }
+      id: '/api/sync/replicas';
+      path: '/replicas';
+      fullPath: '/api/sync/replicas';
+      preLoaderRoute: typeof ApiSyncReplicasRouteImport;
+      parentRoute: typeof ApiSyncRoute;
+    };
     '/api/sync/replica-keys': {
-      id: '/api/sync/replica-keys'
-      path: '/replica-keys'
-      fullPath: '/api/sync/replica-keys'
-      preLoaderRoute: typeof ApiSyncReplicaKeysRouteImport
-      parentRoute: typeof ApiSyncRoute
-    }
+      id: '/api/sync/replica-keys';
+      path: '/replica-keys';
+      fullPath: '/api/sync/replica-keys';
+      preLoaderRoute: typeof ApiSyncReplicaKeysRouteImport;
+      parentRoute: typeof ApiSyncRoute;
+    };
     '/api/storage/upload': {
-      id: '/api/storage/upload'
-      path: '/api/storage/upload'
-      fullPath: '/api/storage/upload'
-      preLoaderRoute: typeof ApiStorageUploadRouteImport
-      parentRoute: typeof rootRouteImport
-    }
+      id: '/api/storage/upload';
+      path: '/api/storage/upload';
+      fullPath: '/api/storage/upload';
+      preLoaderRoute: typeof ApiStorageUploadRouteImport;
+      parentRoute: typeof rootRouteImport;
+    };
     '/api/storage/stats': {
-      id: '/api/storage/stats'
-      path: '/api/storage/stats'
-      fullPath: '/api/storage/stats'
-      preLoaderRoute: typeof ApiStorageStatsRouteImport
-      parentRoute: typeof rootRouteImport
-    }
+      id: '/api/storage/stats';
+      path: '/api/storage/stats';
+      fullPath: '/api/storage/stats';
+      preLoaderRoute: typeof ApiStorageStatsRouteImport;
+      parentRoute: typeof rootRouteImport;
+    };
     '/api/storage/purge': {
-      id: '/api/storage/purge'
-      path: '/api/storage/purge'
-      fullPath: '/api/storage/purge'
-      preLoaderRoute: typeof ApiStoragePurgeRouteImport
-      parentRoute: typeof rootRouteImport
-    }
+      id: '/api/storage/purge';
+      path: '/api/storage/purge';
+      fullPath: '/api/storage/purge';
+      preLoaderRoute: typeof ApiStoragePurgeRouteImport;
+      parentRoute: typeof rootRouteImport;
+    };
     '/api/storage/list': {
-      id: '/api/storage/list'
-      path: '/api/storage/list'
-      fullPath: '/api/storage/list'
-      preLoaderRoute: typeof ApiStorageListRouteImport
-      parentRoute: typeof rootRouteImport
-    }
+      id: '/api/storage/list';
+      path: '/api/storage/list';
+      fullPath: '/api/storage/list';
+      preLoaderRoute: typeof ApiStorageListRouteImport;
+      parentRoute: typeof rootRouteImport;
+    };
     '/api/storage/download': {
-      id: '/api/storage/download'
-      path: '/api/storage/download'
-      fullPath: '/api/storage/download'
-      preLoaderRoute: typeof ApiStorageDownloadRouteImport
-      parentRoute: typeof rootRouteImport
-    }
+      id: '/api/storage/download';
+      path: '/api/storage/download';
+      fullPath: '/api/storage/download';
+      preLoaderRoute: typeof ApiStorageDownloadRouteImport;
+      parentRoute: typeof rootRouteImport;
+    };
     '/api/storage/delete': {
-      id: '/api/storage/delete'
-      path: '/api/storage/delete'
-      fullPath: '/api/storage/delete'
-      preLoaderRoute: typeof ApiStorageDeleteRouteImport
-      parentRoute: typeof rootRouteImport
-    }
+      id: '/api/storage/delete';
+      path: '/api/storage/delete';
+      fullPath: '/api/storage/delete';
+      preLoaderRoute: typeof ApiStorageDeleteRouteImport;
+      parentRoute: typeof rootRouteImport;
+    };
     '/api/deepl/translate': {
-      id: '/api/deepl/translate'
-      path: '/api/deepl/translate'
-      fullPath: '/api/deepl/translate'
-      preLoaderRoute: typeof ApiDeeplTranslateRouteImport
-      parentRoute: typeof rootRouteImport
-    }
+      id: '/api/deepl/translate';
+      path: '/api/deepl/translate';
+      fullPath: '/api/deepl/translate';
+      preLoaderRoute: typeof ApiDeeplTranslateRouteImport;
+      parentRoute: typeof rootRouteImport;
+    };
     '/api/tts/edge': {
-      id: '/api/tts/edge'
-      path: '/api/tts/edge'
-      fullPath: '/api/tts/edge'
-      preLoaderRoute: typeof ApiTtsEdgeRouteRouteImport
-      parentRoute: typeof rootRouteImport
-    }
+      id: '/api/tts/edge';
+      path: '/api/tts/edge';
+      fullPath: '/api/tts/edge';
+      preLoaderRoute: typeof ApiTtsEdgeRouteRouteImport;
+      parentRoute: typeof rootRouteImport;
+    };
     '/api/stripe/webhook': {
-      id: '/api/stripe/webhook'
-      path: '/api/stripe/webhook'
-      fullPath: '/api/stripe/webhook'
-      preLoaderRoute: typeof ApiStripeWebhookRouteRouteImport
-      parentRoute: typeof rootRouteImport
-    }
+      id: '/api/stripe/webhook';
+      path: '/api/stripe/webhook';
+      fullPath: '/api/stripe/webhook';
+      preLoaderRoute: typeof ApiStripeWebhookRouteRouteImport;
+      parentRoute: typeof rootRouteImport;
+    };
     '/api/stripe/portal': {
-      id: '/api/stripe/portal'
-      path: '/api/stripe/portal'
-      fullPath: '/api/stripe/portal'
-      preLoaderRoute: typeof ApiStripePortalRouteRouteImport
-      parentRoute: typeof rootRouteImport
-    }
+      id: '/api/stripe/portal';
+      path: '/api/stripe/portal';
+      fullPath: '/api/stripe/portal';
+      preLoaderRoute: typeof ApiStripePortalRouteRouteImport;
+      parentRoute: typeof rootRouteImport;
+    };
     '/api/stripe/plans': {
-      id: '/api/stripe/plans'
-      path: '/api/stripe/plans'
-      fullPath: '/api/stripe/plans'
-      preLoaderRoute: typeof ApiStripePlansRouteRouteImport
-      parentRoute: typeof rootRouteImport
-    }
+      id: '/api/stripe/plans';
+      path: '/api/stripe/plans';
+      fullPath: '/api/stripe/plans';
+      preLoaderRoute: typeof ApiStripePlansRouteRouteImport;
+      parentRoute: typeof rootRouteImport;
+    };
     '/api/stripe/checkout': {
-      id: '/api/stripe/checkout'
-      path: '/api/stripe/checkout'
-      fullPath: '/api/stripe/checkout'
-      preLoaderRoute: typeof ApiStripeCheckoutRouteRouteImport
-      parentRoute: typeof rootRouteImport
-    }
+      id: '/api/stripe/checkout';
+      path: '/api/stripe/checkout';
+      fullPath: '/api/stripe/checkout';
+      preLoaderRoute: typeof ApiStripeCheckoutRouteRouteImport;
+      parentRoute: typeof rootRouteImport;
+    };
     '/api/stripe/check': {
-      id: '/api/stripe/check'
-      path: '/api/stripe/check'
-      fullPath: '/api/stripe/check'
-      preLoaderRoute: typeof ApiStripeCheckRouteRouteImport
-      parentRoute: typeof rootRouteImport
-    }
+      id: '/api/stripe/check';
+      path: '/api/stripe/check';
+      fullPath: '/api/stripe/check';
+      preLoaderRoute: typeof ApiStripeCheckRouteRouteImport;
+      parentRoute: typeof rootRouteImport;
+    };
     '/api/share/list': {
-      id: '/api/share/list'
-      path: '/api/share/list'
-      fullPath: '/api/share/list'
-      preLoaderRoute: typeof ApiShareListRouteRouteImport
-      parentRoute: typeof rootRouteImport
-    }
+      id: '/api/share/list';
+      path: '/api/share/list';
+      fullPath: '/api/share/list';
+      preLoaderRoute: typeof ApiShareListRouteRouteImport;
+      parentRoute: typeof rootRouteImport;
+    };
     '/api/share/create': {
-      id: '/api/share/create'
-      path: '/api/share/create'
-      fullPath: '/api/share/create'
-      preLoaderRoute: typeof ApiShareCreateRouteRouteImport
-      parentRoute: typeof rootRouteImport
-    }
+      id: '/api/share/create';
+      path: '/api/share/create';
+      fullPath: '/api/share/create';
+      preLoaderRoute: typeof ApiShareCreateRouteRouteImport;
+      parentRoute: typeof rootRouteImport;
+    };
+    '/api/share/$token': {
+      id: '/api/share/$token';
+      path: '/api/share/$token';
+      fullPath: '/api/share/$token';
+      preLoaderRoute: typeof ApiShareTokenRouteRouteImport;
+      parentRoute: typeof rootRouteImport;
+    };
     '/api/opds/proxy': {
-      id: '/api/opds/proxy'
-      path: '/api/opds/proxy'
-      fullPath: '/api/opds/proxy'
-      preLoaderRoute: typeof ApiOpdsProxyRouteRouteImport
-      parentRoute: typeof rootRouteImport
-    }
+      id: '/api/opds/proxy';
+      path: '/api/opds/proxy';
+      fullPath: '/api/opds/proxy';
+      preLoaderRoute: typeof ApiOpdsProxyRouteRouteImport;
+      parentRoute: typeof rootRouteImport;
+    };
     '/api/metadata/search': {
-      id: '/api/metadata/search'
-      path: '/api/metadata/search'
-      fullPath: '/api/metadata/search'
-      preLoaderRoute: typeof ApiMetadataSearchRouteRouteImport
-      parentRoute: typeof rootRouteImport
-    }
+      id: '/api/metadata/search';
+      path: '/api/metadata/search';
+      fullPath: '/api/metadata/search';
+      preLoaderRoute: typeof ApiMetadataSearchRouteRouteImport;
+      parentRoute: typeof rootRouteImport;
+    };
     '/api/hardcover/graphql': {
-      id: '/api/hardcover/graphql'
-      path: '/api/hardcover/graphql'
-      fullPath: '/api/hardcover/graphql'
-      preLoaderRoute: typeof ApiHardcoverGraphqlRouteRouteImport
-      parentRoute: typeof rootRouteImport
-    }
+      id: '/api/hardcover/graphql';
+      path: '/api/hardcover/graphql';
+      fullPath: '/api/hardcover/graphql';
+      preLoaderRoute: typeof ApiHardcoverGraphqlRouteRouteImport;
+      parentRoute: typeof rootRouteImport;
+    };
     '/api/google/iap-verify': {
-      id: '/api/google/iap-verify'
-      path: '/api/google/iap-verify'
-      fullPath: '/api/google/iap-verify'
-      preLoaderRoute: typeof ApiGoogleIapVerifyRouteRouteImport
-      parentRoute: typeof rootRouteImport
-    }
+      id: '/api/google/iap-verify';
+      path: '/api/google/iap-verify';
+      fullPath: '/api/google/iap-verify';
+      preLoaderRoute: typeof ApiGoogleIapVerifyRouteRouteImport;
+      parentRoute: typeof rootRouteImport;
+    };
     '/api/apple/iap-verify': {
-      id: '/api/apple/iap-verify'
-      path: '/api/apple/iap-verify'
-      fullPath: '/api/apple/iap-verify'
-      preLoaderRoute: typeof ApiAppleIapVerifyRouteRouteImport
-      parentRoute: typeof rootRouteImport
-    }
+      id: '/api/apple/iap-verify';
+      path: '/api/apple/iap-verify';
+      fullPath: '/api/apple/iap-verify';
+      preLoaderRoute: typeof ApiAppleIapVerifyRouteRouteImport;
+      parentRoute: typeof rootRouteImport;
+    };
     '/api/ai/embed': {
-      id: '/api/ai/embed'
-      path: '/api/ai/embed'
-      fullPath: '/api/ai/embed'
-      preLoaderRoute: typeof ApiAiEmbedRouteRouteImport
-      parentRoute: typeof rootRouteImport
-    }
+      id: '/api/ai/embed';
+      path: '/api/ai/embed';
+      fullPath: '/api/ai/embed';
+      preLoaderRoute: typeof ApiAiEmbedRouteRouteImport;
+      parentRoute: typeof rootRouteImport;
+    };
     '/api/ai/chat': {
-      id: '/api/ai/chat'
-      path: '/api/ai/chat'
-      fullPath: '/api/ai/chat'
-      preLoaderRoute: typeof ApiAiChatRouteRouteImport
-      parentRoute: typeof rootRouteImport
-    }
+      id: '/api/ai/chat';
+      path: '/api/ai/chat';
+      fullPath: '/api/ai/chat';
+      preLoaderRoute: typeof ApiAiChatRouteRouteImport;
+      parentRoute: typeof rootRouteImport;
+    };
     '/user/subscription/success/': {
-      id: '/user/subscription/success/'
-      path: '/subscription/success'
-      fullPath: '/user/subscription/success/'
-      preLoaderRoute: typeof UserSubscriptionSuccessIndexRouteImport
-      parentRoute: typeof UserRoute
-    }
+      id: '/user/subscription/success/';
+      path: '/subscription/success';
+      fullPath: '/user/subscription/success/';
+      preLoaderRoute: typeof UserSubscriptionSuccessIndexRouteImport;
+      parentRoute: typeof UserRoute;
+    };
+    '/api/share/$token/revoke': {
+      id: '/api/share/$token/revoke';
+      path: '/revoke';
+      fullPath: '/api/share/$token/revoke';
+      preLoaderRoute: typeof ApiShareTokenRevokeRouteRouteImport;
+      parentRoute: typeof ApiShareTokenRouteRoute;
+    };
+    '/api/share/$token/og.png': {
+      id: '/api/share/$token/og.png';
+      path: '/og.png';
+      fullPath: '/api/share/$token/og.png';
+      preLoaderRoute: typeof ApiShareTokenOgDotpngRouteRouteImport;
+      parentRoute: typeof ApiShareTokenRouteRoute;
+    };
+    '/api/share/$token/import': {
+      id: '/api/share/$token/import';
+      path: '/import';
+      fullPath: '/api/share/$token/import';
+      preLoaderRoute: typeof ApiShareTokenImportRouteRouteImport;
+      parentRoute: typeof ApiShareTokenRouteRoute;
+    };
+    '/api/share/$token/download': {
+      id: '/api/share/$token/download';
+      path: '/download';
+      fullPath: '/api/share/$token/download';
+      preLoaderRoute: typeof ApiShareTokenDownloadRouteRouteImport;
+      parentRoute: typeof ApiShareTokenRouteRoute;
+    };
+    '/api/share/$token/cover': {
+      id: '/api/share/$token/cover';
+      path: '/cover';
+      fullPath: '/api/share/$token/cover';
+      preLoaderRoute: typeof ApiShareTokenCoverRouteRouteImport;
+      parentRoute: typeof ApiShareTokenRouteRoute;
+    };
+    '/api/share/$token/download/confirm': {
+      id: '/api/share/$token/download/confirm';
+      path: '/confirm';
+      fullPath: '/api/share/$token/download/confirm';
+      preLoaderRoute: typeof ApiShareTokenDownloadConfirmRouteRouteImport;
+      parentRoute: typeof ApiShareTokenDownloadRouteRoute;
+    };
   }
 }
 
 interface UserRouteChildren {
-  UserIndexRoute: typeof UserIndexRoute
-  UserSubscriptionSuccessIndexRoute: typeof UserSubscriptionSuccessIndexRoute
+  UserIndexRoute: typeof UserIndexRoute;
+  UserSubscriptionSuccessIndexRoute: typeof UserSubscriptionSuccessIndexRoute;
 }
 
 const UserRouteChildren: UserRouteChildren = {
   UserIndexRoute: UserIndexRoute,
   UserSubscriptionSuccessIndexRoute: UserSubscriptionSuccessIndexRoute,
-}
+};
 
-const UserRouteWithChildren = UserRoute._addFileChildren(UserRouteChildren)
+const UserRouteWithChildren = UserRoute._addFileChildren(UserRouteChildren);
 
 interface ApiSyncRouteChildren {
-  ApiSyncReplicaKeysRoute: typeof ApiSyncReplicaKeysRoute
-  ApiSyncReplicasRoute: typeof ApiSyncReplicasRoute
+  ApiSyncReplicaKeysRoute: typeof ApiSyncReplicaKeysRoute;
+  ApiSyncReplicasRoute: typeof ApiSyncReplicasRoute;
 }
 
 const ApiSyncRouteChildren: ApiSyncRouteChildren = {
   ApiSyncReplicaKeysRoute: ApiSyncReplicaKeysRoute,
   ApiSyncReplicasRoute: ApiSyncReplicasRoute,
+};
+
+const ApiSyncRouteWithChildren = ApiSyncRoute._addFileChildren(ApiSyncRouteChildren);
+
+interface ApiShareTokenDownloadRouteRouteChildren {
+  ApiShareTokenDownloadConfirmRouteRoute: typeof ApiShareTokenDownloadConfirmRouteRoute;
 }
 
-const ApiSyncRouteWithChildren =
-  ApiSyncRoute._addFileChildren(ApiSyncRouteChildren)
+const ApiShareTokenDownloadRouteRouteChildren: ApiShareTokenDownloadRouteRouteChildren = {
+  ApiShareTokenDownloadConfirmRouteRoute: ApiShareTokenDownloadConfirmRouteRoute,
+};
+
+const ApiShareTokenDownloadRouteRouteWithChildren =
+  ApiShareTokenDownloadRouteRoute._addFileChildren(ApiShareTokenDownloadRouteRouteChildren);
+
+interface ApiShareTokenRouteRouteChildren {
+  ApiShareTokenCoverRouteRoute: typeof ApiShareTokenCoverRouteRoute;
+  ApiShareTokenDownloadRouteRoute: typeof ApiShareTokenDownloadRouteRouteWithChildren;
+  ApiShareTokenImportRouteRoute: typeof ApiShareTokenImportRouteRoute;
+  ApiShareTokenOgDotpngRouteRoute: typeof ApiShareTokenOgDotpngRouteRoute;
+  ApiShareTokenRevokeRouteRoute: typeof ApiShareTokenRevokeRouteRoute;
+}
+
+const ApiShareTokenRouteRouteChildren: ApiShareTokenRouteRouteChildren = {
+  ApiShareTokenCoverRouteRoute: ApiShareTokenCoverRouteRoute,
+  ApiShareTokenDownloadRouteRoute: ApiShareTokenDownloadRouteRouteWithChildren,
+  ApiShareTokenImportRouteRoute: ApiShareTokenImportRouteRoute,
+  ApiShareTokenOgDotpngRouteRoute: ApiShareTokenOgDotpngRouteRoute,
+  ApiShareTokenRevokeRouteRoute: ApiShareTokenRevokeRouteRoute,
+};
+
+const ApiShareTokenRouteRouteWithChildren = ApiShareTokenRouteRoute._addFileChildren(
+  ApiShareTokenRouteRouteChildren,
+);
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
@@ -978,6 +1140,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiHardcoverGraphqlRouteRoute: ApiHardcoverGraphqlRouteRoute,
   ApiMetadataSearchRouteRoute: ApiMetadataSearchRouteRoute,
   ApiOpdsProxyRouteRoute: ApiOpdsProxyRouteRoute,
+  ApiShareTokenRouteRoute: ApiShareTokenRouteRouteWithChildren,
   ApiShareCreateRouteRoute: ApiShareCreateRouteRoute,
   ApiShareListRouteRoute: ApiShareListRouteRoute,
   ApiStripeCheckRouteRoute: ApiStripeCheckRouteRoute,
@@ -998,17 +1161,17 @@ const rootRouteChildren: RootRouteChildren = {
   AuthErrorIndexRoute: AuthErrorIndexRoute,
   AuthRecoveryIndexRoute: AuthRecoveryIndexRoute,
   AuthUpdateIndexRoute: AuthUpdateIndexRoute,
-}
+};
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
-  ._addFileTypes<FileRouteTypes>()
+  ._addFileTypes<FileRouteTypes>();
 
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
+import type { getRouter } from './router.tsx';
+import type { startInstance } from './start.ts';
 declare module '@tanstack/react-start' {
   interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+    ssr: true;
+    router: Awaited<ReturnType<typeof getRouter>>;
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>;
   }
 }

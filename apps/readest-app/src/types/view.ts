@@ -1,7 +1,7 @@
 import type { BookDoc } from '@/libs/document';
 import type { BookNote, BookSearchConfig, BookSearchResult } from '@/types/book';
 import type { TTSGranularity } from '@/services/tts';
-import { TTS } from 'foliate-js/tts.js';
+import type { TTS } from 'foliate-js/tts.js';
 import type { LocaleWithTextInfo } from './misc';
 
 export const NOTE_PREFIX = 'foliate-note:';
@@ -27,8 +27,6 @@ export interface Renderer extends HTMLElement {
   };
   columnCount?: number;
   open: (book: BookDoc) => Promise<void>;
-  setAttribute: (name: string, value: string | number) => void;
-  removeAttribute: (name: string) => void;
   next: () => Promise<void>;
   prev: () => Promise<void>;
   nextSection?: () => Promise<void>;
@@ -39,12 +37,6 @@ export interface Renderer extends HTMLElement {
   primaryIndex: number;
   getContents: () => { doc: Document; index?: number; overlayer?: unknown }[];
   scrollToAnchor?: (anchor: number | Range, reason?: string, smooth?: boolean) => void;
-  addEventListener: (
-    type: string,
-    listener: EventListener,
-    option?: AddEventListenerOptions,
-  ) => void;
-  removeEventListener: (type: string, listener: EventListener) => void;
   showLoupe?: (
     x: number,
     y: number,

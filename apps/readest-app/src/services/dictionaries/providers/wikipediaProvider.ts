@@ -16,6 +16,7 @@ import type { DictionaryProvider, DictionaryLookupOutcome } from '../types';
 import { BUILTIN_PROVIDER_IDS } from '../types';
 import { stubTranslation as _ } from '@/utils/misc';
 import { isTauriAppPlatform } from '@/services/environment';
+import { isRecord } from '@/utils/unknown';
 
 const isTauri = isTauriAppPlatform();
 
@@ -34,7 +35,10 @@ export const wikipediaProvider: DictionaryProvider = {
       if (!response.ok) {
         return { ok: false, reason: 'error', message: `HTTP ${response.status}` };
       }
-      const data = await response.json();
+      const data: unknown = await response.json();
+      if (!isRecord(data)) {
+        return { ok: false, reason: 'error', message: 'Invalid response' };
+      }
       if (ctx.signal.aborted) return { ok: false, reason: 'error', message: 'aborted' };
 
       const hgroup = document.createElement('hgroup');
@@ -49,35 +53,45 @@ export const wikipediaProvider: DictionaryProvider = {
       hgroup.style.minHeight = '100px';
 
       const h1 = document.createElement('h1');
-      h1.innerHTML = data.titles?.display ?? word;
+      const titles = isRecord(data['titles']) ? data['titles'] : undefined;
+      h1.innerHTML = typeof titles?.['display'] === 'string' ? titles['display'] : word;
       h1.className = 'text-lg font-bold';
-      hgroup.append(h1);
+      hgroup.appendChild(h1);
 
-      if (data.description) {
+      if (typeof data['description'] === 'string') {
         const description = document.createElement('p');
-        description.innerText = data.description;
+        description.innerText = data['description'];
         hgroup.appendChild(description);
       }
 
-      if (data.thumbnail?.source) {
-        hgroup.style.backgroundImage = `url("${data.thumbnail.source}")`;
+      const thumbnail = isRecord(data['thumbnail']) ? data['thumbnail'] : undefined;
+      if (typeof thumbnail?.['source'] === 'string') {
+        hgroup.style.backgroundImage = `url("${thumbnail['source']}")`;
       }
 
       const contentDiv = document.createElement('div');
-      contentDiv.innerHTML = data.extract_html ?? '';
+      contentDiv.innerHTML = typeof data['extract_html'] === 'string' ? data['extract_html'] : '';
       contentDiv.className = 'p-2 text-sm';
-      if (data.dir) contentDiv.dir = data.dir;
+      if (typeof data['dir'] === 'string') contentDiv.dir = data['dir'];
 
-      ctx.container.append(hgroup, contentDiv);
+      ctx.container.appendChild(hgroup);
+      ctx.container.appendChild(contentDiv);
 
       // "Read on Wikipedia" link. The REST summary endpoint returns
       // `content_urls.{desktop,mobile}.page` pointing at the canonical
       // article. Fall back to a constructed URL if the API ever stops
       // sending content_urls (it has been stable for years, but be safe).
       const articleUrl: string =
-        (data.content_urls?.desktop?.page as string | undefined) ??
-        (data.content_urls?.mobile?.page as string | undefined) ??
-        `https://${langCode}.wikipedia.org/wiki/${encodeURIComponent(word)}`;
+        (() => {
+          const contentUrls = isRecord(data['content_urls']) ? data['content_urls'] : undefined;
+          const desktop = isRecord(contentUrls?.['desktop']) ? contentUrls['desktop'] : undefined;
+          const mobile = isRecord(contentUrls?.['mobile']) ? contentUrls['mobile'] : undefined;
+          return typeof desktop?.['page'] === 'string'
+            ? desktop['page']
+            : typeof mobile?.['page'] === 'string'
+              ? mobile['page']
+              : undefined;
+        })() ?? `https://${langCode}.wikipedia.org/wiki/${encodeURIComponent(word)}`;
 
       const linkWrapper = document.createElement('p');
       linkWrapper.className = 'mt-3 px-2 text-sm';
@@ -93,7 +107,7 @@ export const wikipediaProvider: DictionaryProvider = {
       link.className = 'not-eink:text-primary underline';
       link.textContent = _('Read on Wikipedia →');
       linkWrapper.appendChild(link);
-      ctx.container.append(linkWrapper);
+      ctx.container.appendChild(linkWrapper);
 
       return { ok: true, headword: word, sourceLabel: 'Wikipedia (CC BY-SA)' };
     } catch (error) {

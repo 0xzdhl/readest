@@ -3,7 +3,7 @@ import {
   renderNoteTemplate,
   validateNoteTemplate,
   formatBlockQuote,
-  NoteTemplateData,
+  type NoteTemplateData,
 } from '../../utils/note';
 
 describe('renderNoteTemplate', () => {
