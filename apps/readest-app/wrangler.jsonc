@@ -2,7 +2,7 @@
   "$schema": "./node_modules/wrangler/config-schema.json",
   // Top-level configuration
   "name": "readen-web",
-  "main": "@tanstack/react-start/server-entry",
+  "main": "src/server.ts",
   // Set this to today's date
   "compatibility_date": "2026-05-14",
   "compatibility_flags": [
