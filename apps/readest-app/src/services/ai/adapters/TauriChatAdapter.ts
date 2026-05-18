@@ -5,6 +5,7 @@ import { hybridSearch, isBookIndexed } from '../ragService';
 import { aiLogger } from '../logger';
 import { buildSystemPrompt } from '../prompts';
 import type { AISettings, ScoredChunk } from '../types';
+import { getErrorMessage, getJsonErrorMessage } from '@/utils/unknown';
 
 let lastSources: ScoredChunk[] = [];
 
@@ -44,7 +45,7 @@ async function* streamViaApiRoute(
 
   if (!response.ok) {
     const error = await response.json().catch(() => ({ error: 'Unknown error' }));
-    throw new Error(error.error || `Chat failed: ${response.status}`);
+    throw new Error(getJsonErrorMessage(error) || `Chat failed: ${response.status}`);
   }
 
   const reader = response.body!.getReader();
@@ -86,7 +87,7 @@ export function createTauriAdapter(getOptions: () => TauriAdapterOptions): ChatM
           aiLogger.chat.context(chunks.length, chunks.map((c) => c.text).join('').length);
           lastSources = chunks;
         } catch (e) {
-          aiLogger.chat.error(`RAG failed: ${(e as Error).message}`);
+          aiLogger.chat.error(`RAG failed: ${getErrorMessage(e)}`);
           lastSources = [];
         }
       } else {
@@ -134,8 +135,8 @@ export function createTauriAdapter(getOptions: () => TauriAdapterOptions): ChatM
 
         aiLogger.chat.complete(text.length);
       } catch (error) {
-        if ((error as Error).name !== 'AbortError') {
-          aiLogger.chat.error((error as Error).message);
+        if (!(error instanceof Error) || error.name !== 'AbortError') {
+          aiLogger.chat.error(getErrorMessage(error));
           throw error;
         }
       }

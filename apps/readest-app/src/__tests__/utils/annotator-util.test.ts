@@ -5,21 +5,22 @@ import {
   removeBookNoteOverlays,
   toParentViewportPoint,
 } from '@/app/reader/utils/annotatorUtil';
-import { Point } from '@/utils/sel';
-import { BookNote, UserHighlightColor } from '@/types/book';
-import { SystemSettings } from '@/types/settings';
-import { FoliateView, NOTE_PREFIX } from '@/types/view';
+import type { Point } from '@/utils/sel';
+import type { BookNote, UserHighlightColor } from '@/types/book';
+import type { SystemSettings } from '@/types/settings';
+import { NOTE_PREFIX } from '@/types/view';
+import type { FoliateView } from '@/types/view';
 
 describe('getExternalDragHandle', () => {
   const currentStart: Point = { x: 100, y: 200 };
   const currentEnd: Point = { x: 300, y: 200 };
 
-  it('forward drag — externalDragPoint closer to end → returns end', () => {
+  it('forward drag 鈥?externalDragPoint closer to end 鈫?returns end', () => {
     const result = getExternalDragHandle(currentStart, currentEnd, { x: 280, y: 200 });
     expect(result).toBe('end');
   });
 
-  it('backward drag — externalDragPoint closer to start → returns start', () => {
+  it('backward drag 鈥?externalDragPoint closer to start 鈫?returns start', () => {
     const result = getExternalDragHandle(currentStart, currentEnd, { x: 120, y: 200 });
     expect(result).toBe('start');
   });
@@ -34,16 +35,16 @@ describe('getExternalDragHandle', () => {
     expect(result).toBeNull();
   });
 
-  it('vertical text — works with vertical coordinates', () => {
+  it('vertical text 鈥?works with vertical coordinates', () => {
     const vStart: Point = { x: 200, y: 100 };
     const vEnd: Point = { x: 200, y: 400 };
     const result = getExternalDragHandle(vStart, vEnd, { x: 200, y: 350 });
     expect(result).toBe('end');
   });
 
-  it('equal distance — returns end (deterministic tie-breaking)', () => {
+  it('equal distance 鈥?returns end (deterministic tie-breaking)', () => {
     // Midpoint between start(100,200) and end(300,200) is (200,200)
-    // distToStart === distToEnd, so !(distToStart < distToEnd) → returns 'end'
+    // distToStart === distToEnd, so !(distToStart < distToEnd) 鈫?returns 'end'
     const result = getExternalDragHandle(currentStart, currentEnd, { x: 200, y: 200 });
     expect(result).toBe('end');
   });

@@ -93,7 +93,7 @@ function AuthPage() {
     // where custom URL schemes are not supported
     if (
       !useCustomeOAuth.current &&
-      (process.env.NODE_ENV === 'production' || appService?.isMobileApp || USE_APPLE_SIGN_IN)
+      (process.env['NODE_ENV'] === 'production' || appService?.isMobileApp || USE_APPLE_SIGN_IN)
     ) {
       if (appService?.isMobileApp) {
         return isOAuth ? DEEPLINK_CALLBACK : WEB_AUTH_CALLBACK;
@@ -107,7 +107,7 @@ function AuthPage() {
   };
 
   const getWebRedirectTo = () => {
-    return process.env.NODE_ENV === 'production'
+    return process.env['NODE_ENV'] === 'production'
       ? WEB_AUTH_CALLBACK
       : `${window.location.origin}/auth/callback`;
   };
@@ -200,7 +200,7 @@ function AuthPage() {
     try {
       if (
         !useCustomeOAuth.current &&
-        (process.env.NODE_ENV === 'production' || appService?.isMobileApp || USE_APPLE_SIGN_IN)
+        (process.env['NODE_ENV'] === 'production' || appService?.isMobileApp || USE_APPLE_SIGN_IN)
       ) {
         const { getCurrentWindow } = await import('@tauri-apps/api/window');
         const currentWindow = getCurrentWindow();

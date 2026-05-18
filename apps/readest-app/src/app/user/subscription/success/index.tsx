@@ -1,4 +1,4 @@
-﻿import Stripe from 'stripe';
+﻿import type Stripe from 'stripe';
 import { Suspense, useEffect, useState } from 'react';
 import { createFileRoute, useRouter } from '@tanstack/react-router';
 import { z } from 'zod';
@@ -24,6 +24,78 @@ const subscriptionSuccessSearchSchema = z.object({
   purchase_token: z.string().default('').catch(''),
   order_id: z.string().default('').catch(''),
 });
+
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+  typeof value === 'object' && value !== null;
+
+const isPlanType = (value: unknown): value is PlanType =>
+  value === 'subscription' || value === 'purchase';
+
+const isVerifiedIAP = (value: unknown): value is VerifiedIAP => {
+  if (!isRecord(value)) return false;
+  return (
+    (value['platform'] === 'ios' || value['platform'] === 'android') &&
+    typeof value['status'] === 'string' &&
+    typeof value['customerEmail'] === 'string' &&
+    typeof value['orderId'] === 'string' &&
+    typeof value['planName'] === 'string' &&
+    isPlanType(value['planType']) &&
+    typeof value['productId'] === 'string' &&
+    (value['amount'] === undefined || typeof value['amount'] === 'number') &&
+    (value['currency'] === undefined || typeof value['currency'] === 'string')
+  );
+};
+
+const isStripeCheckoutSession = (value: unknown): value is Stripe.Checkout.Session => {
+  if (!isRecord(value)) return false;
+  return (
+    typeof value['id'] === 'string' &&
+    (value['payment_status'] === 'paid' ||
+      value['payment_status'] === 'unpaid' ||
+      value['payment_status'] === 'no_payment_required') &&
+    (value['mode'] === 'payment' ||
+      value['mode'] === 'subscription' ||
+      value['mode'] === 'setup' ||
+      value['mode'] === null)
+  );
+};
+
+const getResponseError = (value: unknown) => {
+  if (isRecord(value) && typeof value['error'] === 'string') {
+    return value['error'];
+  }
+  return null;
+};
+
+type StripeCheckResponse =
+  | { error: string; session?: never }
+  | { error?: never; session: Stripe.Checkout.Session };
+
+const parseStripeCheckResponse = (value: unknown): StripeCheckResponse => {
+  const error = getResponseError(value);
+  if (error) {
+    return { error };
+  }
+  if (isRecord(value) && isStripeCheckoutSession(value['session'])) {
+    return { session: value['session'] };
+  }
+  throw new Error('Invalid Stripe session response');
+};
+
+type IAPVerifyResponse =
+  | { error: string; purchase?: never }
+  | { error?: never; purchase: VerifiedIAP };
+
+const parseIAPVerifyResponse = (value: unknown): IAPVerifyResponse => {
+  const error = getResponseError(value);
+  if (error) {
+    return { error };
+  }
+  if (isRecord(value) && isVerifiedIAP(value['purchase'])) {
+    return { purchase: value['purchase'] };
+  }
+  throw new Error('Invalid IAP verification response');
+};
 
 export const Route = createFileRoute('/user/subscription/success/')({
   validateSearch: subscriptionSuccessSearchSchema,
@@ -84,15 +156,15 @@ const SubscriptionSuccessContent = () => {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
 
-      const { session: stripeCheckoutSession, error } = await response.json();
+      const stripeCheck = parseStripeCheckResponse(await response.json());
 
-      if (error) {
+      if ('error' in stripeCheck) {
         setSessionStatus((prev) => ({ ...prev, status: 'failed' }));
-        console.error('Session check error:', error);
+        console.error('Session check error:', stripeCheck.error);
         return;
       }
 
-      const session = stripeCheckoutSession as Stripe.Checkout.Session;
+      const { session } = stripeCheck;
       setSessionStatus({
         status: session.payment_status === 'paid' ? 'completed' : 'failed',
         customerEmail: session.customer_email || session.customer_details?.email || '',
@@ -136,15 +208,15 @@ const SubscriptionSuccessContent = () => {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
 
-      const { purchase: iOSPurchase, error } = await response.json();
+      const iapVerification = parseIAPVerifyResponse(await response.json());
 
-      if (error) {
+      if ('error' in iapVerification) {
         setSessionStatus((prev) => ({ ...prev, status: 'failed' }));
-        console.error('IAP verification error:', error);
+        console.error('IAP verification error:', iapVerification.error);
         return;
       }
 
-      const purchase = iOSPurchase as VerifiedIAP;
+      const { purchase } = iapVerification;
       setSessionStatus({
         status: purchase.status === 'active' ? 'completed' : 'failed',
         customerEmail: purchase.customerEmail || '',
@@ -192,15 +264,15 @@ const SubscriptionSuccessContent = () => {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
 
-      const { purchase: androidPurchase, error } = await response.json();
+      const iapVerification = parseIAPVerifyResponse(await response.json());
 
-      if (error) {
+      if ('error' in iapVerification) {
         setSessionStatus((prev) => ({ ...prev, status: 'failed' }));
-        console.error('Android IAP verification error:', error);
+        console.error('Android IAP verification error:', iapVerification.error);
         return;
       }
 
-      const purchase = androidPurchase as VerifiedIAP;
+      const { purchase } = iapVerification;
       setSessionStatus({
         status: purchase.status === 'active' ? 'completed' : 'failed',
         customerEmail: purchase.customerEmail || '',

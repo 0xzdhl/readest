@@ -1,7 +1,7 @@
-import { describe, test, expect, vi, beforeEach, afterEach } from 'vitest';
-import { BaseDir, FileSystem, ResolvedPath } from '@/types/system';
-import { DatabaseOpts, DatabaseService } from '@/types/database';
-import { SchemaType } from '@/services/database/migrate';
+﻿import { describe, test, expect, vi, beforeEach, afterEach } from 'vitest';
+import type { BaseDir, FileSystem, ResolvedPath } from '@/types/system';
+import type { DatabaseOpts, DatabaseService } from '@/types/database';
+import type { SchemaType } from '@/services/database/migrate';
 
 // Mock all service dependencies
 vi.mock('@/services/settingsService', () => ({

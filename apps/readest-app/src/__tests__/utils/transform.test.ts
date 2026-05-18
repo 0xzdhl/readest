@@ -5,8 +5,8 @@ import {
   transformBookConfigToDB,
   transformBookConfigFromDB,
 } from '@/utils/transform';
-import { BookConfig, BookNote } from '@/types/book';
-import { DBBookConfig, DBBookNote } from '@/types/records';
+import type { BookConfig, BookNote } from '@/types/book';
+import type { DBBookConfig, DBBookNote } from '@/types/records';
 
 describe('transformBookNoteToDB with xpointer fields', () => {
   it('passes through xpointer0 and xpointer1', () => {

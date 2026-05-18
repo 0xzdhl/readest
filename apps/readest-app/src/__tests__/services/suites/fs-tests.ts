@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { AppService } from '@/types/system';
+import type { AppService } from '@/types/system';
 
 export function fsTests(getService: () => AppService) {
   describe('FileSystem', () => {

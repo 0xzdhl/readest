@@ -20,6 +20,39 @@ const API_ENDPOINTS = {
   purge: getAPIBaseUrl() + '/storage/purge',
 };
 
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+  typeof value === 'object' && value !== null;
+
+const isStringRecord = (value: unknown): value is Record<string, string> =>
+  isRecord(value) && Object.values(value).every((item) => typeof item === 'string');
+
+const parseUploadResponse = (value: unknown) => {
+  if (!isRecord(value) || typeof value['uploadUrl'] !== 'string') {
+    throw new Error('Invalid upload response');
+  }
+  if (value['downloadUrl'] !== undefined && typeof value['downloadUrl'] !== 'string') {
+    throw new Error('Invalid upload response');
+  }
+  return {
+    uploadUrl: value['uploadUrl'],
+    downloadUrl: value['downloadUrl'],
+  };
+};
+
+const parseBatchDownloadResponse = (value: unknown) => {
+  if (!isRecord(value) || !isStringRecord(value['downloadUrls'])) {
+    throw new Error('Invalid download URLs response');
+  }
+  return { downloadUrls: value['downloadUrls'] };
+};
+
+const parseDownloadResponse = (value: unknown) => {
+  if (!isRecord(value) || typeof value['downloadUrl'] !== 'string') {
+    throw new Error('Invalid download URL response');
+  }
+  return { downloadUrl: value['downloadUrl'] };
+};
+
 export const createProgressHandler = (
   totalFiles: number,
   completedFilesRef: { count: number },
@@ -60,8 +93,7 @@ export const uploadFile = async (
       }),
     });
 
-    const { uploadUrl, downloadUrl }: { uploadUrl: string; downloadUrl?: string } =
-      await response.json();
+    const { uploadUrl, downloadUrl } = parseUploadResponse(await response.json());
     if (isWebAppPlatform()) {
       await webUpload(file, uploadUrl, onProgress);
     } else {
@@ -105,7 +137,7 @@ export const uploadReplicaFile = async (
       }),
     });
 
-    const { uploadUrl }: { uploadUrl: string } = await response.json();
+    const { uploadUrl } = parseUploadResponse(await response.json());
     if (isWebAppPlatform()) {
       await webUpload(file, uploadUrl, onProgress);
     } else {
@@ -134,7 +166,7 @@ export const batchGetDownloadUrls = async (files: { lfp: string; cfp: string }[]
       body: JSON.stringify({ fileKeys }),
     });
 
-    const { downloadUrls } = await response.json();
+    const { downloadUrls } = parseBatchDownloadResponse(await response.json());
     return files.map((file) => {
       const fileKey = `${userId}/${file.cfp}`;
       return {
@@ -185,7 +217,7 @@ export const downloadFile = async ({
         },
       );
 
-      const { downloadUrl: url } = await response.json();
+      const { downloadUrl: url } = parseDownloadResponse(await response.json());
       downloadUrl = url;
     }
 

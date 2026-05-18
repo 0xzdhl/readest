@@ -30,6 +30,10 @@ interface GoogleBooksItem {
   volumeInfo: GoogleBooksVolume;
 }
 
+interface GoogleBooksResponse {
+  items?: GoogleBooksItem[];
+}
+
 export class GoogleBooksProvider extends BaseMetadataProvider {
   name = 'googlebooks';
   label = _('Google Books');
@@ -74,7 +78,7 @@ export class GoogleBooksProvider extends BaseMetadataProvider {
         throw new Error(`Google Books API error: ${response.status}`);
       }
 
-      const data = await response.json();
+      const data = (await response.json()) as GoogleBooksResponse;
 
       if (!data.items || data.items.length === 0) {
         return [];
@@ -121,7 +125,7 @@ export class GoogleBooksProvider extends BaseMetadataProvider {
         throw new Error(`Google Books API error: ${response.status}`);
       }
 
-      const data = await response.json();
+      const data = (await response.json()) as GoogleBooksResponse;
 
       if (!data.items || data.items.length === 0) {
         return [];

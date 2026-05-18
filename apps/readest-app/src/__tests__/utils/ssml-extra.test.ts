@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { genSSMLRaw, findSSMLMark, filterSSMLWithLang } from '@/utils/ssml';
-import { TTSMark } from '@/services/tts/types';
+import type { TTSMark } from '@/services/tts/types';
 
 const ssmlWithLang = (lang: string, body: string) =>
   `<speak xmlns="http://www.w3.org/2001/10/synthesis" xml:lang="${lang}">${body}</speak>`;

@@ -1,5 +1,15 @@
 import { getAccessToken } from './access';
 
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+  typeof value === 'object' && value !== null;
+
+const getErrorMessage = (data: unknown, fallback: string) => {
+  if (isRecord(data) && typeof data['error'] === 'string') {
+    return data['error'];
+  }
+  return fallback;
+};
+
 export const fetchWithTimeout = (url: string, options: RequestInit = {}, timeout = 10000) => {
   const controller = new AbortController();
   const id = setTimeout(() => controller.abort('Request timed out'), timeout);
@@ -24,8 +34,9 @@ export const fetchWithAuth = async (url: string, options: RequestInit) => {
 
   if (!response.ok) {
     const errorData = await response.json();
-    console.error('Error:', errorData.error || response.statusText);
-    throw new Error(errorData.error || 'Request failed');
+    const errorMessage = getErrorMessage(errorData, response.statusText || 'Request failed');
+    console.error('Error:', errorMessage);
+    throw new Error(errorMessage);
   }
 
   return response;

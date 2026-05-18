@@ -7,6 +7,13 @@ type ApiRouteDef = {
   options: { server: { handlers: { POST: (ctx: { request: Request }) => Promise<Response> } } };
 };
 
+type IapVerifyResponse = {
+  purchase: unknown;
+};
+
+const hasPurchase = (value: unknown): value is IapVerifyResponse =>
+  typeof value === 'object' && value !== null && 'purchase' in value;
+
 const applePost = (AppleRoute as unknown as ApiRouteDef).options.server.handlers.POST;
 const googlePost = (GoogleRoute as unknown as ApiRouteDef).options.server.handlers.POST;
 
@@ -42,6 +49,8 @@ describe.skipIf(SKIP_IAP_API_TESTS)('/api/apple/iap-verify', () => {
     console.log('Response:', data);
 
     expect(response.status).toBe(200);
+    expect(hasPurchase(data)).toBe(true);
+    if (!hasPurchase(data)) throw new Error('Expected purchase in Apple IAP response');
     expect(data.purchase).toBeDefined();
   });
 });
@@ -69,6 +78,8 @@ describe.skipIf(SKIP_IAP_API_TESTS)('/api/google/iap-verify', () => {
     console.log('Response:', data);
 
     expect(response.status).toBe(200);
+    expect(hasPurchase(data)).toBe(true);
+    if (!hasPurchase(data)) throw new Error('Expected purchase in Google IAP response');
     expect(data.purchase).toBeDefined();
   });
 });

@@ -580,9 +580,9 @@ const FoliateViewer: React.FC<{
       if (bookDoc?.rendition?.layout === 'pre-paginated') {
         view.renderer.setAttribute('zoom', viewSettings.zoomMode);
         view.renderer.setAttribute('spread', viewSettings.spreadMode);
-        view.renderer.setAttribute('scale-factor', viewSettings.zoomLevel);
+        view.renderer.setAttribute('scale-factor', String(viewSettings.zoomLevel));
       } else {
-        view.renderer.setAttribute('max-column-count', maxColumnCount);
+        view.renderer.setAttribute('max-column-count', String(maxColumnCount));
         view.renderer.setAttribute('max-inline-size', `${maxInlineSize}px`);
         view.renderer.setAttribute('max-block-size', `${maxBlockSize}px`);
       }

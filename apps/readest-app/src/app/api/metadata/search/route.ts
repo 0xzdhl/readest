@@ -11,16 +11,27 @@ interface ApiResponse<T> {
   responseTime?: number;
 }
 
-function validateSearchRequest(body: SearchRequest): {
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+  typeof value === 'object' && value !== null;
+
+function validateSearchRequest(body: unknown): {
   isValid: boolean;
   error?: string;
   data?: SearchRequest;
 } {
+  if (!isRecord(body)) {
+    return { isValid: false, error: 'Request body must be an object' };
+  }
+
   const { title, isbn, author, language } = body;
+  const titleValue = typeof title === 'string' ? title : undefined;
+  const isbnValue = typeof isbn === 'string' ? isbn : undefined;
+  const authorValue = typeof author === 'string' ? author : undefined;
+  const languageValue = typeof language === 'string' ? language : undefined;
 
   if (
-    (!title || typeof title !== 'string' || title.trim().length === 0) &&
-    (!isbn || typeof isbn !== 'string' || isbn.trim().length === 0)
+    (!titleValue || titleValue.trim().length === 0) &&
+    (!isbnValue || isbnValue.trim().length === 0)
   ) {
     return {
       isValid: false,
@@ -40,8 +51,8 @@ function validateSearchRequest(body: SearchRequest): {
     return { isValid: false, error: 'Author must be a string if provided' };
   }
 
-  if (isbn) {
-    const cleanIsbn = isbn.replace(/[-\s]/g, '');
+  if (isbnValue) {
+    const cleanIsbn = isbnValue.replace(/[-\s]/g, '');
     if (!/^\d{10}(\d{3})?$/.test(cleanIsbn)) {
       return { isValid: false, error: 'Invalid ISBN format. Must be 10 or 13 digits' };
     }
@@ -50,10 +61,10 @@ function validateSearchRequest(body: SearchRequest): {
   return {
     isValid: true,
     data: {
-      title: title?.trim(),
-      isbn: isbn?.trim(),
-      author: author?.trim(),
-      language: language?.trim(),
+      title: titleValue?.trim(),
+      isbn: isbnValue?.trim(),
+      author: authorValue?.trim(),
+      language: languageValue?.trim(),
     },
   };
 }

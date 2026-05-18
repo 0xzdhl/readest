@@ -2,6 +2,7 @@ import type { Book, BookConfig, BookNote, BookDataRecord } from '@/types/book';
 import { getAPIBaseUrl } from '@/services/environment';
 import { getAccessToken } from '@/utils/access';
 import { fetchWithTimeout } from '@/utils/fetch';
+import { getJsonErrorMessage } from '@/utils/unknown';
 
 const SYNC_API_ENDPOINT = getAPIBaseUrl() + '/sync';
 
@@ -52,8 +53,8 @@ export class SyncClient {
     );
 
     if (!res.ok) {
-      const error = await res.json();
-      throw new Error(`Failed to pull changes: ${error.error || res.statusText}`);
+      const error: unknown = await res.json();
+      throw new Error(`Failed to pull changes: ${getJsonErrorMessage(error) || res.statusText}`);
     }
 
     return res.json();
@@ -81,8 +82,8 @@ export class SyncClient {
     );
 
     if (!res.ok) {
-      const error = await res.json();
-      throw new Error(`Failed to push changes: ${error.error || res.statusText}`);
+      const error: unknown = await res.json();
+      throw new Error(`Failed to push changes: ${getJsonErrorMessage(error) || res.statusText}`);
     }
 
     return res.json();

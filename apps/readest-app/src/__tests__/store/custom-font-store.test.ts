@@ -21,9 +21,9 @@ vi.mock('@/utils/misc', async () => {
 
 import { useCustomFontStore, migrateLegacyFonts } from '@/store/customFontStore';
 import { useSettingsStore } from '@/store/settingsStore';
-import { CustomFont } from '@/styles/fonts';
-import { SystemSettings } from '@/types/settings';
-import { EnvConfigType } from '@/services/environment';
+import type { CustomFont } from '@/styles/fonts';
+import type { SystemSettings } from '@/types/settings';
+import type { EnvConfigType } from '@/services/environment';
 import { publishReplicaUpsert } from '@/services/sync/replicaPublish';
 
 const mockPublishReplicaUpsert = vi.mocked(publishReplicaUpsert);
@@ -52,7 +52,7 @@ beforeEach(() => {
 });
 
 describe('customFontStore', () => {
-  // ── setFonts ───────────────────────────────────────────────────
+  // 鈹€鈹€ setFonts 鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€
   describe('setFonts', () => {
     test('sets fonts array', () => {
       const fonts: CustomFont[] = [
@@ -71,7 +71,7 @@ describe('customFontStore', () => {
     });
   });
 
-  // ── addFont ────────────────────────────────────────────────────
+  // 鈹€鈹€ addFont 鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€
   describe('addFont', () => {
     test('adds a new font from a path', () => {
       const font = useCustomFontStore.getState().addFont('/fonts/MyFont.ttf');
@@ -120,7 +120,7 @@ describe('customFontStore', () => {
     });
   });
 
-  // ── removeFont ─────────────────────────────────────────────────
+  // 鈹€鈹€ removeFont 鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€
   describe('removeFont', () => {
     test('marks a font as deleted', () => {
       const font = useCustomFontStore.getState().addFont('/fonts/Test.ttf');
@@ -148,7 +148,7 @@ describe('customFontStore', () => {
     });
   });
 
-  // ── updateFont ─────────────────────────────────────────────────
+  // 鈹€鈹€ updateFont 鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€
   describe('updateFont', () => {
     test('updates fields on an existing font', () => {
       const font = useCustomFontStore.getState().addFont('/fonts/Test.woff');
@@ -168,7 +168,7 @@ describe('customFontStore', () => {
     });
   });
 
-  // ── getFont ────────────────────────────────────────────────────
+  // 鈹€鈹€ getFont 鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€
   describe('getFont', () => {
     test('returns the font by id', () => {
       const font = useCustomFontStore.getState().addFont('/fonts/Lato.otf');
@@ -181,7 +181,7 @@ describe('customFontStore', () => {
     });
   });
 
-  // ── getAllFonts ─────────────────────────────────────────────────
+  // 鈹€鈹€ getAllFonts 鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€
   describe('getAllFonts', () => {
     test('returns all fonts including deleted', () => {
       const f1 = useCustomFontStore.getState().addFont('/a.ttf');
@@ -191,7 +191,7 @@ describe('customFontStore', () => {
     });
   });
 
-  // ── getAvailableFonts ──────────────────────────────────────────
+  // 鈹€鈹€ getAvailableFonts 鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€
   describe('getAvailableFonts', () => {
     test('excludes deleted fonts', () => {
       const f1 = useCustomFontStore.getState().addFont('/a.ttf');
@@ -209,7 +209,7 @@ describe('customFontStore', () => {
     });
   });
 
-  // ── clearAllFonts ──────────────────────────────────────────────
+  // 鈹€鈹€ clearAllFonts 鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€
   describe('clearAllFonts', () => {
     test('removes all fonts', () => {
       useCustomFontStore.getState().addFont('/a.ttf');
@@ -219,7 +219,7 @@ describe('customFontStore', () => {
     });
   });
 
-  // ── unloadFont ─────────────────────────────────────────────────
+  // 鈹€鈹€ unloadFont 鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€
   describe('unloadFont', () => {
     test('clears loaded state and blobUrl', () => {
       const font = useCustomFontStore.getState().addFont('/a.ttf');
@@ -240,7 +240,7 @@ describe('customFontStore', () => {
     });
   });
 
-  // ── unloadAllFonts ─────────────────────────────────────────────
+  // 鈹€鈹€ unloadAllFonts 鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€
   describe('unloadAllFonts', () => {
     test('unloads all fonts', () => {
       const f1 = useCustomFontStore.getState().addFont('/a.ttf');
@@ -257,7 +257,7 @@ describe('customFontStore', () => {
     });
   });
 
-  // ── getFontFamilies ────────────────────────────────────────────
+  // 鈹€鈹€ getFontFamilies 鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€
   describe('getFontFamilies', () => {
     test('returns unique sorted families from loaded fonts', () => {
       const f1 = useCustomFontStore.getState().addFont('/fonts/Roboto.ttf', {
@@ -301,7 +301,7 @@ describe('customFontStore', () => {
     });
   });
 
-  // ── getLoadedFonts / isFontLoaded ──────────────────────────────
+  // 鈹€鈹€ getLoadedFonts / isFontLoaded 鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€
   describe('getLoadedFonts', () => {
     test('returns only loaded non-deleted fonts', () => {
       const f1 = useCustomFontStore.getState().addFont('/a.ttf');
@@ -345,7 +345,7 @@ describe('customFontStore', () => {
     });
   });
 
-  // ── loadFont ───────────────────────────────────────────────────
+  // 鈹€鈹€ loadFont 鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€
   describe('loadFont', () => {
     test('throws for non-existent font', async () => {
       const envConfig = createMockEnvConfig();
@@ -376,7 +376,7 @@ describe('customFontStore', () => {
     });
   });
 
-  // ── saveCustomFonts ────────────────────────────────────────────
+  // 鈹€鈹€ saveCustomFonts 鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€
   describe('saveCustomFonts', () => {
     test('saves fonts to settings store (strips blobUrl/loaded/error)', async () => {
       useCustomFontStore.getState().addFont('/fonts/Test.ttf');

@@ -18,7 +18,7 @@
       "!src-tauri/**",
       "!i18next-scanner.config.cjs",
       "!cloudflare-env.d.ts",
-      "!routeTree.gen.ts"
+      "!src/routeTree.gen.ts"
     ],
     "rules": {
       "recommended": true,

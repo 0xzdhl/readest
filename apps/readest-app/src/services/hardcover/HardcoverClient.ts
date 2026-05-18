@@ -2,6 +2,7 @@ import type { Book, BookConfig, BookNote } from '@/types/book';
 import { getContentMd5 } from '@/utils/misc';
 import { fetch as tauriFetch } from '@tauri-apps/plugin-http';
 import { isTauriAppPlatform } from '@/services/environment';
+import { isRecord } from '@/utils/unknown';
 import { HardcoverSyncMapStore } from './HardcoverSyncMapStore';
 import {
   QUERY_GET_USER_ID,
@@ -151,12 +152,15 @@ export class HardcoverClient {
       throw new Error(`Hardcover API Error: ${res.status} ${res.statusText}`);
     }
 
-    const json = await res.json();
-    if (json.errors) {
-      throw new Error(`GraphQL Errors: ${JSON.stringify(json.errors)}`);
+    const json: unknown = await res.json();
+    if (!isRecord(json)) {
+      throw new Error('Hardcover API returned an invalid response');
+    }
+    if (json['errors']) {
+      throw new Error(`GraphQL Errors: ${JSON.stringify(json['errors'])}`);
     }
 
-    return json.data as TData;
+    return json['data'] as TData;
   }
 
   async validateToken(): Promise<{ valid: boolean; isNetworkError?: boolean }> {

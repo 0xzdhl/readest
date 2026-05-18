@@ -1,5 +1,5 @@
 import { it, expect } from 'vitest';
-import { DatabaseService } from '@/types/database';
+import type { DatabaseService } from '@/types/database';
 
 /**
  * Shared vector search test cases for Turso's built-in vector functions.

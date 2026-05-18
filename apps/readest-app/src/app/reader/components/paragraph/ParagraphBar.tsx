@@ -169,7 +169,7 @@ const ParagraphBar: React.FC<ParagraphBarProps> = ({
 
   return (
     <>
-      <style jsx global>{`
+      <style>{`
         @keyframes subtle-slide-up {
           from {
             opacity: 0;

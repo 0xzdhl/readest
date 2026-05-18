@@ -1,5 +1,6 @@
 import { describe, test, expect, beforeEach, afterEach, vi, type Mock } from 'vitest';
-import { useTransferStore, TransferItem } from '@/store/transferStore';
+import { useTransferStore } from '@/store/transferStore';
+import type { TransferItem } from '@/store/transferStore';
 
 // ── Mocks ────────────────────────────────────────────────────────────
 // The transferManager module is a singleton, so we need to mock its

@@ -5,7 +5,7 @@ import { createFileRoute } from '@tanstack/react-router';
 async function getCloudflareContext(): Promise<{ env: Record<string, unknown> }> {
   try {
     const workersModule = await import(/* @vite-ignore */ 'cloudflare:workers');
-    return { env: workersModule.env as Record<string, unknown> };
+    return { env: workersModule.env as unknown as Record<string, unknown> };
   } catch {
     throw new Error('Cloudflare context not available');
   }

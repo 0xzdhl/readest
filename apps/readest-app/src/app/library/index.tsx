@@ -469,7 +469,7 @@ const LibraryPageContent = () => {
           saveSettings(envConfig, settings);
         }
       } else if (settings.keepLogin) {
-        router.push('/auth');
+        router.navigate({ to: '/auth' });
       }
     };
 

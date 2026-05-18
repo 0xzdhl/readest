@@ -713,7 +713,7 @@ export const buildCommandRegistry = (options: CommandRegistryOptions): CommandIt
   }
 
   // add ai panel items (only in dev, as of now atleast)
-  if (process.env.NODE_ENV !== 'production') {
+  if (process.env['NODE_ENV'] !== 'production') {
     for (const def of aiPanelItems) {
       items.push(createSettingsItem(def, 'AI'));
     }

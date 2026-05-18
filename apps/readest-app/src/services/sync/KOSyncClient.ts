@@ -3,6 +3,7 @@ import type { Book } from '@/types/book';
 import type { KOSyncSettings } from '@/types/settings';
 import { fetch as tauriFetch } from '@tauri-apps/plugin-http';
 import type { KoSyncProxyPayload } from '@/types/kosync';
+import { getErrorMessage, getStringProperty, isRecord } from '@/utils/unknown';
 import { isLanAddress } from '@/utils/network';
 import { getAPIBaseUrl, isTauriAppPlatform } from '../environment';
 
@@ -143,21 +144,26 @@ export class KOSyncClient {
           return { success: true, message: 'Registration successful.' };
         }
 
-        const regError = await registerResponse.json().catch(() => ({}));
+        const regError: unknown = await registerResponse.json().catch(() => ({}));
         if (registerResponse.status === 402) {
           return { success: false, message: 'Invalid credentials.' };
         }
-        return { success: false, message: regError.message || 'Registration failed.' };
+        return {
+          success: false,
+          message: getStringProperty(regError, 'message') || 'Registration failed.',
+        };
       }
 
-      const errorBody = await authResponse.json().catch(() => ({}));
+      const errorBody: unknown = await authResponse.json().catch(() => ({}));
       return {
         success: false,
-        message: errorBody.message || `Authorization failed with status: ${authResponse.status}`,
+        message:
+          getStringProperty(errorBody, 'message') ||
+          `Authorization failed with status: ${authResponse.status}`,
       };
     } catch (e) {
       console.error('KOSync connection failed', e);
-      return { success: false, message: (e as Error).message || 'Connection error.' };
+      return { success: false, message: getErrorMessage(e) || 'Connection error.' };
     }
   }
 
@@ -182,8 +188,10 @@ export class KOSyncClient {
         return null;
       }
 
-      const data = await response.json();
-      return data.document ? data : null;
+      const data: unknown = await response.json();
+      return isRecord(data) && typeof data['document'] === 'string'
+        ? (data as KoSyncProgress)
+        : null;
     } catch (e) {
       console.error('KOSync getProgress failed', e);
       return null;

@@ -42,7 +42,7 @@ export const handleA11yNavigation = (
       e.stopPropagation();
       options?.skipToLastPosCallback();
     });
-    document.body.prepend(skipLink);
+    document.body.insertBefore(skipLink, document.body.firstChild);
   }
   const skipNextSectionLinkId = 'readest-skip-link-next-section';
   if (document.body && !document.getElementById(skipNextSectionLinkId)) {
@@ -65,6 +65,6 @@ export const handleA11yNavigation = (
       e.stopPropagation();
       options?.skipToNextSectionCallback();
     });
-    document.body.appendChild(skipLink);
+    document.body.insertBefore(skipLink, null);
   }
 };

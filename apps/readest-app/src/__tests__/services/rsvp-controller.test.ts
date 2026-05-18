@@ -1,6 +1,6 @@
 import { describe, test, expect, vi, beforeEach } from 'vitest';
 import { RSVPController } from '@/services/rsvp/RSVPController';
-import { FoliateView } from '@/types/view';
+import type { FoliateView } from '@/types/view';
 
 const POSITION_KEY = 'readest_rsvp_pos_test';
 

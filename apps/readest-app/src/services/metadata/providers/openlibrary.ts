@@ -31,6 +31,12 @@ interface OpenLibraryBookID {
   description?: string | { value: string };
 }
 
+type OpenLibraryISBNResponse = Record<string, OpenLibraryBookID | undefined>;
+
+interface OpenLibrarySearchResponse {
+  docs?: OpenLibraryBookSearch[];
+}
+
 export class OpenLibraryProvider extends BaseMetadataProvider {
   name = 'openlibrary';
   label = _('Open Library');
@@ -54,7 +60,7 @@ export class OpenLibraryProvider extends BaseMetadataProvider {
         throw new Error(`Open Library API error: ${response.status}`);
       }
 
-      const data = await response.json();
+      const data = (await response.json()) as OpenLibraryISBNResponse;
       const bookKey = `ISBN:${isbn}`;
       const book = data[bookKey];
 
@@ -93,7 +99,7 @@ export class OpenLibraryProvider extends BaseMetadataProvider {
         throw new Error(`Open Library API error: ${response.status}`);
       }
 
-      const data = await response.json();
+      const data = (await response.json()) as OpenLibrarySearchResponse;
       console.log('Open Library search results:', data);
 
       if (!data.docs || data.docs.length === 0) {

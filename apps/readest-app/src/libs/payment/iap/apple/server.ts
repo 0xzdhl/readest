@@ -130,7 +130,7 @@ export async function processPurchaseData(
 ): Promise<VerifiedPurchase> {
   const transaction = verificationResult.transaction!;
 
-  if (transaction.environment === 'Sandbox' && process.env.NODE_ENV === 'production') {
+  if (transaction.environment === 'Sandbox' && process.env['NODE_ENV'] === 'production') {
     console.warn('Sandbox transaction in production environment');
   }
 

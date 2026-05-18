@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { invoke } from '../tauri/tauri-invoke';
-import { DatabaseService, DatabaseExecResult, DatabaseRow } from '@/types/database';
+import type { DatabaseService, DatabaseExecResult, DatabaseRow } from '@/types/database';
 import { baseTests } from './suites/base-tests';
 import { ftsTests } from './suites/fts-tests';
 import { vectorTests } from './suites/vector-tests';

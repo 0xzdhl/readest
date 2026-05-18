@@ -168,8 +168,8 @@ const buildNavProvider = (nextWord: string): DictionaryProvider => ({
       e.preventDefault();
       ctx.onNavigate?.(nextWord);
     });
-    ctx.container.append(document.createTextNode(`current: ${word} `));
-    ctx.container.append(a);
+    ctx.container.appendChild(document.createTextNode(`current: ${word} `));
+    ctx.container.appendChild(a);
     return { ok: true, headword: word, sourceLabel: 'Nav Test' };
   },
 });
@@ -322,7 +322,7 @@ describe('DictionarySheet — expand / collapse', () => {
         kind: 'stardict',
         label: `Pseudo ${i}`,
         async lookup(word, ctx) {
-          ctx.container.append(document.createTextNode(`def for ${word} #${i}`));
+          ctx.container.appendChild(document.createTextNode(`def for ${word} #${i}`));
           return { ok: true, headword: word, sourceLabel: `Pseudo ${i}` };
         },
       });

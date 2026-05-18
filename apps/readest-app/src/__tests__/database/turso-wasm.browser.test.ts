@@ -1,6 +1,6 @@
 import { describe, beforeEach, afterEach } from 'vitest';
 import { WebDatabaseService } from '@/services/database/webDatabaseService';
-import { DatabaseService } from '@/types/database';
+import type { DatabaseService } from '@/types/database';
 import { baseTests } from './suites/base-tests';
 import { ftsTests } from './suites/fts-tests';
 import { vectorTests } from './suites/vector-tests';

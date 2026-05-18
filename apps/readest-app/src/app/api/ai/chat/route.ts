@@ -2,6 +2,9 @@ import { createFileRoute } from '@tanstack/react-router';
 import { validateUserAndToken } from '@/utils/access';
 import { streamText, createGateway } from 'ai';
 import type { ModelMessage } from 'ai';
+import { isRecord } from '@/utils/unknown';
+
+const isModelMessageArray = (value: unknown): value is ModelMessage[] => Array.isArray(value);
 
 export const Route = createFileRoute('/api/ai/chat')({
   server: {
@@ -13,16 +16,25 @@ export const Route = createFileRoute('/api/ai/chat')({
             return Response.json({ error: 'Not authenticated' }, { status: 403 });
           }
 
-          const { messages, system, apiKey, model } = await request.json();
+          const body: unknown = await request.json();
+          if (!isRecord(body)) {
+            return new Response(JSON.stringify({ error: 'Invalid request body' }), {
+              status: 400,
+              headers: { 'Content-Type': 'application/json' },
+            });
+          }
 
-          if (!messages || !Array.isArray(messages)) {
+          const { messages, system, apiKey, model } = body;
+
+          if (!isModelMessageArray(messages)) {
             return new Response(JSON.stringify({ error: 'Messages required' }), {
               status: 400,
               headers: { 'Content-Type': 'application/json' },
             });
           }
 
-          const gatewayApiKey = apiKey || process.env['AI_GATEWAY_API_KEY'];
+          const gatewayApiKey =
+            typeof apiKey === 'string' && apiKey ? apiKey : process.env['AI_GATEWAY_API_KEY'];
           if (!gatewayApiKey) {
             return new Response(JSON.stringify({ error: 'API key required' }), {
               status: 401,
@@ -31,12 +43,14 @@ export const Route = createFileRoute('/api/ai/chat')({
           }
 
           const gateway = createGateway({ apiKey: gatewayApiKey });
-          const languageModel = gateway(model || 'google/gemini-2.5-flash-lite');
+          const languageModel = gateway(
+            typeof model === 'string' && model ? model : 'google/gemini-2.5-flash-lite',
+          );
 
           const result = streamText({
             model: languageModel,
-            system: system || 'You are a helpful assistant.',
-            messages: messages as ModelMessage[],
+            system: typeof system === 'string' && system ? system : 'You are a helpful assistant.',
+            messages,
           });
 
           return result.toTextStreamResponse();

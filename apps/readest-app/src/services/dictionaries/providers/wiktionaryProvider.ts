@@ -19,6 +19,7 @@ import { BUILTIN_PROVIDER_IDS } from '../types';
 import { fetchChineseDefinition } from '../chineseDict';
 import { normalizedLangCode } from '@/utils/lang';
 import { stubTranslation as _ } from '@/utils/misc';
+import { isRecord } from '@/utils/unknown';
 
 type Definition = {
   definition: string;
@@ -34,7 +35,7 @@ type Result = {
 const interceptDictLinks = (
   definitionHtml: string,
   onNavigate?: (word: string) => void,
-): HTMLElement[] => {
+): ChildNode[] => {
   const wrapper = document.createElement('div');
   wrapper.innerHTML = definitionHtml;
   const links = wrapper.querySelectorAll<HTMLAnchorElement>('a[rel="mw:WikiLink"]');
@@ -47,7 +48,7 @@ const interceptDictLinks = (
     });
     link.className = 'not-eink:text-primary underline cursor-pointer';
   });
-  return Array.from(wrapper.childNodes) as HTMLElement[];
+  return Array.from(wrapper.childNodes);
 };
 
 const renderChinese = async (
@@ -63,20 +64,20 @@ const renderChinese = async (
   const h1 = document.createElement('h1');
   h1.textContent = entry.word;
   h1.className = 'text-lg font-bold';
-  hgroup.append(h1);
+  hgroup.appendChild(h1);
 
   if (entry.pinyin) {
     const pinyinEl = document.createElement('p');
     pinyinEl.textContent = entry.pinyin;
     pinyinEl.className = 'text-base italic not-eink:opacity-85';
-    hgroup.append(pinyinEl);
+    hgroup.appendChild(pinyinEl);
   }
 
   const langEl = document.createElement('p');
   langEl.textContent = 'Chinese';
   langEl.className = 'text-sm italic not-eink:opacity-75';
-  hgroup.append(langEl);
-  container.append(hgroup);
+  hgroup.appendChild(langEl);
+  container.appendChild(hgroup);
 
   entry.definitions.forEach(({ partOfSpeech, meanings }) => {
     const h2 = document.createElement('h2');
@@ -110,11 +111,12 @@ const renderWiktionary = async (
   if (!response.ok) {
     return { ok: false, reason: 'error', message: `HTTP ${response.status}` };
   }
-  const json = await response.json();
+  const json: unknown = await response.json();
   if (signal.aborted) return { ok: false, reason: 'error', message: 'aborted' };
+  if (!isRecord(json)) return { ok: false, reason: 'error', message: 'Invalid response' };
   const results: Result[] | undefined = language
-    ? json[language] || json['en']
-    : json[Object.keys(json)[0]!];
+    ? ((json[language] || json['en']) as Result[] | undefined)
+    : (json[Object.keys(json)[0]!] as Result[] | undefined);
   if (!results || results.length === 0) {
     return { ok: false, reason: 'empty' };
   }
@@ -126,8 +128,9 @@ const renderWiktionary = async (
   const p = document.createElement('p');
   p.textContent = results[0]!.language;
   p.className = 'text-sm italic not-eink:opacity-75';
-  hgroup.append(h1, p);
-  container.append(hgroup);
+  hgroup.appendChild(h1);
+  hgroup.appendChild(p);
+  container.appendChild(hgroup);
 
   results.forEach(({ partOfSpeech, definitions }: Result) => {
     const h2 = document.createElement('h2');
@@ -139,7 +142,7 @@ const renderWiktionary = async (
       if (!definition) return;
       const li = document.createElement('li');
       const processed = interceptDictLinks(definition, onNavigate);
-      li.append(...processed);
+      processed.forEach((node) => li.appendChild(node));
       if (examples) {
         const ul = document.createElement('ul');
         ul.className = 'pl-8 list-disc text-sm italic not-eink:opacity-75';

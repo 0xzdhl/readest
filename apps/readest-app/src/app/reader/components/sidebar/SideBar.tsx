@@ -204,7 +204,7 @@ const SideBar = ({}) => {
             : '0px',
         }}
       >
-        <style jsx>{`
+        <style>{`
           @media (max-width: 640px) {
             .sidebar-container {
               border-top-left-radius: 16px;

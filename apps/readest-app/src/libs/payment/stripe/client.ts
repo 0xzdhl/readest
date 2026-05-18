@@ -5,10 +5,46 @@ import { getAPIBaseUrl, isTauriAppPlatform, isWebAppPlatform } from '@/services/
 import { openUrl } from '@tauri-apps/plugin-opener';
 import { getAccessToken } from '@/utils/access';
 import type { StripeProductMetadata } from '@/types/payment';
-import type { AvailablePlan, PlanType } from '@/types/quota';
+import type { AvailablePlan, PlanInterval, PlanType, UserPlan } from '@/types/quota';
 import { readPublicEnv } from '@/utils/publicEnv';
 
 let stripePromise: Promise<StripeClient | null>;
+
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+  typeof value === 'object' && value !== null;
+
+const USER_PLANS = ['free', 'plus', 'pro', 'purchase'] as const satisfies readonly UserPlan[];
+const PLAN_INTERVALS = ['month', 'year', 'lifetime'] as const satisfies readonly PlanInterval[];
+
+const isUserPlan = (value: unknown): value is UserPlan =>
+  typeof value === 'string' && USER_PLANS.includes(value as UserPlan);
+
+const isPlanInterval = (value: unknown): value is PlanInterval =>
+  typeof value === 'string' && PLAN_INTERVALS.includes(value as PlanInterval);
+
+const isStripeCheckoutResponse = (value: unknown): value is StripeCheckoutResponse => {
+  if (!isRecord(value)) return false;
+  return (
+    (value['sessionId'] === undefined || typeof value['sessionId'] === 'string') &&
+    (value['clientSecret'] === undefined || typeof value['clientSecret'] === 'string') &&
+    (value['url'] === undefined || typeof value['url'] === 'string')
+  );
+};
+
+const isStripePortalResponse = (value: unknown): value is { url: string; error?: string } => {
+  if (!isRecord(value)) return false;
+  return (
+    typeof value['url'] === 'string' &&
+    (value['error'] === undefined || typeof value['error'] === 'string')
+  );
+};
+
+const getStripePortalError = (value: unknown) => {
+  if (isRecord(value) && typeof value['error'] === 'string') {
+    return value['error'];
+  }
+  return null;
+};
 
 const tryDecodeBase64 = (value: string | undefined) => {
   if (!value) return undefined;
@@ -22,7 +58,7 @@ const tryDecodeBase64 = (value: string | undefined) => {
 export const getStripe = () => {
   if (!stripePromise) {
     const publishableKey =
-      process.env.NODE_ENV === 'production'
+      process.env['NODE_ENV'] === 'production'
         ? tryDecodeBase64(readPublicEnv('VITE_STRIPE_PUBLISHABLE_KEY_BASE64'))
         : tryDecodeBase64(readPublicEnv('VITE_STRIPE_PUBLISHABLE_KEY_DEV_BASE64'));
 
@@ -57,7 +93,20 @@ export type StripeAvailablePlan = AvailablePlan & {
 export const fetchStripePlans = async () => {
   const response = await fetch(WEB_STRIPE_PLANS_URL);
   const data = await response.json();
-  return data && Array.isArray(data) ? data : [];
+  if (!Array.isArray(data)) {
+    return [];
+  }
+  return data.filter((plan): plan is StripeAvailablePlan => {
+    if (!isRecord(plan)) return false;
+    return (
+      typeof plan['productId'] === 'string' &&
+      typeof plan['price'] === 'number' &&
+      typeof plan['currency'] === 'string' &&
+      typeof plan['productName'] === 'string' &&
+      isUserPlan(plan['plan']) &&
+      isPlanInterval(plan['interval'])
+    );
+  });
 };
 
 export const createStripeCheckoutSession = async (
@@ -80,7 +129,11 @@ export const createStripeCheckoutSession = async (
     throw new Error('Failed to create Stripe checkout session');
   }
 
-  return response.json();
+  const data = await response.json();
+  if (!isStripeCheckoutResponse(data)) {
+    throw new Error('Invalid Stripe checkout response');
+  }
+  return data;
 };
 
 export const redirectToStripeCheckout = async (url?: string): Promise<void> => {
@@ -108,8 +161,13 @@ export const createStripePortalSession = async () => {
 
   const data = await response.json();
 
-  if (data.error) {
-    throw new Error(data.error);
+  const error = getStripePortalError(data);
+  if (error) {
+    throw new Error(error);
+  }
+
+  if (!isStripePortalResponse(data)) {
+    throw new Error('Invalid Stripe portal response');
   }
 
   return data.url;

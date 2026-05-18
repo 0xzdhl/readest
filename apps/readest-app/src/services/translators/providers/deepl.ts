@@ -4,9 +4,20 @@ import { ErrorCodes, type TranslationProvider } from '../types';
 import type { UserPlan } from '@/types/quota';
 import { getSubscriptionPlan, getTranslationQuota } from '@/utils/access';
 import { normalizeToShortLang } from '@/utils/lang';
+import { getStringProperty, isRecord } from '@/utils/unknown';
 import { saveDailyUsage } from '../utils';
 
 const DEEPL_API_ENDPOINT = getAPIBaseUrl() + '/deepl/translate';
+
+interface DeepLTranslation {
+  text?: string;
+  daily_usage?: number;
+}
+
+interface DeepLResponse {
+  translations?: DeepLTranslation[];
+  daily_usage?: number;
+}
 
 export const deeplProvider: TranslationProvider = {
   name: 'deepl',
@@ -49,8 +60,8 @@ export const deeplProvider: TranslationProvider = {
       const response = await fetch(DEEPL_API_ENDPOINT, { method: 'POST', headers, body });
 
       if (!response.ok) {
-        const data = await response.json();
-        if (data && data.error && data.error === ErrorCodes.DAILY_QUOTA_EXCEEDED) {
+        const data: unknown = await response.json();
+        if (getStringProperty(data, 'error') === ErrorCodes.DAILY_QUOTA_EXCEEDED) {
           saveDailyUsage(quota);
           deeplProvider.quotaExceeded = true;
           throw new Error(ErrorCodes.DAILY_QUOTA_EXCEEDED);
@@ -58,8 +69,8 @@ export const deeplProvider: TranslationProvider = {
         throw new Error(`Translation failed with status ${response.status}`);
       }
 
-      const data = await response.json();
-      if (!data || !data.translations) {
+      const data = (await response.json()) as DeepLResponse;
+      if (!data.translations) {
         throw new Error('Invalid response from translation service');
       }
 
@@ -68,9 +79,9 @@ export const deeplProvider: TranslationProvider = {
           return line;
         }
         const translation = data.translations?.[i];
-        if (translation?.daily_usage) {
+        if (translation?.daily_usage !== undefined) {
           saveDailyUsage(translation.daily_usage);
-          deeplProvider.quotaExceeded = data.daily_usage >= quota;
+          deeplProvider.quotaExceeded = isRecord(data) && Number(data['daily_usage']) >= quota;
         }
         return translation?.text || line;
       });

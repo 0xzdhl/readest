@@ -1,5 +1,6 @@
 import { describe, test, expect, beforeEach } from 'vitest';
-import { useTransferStore, TransferItem, TransferStatus } from '@/store/transferStore';
+import { useTransferStore } from '@/store/transferStore';
+import type { TransferItem, TransferStatus } from '@/store/transferStore';
 
 const initialState = {
   transfers: {} as Record<string, TransferItem>,

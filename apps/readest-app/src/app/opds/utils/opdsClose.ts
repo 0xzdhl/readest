@@ -1,4 +1,4 @@
-import type { Router } from '@tanstack/react-router';
+import type { AppRouter } from '@/router';
 import { navigateToLibrary } from '@/utils/nav';
 import { useSettingsStore } from '@/store/settingsStore';
 
@@ -41,7 +41,7 @@ export const stashOPDSReturnTarget = (searchParams: { from?: string } | null) =>
  * resume their browser history (e.g. retry the catalog or step further
  * back) — `navigateToLibrary` would clobber that history.
  */
-export const closeOPDSBrowser = (router: Router, searchParams: { from?: string } | null) => {
+export const closeOPDSBrowser = (router: AppRouter, searchParams: { from?: string } | null) => {
   if (searchParams?.from === 'settings-integrations') {
     stashOPDSReturnTarget(searchParams);
     navigateToLibrary(router, '', undefined, true);

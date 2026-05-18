@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { getPlanDetails } from '@/app/user/utils/plan';
-import { AvailablePlan, UserPlan, PlanInterval, QuotaFeature } from '@/types/quota';
-import { StripeProductMetadata } from '@/types/payment';
+import type { AvailablePlan, UserPlan, PlanInterval, QuotaFeature } from '@/types/quota';
+import type { StripeProductMetadata } from '@/types/payment';
 
 // getPlanDetails expects (AvailablePlan & StripeAvailablePlan)[].
 // StripeAvailablePlan = AvailablePlan & { metadata?: StripeProductMetadata; product?: Stripe.Product }

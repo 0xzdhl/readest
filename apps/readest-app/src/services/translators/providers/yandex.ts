@@ -2,6 +2,7 @@ import { stubTranslation as _ } from '@/utils/misc';
 import { fetch as tauriFetch } from '@tauri-apps/plugin-http';
 import { isTauriAppPlatform } from '@/services/environment';
 import { normalizeToShortLang } from '@/utils/lang';
+import { isRecord } from '@/utils/unknown';
 import type { TranslationProvider } from '../types';
 
 /**
@@ -36,9 +37,9 @@ async function translateSingleTextForService(
     );
   }
 
-  const data = await response.json();
-  if (data && Array.isArray(data.translations)) {
-    return data.translations;
+  const data: unknown = await response.json();
+  if (isRecord(data) && Array.isArray(data['translations'])) {
+    return data['translations'];
   } else {
     // fallback: return original texts if translation failed
     return [text];

@@ -6,9 +6,9 @@ import {
   compareSortValues,
   createBookSorter,
 } from '@/app/library/utils/libraryUtils';
-import { Book } from '@/types/book';
+import type { Book } from '@/types/book';
 import { LibrarySortByType } from '@/types/settings';
-import { BookMetadata } from '@/libs/document';
+import type { BookMetadata } from '@/libs/document';
 
 /**
  * Tests for functions NOT covered by the existing library-utils.test.ts:

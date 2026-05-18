@@ -133,7 +133,7 @@ const ViewMenu: React.FC<ViewMenuProps> = ({
     if (zoomLevel === viewSettings.zoomLevel) return;
     saveViewSettings(envConfig, bookKey, 'zoomLevel', zoomLevel, true, true);
     if (bookData.bookDoc?.rendition?.layout === 'pre-paginated') {
-      getView(bookKey)?.renderer.setAttribute('scale-factor', zoomLevel);
+      getView(bookKey)?.renderer.setAttribute('scale-factor', String(zoomLevel));
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [zoomLevel]);

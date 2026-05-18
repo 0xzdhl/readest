@@ -11,6 +11,45 @@ const isValidVoice = (voiceId: string): boolean => {
   return EdgeSpeechTTS.voices.some((v) => v.id === voiceId);
 };
 
+interface EdgeTTSRequest {
+  input?: string;
+  voice?: string;
+  speed: number;
+  rate?: number;
+  lang?: string;
+}
+
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+  typeof value === 'object' && value !== null;
+
+const parseEdgeTTSRequest = (body: unknown): EdgeTTSRequest | null => {
+  if (!isRecord(body)) {
+    return null;
+  }
+  if (body['input'] !== undefined && typeof body['input'] !== 'string') {
+    return null;
+  }
+  if (body['voice'] !== undefined && typeof body['voice'] !== 'string') {
+    return null;
+  }
+  if (body['speed'] !== undefined && typeof body['speed'] !== 'number') {
+    return null;
+  }
+  if (body['rate'] !== undefined && typeof body['rate'] !== 'number') {
+    return null;
+  }
+  if (body['lang'] !== undefined && typeof body['lang'] !== 'string') {
+    return null;
+  }
+  return {
+    input: body['input'],
+    voice: body['voice'],
+    speed: body['speed'] ?? 1.0,
+    rate: body['rate'],
+    lang: body['lang'],
+  };
+};
+
 export const Route = createFileRoute('/api/tts/edge')({
   server: {
     handlers: {
@@ -21,7 +60,18 @@ export const Route = createFileRoute('/api/tts/edge')({
         }
 
         try {
-          const body = await request.json();
+          const body = parseEdgeTTSRequest(await request.json());
+          if (!body) {
+            return Response.json(
+              {
+                error: {
+                  message: 'Invalid request body',
+                  type: 'invalid_request_error',
+                },
+              },
+              { status: 400 },
+            );
+          }
           const { input: text, voice, speed = 1.0 } = body;
           let { rate, lang } = body;
 

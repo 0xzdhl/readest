@@ -115,7 +115,7 @@ const SettingsDialog: React.FC<{ bookKey: string }> = ({ bookKey }) => {
       tab: 'AI',
       icon: PiRobot,
       label: _('AI Assistant'),
-      disabled: process.env.NODE_ENV === 'production',
+      disabled: process.env['NODE_ENV'] === 'production',
     },
     {
       tab: 'Integrations',
