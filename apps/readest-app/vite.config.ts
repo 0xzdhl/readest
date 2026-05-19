@@ -4,6 +4,11 @@ import { tanstackStart } from '@tanstack/react-start/plugin/vite';
 import viteReact from '@vitejs/plugin-react';
 import { defineConfig } from 'vite';
 
+// Tauri expects a fixed dev-server URL (see src-tauri/tauri.conf.json devUrl).
+// Allow override via TAURI_DEV_HOST for mobile/network testing.
+const tauriDevHost = process.env.TAURI_DEV_HOST;
+const isTauri = process.env.VITE_APP_PLATFORM === 'tauri';
+
 export default defineConfig(() => ({
   plugins: [
     tanstackStart({
@@ -23,8 +28,19 @@ export default defineConfig(() => ({
       },
     }),
     viteReact(),
-    cloudflare({ viteEnvironment: { name: 'ssr' } }),
+    // The Cloudflare plugin starts Miniflare and hijacks the Vite server
+    // lifecycle, which is incompatible with Tauri dev/build.
+    ...(isTauri ? [] : [cloudflare({ viteEnvironment: { name: 'ssr' } })]),
   ],
+  clearScreen: false,
+  envPrefix: ['VITE_', 'TAURI_ENV_*'],
+  server: {
+    port: 5173,
+    strictPort: true,
+    host: tauriDevHost || false,
+    hmr: tauriDevHost ? { protocol: 'ws', host: tauriDevHost, port: 5174 } : undefined,
+    watch: { ignored: ['**/src-tauri/**'] },
+  },
   resolve: {
     tsconfigPaths: true,
     alias: [
