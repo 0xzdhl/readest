@@ -19,6 +19,10 @@ WORKDIR /repo
 COPY pnpm-workspace.yaml pnpm-lock.yaml package.json ./
 COPY apps/readest-app/package.json apps/readest-app/
 COPY packages/foliate-js/package.json packages/foliate-js/
+# pnpm-workspace.yaml declares patchedDependencies pointing into ./patches/
+# so those files must be present at install time even though drizzle itself
+# doesn't need them.
+COPY patches/ patches/
 RUN pnpm install --filter @readest/readest-app --frozen-lockfile --ignore-scripts
 
 # Only the files the migrate script reads. The rest of the repo is left
