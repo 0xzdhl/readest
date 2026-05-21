@@ -6,8 +6,8 @@ import type { auth } from './server';
  * Web auth client — cookie session (better-auth default).
  *
  * `inferAdditionalFields<typeof auth>()` projects the server-side
- * `additionalFields` (`plan`, `storage_usage_bytes`,
- * `storage_purchased_bytes`) onto `session.user` so callers get typed
+ * `additionalFields` (`plan`, `storageUsageBytes`,
+ * `storagePurchasedBytes`) onto `session.user` so callers get typed
  * access without an extra DB query.
  */
 export const authClient = createAuthClient({

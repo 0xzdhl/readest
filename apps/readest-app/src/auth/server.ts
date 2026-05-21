@@ -1,16 +1,58 @@
-import { betterAuth } from 'better-auth';
+import { betterAuth, type BetterAuthOptions } from 'better-auth';
 import { drizzleAdapter } from 'better-auth/adapters/drizzle';
 import { bearer, magicLink } from 'better-auth/plugins';
 import { db } from '@/db/client';
 import { sendEmail } from './email';
 
-const env = (key: string): string => process.env[key] ?? '';
-const optionalEnv = (key: string): string | undefined => {
-  const v = process.env[key];
-  return v && v.length > 0 ? v : undefined;
-};
+/**
+ * Return the env var if set, otherwise the dev fallback. In production
+ * (`NODE_ENV === 'production'`) a missing required env throws instead —
+ * better-auth's own `validateSecret` only warns for short/low-entropy
+ * secrets, so without this guard a prod deploy would silently boot with
+ * the dev secret / a non-https baseURL (no Secure cookie flag).
+ */
+function requireEnvInProd(name: string, devFallback: string): string {
+  const value = process.env[name];
+  if (value && value.length > 0) return value;
+  if (process.env['NODE_ENV'] === 'production') {
+    throw new Error(`${name} is required in production`);
+  }
+  return devFallback;
+}
 
-const betterAuthUrl = optionalEnv('BETTER_AUTH_URL');
+/**
+ * Build a social-provider config block only when both id and secret are
+ * non-empty. better-auth keeps registered providers callable even with
+ * blank credentials, so unconfigured providers would return opaque
+ * errors at `/api/auth/sign-in/social/<provider>`. Omitting the entry
+ * entirely makes the route 404 instead, which is the desired fail-closed
+ * behavior.
+ */
+function socialConfig(
+  idEnv: string,
+  secretEnv: string,
+): { clientId: string; clientSecret: string } | null {
+  const clientId = process.env[idEnv];
+  const clientSecret = process.env[secretEnv];
+  if (!clientId || !clientSecret) return null;
+  return { clientId, clientSecret };
+}
+
+type SocialEntry = [string, { clientId: string; clientSecret: string }];
+
+const socialProviders: NonNullable<BetterAuthOptions['socialProviders']> = Object.fromEntries(
+  (
+    [
+      ['google', socialConfig('GOOGLE_CLIENT_ID', 'GOOGLE_CLIENT_SECRET')],
+      ['github', socialConfig('GITHUB_CLIENT_ID', 'GITHUB_CLIENT_SECRET')],
+      ['discord', socialConfig('DISCORD_CLIENT_ID', 'DISCORD_CLIENT_SECRET')],
+      ['apple', socialConfig('APPLE_CLIENT_ID', 'APPLE_CLIENT_SECRET')],
+    ] satisfies [string, { clientId: string; clientSecret: string } | null][]
+  ).filter((entry): entry is SocialEntry => entry[1] !== null),
+);
+
+const secret = requireEnvInProd('BETTER_AUTH_SECRET', 'dev-secret-replace-me');
+const baseURL = requireEnvInProd('BETTER_AUTH_URL', 'http://localhost:3000');
 
 export const auth = betterAuth({
   database: drizzleAdapter(db, { provider: 'pg' }),
@@ -37,12 +79,7 @@ export const auth = betterAuth({
     },
   },
 
-  socialProviders: {
-    google: { clientId: env('GOOGLE_CLIENT_ID'), clientSecret: env('GOOGLE_CLIENT_SECRET') },
-    github: { clientId: env('GITHUB_CLIENT_ID'), clientSecret: env('GITHUB_CLIENT_SECRET') },
-    discord: { clientId: env('DISCORD_CLIENT_ID'), clientSecret: env('DISCORD_CLIENT_SECRET') },
-    apple: { clientId: env('APPLE_CLIENT_ID'), clientSecret: env('APPLE_CLIENT_SECRET') },
-  },
+  socialProviders,
 
   plugins: [
     magicLink({
@@ -58,20 +95,22 @@ export const auth = betterAuth({
   ],
 
   user: {
+    // Keys MUST match the Drizzle schema's JS property names (camelCase),
+    // not the underlying SQL column names. better-auth's drizzle adapter
+    // resolves these against `db._.fullSchema.user[<key>]`; a snake_case
+    // key throws `BetterAuthError: The field "<key>" does not exist in
+    // the "user" Drizzle schema` at sign-up time. See
+    // src/db/schema/auth.ts for the column definitions.
     additionalFields: {
       plan: { type: 'string', defaultValue: 'free' },
-      storage_usage_bytes: { type: 'number', defaultValue: 0 },
-      storage_purchased_bytes: { type: 'number', defaultValue: 0 },
+      storageUsageBytes: { type: 'number', defaultValue: 0 },
+      storagePurchasedBytes: { type: 'number', defaultValue: 0 },
     },
   },
 
-  secret: optionalEnv('BETTER_AUTH_SECRET') ?? 'dev-secret-replace-me',
-  baseURL: betterAuthUrl ?? 'http://localhost:3000',
-  trustedOrigins: [
-    'readest://',
-    'http://localhost:*',
-    ...(betterAuthUrl ? [betterAuthUrl] : []),
-  ],
+  secret,
+  baseURL,
+  trustedOrigins: ['readest://', 'http://localhost:*', baseURL],
 });
 
 export type Auth = typeof auth;

@@ -30,11 +30,7 @@ export async function sendEmail({ to, subject, html }: SendEmailArgs): Promise<v
     const resend = new Resend(apiKey);
     const result = await resend.emails.send({ from, to, subject, html });
     if (result.error) {
-      const message =
-        typeof result.error === 'object' && result.error !== null && 'message' in result.error
-          ? String((result.error as { message: unknown }).message)
-          : 'Unknown Resend error';
-      throw new Error(`Resend send failed: ${message}`);
+      throw new Error(`Resend send failed: ${result.error.message}`);
     }
     return;
   }

@@ -4,9 +4,13 @@ import type { auth } from './server';
 
 /**
  * Storage key for the better-auth bearer token, used by Tauri (desktop +
- * iOS + Android) clients. The WebView writes through to platform secure
- * storage (Tauri Store / Keychain / EncryptedSharedPreferences) where
- * appropriate; in jsdom / unsupported environments we fail silently.
+ * iOS + Android) clients.
+ *
+ * Stored in the WebView's localStorage (WKWebView per-app on iOS,
+ * WebView2 on Windows, Android WebView). Persists across launches but
+ * not necessarily across OS-level app data clears. Secure-keychain
+ * integration is out of scope for this migration. In jsdom /
+ * unsupported environments we fail silently.
  */
 const TOKEN_KEY = 'readest:bearer-token';
 
@@ -51,7 +55,7 @@ export const nativeAuthClient = createAuthClient({
   fetchOptions: {
     auth: {
       type: 'Bearer',
-      token: () => loadToken() ?? '',
+      token: () => loadToken() ?? undefined,
     },
     onSuccess: (ctx) => {
       const setAuthHeader = ctx.response.headers.get('set-auth-token');
