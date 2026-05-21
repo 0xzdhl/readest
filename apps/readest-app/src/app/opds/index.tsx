@@ -1,5 +1,4 @@
 ﻿import clsx from 'clsx';
-import { md5 } from 'js-md5';
 import { useEffect, useState, useCallback, useRef, useMemo } from 'react';
 import { createFileRoute, useRouter } from '@tanstack/react-router';
 import { z } from 'zod';
@@ -10,6 +9,7 @@ import { useAuth } from '@/context/AuthContext';
 import { isWebAppPlatform } from '@/services/environment';
 import { downloadFile } from '@/libs/storage';
 import { Toast } from '@/components/Toast';
+import { md5 } from '@/utils/md5';
 import { useThemeStore } from '@/store/themeStore';
 import { useTranslation } from '@/hooks/useTranslation';
 import { useLibraryStore } from '@/store/libraryStore';

@@ -295,9 +295,6 @@ importers:
       jieba-wasm:
         specifier: ^2.4.0
         version: 2.4.0
-      js-md5:
-        specifier: ^0.8.3
-        version: 0.8.3
       lucide-react:
         specifier: ^0.562.0
         version: 0.562.0(react@19.2.5)
@@ -6019,9 +6016,6 @@ packages:
 
   jose@6.2.3:
     resolution: {integrity: sha512-YYVDInQKFJfR/xa3ojUTl8c2KoTwiL1R5Wg9YCydwH0x0B9grbzlg5HC7mMjCtUJjbQ/YnGEZIhI5tCgfTb4Hw==}
-
-  js-md5@0.8.3:
-    resolution: {integrity: sha512-qR0HB5uP6wCuRMrWPTrkMaev7MJZwJuuw4fnwAzRgP4J4/F8RwtodOKpGp4XpqsLBFzzgqIO42efFAyz2Et6KQ==}
 
   js-tokens@10.0.0:
     resolution: {integrity: sha512-lM/UBzQmfJRo9ABXbPWemivdCW8V2G8FHaHdypQaIy523snUjog0W71ayWXTjiR+ixeMyVHN2XcpnTd/liPg/Q==}
@@ -13766,8 +13760,6 @@ snapshots:
   jose@5.10.0: {}
 
   jose@6.2.3: {}
-
-  js-md5@0.8.3: {}
 
   js-tokens@10.0.0: {}
 

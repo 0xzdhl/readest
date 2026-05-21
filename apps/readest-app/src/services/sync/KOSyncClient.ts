@@ -1,8 +1,8 @@
-import { md5 } from 'js-md5';
 import type { Book } from '@/types/book';
 import type { KOSyncSettings } from '@/types/settings';
 import { fetch as tauriFetch } from '@tauri-apps/plugin-http';
 import type { KoSyncProxyPayload } from '@/types/kosync';
+import { md5 } from '@/utils/md5';
 import { getErrorMessage, getStringProperty, isRecord } from '@/utils/unknown';
 import { isLanAddress } from '@/utils/network';
 import { getAPIBaseUrl, isTauriAppPlatform } from '../environment';

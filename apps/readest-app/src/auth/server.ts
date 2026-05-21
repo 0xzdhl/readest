@@ -11,8 +11,7 @@ import { sendEmail } from './email';
  * secrets, so without this guard a prod deploy would silently boot with
  * the dev secret / a non-https baseURL (no Secure cookie flag).
  */
-function requireEnvInProd(name: string, devFallback: string): string {
-  const value = process.env[name];
+function requireEnvInProd(name: string, value: string | undefined, devFallback: string): string {
   if (value && value.length > 0) return value;
   if (process.env['NODE_ENV'] === 'production') {
     throw new Error(`${name} is required in production`);
@@ -51,8 +50,16 @@ const socialProviders: NonNullable<BetterAuthOptions['socialProviders']> = Objec
   ).filter((entry): entry is SocialEntry => entry[1] !== null),
 );
 
-const secret = requireEnvInProd('BETTER_AUTH_SECRET', 'dev-secret-replace-me');
-const baseURL = requireEnvInProd('BETTER_AUTH_URL', 'http://localhost:3000');
+const secret = requireEnvInProd(
+  'BETTER_AUTH_SECRET',
+  process.env['BETTER_AUTH_SECRET'],
+  'dev-secret-replace-me',
+);
+const baseURL = requireEnvInProd(
+  'BETTER_AUTH_URL',
+  process.env['BETTER_AUTH_URL'],
+  'http://localhost:3000',
+);
 
 export const auth = betterAuth({
   database: drizzleAdapter(db, { provider: 'pg' }),

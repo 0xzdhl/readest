@@ -5,7 +5,7 @@ import { getLocale, getUserLang, makeSafeFilename } from './misc';
 import { getStorageType } from './storage';
 import { getDirFromLanguage } from './rtl';
 import { code6392to6391, isValidLang, normalizedLangCode } from './lang';
-import { md5 } from './md5';
+import { md5 } from '@/utils/md5';
 
 export const getDir = (book: Book) => {
   return `${book.hash}`;

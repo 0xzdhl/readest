@@ -1,9 +1,9 @@
-import { md5 } from 'js-md5';
 import WebSocket from 'isomorphic-ws';
 import { randomMd5 } from '@/utils/misc';
 import { LRUCache } from '@/utils/lru';
 import { genSSML } from '@/utils/ssml';
 import { fetchWithAuth } from '@/utils/fetch';
+import { md5 } from '@/utils/md5';
 import { getAPIBaseUrl, isTauriAppPlatform } from '@/services/environment';
 
 // Cloudflare Workers expose a global `WebSocketPair` that is not available in

@@ -7,7 +7,7 @@
   "compatibility_date": "2026-05-14",
   "compatibility_flags": [
     "nodejs_compat",
-    "enable_nodejs_process_v2"
+    "enable_nodejs_process_v2",
   ],
   "workers_dev": true,
   "observability": {
