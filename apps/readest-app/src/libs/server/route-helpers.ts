@@ -1,5 +1,5 @@
 import type { Session } from '@/auth/server';
-import { db } from '@/db/client';
+import type { db } from '@/db/client';
 import { withBypassRls, withRls } from '@/db/rls';
 import { resolveSessionOr401 } from './auth-fn';
 import { DEFAULT_STORAGE_QUOTA } from '@/services/constants';
@@ -53,6 +53,11 @@ export interface PublicRouteContext {
   tx: TxLike;
 }
 
+export interface AuthRouteContext {
+  user: NonNullable<Session>['user'];
+  session: NonNullable<Session>;
+}
+
 export async function runProtected(
   request: Request,
   inner: (ctx: ProtectedRouteContext) => Promise<Response>,
@@ -81,6 +86,36 @@ export async function runPublic(
   inner: (ctx: PublicRouteContext) => Promise<Response>,
 ): Promise<Response> {
   return withBypassRls((tx) => inner({ tx }));
+}
+
+/**
+ * Authenticated, NO database transaction. For routes that only proxy to
+ * third-party APIs (AI gateway, DeepL, Edge-TTS, metadata search) but need
+ * to identify the caller for quota / plan-tier checks read off
+ * `session.user`. Opening a DB transaction for these would be wasteful and
+ * would briefly hold a pool slot per request — `runAuth` skips the tx and
+ * just resolves the session.
+ *
+ * 401 wire-format matches `runProtected`: `{ error: 'Not authenticated' }`
+ * JSON, so the client hook's substring match (see `runProtected` jsdoc)
+ * keeps working for any route that previously used a legacy auth-check.
+ */
+export async function runAuth(
+  request: Request,
+  inner: (ctx: AuthRouteContext) => Promise<Response>,
+): Promise<Response> {
+  try {
+    const session = await resolveSessionOr401(request.headers);
+    return await inner({ user: session.user, session });
+  } catch (e) {
+    if (e instanceof Response) {
+      if (e.status === 401) {
+        return Response.json({ error: 'Not authenticated' }, { status: 401 });
+      }
+      return e;
+    }
+    throw e;
+  }
 }
 
 /**

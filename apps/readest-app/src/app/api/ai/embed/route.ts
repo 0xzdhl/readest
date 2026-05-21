@@ -1,6 +1,6 @@
 import { createFileRoute } from '@tanstack/react-router';
 import { embed, embedMany, createGateway } from 'ai';
-import { validateUserAndToken } from '@/utils/access';
+import { runAuth } from '@/libs/server/route-helpers';
 
 interface EmbedRequest {
   texts: string[];
@@ -34,41 +34,37 @@ const parseEmbedRequest = (body: unknown): EmbedRequest | null => {
 export const Route = createFileRoute('/api/ai/embed')({
   server: {
     handlers: {
-      POST: async ({ request }) => {
-        try {
-          const { user, token } = await validateUserAndToken(request.headers.get('authorization'));
-          if (!user || !token) {
-            return Response.json({ error: 'Not authenticated' }, { status: 403 });
-          }
+      POST: async ({ request }) =>
+        runAuth(request, async () => {
+          try {
+            const body = parseEmbedRequest(await request.json());
+            if (!body) {
+              return Response.json({ error: 'Texts array required' }, { status: 400 });
+            }
+            const { texts, single, apiKey } = body;
 
-          const body = parseEmbedRequest(await request.json());
-          if (!body) {
-            return Response.json({ error: 'Texts array required' }, { status: 400 });
-          }
-          const { texts, single, apiKey } = body;
+            const gatewayApiKey = apiKey || process.env['AI_GATEWAY_API_KEY'];
+            if (!gatewayApiKey) {
+              return Response.json({ error: 'API key required' }, { status: 401 });
+            }
 
-          const gatewayApiKey = apiKey || process.env['AI_GATEWAY_API_KEY'];
-          if (!gatewayApiKey) {
-            return Response.json({ error: 'API key required' }, { status: 401 });
-          }
+            const gateway = createGateway({ apiKey: gatewayApiKey });
+            const model = gateway.embeddingModel(
+              process.env['AI_GATEWAY_EMBEDDING_MODEL'] || 'openai/text-embedding-3-small',
+            );
 
-          const gateway = createGateway({ apiKey: gatewayApiKey });
-          const model = gateway.embeddingModel(
-            process.env['AI_GATEWAY_EMBEDDING_MODEL'] || 'openai/text-embedding-3-small',
-          );
-
-          if (single) {
-            const { embedding } = await embed({ model, value: texts[0]! });
-            return Response.json({ embedding });
-          } else {
-            const { embeddings } = await embedMany({ model, values: texts });
-            return Response.json({ embeddings });
+            if (single) {
+              const { embedding } = await embed({ model, value: texts[0]! });
+              return Response.json({ embedding });
+            } else {
+              const { embeddings } = await embedMany({ model, values: texts });
+              return Response.json({ embeddings });
+            }
+          } catch (error) {
+            const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+            return Response.json({ error: `Embedding failed: ${errorMessage}` }, { status: 500 });
           }
-        } catch (error) {
-          const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-          return Response.json({ error: `Embedding failed: ${errorMessage}` }, { status: 500 });
-        }
-      },
+        }),
     },
   },
 });

@@ -69,10 +69,25 @@ For Windows targets, “Build Tools for Visual Studio 2022” (or a higher editi
 
 ### 4. Build for Development
 
+For the web app you'll need a Postgres + S3 + SMTP backend. The docker
+compose file at `docker/compose.yaml` brings up exactly that (Postgres
+with the `readest_app` role bootstrapped, MinIO for S3, and Mailpit as a
+local SMTP sink for better-auth email):
+
+```bash
+cd apps/readest-app
+cp .env.web.example .env
+cd ../../docker
+docker compose up -d db minio minio-setup mailpit
+cd ../apps/readest-app
+pnpm db:migrate
+pnpm dev-web
+```
+
 ```bash
 # Start development for the Tauri app
 pnpm tauri dev
-# or start development for the Web app
+# or start development for the Web app (after the docker step above)
 pnpm dev-web
 # preview with OpenNext build for the Web app
 pnpm preview

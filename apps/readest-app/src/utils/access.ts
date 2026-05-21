@@ -101,34 +101,3 @@ export const getUserID = async (): Promise<string | null> => {
   const { data } = await authClient.getSession();
   return data?.user?.id ?? null;
 };
-
-/**
- * Auth-check helper used by API-route handlers that haven't yet been
- * migrated to the `protectedFn` middleware (currently: ai/chat, ai/embed,
- * metadata/search, tts/edge, deepl/translate). Resolves the better-auth
- * session from the incoming Authorization header and surfaces a synthetic
- * `token` field so legacy call-sites that pass the bearer downstream
- * (e.g. translator quota checks against external services) keep working.
- *
- * Phase 8 will port the remaining routes to `protectedFn` and this can
- * then be removed alongside `helpers/auth.ts`.
- */
-export const validateUserAndToken = async (
-  authHeader: string | null | undefined,
-): Promise<
-  | { user: NonNullable<Awaited<ReturnType<typeof authClient.getSession>>['data']>['user']; token: string }
-  | Record<string, never>
-> => {
-  if (!authHeader) return {};
-
-  const token = authHeader.replace('Bearer ', '');
-  // Dynamic import avoids pulling the server bundle into client builds.
-  // The server-side `auth.api.getSession({ headers })` validates the
-  // bearer against the session table and returns the same user shape
-  // the React `useSession()` hook exposes.
-  const { auth } = await import('@/auth/server');
-  const headers = new Headers({ authorization: `Bearer ${token}` });
-  const session = await auth.api.getSession({ headers });
-  if (!session?.user) return {};
-  return { user: session.user, token };
-};

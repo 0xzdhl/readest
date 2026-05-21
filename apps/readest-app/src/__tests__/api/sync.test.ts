@@ -14,9 +14,8 @@ vi.mock('@/auth/server', () => ({
   },
 }));
 
-// Avoid pulling supabase/jwt-decode (and their env-var contracts) into the
-// route module's transitive deps — only `transformBook*` is used from
-// `@/utils/transform`, which has no runtime deps on supabase.
+// The route module pulls `transformBook*` from `@/utils/transform`, which
+// has no runtime auth deps — the auth mock above is the only stub needed.
 
 const url = process.env['TEST_DATABASE_URL'];
 
