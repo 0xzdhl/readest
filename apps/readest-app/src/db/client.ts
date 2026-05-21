@@ -8,7 +8,7 @@ if (!connectionString) {
 }
 const queryClient = postgres(connectionString, {
   prepare: false,
-  max: Number(process.env['DATABASE_POOL_MAX'] ?? 10),
+  max: Number.parseInt(process.env['DATABASE_POOL_MAX'] ?? '', 10) || 10,
   idle_timeout: 20,
 });
 export const db = drizzle(queryClient, { schema });

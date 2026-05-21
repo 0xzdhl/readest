@@ -9,7 +9,6 @@ import {
   index,
   unique,
 } from 'drizzle-orm/pg-core';
-// uuid is still used for primary keys of payment tables
 import { user } from './auth';
 
 export const customers = pgTable(

@@ -32,15 +32,20 @@ ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT USAGE, SELECT ON SEQUENCES TO re
 -- ─────────────────────────────────────────────────────────────────────────
 -- 3. Enable RLS + per-table policies
 --    Policy: user sees/writes their own rows, or bypass flag is set.
+--
+--    Most tables get a single FOR ALL `_self` policy; `files` and
+--    `replica_keys` need per-operation policies (see the blocks after the
+--    loop) to preserve the legacy semantics from
+--    docker/volumes/db/init/schema.sql and docker/volumes/db/migrations/
+--    003_add_replicas.sql.
 -- ─────────────────────────────────────────────────────────────────────────
 DO $$
 DECLARE
   tbl text;
   tables text[] := ARRAY[
     'books', 'book_configs', 'book_notes',
-    'files',
     'book_shares',
-    'replicas', 'replica_keys',
+    'replicas',
     'payments', 'subscriptions', 'customers',
     'apple_iap_subscriptions', 'google_iap_subscriptions'
   ];
@@ -71,10 +76,116 @@ END
 $$;
 
 -- ─────────────────────────────────────────────────────────────────────────
+-- 3a. files: per-operation policies (preserves legacy schema.sql semantics)
+--     - SELECT hides tombstoned rows (deleted_at IS NULL filter).
+--     - INSERT scoped to current user.
+--     - UPDATE allows touching live rows, but the WITH CHECK forbids
+--       resurrecting a tombstone (deleted_at must remain NULL or be a
+--       future timestamp).
+--     - DELETE scoped to current user.
+-- ─────────────────────────────────────────────────────────────────────────
+ALTER TABLE public.files ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS files_self   ON public.files;
+DROP POLICY IF EXISTS files_select ON public.files;
+DROP POLICY IF EXISTS files_insert ON public.files;
+DROP POLICY IF EXISTS files_update ON public.files;
+DROP POLICY IF EXISTS files_delete ON public.files;
+
+CREATE POLICY files_select ON public.files
+  FOR SELECT
+  USING (
+    (user_id = current_setting('app.user_id', true) AND deleted_at IS NULL)
+    OR current_setting('app.bypass_rls', true) = 'true'
+  );
+
+CREATE POLICY files_insert ON public.files
+  FOR INSERT
+  WITH CHECK (
+    user_id = current_setting('app.user_id', true)
+    OR current_setting('app.bypass_rls', true) = 'true'
+  );
+
+CREATE POLICY files_update ON public.files
+  FOR UPDATE
+  USING (
+    user_id = current_setting('app.user_id', true)
+    OR current_setting('app.bypass_rls', true) = 'true'
+  )
+  WITH CHECK (
+    (deleted_at IS NULL OR deleted_at > now())
+    OR current_setting('app.bypass_rls', true) = 'true'
+  );
+
+CREATE POLICY files_delete ON public.files
+  FOR DELETE
+  USING (
+    user_id = current_setting('app.user_id', true)
+    OR current_setting('app.bypass_rls', true) = 'true'
+  );
+
+-- ─────────────────────────────────────────────────────────────────────────
+-- 3b. replica_keys: append-only (SELECT/INSERT/DELETE only).
+--     Legacy migration 003_add_replicas.sql intentionally omits an UPDATE
+--     policy so per-account PBKDF2 salt rows cannot be mutated. A
+--     passphrase rotation INSERTs a new row; forgot-passphrase DELETEs all
+--     rows for the user. Restore that here by NOT creating an UPDATE
+--     policy — any UPDATE is denied by RLS.
+-- ─────────────────────────────────────────────────────────────────────────
+ALTER TABLE public.replica_keys ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS replica_keys_self   ON public.replica_keys;
+DROP POLICY IF EXISTS replica_keys_select ON public.replica_keys;
+DROP POLICY IF EXISTS replica_keys_insert ON public.replica_keys;
+DROP POLICY IF EXISTS replica_keys_delete ON public.replica_keys;
+
+CREATE POLICY replica_keys_select ON public.replica_keys
+  FOR SELECT
+  USING (
+    user_id = current_setting('app.user_id', true)
+    OR current_setting('app.bypass_rls', true) = 'true'
+  );
+
+CREATE POLICY replica_keys_insert ON public.replica_keys
+  FOR INSERT
+  WITH CHECK (
+    user_id = current_setting('app.user_id', true)
+    OR current_setting('app.bypass_rls', true) = 'true'
+  );
+
+CREATE POLICY replica_keys_delete ON public.replica_keys
+  FOR DELETE
+  USING (
+    user_id = current_setting('app.user_id', true)
+    OR current_setting('app.bypass_rls', true) = 'true'
+  );
+
+-- ─────────────────────────────────────────────────────────────────────────
 -- 4. HLC helpers + crdt_merge_replica
 --    Ported from docker/volumes/db/migrations/004_crdt_merge_replica_fn.sql
 --    and 005_replica_manifest_cursor_updated_at.sql.
 --    No auth.uid() calls in these function bodies.
+-- ─────────────────────────────────────────────────────────────────────────
+
+-- ─────────────────────────────────────────────────────────────────────────
+-- INTENTIONALLY UNPORTED LEGACY RPCs
+-- ─────────────────────────────────────────────────────────────────────────
+-- The following plpgsql functions from the old supabase migrations are NOT
+-- ported here. They will be rewritten as inline drizzle queries in later
+-- phases (Phases 4–6 of the migration plan):
+--
+--   - increment_book_share_download(p_token_hash text, p_now timestamptz)
+--     [legacy 002_add_book_shares.sql]
+--     Replaced by: explicit UPDATE in apps/readest-app/src/app/api/share/
+--                  $token/download/confirm/route.ts
+--
+--   - replica_keys_create(p_kind text)
+--     replica_keys_list()
+--     replica_keys_forget(p_salt_id text)
+--     [legacy 008_replica_keys_rpcs.sql + 010_replica_keys_forget.sql]
+--     Replaced by: explicit drizzle queries in
+--                  apps/readest-app/src/app/api/sync/replica-keys.ts
+--
+-- If you find a route still calling supabase.rpc('<one of the above>'),
+-- it has not been refactored yet — see the migration plan.
 -- ─────────────────────────────────────────────────────────────────────────
 
 -- HLC max helper. NULLs lose. Lexicographic order = temporal order.
