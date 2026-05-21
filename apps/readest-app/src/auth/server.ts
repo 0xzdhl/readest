@@ -106,6 +106,14 @@ export const auth = betterAuth({
       storageUsageBytes: { type: 'number', defaultValue: 0 },
       storagePurchasedBytes: { type: 'number', defaultValue: 0 },
     },
+    // Enable account self-deletion so `auth.api.deleteUser({ headers })`
+    // works from /api/user/delete. Without this the endpoint returns 404
+    // ("Delete user is disabled. Enable it in the options"). Our schema's
+    // FK `ON DELETE CASCADE` on every business table's `user_id` column
+    // fans the delete out automatically — we don't manually purge here.
+    deleteUser: {
+      enabled: true,
+    },
   },
 
   secret,

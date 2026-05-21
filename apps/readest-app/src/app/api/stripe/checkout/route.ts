@@ -1,7 +1,8 @@
 import { createFileRoute } from '@tanstack/react-router';
+import { eq } from 'drizzle-orm';
+import { customers } from '@/db/schema';
 import { getStripe } from '@/libs/payment/stripe/server';
-import { validateUserAndToken } from '@/utils/access';
-import { createSupabaseAdminClient } from '@/utils/supabase';
+import { runProtected } from '@/libs/server/route-helpers';
 import type { PlanType } from '@/types/quota';
 
 interface StripeCheckoutRequest {
@@ -37,81 +38,80 @@ const parseStripeCheckoutRequest = (body: unknown): StripeCheckoutRequest | null
   };
 };
 
+/**
+ * Phase 6: owner-only — caller IS the user being charged. Looks up an
+ * existing Stripe customer row (RLS-scoped) or creates one in Stripe and
+ * persists the mapping, then opens a Checkout session.
+ */
 export const Route = createFileRoute('/api/stripe/checkout')({
   server: {
     handlers: {
       POST: async ({ request }) => {
-        const body = parseStripeCheckoutRequest(await request.json());
-        if (!body) {
+        const parsed = parseStripeCheckoutRequest(await request.json());
+        if (!parsed) {
           return Response.json({ error: 'Invalid checkout request' }, { status: 400 });
         }
-        const { priceId, planType, embedded, metadata } = body;
+        const { priceId, planType, embedded, metadata } = parsed;
 
-        const { user, token } = await validateUserAndToken(request.headers.get('authorization'));
-        if (!user || !token) {
-          return Response.json({ error: 'Not authenticated' }, { status: 403 });
-        }
+        return runProtected(request, async ({ user, tx }) => {
+          const enhancedMetadata = {
+            ...metadata,
+            userId: user.id,
+          };
 
-        const enhancedMetadata = {
-          ...metadata,
-          userId: user.id,
-        };
+          try {
+            const existing = await tx
+              .select({ stripeCustomerId: customers.stripeCustomerId })
+              .from(customers)
+              .where(eq(customers.userId, user.id))
+              .limit(1);
 
-        try {
-          const supabase = createSupabaseAdminClient();
-          const { data: customerData } = await supabase
-            .from('customers')
-            .select('stripe_customer_id')
-            .eq('user_id', user.id)
-            .single();
-
-          let customerId: string;
-          if (!customerData?.stripe_customer_id) {
-            const stripe = getStripe();
-            const customer = await stripe.customers.create({
-              email: user.email,
-              metadata: {
+            let customerId: string;
+            if (!existing[0]?.stripeCustomerId) {
+              const stripe = getStripe();
+              const customer = await stripe.customers.create({
+                email: user.email,
+                metadata: { userId: user.id },
+              });
+              customerId = customer.id;
+              await tx.insert(customers).values({
                 userId: user.id,
-              },
+                stripeCustomerId: customerId,
+              });
+            } else {
+              customerId = existing[0].stripeCustomerId;
+            }
+
+            const stripe = getStripe();
+            const successUrl = `${request.headers.get('origin')}/user/subscription/success?payment=stripe&session_id={CHECKOUT_SESSION_ID}`;
+            const returnUrl = `${request.headers.get('origin')}/user`;
+            const session = await stripe.checkout.sessions.create({
+              ui_mode: embedded ? 'embedded_page' : 'hosted_page',
+              customer: customerId,
+              mode: planType === 'subscription' ? 'subscription' : 'payment',
+              allow_promotion_codes: true,
+              line_items: [
+                {
+                  price: priceId,
+                  quantity: 1,
+                },
+              ],
+              metadata: enhancedMetadata,
+              success_url: embedded ? undefined : successUrl,
+              cancel_url: embedded ? undefined : returnUrl,
+              redirect_on_completion: embedded ? 'never' : undefined,
             });
-            customerId = customer.id;
-            await supabase.from('customers').insert({
-              user_id: user.id,
-              stripe_customer_id: customerId,
+
+            return Response.json({
+              url: session.url,
+              sessionId: session.id,
+              clientSecret: session.client_secret,
             });
-          } else {
-            customerId = customerData.stripe_customer_id;
+          } catch (error) {
+            console.error(error);
+            return Response.json({ error: 'Error creating checkout session' }, { status: 500 });
           }
-
-          const stripe = getStripe();
-          const successUrl = `${request.headers.get('origin')}/user/subscription/success?payment=stripe&session_id={CHECKOUT_SESSION_ID}`;
-          const returnUrl = `${request.headers.get('origin')}/user`;
-          const session = await stripe.checkout.sessions.create({
-            ui_mode: embedded ? 'embedded_page' : 'hosted_page',
-            customer: customerId,
-            mode: planType === 'subscription' ? 'subscription' : 'payment',
-            allow_promotion_codes: true,
-            line_items: [
-              {
-                price: priceId,
-                quantity: 1,
-              },
-            ],
-            metadata: enhancedMetadata,
-            success_url: embedded ? undefined : successUrl,
-            cancel_url: embedded ? undefined : returnUrl,
-            redirect_on_completion: embedded ? 'never' : undefined,
-          });
-
-          return Response.json({
-            url: session.url,
-            sessionId: session.id,
-            clientSecret: session.client_secret,
-          });
-        } catch (error) {
-          console.error(error);
-          return Response.json({ error: 'Error creating checkout session' }, { status: 500 });
-        }
+        });
       },
     },
   },

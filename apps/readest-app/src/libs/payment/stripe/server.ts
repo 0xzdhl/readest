@@ -1,8 +1,12 @@
 import Stripe from 'stripe';
+import { eq, sql } from 'drizzle-orm';
 import type { UserPlan } from '@/types/quota';
-import { createSupabaseAdminClient } from '@/utils/supabase';
-import type { PaymentStatus, StripePaymentData, StripeProductMetadata } from '@/types/payment';
+import type { db } from '@/db/client';
+import type { PaymentStatus, StripeProductMetadata } from '@/types/payment';
+import { payments, subscriptions, user } from '@/db/schema';
 import { updateUserStorage } from '../storage';
+
+type TxLike = Parameters<Parameters<typeof db.transaction>[0]>[0];
 
 let stripe: Stripe | null;
 
@@ -19,13 +23,20 @@ export const getStripe = () => {
   return stripe;
 };
 
+/**
+ * Phase 6 of the supabase→better-auth migration: this used to grab its own
+ * supabase admin client; it now takes the RLS-scoped tx from the caller
+ * (`runService` for webhook callsites, `runProtected` for user-facing
+ * routes). The legacy `plans` table is gone — plan/status now live on the
+ * `user` row directly.
+ */
 export const createOrUpdateSubscription = async (
+  tx: TxLike,
   userId: string,
   customerId: string,
   subscriptionId: string,
 ) => {
   const stripe = getStripe();
-  const supabase = createSupabaseAdminClient();
 
   const subscription = await stripe.subscriptions.retrieve(subscriptionId, {
     expand: ['items.data.price.product'],
@@ -38,57 +49,54 @@ export const createOrUpdateSubscription = async (
   const plan = product.metadata?.plan || 'free';
 
   try {
-    const { data: existingSubscription } = await supabase
-      .from('subscriptions')
-      .select('*')
-      .eq('stripe_subscription_id', subscriptionId)
-      .single();
+    const existing = await tx
+      .select()
+      .from(subscriptions)
+      .where(eq(subscriptions.stripeSubscriptionId, subscriptionId))
+      .limit(1);
 
-    const period_start = new Date(subscriptionItem.current_period_start * 1000).toISOString();
-    const period_end = new Date(subscriptionItem.current_period_end * 1000).toISOString();
-    if (existingSubscription) {
-      await supabase
-        .from('subscriptions')
-        .update({
+    const periodStart = new Date(subscriptionItem.current_period_start * 1000);
+    const periodEnd = new Date(subscriptionItem.current_period_end * 1000);
+    if (existing[0]) {
+      await tx
+        .update(subscriptions)
+        .set({
           status: subscription.status,
-          current_period_start: period_start,
-          current_period_end: period_end,
+          currentPeriodStart: periodStart,
+          currentPeriodEnd: periodEnd,
         })
-        .eq('id', existingSubscription.id);
+        .where(eq(subscriptions.id, existing[0].id));
     } else {
-      await supabase.from('subscriptions').insert({
-        user_id: userId,
-        stripe_customer_id: customerId,
-        stripe_subscription_id: subscriptionId,
-        stripe_price_id: priceId,
+      await tx.insert(subscriptions).values({
+        userId,
+        stripeCustomerId: customerId,
+        stripeSubscriptionId: subscriptionId,
+        stripePriceId: priceId,
         status: subscription.status,
-        current_period_start: period_start,
-        current_period_end: period_end,
-        created_at: new Date().toISOString(),
+        currentPeriodStart: periodStart,
+        currentPeriodEnd: periodEnd,
       });
     }
   } catch (error) {
     console.error('Error checking existing subscription:', error);
   }
 
-  await supabase
-    .from('plans')
-    .update({
-      plan: ['active', 'trialing'].includes(subscription.status) ? plan : 'free',
-      status: subscription.status,
-    })
-    .eq('id', userId);
+  const effectivePlan: UserPlan = ['active', 'trialing'].includes(subscription.status)
+    ? ((plan as UserPlan) ?? 'free')
+    : 'free';
+  await tx
+    .update(user)
+    .set({ plan: effectivePlan, updatedAt: sql`now()` })
+    .where(eq(user.id, userId));
 };
 
-export const COMPLETED_PAYMENT_STATUSES: PaymentStatus[] = ['completed', 'succeeded'];
-
 export const createOrUpdatePayment = async (
+  tx: TxLike,
   userId: string,
   customerId: string,
   checkoutSessionId: string,
 ) => {
   const stripe = getStripe();
-  const supabase = createSupabaseAdminClient();
 
   const session = await stripe.checkout.sessions.retrieve(checkoutSessionId, {
     expand: ['line_items.data.price.product', 'payment_intent'],
@@ -106,32 +114,43 @@ export const createOrUpdatePayment = async (
   const productMetadata = product?.metadata;
 
   try {
-    const paymentData: Partial<StripePaymentData> = {
-      user_id: userId,
-      provider: 'stripe',
-      stripe_customer_id: customerId,
-      stripe_checkout_id: checkoutSessionId,
-      stripe_payment_intent_id: paymentIntent.id,
+    const storageGb = productMetadata?.storageGB ? parseInt(productMetadata.storageGB, 10) : 0;
+    const paymentValues = {
+      userId,
+      provider: 'stripe' as const,
+      stripeCustomerId: customerId,
+      stripeCheckoutId: checkoutSessionId,
+      stripePaymentIntentId: paymentIntent.id,
       amount: paymentIntent.amount,
       currency: paymentIntent.currency,
       status: paymentIntent.status as PaymentStatus,
-      payment_method: paymentIntent.payment_method as string | null,
-      product_id: product?.id,
-      storage_gb: productMetadata?.storageGB ? parseInt(productMetadata.storageGB) : 0,
-      metadata: product?.metadata,
+      paymentMethod: paymentIntent.payment_method as string | null,
+      productId: product?.id,
+      storageGb,
+      metadata: product?.metadata as Record<string, unknown> | undefined,
     };
 
-    const { error } = await supabase.from('payments').upsert(paymentData, {
-      onConflict: 'stripe_payment_intent_id',
-      ignoreDuplicates: false,
-    });
+    await tx
+      .insert(payments)
+      .values(paymentValues)
+      .onConflictDoUpdate({
+        target: payments.stripePaymentIntentId,
+        set: {
+          amount: paymentValues.amount,
+          currency: paymentValues.currency,
+          status: paymentValues.status,
+          paymentMethod: paymentValues.paymentMethod,
+          productId: paymentValues.productId,
+          storageGb: paymentValues.storageGb,
+          metadata: paymentValues.metadata,
+          updatedAt: sql`now()`,
+        },
+      });
 
-    if (error) {
-      throw error;
-    }
-    await updateUserStorage(userId);
+    await updateUserStorage(tx, userId);
   } catch (error) {
     console.error('Error creating or updating payment:', error);
     throw error;
   }
 };
+
