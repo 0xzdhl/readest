@@ -9,8 +9,23 @@ export interface AppleIDAuthorizationRequest {
   state?: string;
 }
 
+/**
+ * Identity bundle returned by the native Sign-In-with-Apple plugins. The
+ * caller is expected to pull `identityToken` (plus the `nonce` it supplied
+ * — Apple echoes the same nonce back on the JWT's `nonce` claim) and
+ * forward both to better-auth:
+ *
+ *   await authClient.signIn.social({
+ *     provider: 'apple',
+ *     idToken: { token: identityToken, nonce },
+ *   });
+ *
+ * Better-auth verifies the JWT signature against Apple's JWKs and the
+ * `aud` claim against `APPLE_CLIENT_ID` (or `appBundleIdentifier` on iOS),
+ * then re-issues a better-auth session. Other fields are passed through
+ * for callers that want to greet the user by name on first sign-in.
+ */
 export interface AppleIDAuthorizationResponse {
-  // usually not null
   userIdentifier: string | null;
 
   givenName: string | null;
@@ -20,6 +35,12 @@ export interface AppleIDAuthorizationResponse {
   authorizationCode: string;
   identityToken: string | null;
   state: string | null;
+
+  /**
+   * Echoed back from the request — better-auth's id-token verifier
+   * requires the same nonce on the JWT to defend against replay attacks.
+   */
+  nonce?: string | null;
 }
 
 export async function getAppleIdAuth(

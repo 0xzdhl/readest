@@ -1,84 +1,123 @@
 import { describe, test, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, cleanup, act } from '@testing-library/react';
 
-vi.mock('@/utils/supabase', () => ({
-  supabase: {
-    auth: {
-      onAuthStateChange: vi.fn(() => ({
-        data: { subscription: { unsubscribe: vi.fn() } },
-      })),
-      refreshSession: vi.fn().mockResolvedValue(undefined),
-      signOut: vi.fn().mockResolvedValue(undefined),
-    },
+// Stub the platform-routed better-auth client. `useSession()` is the entire
+// surface AuthContext reads from after Phase 7; everything else (login /
+// logout / refresh) is driven through `authClient.signOut()` and the
+// hook's `refetch`.
+const useSessionMock = vi.fn();
+const signOutMock = vi.fn<(arg?: unknown) => Promise<undefined>>(async () => undefined);
+vi.mock('@/auth', () => ({
+  authClient: {
+    useSession: () => useSessionMock(),
+    signOut: (arg?: unknown) => signOutMock(arg),
   },
 }));
 
 vi.mock('posthog-js', () => ({
-  default: { identify: vi.fn() },
+  default: { identify: vi.fn(), reset: vi.fn() },
 }));
 
 import { AuthProvider, useAuth } from '@/context/AuthContext';
 
-describe('AuthContext memoization', () => {
+const stableSession = (
+  user: { id: string; email: string } | null,
+) =>
+  user
+    ? { user, session: { id: 'sess-1', token: 'tk', userId: user.id } }
+    : null;
+
+describe('AuthContext (better-auth)', () => {
   beforeEach(() => {
-    if (typeof window !== 'undefined') {
-      window.localStorage.clear();
-    }
+    useSessionMock.mockReset();
+    signOutMock.mockReset();
   });
 
   afterEach(() => {
     cleanup();
   });
 
-  test('returns the same context value reference when parent re-renders without state change', () => {
-    const captured: ReturnType<typeof useAuth>[] = [];
-
+  test('exposes user + session derived from authClient.useSession()', () => {
+    useSessionMock.mockReturnValue({
+      data: stableSession({ id: 'u1', email: 'a@b' }),
+      isPending: false,
+      refetch: vi.fn(),
+    });
+    let captured: ReturnType<typeof useAuth> | null = null;
     function Probe() {
-      const value = useAuth();
-      captured.push(value);
+      captured = useAuth();
       return null;
     }
-
-    function Wrapper({ tick }: { tick: number }) {
-      // The tick prop forces a parent re-render but does not change AuthProvider state
-      return (
-        <AuthProvider>
-          <span data-tick={tick} />
-          <Probe />
-        </AuthProvider>
-      );
-    }
-
-    const { rerender } = render(<Wrapper tick={0} />);
-    act(() => {
-      rerender(<Wrapper tick={1} />);
-    });
-    act(() => {
-      rerender(<Wrapper tick={2} />);
-    });
-
-    // Probe captures one value per render. We expect at least 3 captures.
-    expect(captured.length).toBeGreaterThanOrEqual(3);
-
-    // The first capture happens during initial mount (state may settle async),
-    // but subsequent captures from parent-only re-renders should reuse the same
-    // memoized context value reference. If login/logout/refresh are not stable
-    // (no useCallback), useMemo's deps change every render and produce a fresh
-    // object each time — this assertion catches that regression.
-    const firstStable = captured[captured.length - 2]!;
-    const secondStable = captured[captured.length - 1]!;
-    expect(secondStable).toBe(firstStable);
+    render(
+      <AuthProvider>
+        <Probe />
+      </AuthProvider>,
+    );
+    expect(captured).not.toBeNull();
+    const v = captured!;
+    expect(v.user?.id).toBe('u1');
+    expect(v.user?.email).toBe('a@b');
+    expect(v.session?.id).toBe('sess-1');
+    expect(v.isLoading).toBe(false);
   });
 
-  test('login/logout/refresh callbacks are stable across re-renders', () => {
-    const captured: ReturnType<typeof useAuth>[] = [];
-
+  test('isLoading reflects useSession isPending', () => {
+    useSessionMock.mockReturnValue({
+      data: null,
+      isPending: true,
+      refetch: vi.fn(),
+    });
+    let captured: ReturnType<typeof useAuth> | null = null;
     function Probe() {
-      const value = useAuth();
-      captured.push(value);
+      captured = useAuth();
       return null;
     }
+    render(
+      <AuthProvider>
+        <Probe />
+      </AuthProvider>,
+    );
+    expect(captured!.isLoading).toBe(true);
+    expect(captured!.user).toBeNull();
+    expect(captured!.session).toBeNull();
+  });
 
+  test('signOut calls authClient.signOut and triggers refetch', async () => {
+    const refetch = vi.fn();
+    useSessionMock.mockReturnValue({
+      data: stableSession({ id: 'u1', email: 'a@b' }),
+      isPending: false,
+      refetch,
+    });
+    let captured: ReturnType<typeof useAuth> | null = null;
+    function Probe() {
+      captured = useAuth();
+      return null;
+    }
+    render(
+      <AuthProvider>
+        <Probe />
+      </AuthProvider>,
+    );
+    await act(async () => {
+      await captured!.signOut();
+    });
+    expect(signOutMock).toHaveBeenCalledTimes(1);
+    expect(refetch).toHaveBeenCalledTimes(1);
+  });
+
+  test('memoised context value: signOut/refresh callbacks stable across re-renders', () => {
+    useSessionMock.mockReturnValue({
+      data: stableSession({ id: 'u1', email: 'a@b' }),
+      isPending: false,
+      refetch: vi.fn(),
+    });
+
+    const captured: ReturnType<typeof useAuth>[] = [];
+    function Probe() {
+      captured.push(useAuth());
+      return null;
+    }
     function Wrapper({ tick }: { tick: number }) {
       return (
         <AuthProvider>
@@ -87,16 +126,24 @@ describe('AuthContext memoization', () => {
         </AuthProvider>
       );
     }
-
     const { rerender } = render(<Wrapper tick={0} />);
     act(() => {
       rerender(<Wrapper tick={1} />);
     });
-
+    expect(captured.length).toBeGreaterThanOrEqual(2);
     const last = captured[captured.length - 1]!;
     const prev = captured[captured.length - 2]!;
-    expect(last.login).toBe(prev.login);
-    expect(last.logout).toBe(prev.logout);
+    expect(last.signOut).toBe(prev.signOut);
     expect(last.refresh).toBe(prev.refresh);
+  });
+
+  test('useAuth throws outside provider', () => {
+    function Probe() {
+      useAuth();
+      return null;
+    }
+    const spy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    expect(() => render(<Probe />)).toThrow(/useAuth must be used within AuthProvider/);
+    spy.mockRestore();
   });
 });

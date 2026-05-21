@@ -14,6 +14,7 @@ import {
   getDailyTranslationPlanData,
   getSubscriptionPlan,
   validateUserAndToken,
+  type PlanUser,
 } from '@/utils/access';
 import { ErrorCodes } from '@/services/translators';
 import { UsageStatsManager } from '@/utils/usage';
@@ -47,8 +48,8 @@ const generateCacheKey = (text: string, sourceLang: string, targetLang: string):
   return `tr:${hash}`;
 };
 
-const checkDailyUsage = async (userId: string, token: string, chars: number) => {
-  const { quota: dailyQuota } = getDailyTranslationPlanData(token);
+const checkDailyUsage = async (userId: string, user: PlanUser, chars: number) => {
+  const { quota: dailyQuota } = getDailyTranslationPlanData(user);
   const dailyUsage = await UsageStatsManager.getCurrentUsage(userId, 'translation_chars', 'daily');
 
   if (dailyQuota <= dailyUsage + chars) {
@@ -59,13 +60,13 @@ const checkDailyUsage = async (userId: string, token: string, chars: number) => 
 
 const updateDailyUsage = async (
   userId: string | undefined,
-  token: string | undefined,
+  user: PlanUser | null,
   incrementUsage: number,
 ) => {
-  if (!userId || !token) return 0;
+  if (!userId || !user) return 0;
 
   try {
-    const userPlan = getSubscriptionPlan(token);
+    const userPlan = getSubscriptionPlan(user);
     const newUsage = await UsageStatsManager.trackUsage(
       userId,
       'translation_chars',
@@ -179,9 +180,8 @@ export const Route = createFileRoute('/api/deepl/translate')({
         const deeplProApiUrl = DEEPL_PRO_API || DEFAULT_DEEPL_PRO_API;
 
         let deeplApiUrl = deepFreeApiUrl;
-        let userPlan = 'free';
         if (user && token) {
-          userPlan = getSubscriptionPlan(token);
+          const userPlan = getSubscriptionPlan(user);
           if (userPlan === 'pro') deeplApiUrl = deeplProApiUrl;
         }
         const deeplAuthKey =
@@ -228,7 +228,7 @@ export const Route = createFileRoute('/api/deepl/translate')({
               if (!user || !token) {
                 throw new Error(ErrorCodes.UNAUTHORIZED);
               }
-              await checkDailyUsage(user.id, token, singleText.length);
+              await checkDailyUsage(user.id, user, singleText.length);
 
               return await callDeepLAPI(
                 singleText,
@@ -245,7 +245,7 @@ export const Route = createFileRoute('/api/deepl/translate')({
           const translatedCharsCount = translations.reduce((a, b) => a + (b?.text.length || 0), 0);
           const newDailyUsage = await updateDailyUsage(
             user?.id,
-            token,
+            user ?? null,
             originalCharsCount + translatedCharsCount,
           );
           translations.forEach((translation) => {

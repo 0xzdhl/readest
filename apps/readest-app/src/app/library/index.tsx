@@ -115,7 +115,7 @@ const LibraryPageContent = () => {
   const searchParams = Route.useSearch();
   const router = useAppRouter();
   const { envConfig, appService } = useEnv();
-  const { token, user } = useAuth();
+  const { user } = useAuth();
   const {
     library: libraryBooks,
     isSyncing,
@@ -462,7 +462,10 @@ const LibraryPageContent = () => {
     const initLogin = async () => {
       const appService = await envConfig.getAppService();
       const settings = await appService.loadSettings();
-      if (token && user) {
+      // After Phase 7, the React-side "is signed in" check is `!!user`
+      // (web cookies are validated by `useSession`; native bearers are
+      // resolved by the same hook). No separate token field is needed.
+      if (user) {
         if (!settings.keepLogin) {
           settings.keepLogin = true;
           setSettings(settings);

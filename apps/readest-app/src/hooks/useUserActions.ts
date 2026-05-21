@@ -9,10 +9,10 @@ import { navigateToLibrary, navigateToResetPassword, navigateToUpdatePassword } 
 export const useUserActions = () => {
   const router = useRouter();
   const { envConfig } = useEnv();
-  const { logout } = useAuth();
+  const { signOut } = useAuth();
 
-  const handleLogout = () => {
-    logout();
+  const handleLogout = async () => {
+    await signOut();
     saveSysSettings(envConfig, 'keepLogin', false);
     navigateToLibrary(router);
   };
@@ -28,7 +28,7 @@ export const useUserActions = () => {
   const handleConfirmDelete = async (errorMessage: string) => {
     try {
       await deleteUser();
-      handleLogout();
+      await handleLogout();
     } catch (error) {
       console.error('Error deleting user:', error);
       eventDispatcher.dispatch('toast', {

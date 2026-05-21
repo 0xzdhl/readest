@@ -270,8 +270,11 @@ const SettingsMenu: React.FC<SettingsMenuProps> = ({ onPullLibrary, setIsDropdow
     setIsDropdownOpen?.(false);
   };
 
-  const avatarUrl = user?.user_metadata?.['picture'] || user?.user_metadata?.['avatar_url'];
-  const userFullName = user?.user_metadata?.['full_name'];
+  // See app/user/index.tsx for the Supabase user_metadata → better-auth
+  // top-level field migration. `image` is the avatar URL claim, `name` is
+  // the display name.
+  const avatarUrl = user?.image ?? undefined;
+  const userFullName = user?.name;
   const userDisplayName = userFullName ? userFullName.split(' ')[0] : null;
   const themeModeLabel =
     themeMode === 'dark'
