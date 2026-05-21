@@ -1,10 +1,7 @@
 import { z } from 'zod';
 import { createFileRoute } from '@tanstack/react-router';
 import { runProtected } from '@/libs/server/route-helpers';
-import {
-  getGoogleIAPVerifier,
-  type VerifyPurchaseParams,
-} from '@/libs/payment/iap/google/verifier';
+import type { VerifyPurchaseParams } from '@/libs/payment/iap/google/verifier';
 import { processPurchaseData, type VerifiedPurchase } from '@/libs/payment/iap/google/server';
 import { IAPError } from '@/libs/payment/iap/types';
 
@@ -40,6 +37,7 @@ export const Route = createFileRoute('/api/google/iap-verify')({
 
         return runProtected(request, async ({ user, tx }) => {
           try {
+            const { getGoogleIAPVerifier } = await import('@/libs/payment/iap/google/verifier');
             const googleIAPVerifier = getGoogleIAPVerifier();
             const verifyParams: VerifyPurchaseParams = {
               orderId,
