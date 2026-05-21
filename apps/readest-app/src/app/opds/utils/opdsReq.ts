@@ -1,4 +1,3 @@
-import { md5 } from 'js-md5';
 import {
   getAPIBaseUrl,
   getNodeAPIBaseUrl,
@@ -7,6 +6,7 @@ import {
 } from '@/services/environment';
 import { fetch as tauriFetch } from '@tauri-apps/plugin-http';
 import { READEST_OPDS_USER_AGENT } from '@/services/constants';
+import { md5 } from '@/utils/md5';
 import {
   type OPDSCustomHeaders,
   normalizeOPDSCustomHeaders,

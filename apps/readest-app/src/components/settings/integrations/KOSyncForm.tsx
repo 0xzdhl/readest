@@ -1,11 +1,11 @@
 import clsx from 'clsx';
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
-import { md5 } from 'js-md5';
 import { type as osType } from '@tauri-apps/plugin-os';
 import { useEnv } from '@/context/EnvContext';
 import { useTranslation } from '@/hooks/useTranslation';
 import { useSettingsStore } from '@/store/settingsStore';
 import { eventDispatcher } from '@/utils/event';
+import { md5 } from '@/utils/md5';
 import { KOSyncClient } from '@/services/sync/KOSyncClient';
 import type { KOSyncChecksumMethod, KOSyncStrategy } from '@/types/settings';
 import { debounce } from '@/utils/debounce';

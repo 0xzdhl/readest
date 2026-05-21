@@ -1,5 +1,5 @@
 import type { OsPlatform } from '@/types/system';
-import { md5 } from 'js-md5';
+import { md5 } from '@/utils/md5';
 import { isCaselessLang } from './lang';
 
 export const uniqueId = () => Math.random().toString(36).substring(2, 9);

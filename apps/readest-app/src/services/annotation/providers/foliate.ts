@@ -1,6 +1,6 @@
 import type { BookConfig, BookNote, HighlightColor, HighlightStyle } from '@/types/book';
 import { mergeBookConfigs } from '@/services/backupService';
-import { md5 } from 'js-md5';
+import { md5 } from '@/utils/md5';
 import type { AnnotationImportProvider } from '../types';
 
 /** Shape of a single Foliate annotation entry. */

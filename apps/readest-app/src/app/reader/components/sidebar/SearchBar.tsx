@@ -4,7 +4,6 @@ import { FaSearch, FaChevronDown } from 'react-icons/fa';
 import { IoMdCloseCircle } from 'react-icons/io';
 import { MdDeleteOutline } from 'react-icons/md';
 
-import { md5 } from 'js-md5';
 import { useEnv } from '@/context/EnvContext';
 import { useSettingsStore } from '@/store/settingsStore';
 import { useBookDataStore } from '@/store/bookDataStore';
@@ -15,6 +14,7 @@ import type { BookSearchConfig, BookSearchMatch, BookSearchResult } from '@/type
 import { useResponsiveSize } from '@/hooks/useResponsiveSize';
 import { debounce } from '@/utils/debounce';
 import { isCJKStr } from '@/utils/lang';
+import { md5 } from '@/utils/md5';
 import { createRejectFilter } from '@/utils/node';
 import Dropdown from '@/components/Dropdown';
 import SearchOptions from './SearchOptions';

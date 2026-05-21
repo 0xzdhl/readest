@@ -1,4 +1,4 @@
-import { partialMD5 } from './md5';
+import { partialMD5 } from '@/utils/md5';
 import { getBaseFilename } from './path';
 import { detectLanguage } from './lang';
 import { configureZip } from './zip';

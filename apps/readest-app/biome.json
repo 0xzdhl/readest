@@ -1,10 +1,24 @@
 {
   "$schema": "https://biomejs.dev/schemas/2.4.15/schema.json",
-  "vcs": { "enabled": true, "clientKind": "git", "useIgnoreFile": true },
-  "files": { "ignoreUnknown": true },
-  "formatter": { "enabled": false },
-  "assist": { "enabled": false },
-  "css": { "linter": { "enabled": false } },
+  "vcs": {
+    "enabled": true,
+    "clientKind": "git",
+    "useIgnoreFile": true
+  },
+  "files": {
+    "ignoreUnknown": true
+  },
+  "formatter": {
+    "enabled": false
+  },
+  "assist": {
+    "enabled": false
+  },
+  "css": {
+    "linter": {
+      "enabled": false
+    }
+  },
   "linter": {
     "enabled": true,
     "includes": [
@@ -95,7 +109,18 @@
         "noUnusedTemplateLiteral": "off",
         "useTemplate": "off",
         "useExponentiationOperator": "off",
-        "useNodejsImportProtocol": "off"
+        "useNodejsImportProtocol": "off",
+        "noRestrictedImports": {
+          "level": "error",
+          "options": {
+            "paths": {
+              "vitest": "Do not import vitest in production code",
+              "jsdom": "Do not import jsdom in production code",
+              "jedom": "Do not import j(dom) test utilities in production code",
+              "@vitest/*": "Test utilities must not enter production graph"
+            }
+          }
+        }
       },
       "suspicious": {
         "noExplicitAny": "error",
@@ -120,5 +145,17 @@
   },
   "javascript": {
     "globals": ["React"]
-  }
+  },
+  "overrides": [
+    {
+      "includes": ["src/__tests__/**", "**/*.{test,spec}.{js,jsx,ts,tsx}"],
+      "linter": {
+        "rules": {
+          "style": {
+            "noRestrictedImports": "off"
+          }
+        }
+      }
+    }
+  ]
 }

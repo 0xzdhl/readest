@@ -1,5 +1,5 @@
-import { customAlphabet } from 'nanoid';
 import { and, eq, isNull } from 'drizzle-orm';
+import { customAlphabet } from 'nanoid';
 import { bookShares, files } from '@/db/schema';
 
 // 22-char URL-safe alphabet (alphanumeric only — no `-` or `_`). Avoids
@@ -74,6 +74,7 @@ const toIso = (d: Date | string | null | undefined): string | null => {
  * trigger that side effect.
  */
 import type { db as _dbForType } from '@/db/client';
+
 type TxLike = Parameters<Parameters<typeof _dbForType.transaction>[0]>[0];
 
 /**
