@@ -170,6 +170,245 @@ describe.skipIf(!url)('/api/sync (drizzle + protectedFn)', () => {
   });
 
   // ────────────────────────────────────────────────────────────────────────
+  // 401 wire-format — the file-route handler must re-shape the bare
+  // `Response('Unauthorized', 401)` thrown by `resolveSessionOr401` into the
+  // legacy JSON body `{ error: 'Not authenticated' }`. The client hook
+  // (apps/readest-app/src/hooks/useSync.ts:148) does a substring-match on
+  // the surfaced error message to trigger re-login; without this re-shape
+  // the body is plain-text "Unauthorized" and re-login never fires.
+  // ────────────────────────────────────────────────────────────────────────
+  it('401 response body is { error: "Not authenticated" } JSON', async () => {
+    getSessionMock.mockResolvedValueOnce(null);
+    // Re-import the route module to pick up the now-reset mock for this case.
+    const mod = await import('@/app/api/sync');
+
+    type RouteShape = {
+      options: {
+        server: {
+          handlers: {
+            GET: (args: { request: Request }) => Promise<Response>;
+            POST: (args: { request: Request }) => Promise<Response>;
+          };
+        };
+      };
+    };
+    const handlers = (mod.Route as unknown as RouteShape).options.server.handlers;
+    const request = new Request('http://localhost/api/sync?since=0', { method: 'GET' });
+    const response = await handlers.GET({ request });
+
+    expect(response.status).toBe(401);
+    expect(response.headers.get('content-type')).toMatch(/application\/json/);
+    const body = (await response.json()) as { error?: string };
+    expect(body.error).toBe('Not authenticated');
+  });
+
+  // ────────────────────────────────────────────────────────────────────────
+  // LWW: POST preserves server-newer rows.
+  //
+  // The legacy supabase route ran a per-record updated_at/deleted_at
+  // comparison and only overwrote when the client's payload was strictly
+  // newer. Phase 4's bulk `onConflictDoUpdate({ target, set })` originally
+  // clobbered unconditionally; this test pins the restored gating so a stale
+  // client payload cannot overwrite legitimate newer server state.
+  // ────────────────────────────────────────────────────────────────────────
+  it('LWW: POST preserves server-newer books (stale client payload is ignored)', async () => {
+    const serverTime = new Date('2025-01-15T12:00:00.000Z');
+    const staleClientTime = new Date('2025-01-15T11:00:00.000Z'); // 1h older
+
+    // Seed userA's book directly through the route under test so the same
+    // INSERT path runs (proves the upsert wins on its own first insert).
+    await rlsModule.withRls(userA, async (tx) => {
+      const request = new Request('http://localhost/api/sync', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          books: [
+            {
+              hash: 'hash-A-lww',
+              format: 'EPUB',
+              title: 'Server Title',
+              author: 'Author',
+              createdAt: serverTime.getTime(),
+              updatedAt: serverTime.getTime(),
+            },
+          ],
+          configs: [],
+          notes: [],
+        }),
+      });
+      return syncModule.handlePost(request, { user: { id: userA }, tx });
+    });
+
+    // POST a stale payload (older updated_at + a different title) — should
+    // be rejected by the LWW gate and the server's row should be unchanged.
+    const postResponse = await rlsModule.withRls(userA, async (tx) => {
+      const request = new Request('http://localhost/api/sync', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          books: [
+            {
+              hash: 'hash-A-lww',
+              format: 'EPUB',
+              title: 'Stale Title',
+              author: 'Stale Author',
+              createdAt: staleClientTime.getTime(),
+              updatedAt: staleClientTime.getTime(),
+            },
+          ],
+          configs: [],
+          notes: [],
+        }),
+      });
+      return syncModule.handlePost(request, { user: { id: userA }, tx });
+    });
+    expect(postResponse.status).toBe(200);
+
+    // Read back through admin (bypasses RLS) so we see exactly what was
+    // persisted, independent of route GET semantics.
+    const persisted = await adminClient<
+      { title: string | null; updated_at: Date | string }[]
+    >`SELECT title, updated_at FROM books WHERE user_id = ${userA} AND book_hash = 'hash-A-lww'`;
+    expect(persisted).toHaveLength(1);
+    expect(persisted[0]?.title).toBe('Server Title');
+    expect(new Date(persisted[0]!.updated_at).toISOString()).toBe(serverTime.toISOString());
+  });
+
+  it('LWW: POST updates when client is newer', async () => {
+    const oldServerTime = new Date('2025-01-15T11:00:00.000Z');
+    const newClientTime = new Date('2025-01-15T12:00:00.000Z');
+
+    await rlsModule.withRls(userA, async (tx) => {
+      const request = new Request('http://localhost/api/sync', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          books: [
+            {
+              hash: 'hash-A-lww-fresh',
+              format: 'EPUB',
+              title: 'Old Title',
+              author: 'Author',
+              createdAt: oldServerTime.getTime(),
+              updatedAt: oldServerTime.getTime(),
+            },
+          ],
+          configs: [],
+          notes: [],
+        }),
+      });
+      return syncModule.handlePost(request, { user: { id: userA }, tx });
+    });
+
+    const postResponse = await rlsModule.withRls(userA, async (tx) => {
+      const request = new Request('http://localhost/api/sync', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          books: [
+            {
+              hash: 'hash-A-lww-fresh',
+              format: 'EPUB',
+              title: 'New Title',
+              author: 'Author',
+              createdAt: oldServerTime.getTime(),
+              updatedAt: newClientTime.getTime(),
+            },
+          ],
+          configs: [],
+          notes: [],
+        }),
+      });
+      return syncModule.handlePost(request, { user: { id: userA }, tx });
+    });
+    expect(postResponse.status).toBe(200);
+
+    const persisted = await adminClient<
+      { title: string | null; updated_at: Date | string }[]
+    >`SELECT title, updated_at FROM books WHERE user_id = ${userA} AND book_hash = 'hash-A-lww-fresh'`;
+    expect(persisted).toHaveLength(1);
+    expect(persisted[0]?.title).toBe('New Title');
+    expect(new Date(persisted[0]!.updated_at).toISOString()).toBe(newClientTime.toISOString());
+  });
+
+  it('LWW: POST preserves server-newer book_configs and book_notes', async () => {
+    const serverTime = new Date('2025-01-15T12:00:00.000Z');
+    const staleClientTime = new Date('2025-01-15T11:00:00.000Z');
+
+    // book_configs FK depends on books row existing.
+    await adminClient`INSERT INTO books (user_id, book_hash, title, author, updated_at)
+                      VALUES (${userA}, 'hash-A-cfg', 'Book', 'Author', ${serverTime.toISOString()})`;
+
+    await rlsModule.withRls(userA, async (tx) => {
+      const request = new Request('http://localhost/api/sync', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          books: [],
+          configs: [
+            {
+              bookHash: 'hash-A-cfg',
+              location: 'server-loc',
+              updatedAt: serverTime.getTime(),
+            },
+          ],
+          notes: [
+            {
+              bookHash: 'hash-A-cfg',
+              id: 'note-1',
+              type: 'highlight',
+              note: 'server note',
+              updatedAt: serverTime.getTime(),
+            },
+          ],
+        }),
+      });
+      return syncModule.handlePost(request, { user: { id: userA }, tx });
+    });
+
+    await rlsModule.withRls(userA, async (tx) => {
+      const request = new Request('http://localhost/api/sync', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          books: [],
+          configs: [
+            {
+              bookHash: 'hash-A-cfg',
+              location: 'stale-loc',
+              updatedAt: staleClientTime.getTime(),
+            },
+          ],
+          notes: [
+            {
+              bookHash: 'hash-A-cfg',
+              id: 'note-1',
+              type: 'highlight',
+              note: 'stale note',
+              updatedAt: staleClientTime.getTime(),
+            },
+          ],
+        }),
+      });
+      return syncModule.handlePost(request, { user: { id: userA }, tx });
+    });
+
+    const cfg = await adminClient<
+      { location: string | null; updated_at: Date | string }[]
+    >`SELECT location, updated_at FROM book_configs WHERE user_id = ${userA} AND book_hash = 'hash-A-cfg'`;
+    expect(cfg).toHaveLength(1);
+    expect(cfg[0]?.location).toBe('server-loc');
+    expect(new Date(cfg[0]!.updated_at).toISOString()).toBe(serverTime.toISOString());
+
+    const note = await adminClient<
+      { note: string | null; updated_at: Date | string }[]
+    >`SELECT note, updated_at FROM book_notes WHERE user_id = ${userA} AND book_hash = 'hash-A-cfg' AND id = 'note-1'`;
+    expect(note).toHaveLength(1);
+    expect(note[0]?.note).toBe('server note');
+    expect(new Date(note[0]!.updated_at).toISOString()).toBe(serverTime.toISOString());
+  });
+
+  // ────────────────────────────────────────────────────────────────────────
   // cross-user RLS denial — userB cannot see userA's seeded book.
   //
   // Would fail if the handler ever filtered by `WHERE user_id = ?` against

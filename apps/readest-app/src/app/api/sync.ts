@@ -1,5 +1,15 @@
 import { createFileRoute } from '@tanstack/react-router';
-import { and, eq, getTableColumns, gt, or, type SQL, sql } from 'drizzle-orm';
+import {
+  and,
+  eq,
+  getTableColumns,
+  getTableName,
+  gt,
+  inArray,
+  or,
+  type SQL,
+  sql,
+} from 'drizzle-orm';
 import type { PgTable } from 'drizzle-orm/pg-core';
 import { books, bookConfigs, bookNotes } from '@/db/schema';
 import { resolveSessionOr401 } from '@/libs/server/auth-fn';
@@ -152,6 +162,39 @@ function buildExcludedSet<TTable extends PgTable>(
   return result;
 }
 
+/**
+ * Last-write-wins gate for `.onConflictDoUpdate({ target, set, setWhere })`.
+ * Translates the legacy supabase route's per-record comparison:
+ *
+ *   const clientIsNewer =
+ *     clientDeletedAt > serverDeletedAt || clientUpdatedAt > serverUpdatedAt;
+ *
+ * into a `WHERE` clause that runs after `DO UPDATE SET …` so the server
+ * silently drops stale payloads instead of clobbering newer state.
+ *
+ * `COALESCE(..., 'epoch')` is the SQL analogue of `new Date(undefined).getTime()
+ * === 0` in the legacy JS: a null timestamp compares as "infinitely old", so
+ * a non-null `excluded.deleted_at` always beats a null `<table>.deleted_at`
+ * (matching the legacy tombstone semantics).
+ *
+ * The `WHERE` clause references `<table>.<col>` (existing row) and
+ * `EXCLUDED.<col>` (proposed row); we emit raw column names via
+ * `sql.raw(table_name)` so the helper works across all three tables without
+ * needing per-table specialisation.
+ */
+function lwwSetWhere<TTable extends PgTable>(table: TTable): SQL {
+  const cols = getTableColumns(table) as Record<string, { name: string }>;
+  const tableName = getTableName(table);
+  const updatedAtCol = cols['updatedAt']?.name ?? 'updated_at';
+  const deletedAtCol = cols['deletedAt']?.name ?? 'deleted_at';
+  return sql.raw(
+    `COALESCE(excluded.${updatedAtCol}, 'epoch'::timestamptz) > ` +
+      `COALESCE("${tableName}".${updatedAtCol}, 'epoch'::timestamptz) ` +
+      `OR COALESCE(excluded.${deletedAtCol}, 'epoch'::timestamptz) > ` +
+      `COALESCE("${tableName}".${deletedAtCol}, 'epoch'::timestamptz)`,
+  );
+}
+
 export async function handleGet(
   request: Request,
   ctx: SyncHandlerContext,
@@ -287,14 +330,24 @@ export async function handlePost(
           deletedAt: dbRec.deleted_at ? new Date(dbRec.deleted_at) : null,
           uploadedAt: dbRec.uploaded_at ? new Date(dbRec.uploaded_at) : null,
         }));
-      outBooks = await tx
+      // `setWhere` gates the UPDATE so stale client payloads (older
+      // updated_at / deleted_at than the existing server row) are silently
+      // dropped, matching the legacy supabase route's per-record LWW.
+      // `.returning()` would only yield rows actually written; the legacy
+      // API returned authoritative state for every incoming key, so we
+      // SELECT them back after the upsert.
+      await tx
         .insert(books)
         .values(rows)
         .onConflictDoUpdate({
           target: [books.userId, books.bookHash],
           set: buildExcludedSet(books, ['userId', 'bookHash']),
-        })
-        .returning();
+          setWhere: lwwSetWhere(books),
+        });
+      outBooks = await tx
+        .select()
+        .from(books)
+        .where(inArray(books.bookHash, rows.map((r) => r.bookHash)));
     }
 
     let outConfigs: BookConfigsRow[] = [];
@@ -320,14 +373,18 @@ export async function handlePost(
           updatedAt: dbRec.updated_at ? new Date(dbRec.updated_at) : new Date(),
           deletedAt: dbRec.deleted_at ? new Date(dbRec.deleted_at) : null,
         }));
-      outConfigs = await tx
+      await tx
         .insert(bookConfigs)
         .values(rows)
         .onConflictDoUpdate({
           target: [bookConfigs.userId, bookConfigs.bookHash],
           set: buildExcludedSet(bookConfigs, ['userId', 'bookHash']),
-        })
-        .returning();
+          setWhere: lwwSetWhere(bookConfigs),
+        });
+      outConfigs = await tx
+        .select()
+        .from(bookConfigs)
+        .where(inArray(bookConfigs.bookHash, rows.map((r) => r.bookHash)));
     }
 
     let outNotes: BookNotesRow[] = [];
@@ -353,14 +410,24 @@ export async function handlePost(
           updatedAt: dbRec.updated_at ? new Date(dbRec.updated_at) : new Date(),
           deletedAt: dbRec.deleted_at ? new Date(dbRec.deleted_at) : null,
         }));
-      outNotes = await tx
+      await tx
         .insert(bookNotes)
         .values(rows)
         .onConflictDoUpdate({
           target: [bookNotes.userId, bookNotes.bookHash, bookNotes.id],
           set: buildExcludedSet(bookNotes, ['userId', 'bookHash', 'id']),
-        })
-        .returning();
+          setWhere: lwwSetWhere(bookNotes),
+        });
+      // Notes have a 3-column PK, so filter by (bookHash, id) pairs to
+      // pick up exactly the incoming keys.
+      const noteKeys = rows.map((r) => and(
+        eq(bookNotes.bookHash, r.bookHash),
+        eq(bookNotes.id, r.id),
+      ));
+      const noteFilter = or(...noteKeys);
+      outNotes = noteFilter
+        ? await tx.select().from(bookNotes).where(noteFilter)
+        : [];
     }
 
     return Response.json(
@@ -394,7 +461,18 @@ async function runProtected(
       inner({ user: { id: session.user.id }, tx }),
     );
   } catch (e) {
-    if (e instanceof Response) return e;
+    if (e instanceof Response) {
+      // `resolveSessionOr401` throws a bare `Response('Unauthorized', 401)`.
+      // The legacy supabase route returned `{ error: 'Not authenticated' }`
+      // as JSON, and `apps/readest-app/src/hooks/useSync.ts:148` matches on
+      // that substring to trigger silent re-login. Re-shape unauthenticated
+      // responses so that contract holds; pass other Response throws
+      // through unchanged.
+      if (e.status === 401) {
+        return Response.json({ error: 'Not authenticated' }, { status: 401 });
+      }
+      return e;
+    }
     throw e;
   }
 }
