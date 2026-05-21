@@ -1,0 +1,36 @@
+{
+  "name": "Readest",
+  "dockerComposeFile": "compose.yaml",
+  "service": "app",
+  "workspaceFolder": "/workspaces/readest",
+  "shutdownAction": "stopCompose",
+  "remoteUser": "node",
+  "forwardPorts": [5173, 5432, 9000, 9001, 1025, 8025],
+  "portsAttributes": {
+    "5173": { "label": "Vite dev server", "onAutoForward": "openBrowser" },
+    "5432": { "label": "Postgres" },
+    "9000": { "label": "MinIO API" },
+    "9001": { "label": "MinIO console" },
+    "1025": { "label": "Mailpit SMTP" },
+    "8025": { "label": "Mailpit web" }
+  },
+  "postCreateCommand": "pnpm install",
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "biomejs.biome",
+        "bradlc.vscode-tailwindcss",
+        "vitest.explorer",
+        "ms-azuretools.vscode-docker",
+        "tamasfe.even-better-toml"
+      ],
+      "settings": {
+        "editor.formatOnSave": true,
+        "editor.defaultFormatter": "biomejs.biome",
+        "[json]": { "editor.defaultFormatter": "biomejs.biome" },
+        "[jsonc]": { "editor.defaultFormatter": "biomejs.biome" },
+        "files.eol": "\n"
+      }
+    }
+  }
+}

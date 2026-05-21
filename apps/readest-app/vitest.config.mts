@@ -21,6 +21,12 @@ export default defineConfig({
 			// Pin all `fflate` resolutions to the app's copy to keep js-mdict
 			// self-contained at the source-tree level.
 			fflate: path.resolve(__dirname, "node_modules/fflate"),
+			// `cloudflare:workers` is the Workers-runtime virtual module the deepl
+			// route dynamically imports to reach KV cache. In Node tests the call
+			// site is wrapped in try/catch and the catch path is what we want
+			// exercised — but vite's import-analysis still tries to statically
+			// resolve the specifier and errors out. Point it at an empty stub.
+			"cloudflare:workers": path.resolve(__dirname, "vitest.stubs/cloudflare-workers.ts"),
 		},
 	},
 	test: {

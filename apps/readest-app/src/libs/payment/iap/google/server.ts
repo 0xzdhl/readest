@@ -1,5 +1,6 @@
-import type { GooglePaymentData } from '@/types/payment';
-import { createSupabaseAdminClient } from '@/utils/supabase';
+import { eq, sql } from 'drizzle-orm';
+import type { db } from '@/db/client';
+import { googleIapSubscriptions, payments, user } from '@/db/schema';
 import { updateUserStorage } from '@/libs/payment/storage';
 import {
   isStoragePurchase,
@@ -14,6 +15,8 @@ import type {
   VerificationResult,
   VerifyPurchaseParams,
 } from './verifier';
+
+type TxLike = Parameters<Parameters<typeof db.transaction>[0]>[0];
 
 export type VerifiedPurchase = VerifiedIAP & {
   purchaseToken: string;
@@ -36,109 +39,129 @@ export type VerifiedPurchase = VerifiedIAP & {
   userCancellationTimeMillis?: string | null;
 };
 
-export async function createOrUpdateSubscription(userId: string, purchase: VerifiedPurchase) {
+/**
+ * Phase 6 migration: persists a Google Play IAP subscription row and lifts
+ * the resulting plan onto the user record. Caller supplies the tx (route
+ * uses `runProtected`, RLS pinned to the caller's user id).
+ */
+export async function createOrUpdateSubscription(
+  tx: TxLike,
+  userId: string,
+  purchase: VerifiedPurchase,
+) {
   try {
-    const supabase = createSupabaseAdminClient();
-
-    const { data: existingSubscription } = await supabase
-      .from('google_iap_subscriptions')
-      .select('*')
-      .eq('purchase_token', purchase.purchaseToken)
-      .single();
-    if (existingSubscription && existingSubscription.user_id !== userId) {
+    const existing = await tx
+      .select({ userId: googleIapSubscriptions.userId })
+      .from(googleIapSubscriptions)
+      .where(eq(googleIapSubscriptions.purchaseToken, purchase.purchaseToken))
+      .limit(1);
+    if (existing[0] && existing[0].userId !== userId) {
       throw new Error(IAPError.TRANSACTION_BELONGS_TO_ANOTHER_USER);
     }
 
-    const { data, error } = await supabase.from('google_iap_subscriptions').upsert(
-      {
-        user_id: userId,
-        platform: purchase.platform,
-        product_id: purchase.productId,
-        purchase_token: purchase.purchaseToken,
-        order_id: purchase.orderId,
-        status: purchase.status === 'active' ? 'active' : 'expired',
-        purchase_date: purchase.purchaseDate,
-        expires_date: purchase.expiresDate,
-        environment: purchase.environment,
-        package_name: purchase.packageName,
-        quantity: purchase.quantity || 1,
-        auto_renew_status: purchase.autoRenewing || false,
-        purchase_state: purchase.purchaseState,
-        acknowledgement_state: purchase.acknowledgementState,
-        price_amount_micros: purchase.priceAmountMicros,
-        price_currency_code: purchase.priceCurrencyCode,
-        country_code: purchase.countryCode,
-        developer_payload: purchase.developerPayload,
-        linked_purchase_token: purchase.linkedPurchaseToken,
-        obfuscated_external_account_id: purchase.obfuscatedExternalAccountId,
-        obfuscated_external_profile_id: purchase.obfuscatedExternalProfileId,
-        cancel_reason: purchase.cancelReason,
-        user_cancellation_time_millis: purchase.userCancellationTimeMillis,
-        created_at: new Date(),
-        updated_at: new Date(),
-      },
-      {
-        onConflict: 'user_id,order_id',
-      },
-    );
+    const subValues = {
+      userId,
+      platform: purchase.platform,
+      productId: purchase.productId,
+      purchaseToken: purchase.purchaseToken,
+      orderId: purchase.orderId,
+      status: purchase.status === 'active' ? 'active' : 'expired',
+      purchaseDate: purchase.purchaseDate ? new Date(purchase.purchaseDate) : null,
+      expiresDate: purchase.expiresDate ? new Date(purchase.expiresDate) : null,
+      environment: purchase.environment,
+      packageName: purchase.packageName,
+      quantity: purchase.quantity || 1,
+      autoRenewStatus: purchase.autoRenewing || false,
+      purchaseState: purchase.purchaseState ?? null,
+      acknowledgementState: purchase.acknowledgementState ?? null,
+      priceAmountMicros: purchase.priceAmountMicros ?? null,
+      priceCurrencyCode: purchase.priceCurrencyCode ?? null,
+      countryCode: purchase.countryCode ?? null,
+      developerPayload: purchase.developerPayload ?? null,
+      linkedPurchaseToken: purchase.linkedPurchaseToken ?? null,
+      obfuscatedExternalAccountId: purchase.obfuscatedExternalAccountId ?? null,
+      obfuscatedExternalProfileId: purchase.obfuscatedExternalProfileId ?? null,
+      cancelReason: purchase.cancelReason ?? null,
+      userCancellationTimeMillis: purchase.userCancellationTimeMillis ?? null,
+    };
 
-    if (error) {
-      console.error('Database update error:', error);
-      throw new Error(`Database update failed: ${error.message}`);
-    }
+    await tx
+      .insert(googleIapSubscriptions)
+      .values(subValues)
+      .onConflictDoUpdate({
+        target: [googleIapSubscriptions.userId, googleIapSubscriptions.orderId],
+        set: {
+          status: subValues.status,
+          purchaseToken: subValues.purchaseToken,
+          purchaseDate: subValues.purchaseDate,
+          expiresDate: subValues.expiresDate,
+          environment: subValues.environment,
+          quantity: subValues.quantity,
+          autoRenewStatus: subValues.autoRenewStatus,
+          purchaseState: subValues.purchaseState,
+          acknowledgementState: subValues.acknowledgementState,
+          updatedAt: sql`now()`,
+        },
+      });
 
     const plan = mapProductIdToUserPlan(purchase.productId, true);
-    await supabase
-      .from('plans')
-      .update({
-        plan: ['active', 'trialing'].includes(purchase.status) ? plan : 'free',
-        status: purchase.status,
-      })
-      .eq('id', userId);
-
-    return data;
+    const effectivePlan = ['active', 'trialing'].includes(purchase.status) ? plan : 'free';
+    await tx
+      .update(user)
+      .set({ plan: effectivePlan, updatedAt: sql`now()` })
+      .where(eq(user.id, userId));
   } catch (error) {
     console.error('Failed to update user subscription:', error);
     throw error;
   }
 }
 
-export async function createOrUpdatePayment(userId: string, purchase: VerifiedPurchase) {
+export async function createOrUpdatePayment(
+  tx: TxLike,
+  userId: string,
+  purchase: VerifiedPurchase,
+) {
   try {
-    const supabase = createSupabaseAdminClient();
-    const { data: existingPayment } = await supabase
-      .from('payments')
-      .select('*')
-      .eq('google_purchase_token', purchase.purchaseToken)
-      .single();
-
-    if (existingPayment && existingPayment.user_id !== userId) {
+    const existing = await tx
+      .select({ userId: payments.userId })
+      .from(payments)
+      .where(eq(payments.googlePurchaseToken, purchase.purchaseToken))
+      .limit(1);
+    if (existing[0] && existing[0].userId !== userId) {
       throw new Error(IAPError.TRANSACTION_BELONGS_TO_ANOTHER_USER);
     }
-    const paymentData: Partial<GooglePaymentData> = {
-      user_id: userId,
-      provider: 'google',
-      product_id: purchase.productId,
-      google_order_id: purchase.orderId,
-      google_purchase_token: purchase.purchaseToken,
-      storage_gb: isStoragePurchase(purchase.productId) ? parseStorageGB(purchase.productId) : 0,
+
+    const paymentValues = {
+      userId,
+      provider: 'google' as const,
+      productId: purchase.productId,
+      googleOrderId: purchase.orderId,
+      googlePurchaseToken: purchase.purchaseToken,
+      storageGb: isStoragePurchase(purchase.productId)
+        ? parseStorageGB(purchase.productId)
+        : 0,
       status: purchase.status === 'active' ? 'completed' : 'failed',
       amount: purchase.amount,
       currency: purchase.currency,
     };
 
-    const { data, error } = await supabase.from('payments').upsert(paymentData, {
-      onConflict: 'google_purchase_token',
-      ignoreDuplicates: false,
-    });
+    await tx
+      .insert(payments)
+      .values(paymentValues)
+      .onConflictDoUpdate({
+        target: payments.googlePurchaseToken,
+        set: {
+          googleOrderId: paymentValues.googleOrderId,
+          productId: paymentValues.productId,
+          storageGb: paymentValues.storageGb,
+          status: paymentValues.status,
+          amount: paymentValues.amount,
+          currency: paymentValues.currency,
+          updatedAt: sql`now()`,
+        },
+      });
 
-    if (error) {
-      console.error('Database payment update error:', error);
-      throw new Error(`Database payment update failed: ${error.message}`);
-    }
-
-    await updateUserStorage(userId);
-    return data;
+    await updateUserStorage(tx, userId);
   } catch (error) {
     console.error('Failed to update user payment:', error);
     throw error;
@@ -146,7 +169,8 @@ export async function createOrUpdatePayment(userId: string, purchase: VerifiedPu
 }
 
 export async function processPurchaseData(
-  user: { id: string; email?: string | undefined },
+  tx: TxLike,
+  caller: { id: string; email?: string | undefined },
   verifyParams: VerifyPurchaseParams,
   verificationResult: VerificationResult,
 ): Promise<VerifiedPurchase> {
@@ -166,7 +190,7 @@ export async function processPurchaseData(
     purchase = {
       platform: 'android',
       status: verificationResult.status!,
-      customerEmail: user.email!,
+      customerEmail: caller.email!,
       orderId: subData.orderId || orderId,
       subscriptionId: subData.orderId || orderId,
       planName: mapProductIdToProductName(productId),
@@ -198,7 +222,7 @@ export async function processPurchaseData(
     purchase = {
       platform: 'android',
       status: verificationResult.status!,
-      customerEmail: user.email!,
+      customerEmail: caller.email!,
       orderId: prodData.orderId || purchaseToken,
       subscriptionId: prodData.orderId || purchaseToken,
       planName: mapProductIdToProductName(productId),
@@ -226,9 +250,9 @@ export async function processPurchaseData(
   }
 
   if (isSubscription) {
-    await createOrUpdateSubscription(user.id, purchase);
+    await createOrUpdateSubscription(tx, caller.id, purchase);
   } else {
-    await createOrUpdatePayment(user.id, purchase);
+    await createOrUpdatePayment(tx, caller.id, purchase);
   }
 
   return purchase;

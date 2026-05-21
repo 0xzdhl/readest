@@ -1,41 +1,40 @@
 import { createFileRoute } from '@tanstack/react-router';
+import { eq } from 'drizzle-orm';
+import { customers } from '@/db/schema';
 import { getStripe } from '@/libs/payment/stripe/server';
-import { validateUserAndToken } from '@/utils/access';
-import { createSupabaseAdminClient } from '@/utils/supabase';
+import { runProtected } from '@/libs/server/route-helpers';
 
+/**
+ * Phase 6: owner-only — caller manages their own billing portal session.
+ */
 export const Route = createFileRoute('/api/stripe/portal')({
   server: {
     handlers: {
-      POST: async ({ request }) => {
-        const { user, token } = await validateUserAndToken(request.headers.get('authorization'));
-        if (!user || !token) {
-          return Response.json({ error: 'Not authenticated' }, { status: 403 });
-        }
+      POST: async ({ request }) =>
+        runProtected(request, async ({ user, tx }) => {
+          try {
+            const existing = await tx
+              .select({ stripeCustomerId: customers.stripeCustomerId })
+              .from(customers)
+              .where(eq(customers.userId, user.id))
+              .limit(1);
 
-        try {
-          const supabase = createSupabaseAdminClient();
-          const { data: customerData } = await supabase
-            .from('customers')
-            .select('stripe_customer_id')
-            .eq('user_id', user.id)
-            .single();
+            if (!existing[0]?.stripeCustomerId) {
+              throw new Error('Customer not found');
+            }
 
-          if (!customerData?.stripe_customer_id) {
-            throw new Error('Customer not found');
+            const stripe = getStripe();
+            const session = await stripe.billingPortal.sessions.create({
+              customer: existing[0].stripeCustomerId,
+              return_url: `${request.headers.get('origin')}/user`,
+            });
+
+            return Response.json({ url: session.url });
+          } catch (error) {
+            console.error(error);
+            return Response.json({ error: 'Error creating portal session' }, { status: 500 });
           }
-
-          const stripe = getStripe();
-          const session = await stripe.billingPortal.sessions.create({
-            customer: customerData.stripe_customer_id,
-            return_url: `${request.headers.get('origin')}/user`,
-          });
-
-          return Response.json({ url: session.url });
-        } catch (error) {
-          console.error(error);
-          return Response.json({ error: 'Error creating portal session' }, { status: 500 });
-        }
-      },
+        }),
     },
   },
 });

@@ -10,13 +10,9 @@ async function getCloudflareContext(): Promise<{ env: Record<string, unknown> }>
     throw new Error('Cloudflare context not available');
   }
 }
-import {
-  getDailyTranslationPlanData,
-  getSubscriptionPlan,
-  validateUserAndToken,
-} from '@/utils/access';
+import { getDailyTranslationPlanData, getSubscriptionPlan } from '@/utils/access';
 import { ErrorCodes } from '@/services/translators';
-import { UsageStatsManager } from '@/utils/usage';
+import { runAuth } from '@/libs/server/route-helpers';
 
 const DEFAULT_DEEPL_FREE_API = 'https://api-free.deepl.com/v2/translate';
 const DEFAULT_DEEPL_PRO_API = 'https://api.deepl.com/v2/translate';
@@ -45,43 +41,6 @@ const generateCacheKey = (text: string, sourceLang: string, targetLang: string):
   const inputString = `${sourceLang}:${targetLang}:${text}`;
   const hash = crypto.createHash('sha1').update(inputString).digest('hex');
   return `tr:${hash}`;
-};
-
-const checkDailyUsage = async (userId: string, token: string, chars: number) => {
-  const { quota: dailyQuota } = getDailyTranslationPlanData(token);
-  const dailyUsage = await UsageStatsManager.getCurrentUsage(userId, 'translation_chars', 'daily');
-
-  if (dailyQuota <= dailyUsage + chars) {
-    throw new Error(ErrorCodes.DAILY_QUOTA_EXCEEDED);
-  }
-  return dailyUsage;
-};
-
-const updateDailyUsage = async (
-  userId: string | undefined,
-  token: string | undefined,
-  incrementUsage: number,
-) => {
-  if (!userId || !token) return 0;
-
-  try {
-    const userPlan = getSubscriptionPlan(token);
-    const newUsage = await UsageStatsManager.trackUsage(
-      userId,
-      'translation_chars',
-      incrementUsage,
-      {
-        plan_type: userPlan,
-        source: 'deepl_api',
-      },
-    );
-
-    return newUsage;
-  } catch (cacheError) {
-    console.error('Update daily usage error:', cacheError);
-  }
-
-  return 0;
 };
 
 async function callDeepLAPI(
@@ -162,109 +121,100 @@ async function callDeepLAPI(
 export const Route = createFileRoute('/api/deepl/translate')({
   server: {
     handlers: {
-      POST: async ({ request }) => {
-        let env: Partial<CloudflareEnv> = {};
-        try {
-          env = ((await getCloudflareContext()).env || {}) as CloudflareEnv;
-        } catch {
-          console.warn('Cloudflare context is not available. Skipping KV cache.');
-        }
-        const hasKVCache = !!env['TRANSLATIONS_KV'];
+      POST: async ({ request }) =>
+        runAuth(request, async ({ user }) => {
+          let env: Partial<CloudflareEnv> = {};
+          try {
+            env = ((await getCloudflareContext()).env || {}) as CloudflareEnv;
+          } catch {
+            console.warn('Cloudflare context is not available. Skipping KV cache.');
+          }
+          const hasKVCache = !!env['TRANSLATIONS_KV'];
 
-        const { user, token } = await validateUserAndToken(
-          request.headers.get('authorization') ?? undefined,
-        );
-        const { DEEPL_PRO_API, DEEPL_FREE_API } = process.env;
-        const deepFreeApiUrl = DEEPL_FREE_API || DEFAULT_DEEPL_FREE_API;
-        const deeplProApiUrl = DEEPL_PRO_API || DEFAULT_DEEPL_PRO_API;
+          const { DEEPL_PRO_API, DEEPL_FREE_API } = process.env;
+          const deepFreeApiUrl = DEEPL_FREE_API || DEFAULT_DEEPL_FREE_API;
+          const deeplProApiUrl = DEEPL_PRO_API || DEFAULT_DEEPL_PRO_API;
 
-        let deeplApiUrl = deepFreeApiUrl;
-        let userPlan = 'free';
-        if (user && token) {
-          userPlan = getSubscriptionPlan(token);
-          if (userPlan === 'pro') deeplApiUrl = deeplProApiUrl;
-        }
-        const deeplAuthKey =
-          deeplApiUrl === deeplProApiUrl
-            ? getDeepLAPIKey(process.env['DEEPL_PRO_API_KEYS'])
-            : getDeepLAPIKey(process.env['DEEPL_FREE_API_KEYS']);
+          const userPlan = getSubscriptionPlan(user);
+          const deeplApiUrl = userPlan === 'pro' ? deeplProApiUrl : deepFreeApiUrl;
+          const deeplAuthKey =
+            deeplApiUrl === deeplProApiUrl
+              ? getDeepLAPIKey(process.env['DEEPL_PRO_API_KEYS'])
+              : getDeepLAPIKey(process.env['DEEPL_FREE_API_KEYS']);
 
-        const body: {
-          text: string[];
-          source_lang?: string;
-          target_lang?: string;
-          use_cache?: boolean;
-        } = await request.json();
-        const {
-          text,
-          source_lang: sourceLang = 'AUTO',
-          target_lang: targetLang = 'EN',
-          use_cache: useCache = false,
-        } = body;
+          // Per-character daily-quota cap (advisory): block requests that would
+          // burst-write more than the plan's daily allowance in a single call.
+          // Per-user persisted usage tracking previously lived in a Supabase
+          // RPC backed by a `user_usage_stats` table; that table wasn't ported
+          // to the drizzle schema, so server-side rolling totals are gone.
+          // The client tracks daily_usage in localStorage via saveDailyUsage
+          // for UX purposes; the response below echoes 0 to keep the shape.
+          const { quota: dailyQuota } = getDailyTranslationPlanData(user);
 
-        try {
-          const translations = await Promise.all(
-            text.map(async (singleText) => {
-              if (!singleText?.trim()) {
-                return { text: '', daily_usage: 0 };
-              }
-              if (useCache && hasKVCache) {
-                try {
-                  const cacheKey = generateCacheKey(singleText, sourceLang, targetLang);
-                  const cachedTranslation = await env['TRANSLATIONS_KV']!.get(cacheKey);
+          const body: {
+            text: string[];
+            source_lang?: string;
+            target_lang?: string;
+            use_cache?: boolean;
+          } = await request.json();
+          const {
+            text,
+            source_lang: sourceLang = 'AUTO',
+            target_lang: targetLang = 'EN',
+            use_cache: useCache = false,
+          } = body;
 
-                  if (cachedTranslation) {
-                    return {
-                      text: cachedTranslation,
-                      daily_usage: 0,
-                      detected_source_language: sourceLang,
-                    };
-                  }
-                } catch (cacheError) {
-                  console.error('Cache retrieval error:', cacheError);
-                }
-              }
-
-              if (!user || !token) {
-                throw new Error(ErrorCodes.UNAUTHORIZED);
-              }
-              await checkDailyUsage(user.id, token, singleText.length);
-
-              return await callDeepLAPI(
-                singleText,
-                sourceLang,
-                targetLang,
-                deeplApiUrl,
-                deeplAuthKey,
-                env['TRANSLATIONS_KV'],
-                useCache,
-              );
-            }),
-          );
-          const originalCharsCount = text.reduce((a, b) => a + b.length, 0);
-          const translatedCharsCount = translations.reduce((a, b) => a + (b?.text.length || 0), 0);
-          const newDailyUsage = await updateDailyUsage(
-            user?.id,
-            token,
-            originalCharsCount + translatedCharsCount,
-          );
-          translations.forEach((translation) => {
-            if (translation && translation.text) {
-              translation.daily_usage = newDailyUsage;
+          try {
+            const totalChars = text.reduce((a, b) => a + (b?.length ?? 0), 0);
+            if (totalChars >= dailyQuota) {
+              throw new Error(ErrorCodes.DAILY_QUOTA_EXCEEDED);
             }
-          });
-          return Response.json({ translations });
-        } catch (error) {
-          if (error instanceof Error && error.message.includes(ErrorCodes.DAILY_QUOTA_EXCEEDED)) {
-            return Response.json({ error: ErrorCodes.DAILY_QUOTA_EXCEEDED }, { status: 429 });
+
+            const translations = await Promise.all(
+              text.map(async (singleText) => {
+                if (!singleText?.trim()) {
+                  return { text: '', daily_usage: 0 };
+                }
+                if (useCache && hasKVCache) {
+                  try {
+                    const cacheKey = generateCacheKey(singleText, sourceLang, targetLang);
+                    const cachedTranslation = await env['TRANSLATIONS_KV']!.get(cacheKey);
+
+                    if (cachedTranslation) {
+                      return {
+                        text: cachedTranslation,
+                        daily_usage: 0,
+                        detected_source_language: sourceLang,
+                      };
+                    }
+                  } catch (cacheError) {
+                    console.error('Cache retrieval error:', cacheError);
+                  }
+                }
+
+                return await callDeepLAPI(
+                  singleText,
+                  sourceLang,
+                  targetLang,
+                  deeplApiUrl,
+                  deeplAuthKey,
+                  env['TRANSLATIONS_KV'],
+                  useCache,
+                );
+              }),
+            );
+            return Response.json({ translations });
+          } catch (error) {
+            if (error instanceof Error && error.message.includes(ErrorCodes.DAILY_QUOTA_EXCEEDED)) {
+              return Response.json({ error: ErrorCodes.DAILY_QUOTA_EXCEEDED }, { status: 429 });
+            }
+            if (error instanceof Error && error.message.includes(ErrorCodes.UNAUTHORIZED)) {
+              return Response.json({ error: ErrorCodes.UNAUTHORIZED }, { status: 401 });
+            }
+            console.error('Error proxying DeepL request:', error);
+            return Response.json({ error: ErrorCodes.INTERNAL_SERVER_ERROR }, { status: 500 });
           }
-          if (error instanceof Error && error.message.includes(ErrorCodes.UNAUTHORIZED)) {
-            return Response.json({ error: ErrorCodes.UNAUTHORIZED }, { status: 401 });
-          }
-          console.error('Error proxying DeepL request:', error);
-          return Response.json({ error: ErrorCodes.INTERNAL_SERVER_ERROR }, { status: 500 });
-        }
-      },
+        }),
     },
   },
 });

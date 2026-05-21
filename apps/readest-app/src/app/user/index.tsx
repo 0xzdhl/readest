@@ -63,7 +63,7 @@ function ProfilePage() {
   const _ = useTranslation();
   const router = useRouter();
   const { appService } = useEnv();
-  const { token, user, refresh } = useAuth();
+  const { user, refresh } = useAuth();
   const { safeAreaInsets, isRoundedWindow } = useThemeStore();
 
   const [loading, setLoading] = useState(false);
@@ -84,7 +84,7 @@ function ProfilePage() {
   useEffect(() => {
     if (!mounted) return;
 
-    const isAuthenticated = user && token && appService;
+    const isAuthenticated = user && appService;
     if (isAuthenticated) return;
 
     const timer = setTimeout(() => {
@@ -92,7 +92,7 @@ function ProfilePage() {
     }, 1000);
 
     return () => clearTimeout(timer);
-  }, [mounted, user, token, appService, router]);
+  }, [mounted, user, appService, router]);
 
   useTheme({ systemUIVisible: false });
 
@@ -259,7 +259,7 @@ function ProfilePage() {
     return null;
   }
 
-  if (!user || !token || !appService) {
+  if (!user || !appService) {
     return (
       <div className='mx-auto max-w-4xl px-4 py-8'>
         <div className='overflow-hidden rounded-lg shadow-md'>
@@ -271,8 +271,14 @@ function ProfilePage() {
     );
   }
 
-  const avatarUrl = user?.user_metadata?.['picture'] || user?.user_metadata?.['avatar_url'];
-  const userFullName = user?.user_metadata?.['full_name'] || '-';
+  // better-auth's user has `image` (canonical avatar URL) and `name`
+  // (display name) as first-class columns. The Supabase-era profile
+  // metadata (`user_metadata.picture` / `full_name`) used by the
+  // pre-Phase-7 UI is no longer populated. Social-login providers feed
+  // their `picture` / `name` claims directly into these top-level
+  // fields via better-auth's social-account mapping.
+  const avatarUrl = user?.image ?? undefined;
+  const userFullName = user?.name || '-';
   const userEmail = user?.email || '';
   const userPlanDetails =
     getPlanDetails(userProfilePlan, availablePlans) || getPlanDetails('free', availablePlans);

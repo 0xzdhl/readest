@@ -48,7 +48,10 @@ const TranslatorPopup: React.FC<TranslatorPopupProps> = ({
   onDismiss,
 }) => {
   const _ = useTranslation();
-  const { token } = useAuth();
+  // `hasAuth` replaces the old `hasAuth` "logged-in" flag — see
+  // useTranslator.ts for the same shift.
+  const { user } = useAuth();
+  const hasAuth = !!user;
   const { settings, setSettings } = useSettingsStore();
   const [providers, setProviders] = useState<TranslatorType[]>([]);
   const [sourceLang, setSourceLang] = useState('AUTO');
@@ -77,7 +80,7 @@ const TranslatorPopup: React.FC<TranslatorPopupProps> = ({
 
   const handleProviderChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
     const requestedProvider = event.target.value;
-    const availableTranslators = getTranslators().filter((t) => isTranslatorAvailable(t, !!token));
+    const availableTranslators = getTranslators().filter((t) => isTranslatorAvailable(t, hasAuth));
     const selectedTranslator =
       availableTranslators.find((t) => t.name === requestedProvider) || availableTranslators[0]!;
     if (selectedTranslator) {
@@ -90,7 +93,7 @@ const TranslatorPopup: React.FC<TranslatorPopupProps> = ({
   useEffect(() => {
     const availableProviders = translators.map((t) => ({
       name: t.name,
-      label: getTranslatorDisplayLabel(t, !!token, _),
+      label: getTranslatorDisplayLabel(t, hasAuth, _),
       disabled: !!t.disabled,
     }));
     setProviders(availableProviders);
@@ -119,7 +122,7 @@ const TranslatorPopup: React.FC<TranslatorPopupProps> = ({
         }
       } catch (err) {
         console.error(err);
-        if (!token) {
+        if (!hasAuth) {
           setError(_('Unable to fetch the translation. Please log in first and try again.'));
         } else {
           setError(_('Unable to fetch the translation. Try again later.'));
@@ -131,7 +134,7 @@ const TranslatorPopup: React.FC<TranslatorPopupProps> = ({
 
     fetchTranslation();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [text, token, sourceLang, targetLang, provider, translate]);
+  }, [text, hasAuth, sourceLang, targetLang, provider, translate]);
 
   return (
     <div>

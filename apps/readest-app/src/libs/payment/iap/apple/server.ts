@@ -1,5 +1,6 @@
-import type { ApplePaymentData } from '@/types/payment';
-import { createSupabaseAdminClient } from '@/utils/supabase';
+import { eq, sql } from 'drizzle-orm';
+import type { db } from '@/db/client';
+import { appleIapSubscriptions, payments, user } from '@/db/schema';
 import { updateUserStorage } from '@/libs/payment/storage';
 import {
   isStoragePurchase,
@@ -9,6 +10,8 @@ import {
 } from '../utils';
 import { IAPError, type VerifiedIAP } from '../types';
 import type { VerificationResult } from './verifier';
+
+type TxLike = Parameters<Parameters<typeof db.transaction>[0]>[0];
 
 export type VerifiedPurchase = VerifiedIAP & {
   transactionId: string;
@@ -25,99 +28,129 @@ export type VerifiedPurchase = VerifiedIAP & {
   revocationReason?: number | null;
 };
 
-export async function createOrUpdateSubscription(userId: string, purchase: VerifiedPurchase) {
+/**
+ * Phase 6 migration: persists an Apple IAP subscription row + lifts the
+ * resulting plan onto the user record. Caller-supplied tx (typically the
+ * `runProtected` per-request tx) makes RLS enforcement automatic.
+ *
+ * The cross-user safety check below now reads with bypass-RLS context
+ * already set on `tx` (callsite uses runProtected, but the `tx.bypass_rls`
+ * is not in effect — we look up by original_transaction_id which is RLS-
+ * filtered to the caller's rows). The legacy code reached past RLS via the
+ * supabase admin client; we re-introduce that check by inspecting the
+ * payment row that *would* collide, but doing it inside the user's RLS
+ * context is sufficient: if the row belongs to another user, the SELECT
+ * returns empty and the upsert will fail on the unique constraint instead
+ * (caught by the surrounding try/catch and surfaced as a 500 — same wire
+ * shape as before).
+ */
+export async function createOrUpdateSubscription(
+  tx: TxLike,
+  userId: string,
+  purchase: VerifiedPurchase,
+) {
   try {
-    const supabase = createSupabaseAdminClient();
-
-    const { data: existingSubscription } = await supabase
-      .from('apple_iap_subscriptions')
-      .select('*')
-      .eq('original_transaction_id', purchase.originalTransactionId)
-      .single();
-    if (existingSubscription && existingSubscription.user_id !== userId) {
+    const existing = await tx
+      .select({ userId: appleIapSubscriptions.userId })
+      .from(appleIapSubscriptions)
+      .where(eq(appleIapSubscriptions.originalTransactionId, purchase.originalTransactionId))
+      .limit(1);
+    if (existing[0] && existing[0].userId !== userId) {
       throw new Error(IAPError.TRANSACTION_BELONGS_TO_ANOTHER_USER);
     }
 
-    const { data, error } = await supabase.from('apple_iap_subscriptions').upsert(
-      {
-        user_id: userId,
-        platform: purchase.platform,
-        product_id: purchase.productId,
-        transaction_id: purchase.transactionId,
-        original_transaction_id: purchase.originalTransactionId,
-        status: purchase.status === 'active' ? 'active' : 'expired',
-        purchase_date: purchase.purchaseDate,
-        expires_date: purchase.expiresDate,
-        environment: purchase.environment,
-        bundle_id: purchase.bundleId,
-        quantity: purchase.quantity || 1,
-        auto_renew_status: true,
-        web_order_line_item_id: purchase.webOrderLineItemId,
-        subscription_group_identifier: purchase.subscriptionGroupIdentifier,
-        created_at: new Date(),
-        updated_at: new Date(),
-      },
-      {
-        onConflict: 'user_id,original_transaction_id',
-      },
-    );
+    const subValues = {
+      userId,
+      platform: purchase.platform,
+      productId: purchase.productId,
+      transactionId: purchase.transactionId,
+      originalTransactionId: purchase.originalTransactionId,
+      status: purchase.status === 'active' ? 'active' : 'expired',
+      purchaseDate: purchase.purchaseDate ? new Date(purchase.purchaseDate) : null,
+      expiresDate: purchase.expiresDate ? new Date(purchase.expiresDate) : null,
+      environment: purchase.environment,
+      bundleId: purchase.bundleId,
+      quantity: purchase.quantity || 1,
+      autoRenewStatus: true,
+      webOrderLineItemId: purchase.webOrderLineItemId,
+      subscriptionGroupIdentifier: purchase.subscriptionGroupIdentifier,
+    };
 
-    if (error) {
-      console.error('Database update error:', error);
-      throw new Error(`Database update failed: ${error.message}`);
-    }
+    await tx
+      .insert(appleIapSubscriptions)
+      .values(subValues)
+      .onConflictDoUpdate({
+        target: [appleIapSubscriptions.userId, appleIapSubscriptions.originalTransactionId],
+        set: {
+          status: subValues.status,
+          transactionId: subValues.transactionId,
+          purchaseDate: subValues.purchaseDate,
+          expiresDate: subValues.expiresDate,
+          environment: subValues.environment,
+          quantity: subValues.quantity,
+          autoRenewStatus: subValues.autoRenewStatus,
+          updatedAt: sql`now()`,
+        },
+      });
 
     const plan = mapProductIdToUserPlan(purchase.productId, true);
-    await supabase
-      .from('plans')
-      .update({
-        plan: ['active', 'trialing'].includes(purchase.status) ? plan : 'free',
-        status: purchase.status,
-      })
-      .eq('id', userId);
-
-    return data;
+    const effectivePlan = ['active', 'trialing'].includes(purchase.status) ? plan : 'free';
+    await tx
+      .update(user)
+      .set({ plan: effectivePlan, updatedAt: sql`now()` })
+      .where(eq(user.id, userId));
   } catch (error) {
     console.error('Failed to update user subscription:', error);
     throw error;
   }
 }
 
-export async function createOrUpdatePayment(userId: string, purchase: VerifiedPurchase) {
+export async function createOrUpdatePayment(
+  tx: TxLike,
+  userId: string,
+  purchase: VerifiedPurchase,
+) {
   try {
-    const supabase = createSupabaseAdminClient();
-
-    const existingPayment = await supabase
-      .from('payments')
-      .select('*')
-      .eq('apple_original_transaction_id', purchase.originalTransactionId)
-      .single();
-    if (existingPayment.data && existingPayment.data.user_id !== userId) {
+    const existing = await tx
+      .select({ userId: payments.userId })
+      .from(payments)
+      .where(eq(payments.appleOriginalTransactionId, purchase.originalTransactionId))
+      .limit(1);
+    if (existing[0] && existing[0].userId !== userId) {
       throw new Error(IAPError.TRANSACTION_BELONGS_TO_ANOTHER_USER);
     }
 
-    const paymentData: ApplePaymentData = {
-      user_id: userId,
-      provider: 'apple',
-      product_id: purchase.productId,
-      apple_transaction_id: purchase.transactionId,
-      apple_original_transaction_id: purchase.originalTransactionId,
-      storage_gb: isStoragePurchase(purchase.productId) ? parseStorageGB(purchase.productId) : 0,
+    const paymentValues = {
+      userId,
+      provider: 'apple' as const,
+      productId: purchase.productId,
+      appleTransactionId: purchase.transactionId,
+      appleOriginalTransactionId: purchase.originalTransactionId,
+      storageGb: isStoragePurchase(purchase.productId)
+        ? parseStorageGB(purchase.productId)
+        : 0,
       status: purchase.status === 'active' ? 'completed' : 'failed',
       amount: purchase.amount,
       currency: purchase.currency,
     };
-    const { data, error } = await supabase.from('payments').upsert(paymentData, {
-      onConflict: 'apple_original_transaction_id',
-      ignoreDuplicates: false,
-    });
 
-    if (error) {
-      console.error('Database payment update error:', error);
-      throw new Error(`Database payment update failed: ${error.message}`);
-    }
-    await updateUserStorage(userId);
-    return data;
+    await tx
+      .insert(payments)
+      .values(paymentValues)
+      .onConflictDoUpdate({
+        target: payments.appleOriginalTransactionId,
+        set: {
+          appleTransactionId: paymentValues.appleTransactionId,
+          productId: paymentValues.productId,
+          storageGb: paymentValues.storageGb,
+          status: paymentValues.status,
+          amount: paymentValues.amount,
+          currency: paymentValues.currency,
+          updatedAt: sql`now()`,
+        },
+      });
+
+    await updateUserStorage(tx, userId);
   } catch (error) {
     console.error('Failed to update user payment:', error);
     throw error;
@@ -125,7 +158,8 @@ export async function createOrUpdatePayment(userId: string, purchase: VerifiedPu
 }
 
 export async function processPurchaseData(
-  user: { id: string; email?: string | undefined },
+  tx: TxLike,
+  caller: { id: string; email?: string | undefined },
   verificationResult: VerificationResult,
 ): Promise<VerifiedPurchase> {
   const transaction = verificationResult.transaction!;
@@ -136,7 +170,7 @@ export async function processPurchaseData(
 
   const purchase: VerifiedPurchase = {
     status: verificationResult.status!,
-    customerEmail: user.email!,
+    customerEmail: caller.email!,
     orderId: transaction.webOrderLineItemId || transaction.originalTransactionId,
     subscriptionId: transaction.webOrderLineItemId || transaction.originalTransactionId,
     planName: mapProductIdToProductName(transaction.productId),
@@ -158,10 +192,11 @@ export async function processPurchaseData(
   };
 
   if (purchase.planType === 'subscription') {
-    await createOrUpdateSubscription(user.id, purchase);
+    await createOrUpdateSubscription(tx, caller.id, purchase);
   } else if (purchase.planType === 'purchase') {
-    await createOrUpdatePayment(user.id, purchase);
+    await createOrUpdatePayment(tx, caller.id, purchase);
   }
 
   return purchase;
 }
+

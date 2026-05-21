@@ -1,0 +1,100 @@
+# Local-dev infrastructure compose. Brings up Postgres, MinIO (+ bucket
+# setup), Mailpit, and a one-shot drizzle migrator. Run the Vite dev
+# server (`pnpm dev-web`) on the host — or use the VSCode devcontainer at
+# .devcontainer/ which extends this file.
+#
+# Quickstart:
+#   cp docker/.env.example docker/.env
+#   docker compose -f docker/compose.dev.yaml --env-file docker/.env up -d
+#   cp apps/readest-app/.env.web.example apps/readest-app/.env.web
+#   # fill in BETTER_AUTH_SECRET in .env.web with `openssl rand -hex 32`
+#   pnpm dev-web
+#
+# Difference vs ../docker/compose.yaml: no `client` build/serve service.
+# The app runs on the host (or in the devcontainer) with hot-reload.
+
+name: readest-dev
+
+services:
+  db:
+    container_name: readest-dev-db
+    image: postgres:16-alpine
+    restart: unless-stopped
+    volumes:
+      - ./volumes/db/init:/docker-entrypoint-initdb.d:Z
+      - db-data:/var/lib/postgresql/data:Z
+    environment:
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-readest-dev}
+      POSTGRES_DB: ${POSTGRES_DB:-postgres}
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    healthcheck:
+      test:
+        ["CMD-SHELL", "pg_isready -U postgres -d ${POSTGRES_DB:-postgres}"]
+      interval: 3s
+      timeout: 5s
+      retries: 10
+
+  minio:
+    container_name: readest-dev-minio
+    image: minio/minio
+    restart: unless-stopped
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-minioadmin}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-minioadmin-secret-password}
+    command: server --console-address ":9001" /data
+    volumes:
+      - minio-data:/data:z
+    healthcheck:
+      test: ["CMD", "mc", "ready", "local"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  minio-setup:
+    container_name: readest-dev-minio-setup
+    image: minio/mc
+    depends_on:
+      minio:
+        condition: service_healthy
+    entrypoint: >
+      /bin/sh -c "
+      mc alias set myminio http://minio:9000
+        ${MINIO_ROOT_USER:-minioadmin}
+        ${MINIO_ROOT_PASSWORD:-minioadmin-secret-password} &&
+      mc mb --ignore-existing myminio/${S3_BUCKET_NAME:-readest-files}
+      "
+
+  mailpit:
+    container_name: readest-dev-mailpit
+    image: axllent/mailpit:latest
+    restart: unless-stopped
+    ports:
+      - "1025:1025" # SMTP
+      - "8025:8025" # web UI
+    environment:
+      MP_SMTP_AUTH_ACCEPT_ANY: "true"
+      MP_SMTP_AUTH_ALLOW_INSECURE: "true"
+
+  # One-shot drizzle migrator. Connects as the postgres superuser because
+  # migration 0001 issues CREATE ROLE / GRANT statements. After the role
+  # exists, the app process connects as `readest_app` (constrained role
+  # whose RLS policies are gated on `app.user_id`).
+  migrate:
+    container_name: readest-dev-migrate
+    build:
+      context: ..
+      dockerfile: docker/migrate.Dockerfile
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: "no"
+    environment:
+      DATABASE_URL: postgres://postgres:${POSTGRES_PASSWORD:-readest-dev}@db:5432/${POSTGRES_DB:-postgres}
+
+volumes:
+  db-data:
+  minio-data:

@@ -69,12 +69,46 @@ For Windows targets, “Build Tools for Visual Studio 2022” (or a higher editi
 
 ### 4. Build for Development
 
+#### Web app
+
+The web app needs Postgres (with the `readest_app` role + RLS policies
+bootstrapped), S3-compatible storage (MinIO), and SMTP (Mailpit, so
+better-auth verification / magic-link emails are inspectable in a
+browser). `docker/compose.dev.yaml` brings up all three plus a one-shot
+drizzle migrator:
+
 ```bash
-# Start development for the Tauri app
-pnpm tauri dev
-# or start development for the Web app
+# 1. Env files (edit afterwards: set BETTER_AUTH_SECRET to `openssl rand -hex 32`)
+cp docker/.env.example docker/.env
+cp apps/readest-app/.env.web.example apps/readest-app/.env.web
+
+# 2. Start infra (first time builds the migrate image; takes ~3–5 min)
+docker compose -f docker/compose.dev.yaml --env-file docker/.env up -d
+
+# 3. Run the dev server on the host
 pnpm dev-web
-# preview with OpenNext build for the Web app
+```
+
+Then open http://localhost:5173. Mailpit web UI is at
+http://localhost:8025; MinIO console at http://localhost:9001.
+
+After any schema change, re-apply migrations with either
+`docker compose -f docker/compose.dev.yaml up migrate` (uses the cached
+migrator image) or `pnpm db:migrate` on the host.
+
+#### VSCode devcontainer (alternative)
+
+The repo ships a `.devcontainer/` config that includes the same infra
+plus an `app` container with Node 22 + pnpm + psql. In VSCode: command
+palette → **Dev Containers: Reopen in Container**. Once attached, run
+`pnpm dev-web` from the integrated terminal; port 5173 is auto-forwarded.
+
+#### Other targets
+
+```bash
+# Tauri desktop app
+pnpm tauri dev
+# Web app preview with OpenNext build
 pnpm preview
 ```
 

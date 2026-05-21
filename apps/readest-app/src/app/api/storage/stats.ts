@@ -1,6 +1,7 @@
 import { createFileRoute } from '@tanstack/react-router';
-import { createSupabaseAdminClient } from '@/utils/supabase';
-import { validateUserAndToken, getStoragePlanData } from '@/utils/access';
+import { and, count, desc, eq, isNull, sql, sum } from 'drizzle-orm';
+import { files } from '@/db/schema';
+import { getStoragePlanData, runProtected } from '@/libs/server/route-helpers';
 
 interface StorageStats {
   totalFiles: number;
@@ -15,133 +16,71 @@ interface StorageStats {
   }>;
 }
 
+/**
+ * GET /api/storage/stats — owner-only. Aggregate counts + per-book breakdown.
+ * Phase 5 swaps supabase for drizzle. The legacy route called an RPC
+ * `get_storage_by_book_hash` with a JS fallback when the function didn't
+ * exist; since Phase 2 doesn't port that RPC, we do the GROUP BY inline as
+ * a single drizzle query — same shape as the legacy fallback path.
+ */
 export const Route = createFileRoute('/api/storage/stats')({
   server: {
     handlers: {
-      GET: async ({ request }) => {
-        try {
-          const { user, token } = await validateUserAndToken(
-            request.headers.get('authorization') ?? undefined,
-          );
-          if (!user || !token) {
-            return Response.json({ error: 'Not authenticated' }, { status: 403 });
+      GET: async ({ request }) =>
+        runProtected(request, async ({ user, tx }) => {
+          try {
+            const where = and(eq(files.userId, user.id), isNull(files.deletedAt));
+
+            const [totalsRow] = await tx
+              .select({
+                totalFiles: count(),
+                totalSize: sum(files.fileSize),
+              })
+              .from(files)
+              .where(where);
+
+            const totalFiles = Number(totalsRow?.totalFiles ?? 0);
+            // `sum()` returns string | null from postgres-js to preserve
+            // bigint precision; coerce to a JS number for the JSON wire.
+            const totalSize = Number(totalsRow?.totalSize ?? 0);
+
+            const { usage, quota } = getStoragePlanData(user);
+            const usagePercentage = quota > 0 ? Math.round((usage / quota) * 100) : 0;
+
+            const groupedRows = await tx
+              .select({
+                bookHash: files.bookHash,
+                fileCount: count(),
+                totalSize: sum(files.fileSize),
+              })
+              .from(files)
+              .where(where)
+              .groupBy(files.bookHash)
+              .orderBy(desc(sql<number>`sum(${files.fileSize})`));
+
+            const byBookHash = groupedRows.map((row) => ({
+              bookHash: row.bookHash,
+              fileCount: Number(row.fileCount),
+              totalSize: Number(row.totalSize ?? 0),
+            }));
+
+            const response: StorageStats = {
+              totalFiles,
+              totalSize,
+              usage,
+              quota,
+              usagePercentage,
+              byBookHash,
+            };
+            return Response.json(response);
+          } catch (error) {
+            console.error('Error querying storage stats:', error);
+            return Response.json(
+              { error: 'Failed to retrieve storage statistics' },
+              { status: 500 },
+            );
           }
-
-          const supabase = createSupabaseAdminClient();
-
-          // Get total file count and size (paginated to avoid Supabase 1000 row limit)
-          const PAGE_SIZE = 1000;
-          let allFileStats: { file_size: number }[] = [];
-          let offset = 0;
-          let hasMore = true;
-
-          while (hasMore) {
-            const { data, error } = await supabase
-              .from('files')
-              .select('file_size')
-              .eq('user_id', user.id)
-              .is('deleted_at', null)
-              .range(offset, offset + PAGE_SIZE - 1);
-
-            if (error) {
-              console.error('Error querying total stats:', error);
-              return Response.json(
-                { error: 'Failed to retrieve storage statistics' },
-                { status: 500 },
-              );
-            }
-
-            if (data && data.length > 0) {
-              allFileStats = allFileStats.concat(data);
-              offset += PAGE_SIZE;
-              hasMore = data.length === PAGE_SIZE;
-            } else {
-              hasMore = false;
-            }
-          }
-
-          const totalFiles = allFileStats.length;
-          const totalSize = allFileStats.reduce((sum, file) => sum + (file.file_size || 0), 0);
-
-          // Get storage plan data
-          const { usage, quota } = getStoragePlanData(token);
-          const usagePercentage = quota > 0 ? Math.round((usage / quota) * 100) : 0;
-
-          // Get stats grouped by book_hash
-          const { data: bookHashStats, error: bookHashError } = await supabase.rpc(
-            'get_storage_by_book_hash',
-            { p_user_id: user.id },
-          );
-
-          // Fallback if RPC function doesn't exist - manual aggregation
-          let byBookHash: Array<{ bookHash: string | null; fileCount: number; totalSize: number }> =
-            [];
-
-          if (bookHashError) {
-            console.warn('RPC function not available, using fallback aggregation:', bookHashError);
-
-            let allFiles: { book_hash: string | null; file_size: number }[] = [];
-            let fallbackOffset = 0;
-            let fallbackHasMore = true;
-
-            while (fallbackHasMore) {
-              const { data, error: filesError } = await supabase
-                .from('files')
-                .select('book_hash, file_size')
-                .eq('user_id', user.id)
-                .is('deleted_at', null)
-                .range(fallbackOffset, fallbackOffset + PAGE_SIZE - 1);
-
-              if (filesError) break;
-
-              if (data && data.length > 0) {
-                allFiles = allFiles.concat(data);
-                fallbackOffset += PAGE_SIZE;
-                fallbackHasMore = data.length === PAGE_SIZE;
-              } else {
-                fallbackHasMore = false;
-              }
-            }
-
-            if (allFiles.length > 0) {
-              const grouped = new Map<string | null, { count: number; size: number }>();
-
-              allFiles.forEach((file) => {
-                const key = file.book_hash;
-                const current = grouped.get(key) || { count: 0, size: 0 };
-                grouped.set(key, {
-                  count: current.count + 1,
-                  size: current.size + file.file_size,
-                });
-              });
-
-              byBookHash = Array.from(grouped.entries())
-                .map(([bookHash, stats]) => ({
-                  bookHash,
-                  fileCount: stats.count,
-                  totalSize: stats.size,
-                }))
-                .sort((a, b) => b.totalSize - a.totalSize);
-            }
-          } else if (bookHashStats) {
-            byBookHash = bookHashStats;
-          }
-
-          const response: StorageStats = {
-            totalFiles,
-            totalSize,
-            usage,
-            quota,
-            usagePercentage,
-            byBookHash,
-          };
-
-          return Response.json(response);
-        } catch (error) {
-          console.error(error);
-          return Response.json({ error: 'Something went wrong' }, { status: 500 });
-        }
-      },
+        }),
     },
   },
 });

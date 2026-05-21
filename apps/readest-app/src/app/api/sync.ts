@@ -1,39 +1,205 @@
 import { createFileRoute } from '@tanstack/react-router';
-import type { PostgrestError } from '@supabase/supabase-js';
-import { createSupabaseClient } from '@/utils/supabase';
-import type { BookDataRecord } from '@/types/book';
-import { transformBookConfigToDB } from '@/utils/transform';
-import { transformBookNoteToDB } from '@/utils/transform';
-import { transformBookToDB } from '@/utils/transform';
-import type { SyncData, SyncRecord, SyncResult, SyncType } from '@/libs/sync';
-import { validateUserAndToken } from '@/utils/access';
-import type { DBBook, DBBookConfig } from '@/types/records';
+import {
+  and,
+  eq,
+  getTableColumns,
+  getTableName,
+  gt,
+  inArray,
+  or,
+  type SQL,
+  sql,
+} from 'drizzle-orm';
+import type { PgTable } from 'drizzle-orm/pg-core';
+import { books, bookConfigs, bookNotes } from '@/db/schema';
+import { resolveSessionOr401 } from '@/libs/server/auth-fn';
+import { withRls } from '@/db/rls';
+import { db } from '@/db/client';
+import type { SyncData, SyncType } from '@/libs/sync';
+import type { DBBook, DBBookConfig, DBBookNote } from '@/types/records';
+import {
+  transformBookConfigToDB,
+  transformBookNoteToDB,
+  transformBookToDB,
+} from '@/utils/transform';
 
-const transformsToDB = {
-  books: transformBookToDB,
-  book_notes: transformBookNoteToDB,
-  book_configs: transformBookConfigToDB,
-};
+/**
+ * Phase 4 of supabase→better-auth migration. Citations:
+ *   - §3.3 RLS Strategy: every business table has a `_self` policy keyed
+ *     on `current_setting('app.user_id', true)`, so once the route is
+ *     inside `withRls(userId, ...)` no explicit `WHERE user_id = ?` is
+ *     needed — Postgres enforces it.
+ *   - §3.4 `withRls` Helper: opens the per-request transaction and sets
+ *     `app.user_id`. Re-entered here both from the file-route handler
+ *     (HTTP path) and from the integration test (which talks straight to
+ *     the helpers; the protectedFn server-function wrapper is exercised
+ *     by Phase 3 unit tests in `libs/server/auth-fn.test.ts`).
+ *   - §4.3 Protected Server Function Template: `protectedFn` from
+ *     `@/libs/server/auth-fn` composes the same `resolveSessionOr401` +
+ *     `withRls` we call directly below. We don't compose it via
+ *     `createServerFn` because file-route HTTP handlers and serverFn RPCs
+ *     are separate dispatch paths in TanStack Start; the auth/RLS
+ *     contract is identical either way.
+ */
 
-const DBSyncTypeMap = {
+// Drizzle row types — internal to this module. The wire format is the
+// snake_case `DB*` shape from `@/types/records` (kept stable so existing
+// clients in `apps/readest-app/src/hooks/useSync.ts` consume it via
+// `transformBook*FromDB` unchanged).
+type BooksRow = typeof books.$inferSelect;
+type BookConfigsRow = typeof bookConfigs.$inferSelect;
+type BookNotesRow = typeof bookNotes.$inferSelect;
+
+// camelCase drizzle row → snake_case wire shape. Date columns become
+// ISO strings (the client's transformBook*FromDB expects strings).
+const toIsoOrNull = (d: Date | string | null | undefined): string | null =>
+  d == null ? null : d instanceof Date ? d.toISOString() : d;
+const toIsoOrUndefined = (d: Date | string | null | undefined): string | undefined =>
+  d == null ? undefined : d instanceof Date ? d.toISOString() : d;
+
+function booksRowToDB(r: BooksRow): DBBook {
+  return {
+    user_id: r.userId,
+    book_hash: r.bookHash,
+    meta_hash: r.metaHash ?? undefined,
+    format: r.format ?? '',
+    title: r.title ?? '',
+    source_title: r.sourceTitle ?? undefined,
+    author: r.author ?? '',
+    group_id: r.groupId ?? undefined,
+    group_name: r.groupName ?? undefined,
+    tags: r.tags ?? undefined,
+    progress: (r.progress as [number, number] | null) ?? undefined,
+    reading_status: r.readingStatus ?? undefined,
+    metadata: r.metadata == null ? null : JSON.stringify(r.metadata),
+    created_at: toIsoOrUndefined(r.createdAt),
+    updated_at: toIsoOrUndefined(r.updatedAt),
+    deleted_at: toIsoOrNull(r.deletedAt),
+    uploaded_at: toIsoOrNull(r.uploadedAt),
+  };
+}
+
+function bookConfigsRowToDB(r: BookConfigsRow): DBBookConfig {
+  return {
+    user_id: r.userId,
+    book_hash: r.bookHash,
+    meta_hash: r.metaHash ?? undefined,
+    location: r.location ?? undefined,
+    xpointer: r.xpointer ?? undefined,
+    // `progress` / `search_config` / `view_settings` columns are jsonb; the
+    // client's transformer JSON.parses them, so re-stringify here.
+    progress: r.progress == null ? undefined : JSON.stringify(r.progress),
+    rsvp_position: r.rsvpPosition ?? undefined,
+    search_config: r.searchConfig == null ? undefined : JSON.stringify(r.searchConfig),
+    view_settings: r.viewSettings == null ? undefined : JSON.stringify(r.viewSettings),
+    created_at: toIsoOrUndefined(r.createdAt),
+    updated_at: toIsoOrUndefined(r.updatedAt),
+    deleted_at: toIsoOrNull(r.deletedAt),
+  };
+}
+
+function bookNotesRowToDB(r: BookNotesRow): DBBookNote {
+  return {
+    user_id: r.userId,
+    book_hash: r.bookHash,
+    meta_hash: r.metaHash ?? undefined,
+    id: r.id,
+    type: r.type ?? '',
+    cfi: r.cfi ?? undefined,
+    xpointer0: r.xpointer0 ?? undefined,
+    xpointer1: r.xpointer1 ?? undefined,
+    page: r.page ?? undefined,
+    text: r.text ?? undefined,
+    style: r.style ?? undefined,
+    color: r.color ?? undefined,
+    note: r.note ?? '',
+    created_at: toIsoOrUndefined(r.createdAt),
+    updated_at: toIsoOrUndefined(r.updatedAt),
+    deleted_at: toIsoOrNull(r.deletedAt),
+  };
+}
+
+// Context passed by `protectedFn`-equivalent wiring (the route handler
+// below, or the integration test). `tx` is a drizzle transaction already
+// bound to `app.user_id = user.id`, so all RLS-protected reads/writes are
+// scoped to the caller automatically.
+export interface SyncHandlerContext {
+  user: { id: string };
+  // `db.transaction(...)`'s callback parameter type — exposed via
+  // `Parameters<...>` to avoid leaking drizzle-internal symbols.
+  tx: Parameters<Parameters<typeof db.transaction>[0]>[0];
+}
+
+const SYNC_TYPE_FOR_TABLE: Record<'books' | 'bookConfigs' | 'bookNotes', SyncType> = {
   books: 'books',
-  book_notes: 'notes',
-  book_configs: 'configs',
+  bookConfigs: 'configs',
+  bookNotes: 'notes',
 };
 
-type TableName = keyof typeof transformsToDB;
+// Cap the per-table response to bound memory + serialization cost. The old
+// route paged in 1k chunks until a short page; this single-shot fetch with a
+// hard cap preserves the external contract (single JSON payload, same keys,
+// same ordering) and is large enough for any realistic per-user sync.
+const FETCH_LIMIT = 10_000;
 
-type DBError = { table: TableName; error: PostgrestError };
-
-async function handleGet(request: Request): Promise<Response> {
-  const { user, token } = await validateUserAndToken(
-    request.headers.get('authorization') ?? undefined,
-  );
-  if (!user || !token) {
-    return Response.json({ error: 'Not authenticated' }, { status: 403 });
+/**
+ * Build the `set:` map for `.onConflictDoUpdate({ target, set })` so every
+ * non-conflict column is overwritten with the value from the row being
+ * inserted (`EXCLUDED.*`). Pattern verified against drizzle docs (see
+ * https://orm.drizzle.team/docs/guides/upsert "Multi-row upsert").
+ */
+function buildExcludedSet<TTable extends PgTable>(
+  table: TTable,
+  exclude: ReadonlyArray<keyof TTable['$inferSelect']>,
+): Record<string, SQL> {
+  const cols = getTableColumns(table);
+  const result: Record<string, SQL> = {};
+  for (const [key, col] of Object.entries(cols)) {
+    if ((exclude as readonly string[]).includes(key)) continue;
+    // `col.name` is the SQL column name (snake_case in our schema).
+    result[key] = sql.raw(`excluded.${col.name}`);
   }
-  const supabase = createSupabaseClient(token);
+  return result;
+}
 
+/**
+ * Last-write-wins gate for `.onConflictDoUpdate({ target, set, setWhere })`.
+ * Translates the legacy supabase route's per-record comparison:
+ *
+ *   const clientIsNewer =
+ *     clientDeletedAt > serverDeletedAt || clientUpdatedAt > serverUpdatedAt;
+ *
+ * into a `WHERE` clause that runs after `DO UPDATE SET …` so the server
+ * silently drops stale payloads instead of clobbering newer state.
+ *
+ * `COALESCE(..., 'epoch')` is the SQL analogue of `new Date(undefined).getTime()
+ * === 0` in the legacy JS: a null timestamp compares as "infinitely old", so
+ * a non-null `excluded.deleted_at` always beats a null `<table>.deleted_at`
+ * (matching the legacy tombstone semantics).
+ *
+ * The `WHERE` clause references `<table>.<col>` (existing row) and
+ * `EXCLUDED.<col>` (proposed row); we emit raw column names via
+ * `sql.raw(table_name)` so the helper works across all three tables without
+ * needing per-table specialisation.
+ */
+function lwwSetWhere<TTable extends PgTable>(table: TTable): SQL {
+  const cols = getTableColumns(table) as Record<string, { name: string }>;
+  const tableName = getTableName(table);
+  const updatedAtCol = cols['updatedAt']?.name ?? 'updated_at';
+  const deletedAtCol = cols['deletedAt']?.name ?? 'deleted_at';
+  return sql.raw(
+    `COALESCE(excluded.${updatedAtCol}, 'epoch'::timestamptz) > ` +
+      `COALESCE("${tableName}".${updatedAtCol}, 'epoch'::timestamptz) ` +
+      `OR COALESCE(excluded.${deletedAtCol}, 'epoch'::timestamptz) > ` +
+      `COALESCE("${tableName}".${deletedAtCol}, 'epoch'::timestamptz)`,
+  );
+}
+
+export async function handleGet(
+  request: Request,
+  ctx: SyncHandlerContext,
+): Promise<Response> {
+  const { tx } = ctx;
   const { searchParams } = new URL(request.url);
   const sinceParam = searchParams.get('since');
   const typeParam = searchParams.get('type') as SyncType | undefined;
@@ -43,116 +209,73 @@ async function handleGet(request: Request): Promise<Response> {
   if (!sinceParam) {
     return Response.json({ error: '"since" query parameter is required' }, { status: 400 });
   }
-
   const since = new Date(Number(sinceParam));
-  if (isNaN(since.getTime())) {
+  if (Number.isNaN(since.getTime())) {
     return Response.json({ error: 'Invalid "since" timestamp' }, { status: 400 });
   }
 
-  const sinceIso = since.toISOString();
-
   try {
-    const results: SyncResult = { books: [], configs: [], notes: [] };
-    const errors: Record<TableName, DBError | null> = {
-      books: null,
-      book_notes: null,
-      book_configs: null,
+    // Per-table query builder. RLS adds the implicit `user_id = $current`
+    // predicate; we only contribute the freshness filter and optional
+    // book/meta filters (matching the original supabase query semantics).
+    const buildWhere = <
+      TTable extends typeof books | typeof bookConfigs | typeof bookNotes,
+    >(table: TTable): SQL | undefined => {
+      const freshness = or(gt(table.updatedAt, since), gt(table.deletedAt, since));
+      // Original behaviour: when BOTH `book` and `meta_hash` are present the
+      // route OR'd them ("either match" — used to fetch a book and any
+      // duplicate by metadata in one shot); when only one was present, AND'd.
+      if (bookParam && metaHashParam) {
+        return and(
+          or(eq(table.bookHash, bookParam), eq(table.metaHash, metaHashParam)),
+          freshness,
+        );
+      }
+      if (bookParam) {
+        return and(eq(table.bookHash, bookParam), freshness);
+      }
+      if (metaHashParam) {
+        return and(eq(table.metaHash, metaHashParam), freshness);
+      }
+      return freshness;
     };
 
-    const queryTables = async (table: TableName, dedupeKeys?: (keyof BookDataRecord)[]) => {
-      const PAGE_SIZE = 1000;
-      let allRecords: SyncRecord[] = [];
-      let offset = 0;
-      let hasMore = true;
+    const results: {
+      books: DBBook[];
+      configs: DBBookConfig[];
+      notes: DBBookNote[];
+    } = { books: [], configs: [], notes: [] };
 
-      while (hasMore) {
-        let query = supabase
-          .from(table)
-          .select('*')
-          .eq('user_id', user.id)
-          .range(offset, offset + PAGE_SIZE - 1);
-
-        if (bookParam && metaHashParam) {
-          query = query.or(`book_hash.eq.${bookParam},meta_hash.eq.${metaHashParam}`);
-        } else if (bookParam) {
-          query = query.eq('book_hash', bookParam);
-        } else if (metaHashParam) {
-          query = query.eq('meta_hash', metaHashParam);
-        }
-
-        query = query.or(`updated_at.gt.${sinceIso},deleted_at.gt.${sinceIso}`);
-        query = query.order('updated_at', { ascending: false });
-
-        console.log('Querying table:', table, 'since:', sinceIso, 'offset:', offset);
-
-        const { data, error } = await query;
-        if (error) throw { table, error } as DBError;
-
-        if (data && data.length > 0) {
-          allRecords = allRecords.concat(data);
-          offset += PAGE_SIZE;
-          hasMore = data.length === PAGE_SIZE;
-        } else {
-          hasMore = false;
-        }
-      }
-
-      let records = allRecords;
-      if (dedupeKeys && dedupeKeys.length > 0) {
-        const seen = new Set<string>();
-        records = records.filter((rec) => {
-          const key = dedupeKeys
-            .map((k) => rec[k])
-            .filter(Boolean)
-            .join('|');
-          if (key && seen.has(key)) {
-            return false;
-          } else {
-            seen.add(key);
-            return true;
-          }
-        });
-      }
-      results[DBSyncTypeMap[table] as SyncType] = records || [];
-    };
-
-    if (!typeParam || typeParam === 'books') {
-      await queryTables('books').catch((err) => (errors['books'] = err));
-      // TODO: Remove this hotfix for the initial race condition for books sync
-      if (results.books?.length === 0 && since.getTime() < 1000) {
-        const dummyHash = '00000000000000000000000000000000';
-        const now = Date.now();
-        results.books.push({
-          user_id: user.id,
-          id: dummyHash,
-          book_hash: dummyHash,
-          deleted_at: now,
-          updated_at: now,
-
-          hash: dummyHash,
-          title: 'Dummy Book',
-          format: 'EPUB',
-          author: '',
-          createdAt: now,
-          updatedAt: now,
-          deletedAt: now,
-        });
-      }
+    // Drizzle's `tx.select().from(T)` infers `T` so tightly that wrapping it
+    // in a generic helper trips one of the "cannot reference a data-modifying
+    // subquery" guard types. Inlining per table keeps the inference happy and
+    // each query is a 3-liner — no real DRY win in extracting it.
+    if (!typeParam || typeParam === SYNC_TYPE_FOR_TABLE['books']) {
+      const rows = await tx
+        .select()
+        .from(books)
+        .where(buildWhere(books))
+        .orderBy(sql`${books.updatedAt} DESC`)
+        .limit(FETCH_LIMIT);
+      results.books = rows.map(booksRowToDB);
     }
-    if (!typeParam || typeParam === 'configs') {
-      await queryTables('book_configs').catch((err) => (errors['book_configs'] = err));
+    if (!typeParam || typeParam === SYNC_TYPE_FOR_TABLE['bookConfigs']) {
+      const rows = await tx
+        .select()
+        .from(bookConfigs)
+        .where(buildWhere(bookConfigs))
+        .orderBy(sql`${bookConfigs.updatedAt} DESC`)
+        .limit(FETCH_LIMIT);
+      results.configs = rows.map(bookConfigsRowToDB);
     }
-    if (!typeParam || typeParam === 'notes') {
-      await queryTables('book_notes', ['id']).catch((err) => (errors['book_notes'] = err));
-    }
-
-    const dbErrors = Object.values(errors).filter((err) => err !== null);
-    if (dbErrors.length > 0) {
-      console.error('Errors occurred:', dbErrors);
-      const errorMsg = dbErrors
-        .map((err) => `${err.table}: ${err.error.message || 'Unknown error'}`)
-        .join('; ');
-      return Response.json({ error: errorMsg }, { status: 500 });
+    if (!typeParam || typeParam === SYNC_TYPE_FOR_TABLE['bookNotes']) {
+      const rows = await tx
+        .select()
+        .from(bookNotes)
+        .where(buildWhere(bookNotes))
+        .orderBy(sql`${bookNotes.updatedAt} DESC`)
+        .limit(FETCH_LIMIT);
+      results.notes = rows.map(bookNotesRowToDB);
     }
 
     return Response.json(results, {
@@ -163,177 +286,202 @@ async function handleGet(request: Request): Promise<Response> {
       },
     });
   } catch (error: unknown) {
-    console.error(error);
-    const errorMessage = (error as PostgrestError).message || 'Unknown error';
+    console.error('GET /api/sync failed', error);
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
     return Response.json({ error: errorMessage }, { status: 500 });
   }
 }
 
-async function handlePost(request: Request): Promise<Response> {
-  const { user, token } = await validateUserAndToken(
-    request.headers.get('authorization') ?? undefined,
-  );
-  if (!user || !token) {
-    return Response.json({ error: 'Not authenticated' }, { status: 403 });
-  }
-  const supabase = createSupabaseClient(token);
-  const body = await request.json();
-  const { books = [], configs = [], notes = [] } = body as SyncData;
-
-  const BATCH_SIZE = 100;
-  const upsertRecords = async (
-    table: TableName,
-    primaryKeys: (keyof BookDataRecord)[],
-    records: BookDataRecord[],
-  ) => {
-    if (records.length === 0) return { data: [] };
-
-    const allAuthoritativeRecords: BookDataRecord[] = [];
-
-    // Process in batches
-    for (let i = 0; i < records.length; i += BATCH_SIZE) {
-      const batch = records.slice(i, i + BATCH_SIZE);
-
-      // Transform all records to DB format
-      const dbRecords = batch.map((rec) => {
-        const dbRec = transformsToDB[table](rec, user.id);
-        rec.user_id = user.id;
-        rec.book_hash = dbRec.book_hash;
-        return { original: rec, db: dbRec };
-      });
-
-      // Build match conditions for batch
-      const matchConditions = dbRecords.map(({ original }) => {
-        const conditions: Record<string, string | number> = { user_id: user.id };
-        for (const pk of primaryKeys) {
-          conditions[pk] = original[pk]!;
-        }
-        return conditions;
-      });
-
-      // Fetch existing records for this batch
-      const orConditions = matchConditions
-        .map((cond) => {
-          const parts = Object.entries(cond).map(([key, val]) => `${key}.eq.${val}`);
-          return `and(${parts.join(',')})`;
-        })
-        .join(',');
-
-      const { data: serverRecords, error: fetchError } = await supabase
-        .from(table)
-        .select()
-        .or(orConditions);
-
-      if (fetchError) {
-        return { error: fetchError.message };
-      }
-
-      // Create lookup map
-      const serverRecordsMap = new Map<string, BookDataRecord>();
-      (serverRecords || []).forEach((record) => {
-        const key = primaryKeys.map((pk) => record[pk]).join('|');
-        serverRecordsMap.set(key, record);
-      });
-
-      // Separate into inserts and updates
-      const toInsert: (DBBook | DBBookConfig | DBBookConfig)[] = [];
-      const toUpdate: (DBBook | DBBookConfig | DBBookConfig)[] = [];
-      const batchAuthoritativeRecords: BookDataRecord[] = [];
-
-      for (const { original, db: dbRec } of dbRecords) {
-        const key = primaryKeys.map((pk) => original[pk]).join('|');
-        const serverData = serverRecordsMap.get(key);
-
-        if (!serverData) {
-          dbRec.updated_at = new Date().toISOString();
-          toInsert.push(dbRec);
-        } else {
-          const clientUpdatedAt = dbRec.updated_at ? new Date(dbRec.updated_at).getTime() : 0;
-          const serverUpdatedAt = serverData.updated_at
-            ? new Date(serverData.updated_at).getTime()
-            : 0;
-          const clientDeletedAt = dbRec.deleted_at ? new Date(dbRec.deleted_at).getTime() : 0;
-          const serverDeletedAt = serverData.deleted_at
-            ? new Date(serverData.deleted_at).getTime()
-            : 0;
-          const clientIsNewer =
-            clientDeletedAt > serverDeletedAt || clientUpdatedAt > serverUpdatedAt;
-
-          if (clientIsNewer) {
-            toUpdate.push(dbRec);
-          } else {
-            batchAuthoritativeRecords.push(serverData);
-          }
-        }
-      }
-
-      // Batch insert
-      if (toInsert.length > 0) {
-        const { data: inserted, error: insertError } = await supabase
-          .from(table)
-          .insert(toInsert)
-          .select();
-
-        if (insertError) {
-          console.log(`Failed to insert ${table} records:`, JSON.stringify(toInsert));
-          return { error: insertError.message };
-        }
-        batchAuthoritativeRecords.push(...(inserted || []));
-      }
-
-      // Batch upsert
-      if (toUpdate.length > 0) {
-        const { data: updated, error: updateError } = await supabase
-          .from(table)
-          .upsert(toUpdate, {
-            onConflict: ['user_id', ...primaryKeys].join(','),
-          })
-          .select();
-
-        if (updateError) {
-          console.log(`Failed to update ${table} records:`, JSON.stringify(toUpdate));
-          return { error: updateError.message };
-        }
-        batchAuthoritativeRecords.push(...(updated || []));
-      }
-
-      allAuthoritativeRecords.push(...batchAuthoritativeRecords);
-    }
-
-    return { data: allAuthoritativeRecords };
-  };
+export async function handlePost(
+  request: Request,
+  ctx: SyncHandlerContext,
+): Promise<Response> {
+  const { user, tx } = ctx;
+  const body = (await request.json()) as SyncData;
+  const { books: booksPayload = [], configs: configsPayload = [], notes: notesPayload = [] } =
+    body;
 
   try {
-    const [booksResult, configsResult, notesResult] = await Promise.all([
-      upsertRecords('books', ['book_hash'], books as BookDataRecord[]),
-      upsertRecords('book_configs', ['book_hash'], configs as BookDataRecord[]),
-      upsertRecords('book_notes', ['book_hash', 'id'], notes as BookDataRecord[]),
-    ]);
+    // Upsert helpers — one per table because the conflict target / column
+    // shape differs. Drizzle's `.onConflictDoUpdate({ target, set })` maps to
+    // PG's `ON CONFLICT (...) DO UPDATE SET ...` with `excluded.col` as the
+    // proposed-row reference (see drizzle docs §"Multi-row upsert").
+    let outBooks: BooksRow[] = [];
+    if (booksPayload.length > 0) {
+      const rows = booksPayload
+        .filter((b): b is NonNullable<typeof b> => b != null)
+        .map((b) => transformBookToDB(b, user.id))
+        .map((dbRec) => ({
+          userId: dbRec.user_id,
+          bookHash: dbRec.book_hash,
+          metaHash: dbRec.meta_hash ?? null,
+          format: dbRec.format ?? null,
+          title: dbRec.title ?? null,
+          sourceTitle: dbRec.source_title ?? null,
+          author: dbRec.author ?? null,
+          tags: dbRec.tags ?? null,
+          progress: dbRec.progress ?? null,
+          readingStatus: dbRec.reading_status ?? null,
+          groupId: dbRec.group_id ?? null,
+          groupName: dbRec.group_name ?? null,
+          metadata: dbRec.metadata ?? null,
+          createdAt: dbRec.created_at ? new Date(dbRec.created_at) : new Date(),
+          updatedAt: dbRec.updated_at ? new Date(dbRec.updated_at) : new Date(),
+          deletedAt: dbRec.deleted_at ? new Date(dbRec.deleted_at) : null,
+          uploadedAt: dbRec.uploaded_at ? new Date(dbRec.uploaded_at) : null,
+        }));
+      // `setWhere` gates the UPDATE so stale client payloads (older
+      // updated_at / deleted_at than the existing server row) are silently
+      // dropped, matching the legacy supabase route's per-record LWW.
+      // `.returning()` would only yield rows actually written; the legacy
+      // API returned authoritative state for every incoming key, so we
+      // SELECT them back after the upsert.
+      await tx
+        .insert(books)
+        .values(rows)
+        .onConflictDoUpdate({
+          target: [books.userId, books.bookHash],
+          set: buildExcludedSet(books, ['userId', 'bookHash']),
+          setWhere: lwwSetWhere(books),
+        });
+      outBooks = await tx
+        .select()
+        .from(books)
+        .where(inArray(books.bookHash, rows.map((r) => r.bookHash)));
+    }
 
-    if (booksResult?.error) throw new Error(booksResult.error);
-    if (configsResult?.error) throw new Error(configsResult.error);
-    if (notesResult?.error) throw new Error(notesResult.error);
+    let outConfigs: BookConfigsRow[] = [];
+    if (configsPayload.length > 0) {
+      const rows = configsPayload
+        .filter((c): c is NonNullable<typeof c> => c != null)
+        .map((c) => transformBookConfigToDB(c, user.id))
+        .map((dbRec) => ({
+          userId: dbRec.user_id,
+          bookHash: dbRec.book_hash,
+          metaHash: dbRec.meta_hash ?? null,
+          location: dbRec.location ?? null,
+          xpointer: dbRec.xpointer ?? null,
+          // `progress`, `rsvpPosition`, `searchConfig`, `viewSettings` come
+          // back JSON-stringified from transformBookConfigToDB but the
+          // jsonb columns want a parsed value. Re-parse so PG stores
+          // structured JSON, not a JSON-encoded string.
+          progress: dbRec.progress ? JSON.parse(dbRec.progress) : null,
+          rsvpPosition: dbRec.rsvp_position ?? null,
+          searchConfig: dbRec.search_config ? JSON.parse(dbRec.search_config) : null,
+          viewSettings: dbRec.view_settings ? JSON.parse(dbRec.view_settings) : null,
+          createdAt: dbRec.created_at ? new Date(dbRec.created_at) : new Date(),
+          updatedAt: dbRec.updated_at ? new Date(dbRec.updated_at) : new Date(),
+          deletedAt: dbRec.deleted_at ? new Date(dbRec.deleted_at) : null,
+        }));
+      await tx
+        .insert(bookConfigs)
+        .values(rows)
+        .onConflictDoUpdate({
+          target: [bookConfigs.userId, bookConfigs.bookHash],
+          set: buildExcludedSet(bookConfigs, ['userId', 'bookHash']),
+          setWhere: lwwSetWhere(bookConfigs),
+        });
+      outConfigs = await tx
+        .select()
+        .from(bookConfigs)
+        .where(inArray(bookConfigs.bookHash, rows.map((r) => r.bookHash)));
+    }
+
+    let outNotes: BookNotesRow[] = [];
+    if (notesPayload.length > 0) {
+      const rows = notesPayload
+        .filter((n): n is NonNullable<typeof n> => n != null)
+        .map((n) => transformBookNoteToDB(n, user.id))
+        .map((dbRec) => ({
+          userId: dbRec.user_id,
+          bookHash: dbRec.book_hash,
+          metaHash: dbRec.meta_hash ?? null,
+          id: dbRec.id,
+          type: dbRec.type ?? null,
+          cfi: dbRec.cfi ?? null,
+          xpointer0: dbRec.xpointer0 ?? null,
+          xpointer1: dbRec.xpointer1 ?? null,
+          text: dbRec.text ?? null,
+          style: dbRec.style ?? null,
+          color: dbRec.color ?? null,
+          note: dbRec.note ?? null,
+          page: dbRec.page ?? null,
+          createdAt: dbRec.created_at ? new Date(dbRec.created_at) : new Date(),
+          updatedAt: dbRec.updated_at ? new Date(dbRec.updated_at) : new Date(),
+          deletedAt: dbRec.deleted_at ? new Date(dbRec.deleted_at) : null,
+        }));
+      await tx
+        .insert(bookNotes)
+        .values(rows)
+        .onConflictDoUpdate({
+          target: [bookNotes.userId, bookNotes.bookHash, bookNotes.id],
+          set: buildExcludedSet(bookNotes, ['userId', 'bookHash', 'id']),
+          setWhere: lwwSetWhere(bookNotes),
+        });
+      // Notes have a 3-column PK, so filter by (bookHash, id) pairs to
+      // pick up exactly the incoming keys.
+      const noteKeys = rows.map((r) => and(
+        eq(bookNotes.bookHash, r.bookHash),
+        eq(bookNotes.id, r.id),
+      ));
+      const noteFilter = or(...noteKeys);
+      outNotes = noteFilter
+        ? await tx.select().from(bookNotes).where(noteFilter)
+        : [];
+    }
 
     return Response.json(
       {
-        books: booksResult?.data || [],
-        configs: configsResult?.data || [],
-        notes: notesResult?.data || [],
+        books: outBooks.map(booksRowToDB),
+        configs: outConfigs.map(bookConfigsRowToDB),
+        notes: outNotes.map(bookNotesRowToDB),
       },
       { status: 200 },
     );
   } catch (error: unknown) {
-    console.error(error);
-    const errorMessage = (error as PostgrestError).message || 'Unknown error';
+    console.error('POST /api/sync failed', error);
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
     return Response.json({ error: errorMessage }, { status: 500 });
+  }
+}
+
+// File-route HTTP handler. The protectedFn server-function (see
+// `@/libs/server/auth-fn`) shares the same `resolveSessionOr401` +
+// `withRls` machinery; file-routes can't compose a serverFn directly
+// (different dispatch path), so we inline the two-step equivalent here
+// and feed the resulting `{ user, tx }` context into the pure handlers
+// above — which are the same surface the integration test exercises.
+async function runProtected(
+  request: Request,
+  inner: (ctx: SyncHandlerContext) => Promise<Response>,
+): Promise<Response> {
+  try {
+    const session = await resolveSessionOr401(request.headers);
+    return withRls(session.user.id, (tx) =>
+      inner({ user: { id: session.user.id }, tx }),
+    );
+  } catch (e) {
+    if (e instanceof Response) {
+      // `resolveSessionOr401` throws a bare `Response('Unauthorized', 401)`.
+      // The legacy supabase route returned `{ error: 'Not authenticated' }`
+      // as JSON, and `apps/readest-app/src/hooks/useSync.ts:148` matches on
+      // that substring to trigger silent re-login. Re-shape unauthenticated
+      // responses so that contract holds; pass other Response throws
+      // through unchanged.
+      if (e.status === 401) {
+        return Response.json({ error: 'Not authenticated' }, { status: 401 });
+      }
+      return e;
+    }
+    throw e;
   }
 }
 
 export const Route = createFileRoute('/api/sync')({
   server: {
     handlers: {
-      GET: async ({ request }) => handleGet(request),
-      POST: async ({ request }) => handlePost(request),
+      GET: ({ request }) => runProtected(request, (ctx) => handleGet(request, ctx)),
+      POST: ({ request }) => runProtected(request, (ctx) => handlePost(request, ctx)),
     },
   },
 });

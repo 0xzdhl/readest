@@ -1,114 +1,84 @@
-import { createContext, useState, useContext, useCallback, useMemo, useEffect } from 'react';
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef } from 'react';
 import type { ReactNode } from 'react';
-import type { User } from '@supabase/supabase-js';
-import { supabase } from '@/utils/supabase';
 import posthog from 'posthog-js';
 
-interface AuthContextType {
-  token: string | null;
-  user: User | null;
-  login: (token: string, user: User) => void;
-  logout: () => void;
+import { authClient } from '@/auth';
+import type { Session } from '@/auth/server';
+
+/**
+ * better-auth's React client (`authClient.useSession()`) returns:
+ *
+ *   { data: { user, session } | null, isPending, error, refetch }
+ *
+ * The `data.user` already carries our `additionalFields`
+ * (`plan`, `storageUsageBytes`, `storagePurchasedBytes`) in camelCase,
+ * thanks to `inferAdditionalFields<typeof auth>` on the client. This
+ * context is now a thin pass-through over that hook — there's no separate
+ * `token` field (web is cookie-backed, native carries the bearer in
+ * `localStorage` via `@/auth/native-client`) and no localStorage mirroring
+ * of the user object.
+ */
+export type AuthUser = NonNullable<Session>['user'];
+export type AuthSession = NonNullable<Session>['session'];
+
+export interface AuthContextValue {
+  user: AuthUser | null;
+  session: AuthSession | null;
+  isLoading: boolean;
+  signOut: () => Promise<void>;
   refresh: () => void;
 }
 
-const AuthContext = createContext<AuthContextType | undefined>(undefined);
+const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
-  const [token, setToken] = useState<string | null>(() => {
-    if (typeof window !== 'undefined') {
-      return localStorage.getItem('token');
-    }
-    return null;
-  });
-  const [user, setUser] = useState<User | null>(() => {
-    if (typeof window !== 'undefined') {
-      const userJson = localStorage.getItem('user');
-      return userJson ? JSON.parse(userJson) : null;
-    }
-    return null;
-  });
+  const { data, isPending, refetch } = authClient.useSession();
 
+  // posthog identification — `useSession` re-fires often (every focus /
+  // visibility change can re-fetch); guard with a ref so we only identify
+  // on user-id transitions, not every render.
+  const lastIdentifiedRef = useRef<string | null>(null);
   useEffect(() => {
-    const syncSession = (
-      session: { access_token: string; refresh_token: string; user: User } | null,
-    ) => {
-      if (session) {
-        console.log('Syncing session');
-        const { access_token, refresh_token, user } = session;
-        localStorage.setItem('token', access_token);
-        localStorage.setItem('refresh_token', refresh_token);
-        localStorage.setItem('user', JSON.stringify(user));
-        posthog.identify(user.id);
-        setToken(access_token);
-        setUser(user);
-      } else {
-        localStorage.removeItem('token');
-        localStorage.removeItem('refresh_token');
-        localStorage.removeItem('user');
-        setToken(null);
-        setUser(null);
-      }
-    };
-    const refreshSession = async () => {
-      try {
-        await supabase.auth.refreshSession();
-      } catch {
-        syncSession(null);
-      }
-    };
-
-    const { data: subscription } = supabase.auth.onAuthStateChange((_, session) => {
-      syncSession(session);
-    });
-
-    refreshSession();
-    return () => {
-      subscription?.subscription.unsubscribe();
-    };
-  }, []);
-
-  // setToken / setUser from useState are stable across renders, so the empty
-  // deps array is correct. Wrapping in useCallback (and only including stable
-  // refs in the deps) is what makes the useMemo below actually memoize the
-  // context value — without this, login/logout/refresh would be recreated on
-  // every render and the memo would always invalidate.
-  const login = useCallback((newToken: string, newUser: User) => {
-    console.log('Logging in');
-    setToken(newToken);
-    setUser(newUser);
-    localStorage.setItem('token', newToken);
-    localStorage.setItem('user', JSON.stringify(newUser));
-  }, []);
-
-  const logout = useCallback(async () => {
-    console.log('Logging out');
-    try {
-      await supabase.auth.refreshSession();
-    } catch {
-    } finally {
-      await supabase.auth.signOut();
-      localStorage.removeItem('token');
-      localStorage.removeItem('user');
-      setToken(null);
-      setUser(null);
+    const id = data?.user?.id ?? null;
+    if (id === lastIdentifiedRef.current) return;
+    if (id) {
+      posthog.identify(id);
+    } else if (lastIdentifiedRef.current) {
+      // Transition from signed-in → signed-out. Reset rather than leave
+      // the previous user's distinct id associated with subsequent
+      // anonymous events.
+      posthog.reset();
     }
-  }, []);
+    lastIdentifiedRef.current = id;
+  }, [data?.user?.id]);
 
-  const refresh = useCallback(async () => {
+  const signOut = useCallback(async () => {
     try {
-      await supabase.auth.refreshSession();
-    } catch {}
-  }, []);
+      await authClient.signOut();
+    } finally {
+      refetch();
+    }
+  }, [refetch]);
 
-  const value = useMemo(
-    () => ({ token, user, login, logout, refresh }),
-    [token, user, login, logout, refresh],
+  const refresh = useCallback(() => {
+    refetch();
+  }, [refetch]);
+
+  const value = useMemo<AuthContextValue>(
+    () => ({
+      user: data?.user ?? null,
+      session: data?.session ?? null,
+      isLoading: isPending,
+      signOut,
+      refresh,
+    }),
+    [data, isPending, signOut, refresh],
   );
+
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };
 
-export const useAuth = (): AuthContextType => {
+export const useAuth = (): AuthContextValue => {
   const context = useContext(AuthContext);
   if (!context) throw new Error('useAuth must be used within AuthProvider');
   return context;

@@ -1,5 +1,6 @@
 import { customAlphabet } from 'nanoid';
-import { createSupabaseAdminClient } from '@/utils/supabase';
+import { and, eq, isNull } from 'drizzle-orm';
+import { bookShares, files } from '@/db/schema';
 
 // 22-char URL-safe alphabet (alphanumeric only — no `-` or `_`). Avoids
 // punctuation that some chat clients linkify oddly.
@@ -58,73 +59,119 @@ export interface ResolvedShare {
 
 const isCoverKey = (fileKey: string): boolean => /\.(png|jpe?g|webp|gif)$/i.test(fileKey);
 
-// Single source of truth for the "is this share alive and usable?" check.
-// Used by the public metadata, download, cover, og.png, and import routes
-// so the validation logic stays in one place.
+/** Coerce a drizzle timestamp (`Date | string | null`) to an ISO string or null. */
+const toIso = (d: Date | string | null | undefined): string | null => {
+  if (d == null) return null;
+  if (d instanceof Date) return d.toISOString();
+  return String(d);
+};
+
+/**
+ * Tx parameter type imported lazily via a type-only import so the runtime
+ * `@/db/client` module isn't pulled into pure-function tests. The
+ * `@/db/client` module reads `process.env.DATABASE_URL` at import time and
+ * throws when unset; a `import type` is erased at compile time and doesn't
+ * trigger that side effect.
+ */
+import type { db as _dbForType } from '@/db/client';
+type TxLike = Parameters<Parameters<typeof _dbForType.transaction>[0]>[0];
+
+/**
+ * Single source of truth for the "is this share alive and usable?" check.
+ * Used by the public metadata, download, cover, og.png, and import routes
+ * so the validation logic stays in one place.
+ *
+ * Phase 5 refactor: this function now takes a drizzle tx (typically the
+ * bypass-RLS tx from `runPublic`) so the caller controls the transaction
+ * scope. When no tx is supplied, the helper opens its own withBypassRls
+ * tx — used by `og[.]png/render.tsx` which builds the response outside the
+ * shared route helper, and by any incidental caller that just wants the
+ * resolved share without a wider transaction.
+ *
+ * The two queries (book_shares row + the corresponding files rows) need
+ * `withBypassRls` because there's no `app.user_id` for an anonymous
+ * caller. The token's secrecy IS the security boundary; the
+ * `WHERE token_hash = $1` filter is the lookup gate.
+ */
 export const resolveActiveShare = async (
   rawToken: string,
+  tx?: TxLike,
 ): Promise<{ ok: true; share: ResolvedShare } | { ok: false; reason: ShareLookupRejection }> => {
   if (!isValidShareToken(rawToken)) {
     return { ok: false, reason: { kind: 'invalid_token' } };
   }
+  if (!tx) {
+    // Lazy import to keep this module free of any top-level `@/db/client`
+    // side effects (see comment on `TxLike`). The dynamic import is only
+    // hit at runtime when a caller doesn't pass a tx.
+    const { withBypassRls } = await import('@/db/rls');
+    return withBypassRls((newTx) => resolveActiveShare(rawToken, newTx));
+  }
 
-  const supabase = createSupabaseAdminClient();
   const tokenHash = await hashShareToken(rawToken);
 
-  const { data: row, error } = await supabase
-    .from('book_shares')
-    .select(
-      'id, user_id, book_hash, book_title, book_author, book_format, book_size, cfi, expires_at, revoked_at, download_count, created_at',
-    )
-    .eq('token_hash', tokenHash)
-    .maybeSingle();
-
-  if (error) {
-    return { ok: false, reason: { kind: 'lookup_failed', detail: error.message } };
+  let row: typeof bookShares.$inferSelect | undefined;
+  try {
+    const rows = await tx
+      .select()
+      .from(bookShares)
+      .where(eq(bookShares.tokenHash, tokenHash))
+      .limit(1);
+    row = rows[0];
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'unknown';
+    return { ok: false, reason: { kind: 'lookup_failed', detail: message } };
   }
   if (!row) {
     return { ok: false, reason: { kind: 'not_found' } };
   }
-  if (row.revoked_at) {
+  if (row.revokedAt) {
     return { ok: false, reason: { kind: 'revoked' } };
   }
-  if (new Date(row.expires_at).getTime() < Date.now()) {
+  if (new Date(row.expiresAt).getTime() < Date.now()) {
     return { ok: false, reason: { kind: 'expired' } };
   }
 
-  const { data: files, error: filesError } = await supabase
-    .from('files')
-    .select('file_key')
-    .eq('user_id', row.user_id)
-    .eq('book_hash', row.book_hash)
-    .is('deleted_at', null);
-  if (filesError) {
-    return { ok: false, reason: { kind: 'lookup_failed', detail: filesError.message } };
+  let fileRows: Array<{ fileKey: string }>;
+  try {
+    fileRows = await tx
+      .select({ fileKey: files.fileKey })
+      .from(files)
+      .where(
+        and(
+          eq(files.userId, row.userId),
+          eq(files.bookHash, row.bookHash),
+          isNull(files.deletedAt),
+        ),
+      );
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'unknown';
+    return { ok: false, reason: { kind: 'lookup_failed', detail: message } };
   }
 
-  const bookFile = files?.find((f) => !isCoverKey(f.file_key));
+  const bookFile = fileRows.find((f) => !isCoverKey(f.fileKey));
   if (!bookFile) {
     return { ok: false, reason: { kind: 'source_deleted' } };
   }
-  const coverFile = files?.find((f) => isCoverKey(f.file_key));
+  const coverFile = fileRows.find((f) => isCoverKey(f.fileKey));
 
   return {
     ok: true,
     share: {
       id: row.id,
-      userId: row.user_id,
-      bookHash: row.book_hash,
-      bookTitle: row.book_title,
-      bookAuthor: row.book_author,
-      bookFormat: row.book_format,
-      bookSize: row.book_size,
+      userId: row.userId,
+      bookHash: row.bookHash,
+      bookTitle: row.bookTitle,
+      bookAuthor: row.bookAuthor,
+      bookFormat: row.bookFormat,
+      bookSize: row.bookSize,
       cfi: row.cfi,
-      expiresAt: row.expires_at,
-      revokedAt: row.revoked_at,
-      downloadCount: row.download_count,
-      createdAt: row.created_at,
-      bookFileKey: bookFile.file_key,
-      coverFileKey: coverFile?.file_key ?? null,
+      expiresAt: toIso(row.expiresAt) ?? '',
+      revokedAt: toIso(row.revokedAt),
+      downloadCount: row.downloadCount,
+      createdAt: toIso(row.createdAt) ?? '',
+      bookFileKey: bookFile.fileKey,
+      coverFileKey: coverFile?.fileKey ?? null,
     },
   };
 };

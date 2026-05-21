@@ -6,14 +6,14 @@ import { useTranslation } from './useTranslation';
 
 export const useQuotaStats = (briefName = false) => {
   const _ = useTranslation();
-  const { token, user } = useAuth();
+  const { user } = useAuth();
   const [quotas, setQuotas] = useState<QuotaType[]>([]);
   const [userProfilePlan, setUserProfilePlan] = useState<UserPlan | undefined>(undefined);
 
   useEffect(() => {
-    if (!user || !token) return;
+    if (!user) return;
 
-    const storagPlan = getStoragePlanData(token);
+    const storagPlan = getStoragePlanData(user);
     const inGB = storagPlan.quota > 1e9;
     const storageQuota: QuotaType = {
       name: briefName ? _('Storage') : _('Cloud Sync Storage'),
@@ -24,7 +24,7 @@ export const useQuotaStats = (briefName = false) => {
       total: Math.round((storagPlan.quota / 1024 / 1024 / (inGB ? 1024 : 1)) * 10) / 10,
       unit: inGB ? 'GB' : 'MB',
     };
-    const translationPlan = getTranslationPlanData(token);
+    const translationPlan = getTranslationPlanData(user);
     const now = new Date();
     const translationResetAt = Date.UTC(
       now.getUTCFullYear(),
@@ -41,10 +41,10 @@ export const useQuotaStats = (briefName = false) => {
       unit: 'K',
       resetAt: translationResetAt,
     };
-    setUserProfilePlan(getUserProfilePlan(token));
+    setUserProfilePlan(getUserProfilePlan(user));
     setQuotas([storageQuota, translationQuota]);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [token]);
+  }, [user]);
 
   return {
     quotas,

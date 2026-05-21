@@ -2,7 +2,7 @@ import { getAPIBaseUrl } from '@/services/environment';
 import { stubTranslation as _ } from '@/utils/misc';
 import { ErrorCodes, type TranslationProvider } from '../types';
 import type { UserPlan } from '@/types/quota';
-import { getSubscriptionPlan, getTranslationQuota } from '@/utils/access';
+import { getTranslationQuota } from '@/utils/access';
 import { normalizeToShortLang } from '@/utils/lang';
 import { getStringProperty, isRecord } from '@/utils/unknown';
 import { saveDailyUsage } from '../utils';
@@ -37,9 +37,14 @@ export const deeplProvider: TranslationProvider = {
       'Content-Type': 'application/json',
     };
 
-    let userPlan: UserPlan = 'free';
+    // Plan-aware quota math is now enforced exclusively by the server
+    // (apps/readest-app/src/app/api/deepl/translate.ts reads
+    // `session.user.plan` from better-auth). Client-side we treat every
+    // signed-in user as having the free-tier soft cap so the local
+    // saveDailyUsage write rate-limits politely; the server returns the
+    // authoritative `daily_usage` on every response anyway.
+    const userPlan: UserPlan = 'free';
     if (token) {
-      userPlan = getSubscriptionPlan(token);
       headers['Authorization'] = `Bearer ${token}`;
     }
 

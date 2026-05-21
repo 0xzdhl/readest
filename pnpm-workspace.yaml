@@ -3,7 +3,9 @@ packages:
   - packages/foliate-js
 
 allowBuilds:
+  '@prisma/client': false
   '@swc/core': true
+  better-sqlite3: true
   core-js: true
   edgedriver: true
   esbuild: true

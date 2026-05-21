@@ -61,9 +61,39 @@ For Windows targets, “Build Tools for Visual Studio 2022” (or a higher editi
 
 #### 4. Build for Development
 
+##### Tauri desktop
+
 ```bash
 pnpm tauri dev
 ```
+
+##### Web app
+
+The web app needs Postgres (with the `readest_app` role + RLS policies),
+S3-compatible storage (MinIO), and SMTP (Mailpit). `docker/compose.dev.yaml`
+brings up all three plus a one-shot drizzle migrator:
+
+```bash
+# 1. Env files — fill BETTER_AUTH_SECRET with `openssl rand -hex 32`
+cp docker/.env.example docker/.env
+cp apps/readest-app/.env.web.example apps/readest-app/.env.web
+
+# 2. Start infra (first run builds the migrator image; ~3–5 min)
+docker compose -f docker/compose.dev.yaml --env-file docker/.env up -d
+
+# 3. Run the dev server
+pnpm dev-web
+```
+
+App: http://localhost:5173 · Mailpit: http://localhost:8025 · MinIO console: http://localhost:9001.
+Re-run migrations with `docker compose -f docker/compose.dev.yaml up migrate` (cached image) or `pnpm db:migrate` on the host.
+
+##### VSCode devcontainer (alternative)
+
+`.devcontainer/` includes the infra plus a Node 22 + pnpm + psql `app`
+container. Command palette → **Dev Containers: Reopen in Container**;
+then run `pnpm dev-web` from the integrated terminal (port 5173 is
+auto-forwarded).
 
 #### 5. Build for Production
 
@@ -81,12 +111,17 @@ This project is a monorepo. The code for the `readest-app` is in the `apps/reade
 | ---------------- | -------------------------------------------------- |
 | `pnpm dev-web`   | Starts the development server for the web app only |
 | `pnpm build-web` | Builds the web app                                 |
+| `pnpm db:migrate`| Applies drizzle migrations against `DATABASE_URL`  |
+| `pnpm test`      | Runs the vitest unit suite                         |
+| `pnpm lint`      | Biome + tsgo typecheck                             |
 
-Recommended Visual Studio Code plugins for development:
+Recommended Visual Studio Code plugins for development (the devcontainer
+installs these automatically):
 
-- JavaScript and TypeScript Nightly (ms-vscode.vscode-typescript-next)
-- VS Code ESLint extension (dbaeumer.vscode-eslint)
-- Prettier - Code formatter (esbenp.prettier-vscode)
+- Biome (biomejs.biome) — formatter + linter (project uses Biome, not Prettier/ESLint)
+- Tailwind CSS IntelliSense (bradlc.vscode-tailwindcss)
+- Vitest (vitest.explorer)
+- Docker (ms-azuretools.vscode-docker)
 - rust-analyzer (rust-lang.rust-analyzer) (for Tauri development only)
 
 ### When you're done
