@@ -182,7 +182,6 @@
     "zustand": "5.0.10"
   },
   "devDependencies": {
-    "@better-auth/cli": "^1.4.21",
     "@biomejs/biome": "^2.4.15",
     "@tailwindcss/typography": "^0.5.16",
     "@tauri-apps/cli": "2.10.1",

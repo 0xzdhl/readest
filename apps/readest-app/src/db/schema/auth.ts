@@ -1,3 +1,6 @@
+// Regenerate with:
+//   pnpm dlx @better-auth/cli@latest generate --config ./src/auth/server.ts --output ./src/db/schema/auth.ts -y
+// (cli is not a devDep — it transitively pins an older better-auth that breaks the runtime build.)
 import { pgTable, text, timestamp, boolean, integer, index } from 'drizzle-orm/pg-core';
 
 export const user = pgTable('user', {
