@@ -103,9 +103,9 @@ vi.mock('@/app/auth/utils/nativeAuth', () => ({
   extractBearerFromCallback: vi.fn(),
 }));
 
-import { AuthPage } from '@/app/auth';
+import { AuthComponent } from "@/components/Auth";
 
-describe('AuthPage (better-auth)', () => {
+describe('AuthComponent (better-auth)', () => {
   beforeEach(() => {
     signInEmailMock.mockReset();
     signUpEmailMock.mockReset();
@@ -122,7 +122,7 @@ describe('AuthPage (better-auth)', () => {
 
   it('on web, shows the magic-link button', () => {
     isTauriMock.mockReturnValue(false);
-    render(<AuthPage />);
+    render(<AuthComponent />);
     // Button text differs by mode, but the magic-link CTA should be
     // present somewhere in the document regardless.
     expect(screen.queryByRole('button', { name: /Magic Link/i })).not.toBeNull();
@@ -130,14 +130,14 @@ describe('AuthPage (better-auth)', () => {
 
   it('on Tauri, hides the magic-link button (web-only feature)', () => {
     isTauriMock.mockReturnValue(true);
-    render(<AuthPage />);
+    render(<AuthComponent />);
     expect(screen.queryByRole('button', { name: /Magic Link/i })).toBeNull();
   });
 
   it('calls authClient.signIn.email when the email form is submitted in sign-in mode', async () => {
     isTauriMock.mockReturnValue(false);
     signInEmailMock.mockResolvedValue({ data: { user: { id: 'u1' } }, error: null });
-    render(<AuthPage />);
+    render(<AuthComponent />);
     fireEvent.change(screen.getByLabelText(/Email address/i), {
       target: { value: 'a@b.com' },
     });
@@ -156,7 +156,7 @@ describe('AuthPage (better-auth)', () => {
   it('calls authClient.signIn.social with provider=google when the Google button is clicked', async () => {
     isTauriMock.mockReturnValue(false);
     signInSocialMock.mockResolvedValue({ data: {}, error: null });
-    render(<AuthPage />);
+    render(<AuthComponent />);
     fireEvent.click(screen.getByRole('button', { name: /Sign in with Google/i }));
     await waitFor(() => {
       expect(signInSocialMock).toHaveBeenCalled();
