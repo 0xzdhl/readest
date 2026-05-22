@@ -1,13 +1,13 @@
 import clsx from 'clsx';
-import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { PiCheckCircle, PiWarningCircle, PiArrowsClockwise, PiSpinner } from 'react-icons/pi';
-
-import { useTranslation } from '@/hooks/useTranslation';
-import { useSettingsStore } from '@/store/settingsStore';
+import type React from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { PiArrowsClockwise, PiCheckCircle, PiSpinner, PiWarningCircle } from 'react-icons/pi';
 import { useEnv } from '@/context/EnvContext';
-import { getAIProvider } from '@/services/ai/providers';
+import { useTranslation } from '@/hooks/useTranslation';
 import { DEFAULT_AI_SETTINGS, GATEWAY_MODELS, MODEL_PRICING } from '@/services/ai/constants';
-import type { AISettings, AIProviderName } from '@/services/ai/types';
+import { getAIProvider } from '@/services/ai/providers';
+import type { AIProviderName, AISettings } from '@/services/ai/types';
+import { useSettingsStore } from '@/store/settingsStore';
 import { isRecord } from '@/utils/unknown';
 import { BoxedList, SettingLabel, SettingsRow, SettingsSwitchRow } from './primitives';
 

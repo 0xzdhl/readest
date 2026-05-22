@@ -1,6 +1,10 @@
 import clsx from 'clsx';
-import React, { useEffect, useState } from 'react';
-
+import type React from 'react';
+import { useEffect, useState } from 'react';
+import { useEnv } from '@/context/EnvContext';
+import { saveViewSettings } from '@/helpers/settings';
+import { useResetViewSettings } from '@/hooks/useResetSettings';
+import { useTranslation } from '@/hooks/useTranslation';
 import {
   CJK_EXCLUDE_PATTENS,
   CJK_FONTS_PATTENS,
@@ -15,22 +19,18 @@ import {
   SERIF_FONTS,
   WINDOWS_FONTS,
 } from '@/services/constants';
-import { useEnv } from '@/context/EnvContext';
-import { useReaderStore } from '@/store/readerStore';
-import { useTranslation } from '@/hooks/useTranslation';
-import { useSettingsStore } from '@/store/settingsStore';
+import { isTauriAppPlatform } from '@/services/environment';
 import { useCustomFontStore } from '@/store/customFontStore';
-import { getOSPlatform, isCJKEnv } from '@/utils/misc';
+import { useReaderStore } from '@/store/readerStore';
+import { useSettingsStore } from '@/store/settingsStore';
 import { getSysFontsList } from '@/utils/bridge';
 import { isCJKStr } from '@/utils/lang';
-import { isTauriAppPlatform } from '@/services/environment';
-import { useResetViewSettings } from '@/hooks/useResetSettings';
-import { saveViewSettings } from '@/helpers/settings';
-import type { SettingsPanelPanelProp } from './SettingsDialog';
-import { BoxedList, NavigationRow, SettingLabel, SettingsRow } from './primitives';
-import NumberInput from './NumberInput';
-import FontDropdown from './FontDropDown';
+import { getOSPlatform, isCJKEnv } from '@/utils/misc';
 import CustomFonts from './CustomFonts';
+import FontDropdown from './FontDropDown';
+import NumberInput from './NumberInput';
+import { BoxedList, NavigationRow, SettingLabel, SettingsRow } from './primitives';
+import type { SettingsPanelPanelProp } from './SettingsDialog';
 
 const genCJKFontsList = (sysFonts: string[]) => {
   return Array.from(new Set([...sysFonts, ...CJK_SERIF_FONTS, ...CJK_SANS_SERIF_FONTS]))

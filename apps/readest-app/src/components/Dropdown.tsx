@@ -1,9 +1,9 @@
 import clsx from 'clsx';
-import React, { useState, isValidElement, useRef, useId } from 'react';
 import type { ReactElement, ReactNode } from 'react';
+import React, { isValidElement, useId, useRef, useState } from 'react';
 import { useDropdownContext } from '@/context/DropdownContext';
-import { Overlay } from './Overlay';
 import MenuItem from './MenuItem';
+import { Overlay } from './Overlay';
 
 interface DropdownProps {
   label: string;

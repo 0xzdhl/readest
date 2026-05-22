@@ -1,19 +1,20 @@
-import React, { useEffect, useState } from 'react';
+import type React from 'react';
+import { useEffect, useState } from 'react';
+import { annotationToolQuickActions } from '@/app/reader/components/annotator/AnnotationTools';
 import { useEnv } from '@/context/EnvContext';
-import { useReaderStore } from '@/store/readerStore';
-import { useDeviceControlStore } from '@/store/deviceStore';
+import { saveSysSettings, saveViewSettings } from '@/helpers/settings';
+import { useEinkMode } from '@/hooks/useEinkMode';
+import { useResetViewSettings } from '@/hooks/useResetSettings';
 import { useTranslation } from '@/hooks/useTranslation';
 import { useBookDataStore } from '@/store/bookDataStore';
+import { useDeviceControlStore } from '@/store/deviceStore';
+import { useReaderStore } from '@/store/readerStore';
 import { useSettingsStore } from '@/store/settingsStore';
-import { useResetViewSettings } from '@/hooks/useResetSettings';
-import { useEinkMode } from '@/hooks/useEinkMode';
-import { getStyles } from '@/utils/style';
 import { getMaxInlineSize } from '@/utils/config';
-import { saveSysSettings, saveViewSettings } from '@/helpers/settings';
-import type { SettingsPanelPanelProp } from './SettingsDialog';
-import { annotationToolQuickActions } from '@/app/reader/components/annotator/AnnotationTools';
-import { BoxedList, SettingsRow, SettingsSelect, SettingsSwitchRow } from './primitives';
+import { getStyles } from '@/utils/style';
 import NumberInput from './NumberInput';
+import { BoxedList, SettingsRow, SettingsSelect, SettingsSwitchRow } from './primitives';
+import type { SettingsPanelPanelProp } from './SettingsDialog';
 
 const ControlPanel: React.FC<SettingsPanelPanelProp> = ({ bookKey, onRegisterReset }) => {
   const _ = useTranslation();

@@ -1,15 +1,15 @@
 import clsx from 'clsx';
 import type React from 'react';
 import { MdCheck } from 'react-icons/md';
-import { useEnv } from '@/context/EnvContext';
-import { useSettingsStore } from '@/store/settingsStore';
-import { useTranslation } from '@/hooks/useTranslation';
-import { useReaderStore } from '@/store/readerStore';
-import { useCustomFontStore } from '@/store/customFontStore';
-import { saveViewSettings } from '@/helpers/settings';
-import type { SettingsPanelType } from './SettingsDialog';
 import Menu from '@/components/Menu';
 import MenuItem from '@/components/MenuItem';
+import { useEnv } from '@/context/EnvContext';
+import { saveViewSettings } from '@/helpers/settings';
+import { useTranslation } from '@/hooks/useTranslation';
+import { useCustomFontStore } from '@/store/customFontStore';
+import { useReaderStore } from '@/store/readerStore';
+import { useSettingsStore } from '@/store/settingsStore';
+import type { SettingsPanelType } from './SettingsDialog';
 
 interface DialogMenuProps {
   bookKey: string;

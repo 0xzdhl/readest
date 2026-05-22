@@ -1,16 +1,17 @@
 import clsx from 'clsx';
-import React, { useEffect, useState } from 'react';
+import type React from 'react';
+import { useEffect, useState } from 'react';
 import { MdChevronRight } from 'react-icons/md';
-import { RiBookOpenLine, RiRssLine, RiBookReadLine, RiBook3Line } from 'react-icons/ri';
-import { useTranslation } from '@/hooks/useTranslation';
-import { useSettingsStore } from '@/store/settingsStore';
-import { useCustomOPDSStore } from '@/store/customOPDSStore';
+import { RiBook3Line, RiBookOpenLine, RiBookReadLine, RiRssLine } from 'react-icons/ri';
 import { CatalogManager } from '@/app/opds/components/CatalogManager';
+import { useTranslation } from '@/hooks/useTranslation';
+import { useCustomOPDSStore } from '@/store/customOPDSStore';
+import { useSettingsStore } from '@/store/settingsStore';
+import HardcoverForm from './integrations/HardcoverForm';
 import KOSyncForm from './integrations/KOSyncForm';
 import ReadwiseForm from './integrations/ReadwiseForm';
-import HardcoverForm from './integrations/HardcoverForm';
-import SubPageHeader from './SubPageHeader';
 import { SectionTitle, SettingLabel } from './primitives';
+import SubPageHeader from './SubPageHeader';
 
 type SubPage = 'kosync' | 'readwise' | 'hardcover' | 'opds' | null;
 
