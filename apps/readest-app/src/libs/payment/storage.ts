@@ -1,7 +1,7 @@
 import { and, eq, inArray, sql } from 'drizzle-orm';
+import type { db } from '@/db/client';
 import { payments, user } from '@/db/schema';
 import { COMPLETED_PAYMENT_STATUSES } from '@/types/payment';
-import type { db } from '@/db/client';
 
 type TxLike = Parameters<Parameters<typeof db.transaction>[0]>[0];
 
@@ -19,9 +19,7 @@ export const updateUserStorage = async (tx: TxLike, userId: string): Promise<num
   const rows = await tx
     .select({ storageGb: payments.storageGb })
     .from(payments)
-    .where(
-      and(eq(payments.userId, userId), inArray(payments.status, COMPLETED_PAYMENT_STATUSES)),
-    );
+    .where(and(eq(payments.userId, userId), inArray(payments.status, COMPLETED_PAYMENT_STATUSES)));
 
   const totalStorageGB = rows.reduce((sum, row) => sum + (row.storageGb ?? 0), 0);
   const purchasedBytes = totalStorageGB * 1024 * 1024 * 1024;

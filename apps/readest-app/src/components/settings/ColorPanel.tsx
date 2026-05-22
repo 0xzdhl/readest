@@ -1,4 +1,19 @@
-import React, { useState, useEffect } from 'react';
+import clsx from 'clsx';
+import type React from 'react';
+import { useEffect, useState } from 'react';
+import { useEnv } from '@/context/EnvContext';
+import { saveViewSettings } from '@/helpers/settings';
+import { useFileSelector } from '@/hooks/useFileSelector';
+import { useResetViewSettings } from '@/hooks/useResetSettings';
+import { useTranslation } from '@/hooks/useTranslation';
+import { HIGHLIGHT_COLOR_HEX } from '@/services/constants';
+import { queueReplicaBinaryUpload } from '@/services/sync/replicaBinaryUpload';
+import { useAtmosphereStore } from '@/store/atmosphereStore';
+import { useCustomTextureStore } from '@/store/customTextureStore';
+import { useReaderStore } from '@/store/readerStore';
+import { useSettingsStore } from '@/store/settingsStore';
+import { useThemeStore } from '@/store/themeStore';
+import { PREDEFINED_TEXTURES } from '@/styles/textures';
 import {
   applyCustomTheme,
   type CustomTheme,
@@ -7,31 +22,17 @@ import {
   type Theme,
   themes,
 } from '@/styles/themes';
-import { useEnv } from '@/context/EnvContext';
-import { useThemeStore } from '@/store/themeStore';
-import { useReaderStore } from '@/store/readerStore';
-import { useTranslation } from '@/hooks/useTranslation';
-import { useSettingsStore } from '@/store/settingsStore';
-import { useResetViewSettings } from '@/hooks/useResetSettings';
-import { useCustomTextureStore } from '@/store/customTextureStore';
-import { queueReplicaBinaryUpload } from '@/services/sync/replicaBinaryUpload';
-import { saveViewSettings } from '@/helpers/settings';
-import { manageSyntaxHighlighting } from '@/utils/highlightjs';
-import type { SettingsPanelPanelProp } from './SettingsDialog';
-import { useFileSelector } from '@/hooks/useFileSelector';
-import { PREDEFINED_TEXTURES } from '@/styles/textures';
-import { useAtmosphereStore } from '@/store/atmosphereStore';
 import type { DefaultHighlightColor, HighlightColor, UserHighlightColor } from '@/types/book';
-import clsx from 'clsx';
-import { SettingLabel } from './primitives';
-import { HIGHLIGHT_COLOR_HEX } from '@/services/constants';
+import { manageSyntaxHighlighting } from '@/utils/highlightjs';
+import BackgroundTextureSelector from './color/BackgroundTextureSelector';
+import CodeHighlightingSettings from './color/CodeHighlightingSettings';
+import HighlightColorsEditor from './color/HighlightColorsEditor';
+import ReadingRulerSettings from './color/ReadingRulerSettings';
+import ThemeColorSelector from './color/ThemeColorSelector';
 import ThemeEditor from './color/ThemeEditor';
 import ThemeModeSelector from './color/ThemeModeSelector';
-import ThemeColorSelector from './color/ThemeColorSelector';
-import BackgroundTextureSelector from './color/BackgroundTextureSelector';
-import HighlightColorsEditor from './color/HighlightColorsEditor';
-import CodeHighlightingSettings from './color/CodeHighlightingSettings';
-import ReadingRulerSettings from './color/ReadingRulerSettings';
+import { SettingLabel } from './primitives';
+import type { SettingsPanelPanelProp } from './SettingsDialog';
 
 const ColorPanel: React.FC<SettingsPanelPanelProp> = ({ bookKey, onRegisterReset }) => {
   const _ = useTranslation();

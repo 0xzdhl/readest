@@ -1,6 +1,6 @@
 import type { AppService } from '@/types/system';
-import { READEST_NODE_BASE_URL, READEST_WEB_BASE_URL } from './constants';
 import { readPublicEnv } from '@/utils/publicEnv';
+import { READEST_NODE_BASE_URL, READEST_WEB_BASE_URL } from './constants';
 
 declare global {
   interface Window {

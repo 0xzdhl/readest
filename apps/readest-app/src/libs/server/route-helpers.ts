@@ -1,10 +1,10 @@
 import type { Session } from '@/auth/server';
 import type { db } from '@/db/client';
 import { withBypassRls, withRls } from '@/db/rls';
-import { resolveSessionOr401 } from './auth-fn';
 import { DEFAULT_STORAGE_QUOTA } from '@/services/constants';
 import type { UserPlan } from '@/types/quota';
 import { readPublicEnv } from '@/utils/publicEnv';
+import { resolveSessionOr401 } from './auth-fn';
 
 /**
  * Phase 5 of the supabase→better-auth migration. File-route HTTP handlers
@@ -149,8 +149,7 @@ export function getStoragePlanData(user: StoragePlanUserFields): {
   const usage = user.storageUsageBytes ?? 0;
   const purchasedQuota = user.storagePurchasedBytes ?? 0;
   const fixedQuota = Number.parseInt(readPublicEnv('VITE_STORAGE_FIXED_QUOTA') || '0', 10);
-  const planQuota =
-    fixedQuota || DEFAULT_STORAGE_QUOTA[plan] || DEFAULT_STORAGE_QUOTA['free'];
+  const planQuota = fixedQuota || DEFAULT_STORAGE_QUOTA[plan] || DEFAULT_STORAGE_QUOTA['free'];
   const quota = planQuota + purchasedQuota;
   return { plan, usage, quota };
 }

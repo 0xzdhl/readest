@@ -1,5 +1,5 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { cleanup, render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 const routerStub = { navigate: vi.fn(), history: { back: vi.fn() } };
 const changeEmailMock = vi.fn();
@@ -24,9 +24,9 @@ vi.mock('@/store/themeStore', () => ({
   useThemeStore: () => ({ isDarkMode: false }),
 }));
 
-import { UpdateEmailPage } from '@/app/auth/update';
+import { UpdateEmail } from '@/components/settings/updateEmail';
 
-describe('UpdateEmailPage (better-auth)', () => {
+describe('UpdateEmail (better-auth)', () => {
   beforeEach(() => {
     changeEmailMock.mockReset();
     routerStub.navigate.mockReset();
@@ -39,7 +39,7 @@ describe('UpdateEmailPage (better-auth)', () => {
   it('calls authClient.changeEmail with the new email', async () => {
     useAuthMock.mockReturnValue({ user: { id: 'u1', email: 'old@x.com' } });
     changeEmailMock.mockResolvedValue({ data: { status: true }, error: null });
-    render(<UpdateEmailPage />);
+    render(<UpdateEmail />);
     fireEvent.change(screen.getByLabelText(/New Email/i), {
       target: { value: 'new@x.com' },
     });
@@ -53,7 +53,7 @@ describe('UpdateEmailPage (better-auth)', () => {
 
   it('redirects to /auth when no user is signed in', () => {
     useAuthMock.mockReturnValue({ user: null });
-    render(<UpdateEmailPage />);
+    render(<UpdateEmail />);
     expect(routerStub.navigate).toHaveBeenCalledWith({ to: '/auth' });
   });
 });

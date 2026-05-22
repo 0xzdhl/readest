@@ -11,10 +11,10 @@ import {
   sql,
 } from 'drizzle-orm';
 import type { PgTable } from 'drizzle-orm/pg-core';
-import { books, bookConfigs, bookNotes } from '@/db/schema';
-import { resolveSessionOr401 } from '@/libs/server/auth-fn';
+import type { db } from '@/db/client';
 import { withRls } from '@/db/rls';
-import { db } from '@/db/client';
+import { bookConfigs, bookNotes, books } from '@/db/schema';
+import { resolveSessionOr401 } from '@/libs/server/auth-fn';
 import type { SyncData, SyncType } from '@/libs/sync';
 import type { DBBook, DBBookConfig, DBBookNote } from '@/types/records';
 import {
@@ -195,10 +195,7 @@ function lwwSetWhere<TTable extends PgTable>(table: TTable): SQL {
   );
 }
 
-export async function handleGet(
-  request: Request,
-  ctx: SyncHandlerContext,
-): Promise<Response> {
+export async function handleGet(request: Request, ctx: SyncHandlerContext): Promise<Response> {
   const { tx } = ctx;
   const { searchParams } = new URL(request.url);
   const sinceParam = searchParams.get('since');
@@ -218,18 +215,15 @@ export async function handleGet(
     // Per-table query builder. RLS adds the implicit `user_id = $current`
     // predicate; we only contribute the freshness filter and optional
     // book/meta filters (matching the original supabase query semantics).
-    const buildWhere = <
-      TTable extends typeof books | typeof bookConfigs | typeof bookNotes,
-    >(table: TTable): SQL | undefined => {
+    const buildWhere = <TTable extends typeof books | typeof bookConfigs | typeof bookNotes>(
+      table: TTable,
+    ): SQL | undefined => {
       const freshness = or(gt(table.updatedAt, since), gt(table.deletedAt, since));
       // Original behaviour: when BOTH `book` and `meta_hash` are present the
       // route OR'd them ("either match" — used to fetch a book and any
       // duplicate by metadata in one shot); when only one was present, AND'd.
       if (bookParam && metaHashParam) {
-        return and(
-          or(eq(table.bookHash, bookParam), eq(table.metaHash, metaHashParam)),
-          freshness,
-        );
+        return and(or(eq(table.bookHash, bookParam), eq(table.metaHash, metaHashParam)), freshness);
       }
       if (bookParam) {
         return and(eq(table.bookHash, bookParam), freshness);
@@ -292,14 +286,10 @@ export async function handleGet(
   }
 }
 
-export async function handlePost(
-  request: Request,
-  ctx: SyncHandlerContext,
-): Promise<Response> {
+export async function handlePost(request: Request, ctx: SyncHandlerContext): Promise<Response> {
   const { user, tx } = ctx;
   const body = (await request.json()) as SyncData;
-  const { books: booksPayload = [], configs: configsPayload = [], notes: notesPayload = [] } =
-    body;
+  const { books: booksPayload = [], configs: configsPayload = [], notes: notesPayload = [] } = body;
 
   try {
     // Upsert helpers — one per table because the conflict target / column
@@ -347,7 +337,12 @@ export async function handlePost(
       outBooks = await tx
         .select()
         .from(books)
-        .where(inArray(books.bookHash, rows.map((r) => r.bookHash)));
+        .where(
+          inArray(
+            books.bookHash,
+            rows.map((r) => r.bookHash),
+          ),
+        );
     }
 
     let outConfigs: BookConfigsRow[] = [];
@@ -384,7 +379,12 @@ export async function handlePost(
       outConfigs = await tx
         .select()
         .from(bookConfigs)
-        .where(inArray(bookConfigs.bookHash, rows.map((r) => r.bookHash)));
+        .where(
+          inArray(
+            bookConfigs.bookHash,
+            rows.map((r) => r.bookHash),
+          ),
+        );
     }
 
     let outNotes: BookNotesRow[] = [];
@@ -420,14 +420,11 @@ export async function handlePost(
         });
       // Notes have a 3-column PK, so filter by (bookHash, id) pairs to
       // pick up exactly the incoming keys.
-      const noteKeys = rows.map((r) => and(
-        eq(bookNotes.bookHash, r.bookHash),
-        eq(bookNotes.id, r.id),
-      ));
+      const noteKeys = rows.map((r) =>
+        and(eq(bookNotes.bookHash, r.bookHash), eq(bookNotes.id, r.id)),
+      );
       const noteFilter = or(...noteKeys);
-      outNotes = noteFilter
-        ? await tx.select().from(bookNotes).where(noteFilter)
-        : [];
+      outNotes = noteFilter ? await tx.select().from(bookNotes).where(noteFilter) : [];
     }
 
     return Response.json(
@@ -457,9 +454,7 @@ async function runProtected(
 ): Promise<Response> {
   try {
     const session = await resolveSessionOr401(request.headers);
-    return withRls(session.user.id, (tx) =>
-      inner({ user: { id: session.user.id }, tx }),
-    );
+    return withRls(session.user.id, (tx) => inner({ user: { id: session.user.id }, tx }));
   } catch (e) {
     if (e instanceof Response) {
       // `resolveSessionOr401` throws a bare `Response('Unauthorized', 401)`.

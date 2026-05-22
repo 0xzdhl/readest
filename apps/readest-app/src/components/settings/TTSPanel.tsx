@@ -1,14 +1,15 @@
-import React, { useEffect, useState } from 'react';
+import type React from 'react';
+import { useEffect, useState } from 'react';
 import { useEnv } from '@/context/EnvContext';
-import { useReaderStore } from '@/store/readerStore';
-import { useSettingsStore } from '@/store/settingsStore';
+import { saveViewSettings } from '@/helpers/settings';
 import { useResetViewSettings } from '@/hooks/useResetSettings';
 import { useTranslation } from '@/hooks/useTranslation';
-import { saveViewSettings } from '@/helpers/settings';
-import type { SettingsPanelPanelProp } from './SettingsDialog';
 import type { TTSMediaMetadataMode } from '@/services/tts/types';
-import { BoxedList, SettingsRow, SettingsSelect } from './primitives';
+import { useReaderStore } from '@/store/readerStore';
+import { useSettingsStore } from '@/store/settingsStore';
 import TTSHighlightStyleEditor, { type TTSHighlightStyle } from './color/TTSHighlightStyleEditor';
+import { BoxedList, SettingsRow, SettingsSelect } from './primitives';
+import type { SettingsPanelPanelProp } from './SettingsDialog';
 
 const TTSPanel: React.FC<SettingsPanelPanelProp> = ({ bookKey, onRegisterReset }) => {
   const _ = useTranslation();

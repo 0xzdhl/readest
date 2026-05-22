@@ -1,22 +1,23 @@
 import clsx from 'clsx';
-import React, { useEffect, useState } from 'react';
-import { useEnv } from '@/context/EnvContext';
+import type React from 'react';
+import { useEffect, useState } from 'react';
 import { useAuth } from '@/context/AuthContext';
-import { useReaderStore } from '@/store/readerStore';
-import { useTranslation } from '@/hooks/useTranslation';
-import { useSettingsStore } from '@/store/settingsStore';
+import { useEnv } from '@/context/EnvContext';
 import { saveViewSettings } from '@/helpers/settings';
+import { useResetViewSettings } from '@/hooks/useResetSettings';
+import { useTranslation } from '@/hooks/useTranslation';
+import { TRANSLATED_LANGS, TRANSLATOR_LANGS } from '@/services/constants';
 import {
   getTranslatorDisplayLabel,
   getTranslators,
   isTranslatorAvailable,
 } from '@/services/translators';
-import { useResetViewSettings } from '@/hooks/useResetSettings';
-import { TRANSLATED_LANGS, TRANSLATOR_LANGS } from '@/services/constants';
+import { useReaderStore } from '@/store/readerStore';
+import { useSettingsStore } from '@/store/settingsStore';
 import type { ConvertChineseVariant } from '@/types/book';
-import type { SettingsPanelPanelProp } from './SettingsDialog';
-import { getDirFromLanguage } from '@/utils/rtl';
 import { isCJKEnv } from '@/utils/misc';
+import { getDirFromLanguage } from '@/utils/rtl';
+import CustomDictionaries from './CustomDictionaries';
 import {
   BoxedList,
   NavigationRow,
@@ -24,7 +25,7 @@ import {
   SettingsSelect,
   SettingsSwitchRow,
 } from './primitives';
-import CustomDictionaries from './CustomDictionaries';
+import type { SettingsPanelPanelProp } from './SettingsDialog';
 
 const LangPanel: React.FC<SettingsPanelPanelProp> = ({ bookKey, onRegisterReset }) => {
   const _ = useTranslation();

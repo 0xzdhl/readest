@@ -1,16 +1,9 @@
 import clsx from 'clsx';
-import React, { useEffect, useRef, useState } from 'react';
-import { useEnv } from '@/context/EnvContext';
-import { useSettingsStore } from '@/store/settingsStore';
-import { useResponsiveSize } from '@/hooks/useResponsiveSize';
-import { useTranslation } from '@/hooks/useTranslation';
-import { useCommandPalette } from '@/components/command-palette';
-import { RiFontSize, RiShareLine } from 'react-icons/ri';
-import { RiDashboardLine, RiTranslate } from 'react-icons/ri';
-import { VscSymbolColor } from 'react-icons/vsc';
-import { PiDotsThreeVerticalBold, PiRobot, PiSpeakerHigh } from 'react-icons/pi';
-import { LiaHandPointerSolid } from 'react-icons/lia';
+import type React from 'react';
+import { useEffect, useRef, useState } from 'react';
+import { FiSearch } from 'react-icons/fi';
 import { IoAccessibilityOutline } from 'react-icons/io5';
+import { LiaHandPointerSolid } from 'react-icons/lia';
 import {
   MdArrowBackIosNew,
   MdArrowForwardIos,
@@ -18,20 +11,27 @@ import {
   MdChevronRight,
   MdClose,
 } from 'react-icons/md';
-import { FiSearch } from 'react-icons/fi';
-import { getDirFromUILanguage } from '@/utils/rtl';
-import { getCommandPaletteShortcut } from '@/services/environment';
-import FontPanel from './FontPanel';
-import LayoutPanel from './LayoutPanel';
-import ColorPanel from './ColorPanel';
-import IntegrationsPanel from './IntegrationsPanel';
-import Dropdown from '@/components/Dropdown';
+import { PiDotsThreeVerticalBold, PiRobot, PiSpeakerHigh } from 'react-icons/pi';
+import { RiDashboardLine, RiFontSize, RiShareLine, RiTranslate } from 'react-icons/ri';
+import { VscSymbolColor } from 'react-icons/vsc';
+import { useCommandPalette } from '@/components/command-palette';
 import Dialog from '@/components/Dialog';
-import DialogMenu from './DialogMenu';
-import ControlPanel from './ControlPanel';
-import LangPanel from './LangPanel';
-import MiscPanel from './MiscPanel';
+import Dropdown from '@/components/Dropdown';
+import { useEnv } from '@/context/EnvContext';
+import { useResponsiveSize } from '@/hooks/useResponsiveSize';
+import { useTranslation } from '@/hooks/useTranslation';
+import { getCommandPaletteShortcut } from '@/services/environment';
+import { useSettingsStore } from '@/store/settingsStore';
+import { getDirFromUILanguage } from '@/utils/rtl';
 import AIPanel from './AIPanel';
+import ColorPanel from './ColorPanel';
+import ControlPanel from './ControlPanel';
+import DialogMenu from './DialogMenu';
+import FontPanel from './FontPanel';
+import IntegrationsPanel from './IntegrationsPanel';
+import LangPanel from './LangPanel';
+import LayoutPanel from './LayoutPanel';
+import MiscPanel from './MiscPanel';
 import TTSPanel from './TTSPanel';
 
 export type SettingsPanelType =

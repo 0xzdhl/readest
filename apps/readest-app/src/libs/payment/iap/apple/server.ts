@@ -2,13 +2,13 @@ import { eq, sql } from 'drizzle-orm';
 import type { db } from '@/db/client';
 import { appleIapSubscriptions, payments, user } from '@/db/schema';
 import { updateUserStorage } from '@/libs/payment/storage';
+import { IAPError, type VerifiedIAP } from '../types';
 import {
   isStoragePurchase,
   mapProductIdToProductName,
   mapProductIdToUserPlan,
   parseStorageGB,
 } from '../utils';
-import { IAPError, type VerifiedIAP } from '../types';
 import type { VerificationResult } from './verifier';
 
 type TxLike = Parameters<Parameters<typeof db.transaction>[0]>[0];
@@ -126,9 +126,7 @@ export async function createOrUpdatePayment(
       productId: purchase.productId,
       appleTransactionId: purchase.transactionId,
       appleOriginalTransactionId: purchase.originalTransactionId,
-      storageGb: isStoragePurchase(purchase.productId)
-        ? parseStorageGB(purchase.productId)
-        : 0,
+      storageGb: isStoragePurchase(purchase.productId) ? parseStorageGB(purchase.productId) : 0,
       status: purchase.status === 'active' ? 'completed' : 'failed',
       amount: purchase.amount,
       currency: purchase.currency,
@@ -199,4 +197,3 @@ export async function processPurchaseData(
 
   return purchase;
 }
-

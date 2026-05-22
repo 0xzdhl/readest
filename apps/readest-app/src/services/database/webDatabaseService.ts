@@ -1,8 +1,8 @@
 import type {
-  DatabaseService,
   DatabaseExecResult,
-  DatabaseRow,
   DatabaseOpts,
+  DatabaseRow,
+  DatabaseService,
 } from '@/types/database';
 
 interface WasmRunResult {

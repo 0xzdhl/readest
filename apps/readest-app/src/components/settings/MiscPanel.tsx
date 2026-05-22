@@ -1,16 +1,16 @@
 import clsx from 'clsx';
-import React, { useEffect, useRef, useState } from 'react';
-
+import type React from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useEnv } from '@/context/EnvContext';
+import { saveViewSettings } from '@/helpers/settings';
+import { useResetViewSettings } from '@/hooks/useResetSettings';
+import { useTranslation } from '@/hooks/useTranslation';
 import { useReaderStore } from '@/store/readerStore';
 import { useSettingsStore } from '@/store/settingsStore';
-import { useTranslation } from '@/hooks/useTranslation';
-import { useResetViewSettings } from '@/hooks/useResetSettings';
-import type { SettingsPanelPanelProp } from './SettingsDialog';
-import { saveViewSettings } from '@/helpers/settings';
-import { validateCSS, formatCSS } from '@/utils/css';
+import { formatCSS, validateCSS } from '@/utils/css';
 import { getStyles } from '@/utils/style';
 import { BoxedList } from './primitives';
+import type { SettingsPanelPanelProp } from './SettingsDialog';
 
 type CSSType = 'book' | 'reader';
 

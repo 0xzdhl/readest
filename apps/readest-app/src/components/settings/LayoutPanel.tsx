@@ -1,23 +1,27 @@
-import React, { useEffect, useState } from 'react';
-import { MdOutlineAutoMode, MdOutlineScreenRotation } from 'react-icons/md';
-import { MdOutlineTextRotationNone, MdTextRotateVertical } from 'react-icons/md';
+import type React from 'react';
+import { useEffect, useState } from 'react';
 import { IoPhoneLandscapeOutline, IoPhonePortraitOutline } from 'react-icons/io5';
+import {
+  MdOutlineAutoMode,
+  MdOutlineScreenRotation,
+  MdOutlineTextRotationNone,
+  MdTextRotateVertical,
+} from 'react-icons/md';
 import { TbTextDirectionRtl } from 'react-icons/tb';
-
 import { useEnv } from '@/context/EnvContext';
-import { useReaderStore } from '@/store/readerStore';
-import { useBookDataStore } from '@/store/bookDataStore';
-import { useSettingsStore } from '@/store/settingsStore';
-import { useTranslation } from '@/hooks/useTranslation';
+import { saveViewSettings } from '@/helpers/settings';
 import { useResetViewSettings } from '@/hooks/useResetSettings';
+import { useTranslation } from '@/hooks/useTranslation';
+import { MIGHT_BE_RTL_LANGS } from '@/services/constants';
+import { useBookDataStore } from '@/store/bookDataStore';
+import { useReaderStore } from '@/store/readerStore';
+import { useSettingsStore } from '@/store/settingsStore';
+import { getBookDirFromWritingMode, getBookLangCode } from '@/utils/book';
+import { lockScreenOrientation } from '@/utils/bridge';
+import { getMaxInlineSize } from '@/utils/config';
 import { isCJKEnv } from '@/utils/misc';
 import { getStyles } from '@/utils/style';
-import { getMaxInlineSize } from '@/utils/config';
-import { lockScreenOrientation } from '@/utils/bridge';
-import { saveViewSettings } from '@/helpers/settings';
-import { getBookDirFromWritingMode, getBookLangCode } from '@/utils/book';
-import { MIGHT_BE_RTL_LANGS } from '@/services/constants';
-import type { SettingsPanelPanelProp } from './SettingsDialog';
+import NumberInput from './NumberInput';
 import {
   BoxedList,
   SettingLabel,
@@ -25,7 +29,7 @@ import {
   SettingsSelect,
   SettingsSwitchRow,
 } from './primitives';
-import NumberInput from './NumberInput';
+import type { SettingsPanelPanelProp } from './SettingsDialog';
 
 const LayoutPanel: React.FC<SettingsPanelPanelProp> = ({ bookKey, onRegisterReset }) => {
   const _ = useTranslation();

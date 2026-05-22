@@ -1,7 +1,7 @@
 // Regenerate with:
 //   pnpm dlx @better-auth/cli@latest generate --config ./src/auth/server.ts --output ./src/db/schema/auth.ts -y
 // (cli is not a devDep — it transitively pins an older better-auth that breaks the runtime build.)
-import { pgTable, text, timestamp, boolean, integer, index } from 'drizzle-orm/pg-core';
+import { boolean, index, integer, pgTable, text, timestamp } from 'drizzle-orm/pg-core';
 
 export const user = pgTable('user', {
   id: text('id').primaryKey(),
@@ -10,7 +10,10 @@ export const user = pgTable('user', {
   emailVerified: boolean('email_verified').notNull(),
   image: text('image'),
   createdAt: timestamp('created_at').defaultNow().notNull(),
-  updatedAt: timestamp('updated_at').defaultNow().$onUpdate(() => new Date()).notNull(),
+  updatedAt: timestamp('updated_at')
+    .defaultNow()
+    .$onUpdate(() => new Date())
+    .notNull(),
   plan: text('plan').default('free').notNull(),
   storageUsageBytes: integer('storage_usage_bytes').default(0).notNull(),
   storagePurchasedBytes: integer('storage_purchased_bytes').default(0).notNull(),
@@ -23,7 +26,10 @@ export const session = pgTable(
     expiresAt: timestamp('expires_at').notNull(),
     token: text('token').notNull().unique(),
     createdAt: timestamp('created_at').defaultNow().notNull(),
-    updatedAt: timestamp('updated_at').defaultNow().$onUpdate(() => new Date()).notNull(),
+    updatedAt: timestamp('updated_at')
+      .defaultNow()
+      .$onUpdate(() => new Date())
+      .notNull(),
     ipAddress: text('ip_address'),
     userAgent: text('user_agent'),
     userId: text('user_id')
@@ -50,7 +56,10 @@ export const account = pgTable(
     scope: text('scope'),
     password: text('password'),
     createdAt: timestamp('created_at').defaultNow().notNull(),
-    updatedAt: timestamp('updated_at').defaultNow().$onUpdate(() => new Date()).notNull(),
+    updatedAt: timestamp('updated_at')
+      .defaultNow()
+      .$onUpdate(() => new Date())
+      .notNull(),
   },
   (table) => [index('account_user_id_idx').on(table.userId)],
 );
@@ -63,7 +72,10 @@ export const verification = pgTable(
     value: text('value').notNull(),
     expiresAt: timestamp('expires_at').notNull(),
     createdAt: timestamp('created_at').defaultNow().notNull(),
-    updatedAt: timestamp('updated_at').defaultNow().$onUpdate(() => new Date()).notNull(),
+    updatedAt: timestamp('updated_at')
+      .defaultNow()
+      .$onUpdate(() => new Date())
+      .notNull(),
   },
   (table) => [index('verification_identifier_idx').on(table.identifier)],
 );

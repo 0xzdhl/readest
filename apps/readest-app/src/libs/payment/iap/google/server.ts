@@ -2,13 +2,13 @@ import { eq, sql } from 'drizzle-orm';
 import type { db } from '@/db/client';
 import { googleIapSubscriptions, payments, user } from '@/db/schema';
 import { updateUserStorage } from '@/libs/payment/storage';
+import { IAPError, type VerifiedIAP } from '../types';
 import {
   isStoragePurchase,
   mapProductIdToProductName,
   mapProductIdToUserPlan,
   parseStorageGB,
 } from '../utils';
-import { IAPError, type VerifiedIAP } from '../types';
 import type {
   ProductPurchase,
   SubscriptionPurchase,
@@ -137,9 +137,7 @@ export async function createOrUpdatePayment(
       productId: purchase.productId,
       googleOrderId: purchase.orderId,
       googlePurchaseToken: purchase.purchaseToken,
-      storageGb: isStoragePurchase(purchase.productId)
-        ? parseStorageGB(purchase.productId)
-        : 0,
+      storageGb: isStoragePurchase(purchase.productId) ? parseStorageGB(purchase.productId) : 0,
       status: purchase.status === 'active' ? 'completed' : 'failed',
       amount: purchase.amount,
       currency: purchase.currency,

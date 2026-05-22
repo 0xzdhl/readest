@@ -1,18 +1,19 @@
 import clsx from 'clsx';
-import React, { useEffect, useRef, useState } from 'react';
-import type { ReactNode } from 'react';
 import { OverlayScrollbarsComponent } from 'overlayscrollbars-react';
+import type React from 'react';
+import type { ReactNode } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import 'overlayscrollbars/overlayscrollbars.css';
+import { impactFeedback } from '@tauri-apps/plugin-haptics';
 import { MdArrowBackIosNew, MdArrowForwardIos } from 'react-icons/md';
 import { useEnv } from '@/context/EnvContext';
 import { useDrag } from '@/hooks/useDrag';
-import { useThemeStore } from '@/store/themeStore';
+import { useResponsiveSize } from '@/hooks/useResponsiveSize';
 import { useTranslation } from '@/hooks/useTranslation';
 import { useDeviceControlStore } from '@/store/deviceStore';
-import { useResponsiveSize } from '@/hooks/useResponsiveSize';
-import { impactFeedback } from '@tauri-apps/plugin-haptics';
-import { getDirFromUILanguage } from '@/utils/rtl';
+import { useThemeStore } from '@/store/themeStore';
 import { eventDispatcher } from '@/utils/event';
+import { getDirFromUILanguage } from '@/utils/rtl';
 import { Overlay } from './Overlay';
 
 const VELOCITY_THRESHOLD = 0.5;
