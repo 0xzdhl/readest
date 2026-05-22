@@ -1,5 +1,5 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { cleanup, render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 const routerStub = { navigate: vi.fn(), history: { back: vi.fn() } };
 const resetPasswordMock = vi.fn();
@@ -20,9 +20,9 @@ vi.mock('@/store/themeStore', () => ({
   useThemeStore: () => ({ isDarkMode: false }),
 }));
 
-import { ResetPasswordPage } from '@/app/auth/recovery';
+import { ResetPassword } from '@/components/settings/ResetPassword';
 
-describe('ResetPasswordPage (better-auth)', () => {
+describe('ResetPassword (better-auth)', () => {
   beforeEach(() => {
     resetPasswordMock.mockReset();
     routerStub.navigate.mockReset();
@@ -38,7 +38,7 @@ describe('ResetPasswordPage (better-auth)', () => {
 
   it('calls authClient.resetPassword with the new password and the URL token', async () => {
     resetPasswordMock.mockResolvedValue({ data: { status: true }, error: null });
-    render(<ResetPasswordPage />);
+    render(<ResetPassword />);
     fireEvent.change(screen.getByLabelText(/New Password/i), {
       target: { value: 'new-pw-1234' },
     });

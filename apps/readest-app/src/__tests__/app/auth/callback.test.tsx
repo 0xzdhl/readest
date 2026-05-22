@@ -17,7 +17,7 @@ vi.mock('@/services/environment', () => ({
   isTauriAppPlatform: () => false,
 }));
 
-import { AuthCallback } from '@/app/auth/callback';
+import { AuthCallback } from "@/components/AuthCallback";
 
 describe('AuthCallback (better-auth)', () => {
   beforeEach(() => {

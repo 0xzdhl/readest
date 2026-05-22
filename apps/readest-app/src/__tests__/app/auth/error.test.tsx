@@ -1,5 +1,5 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { cleanup, render, screen } from '@testing-library/react';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 const routerStub = { navigate: vi.fn() };
 
@@ -9,7 +9,7 @@ vi.mock('@tanstack/react-router', () => ({
 }));
 vi.mock('@/hooks/useTheme', () => ({ useTheme: () => undefined }));
 
-import { AuthErrorPage } from '@/app/auth/error';
+import { AuthError } from '@/components/AuthError';
 
 describe('AuthErrorPage (better-auth)', () => {
   beforeEach(() => {
@@ -26,7 +26,7 @@ describe('AuthErrorPage (better-auth)', () => {
   });
 
   it('renders the error_description from the URL when present', () => {
-    render(<AuthErrorPage />);
+    render(<AuthError />);
     expect(screen.getByText(/Bad code/)).toBeTruthy();
   });
 
@@ -35,12 +35,12 @@ describe('AuthErrorPage (better-auth)', () => {
       writable: true,
       value: new URL('https://app.example.com/auth/error') as unknown as Location,
     });
-    render(<AuthErrorPage />);
+    render(<AuthError />);
     expect(screen.getByText(/redirected to the login page/i)).toBeTruthy();
   });
 
   it('exposes a "Go to Login" button that navigates to /auth', () => {
-    render(<AuthErrorPage />);
+    render(<AuthError />);
     const btn = screen.getByRole('button', { name: /Go to Login/i });
     btn.click();
     expect(routerStub.navigate).toHaveBeenCalledWith({ to: '/auth' });
