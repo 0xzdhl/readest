@@ -1,12 +1,12 @@
-import Stripe from 'stripe';
 import { createFileRoute } from '@tanstack/react-router';
 import { eq, sql } from 'drizzle-orm';
+import type Stripe from 'stripe';
 import type { db } from '@/db/client';
 import { customers, subscriptions, user } from '@/db/schema';
 import {
-  getStripe,
-  createOrUpdateSubscription,
   createOrUpdatePayment,
+  createOrUpdateSubscription,
+  getStripe,
 } from '@/libs/payment/stripe/server';
 import { runService } from '@/libs/server/route-helpers';
 

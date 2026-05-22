@@ -1,8 +1,8 @@
 import { createFileRoute } from '@tanstack/react-router';
 import { and, asc, eq, gt, sql } from 'drizzle-orm';
 import { replicas } from '@/db/schema';
-import { runProtected } from '@/libs/server/route-helpers';
 import { validatePullBatch, validatePullParams, validatePushBatch } from '@/libs/replicaSyncServer';
+import { runProtected } from '@/libs/server/route-helpers';
 import type { Hlc, ReplicaRow } from '@/types/replica';
 
 const errorResponse = (status: number, code: string, message: string, offendingIndex?: number) =>
@@ -188,8 +188,11 @@ export const Route = createFileRoute('/api/sync/replicas')({
                   userId: dbRow.userId ?? dbRow.user_id!,
                   kind: dbRow.kind,
                   replicaId: dbRow.replicaId ?? dbRow.replica_id!,
-                  fieldsJsonb: (dbRow.fieldsJsonb ?? dbRow.fields_jsonb)! as ReplicaDbRow['fieldsJsonb'],
-                  manifestJsonb: (dbRow.manifestJsonb ?? dbRow.manifest_jsonb ?? null) as ReplicaDbRow['manifestJsonb'],
+                  fieldsJsonb: (dbRow.fieldsJsonb ??
+                    dbRow.fields_jsonb)! as ReplicaDbRow['fieldsJsonb'],
+                  manifestJsonb: (dbRow.manifestJsonb ??
+                    dbRow.manifest_jsonb ??
+                    null) as ReplicaDbRow['manifestJsonb'],
                   deletedAtTs: dbRow.deletedAtTs ?? dbRow.deleted_at_ts ?? null,
                   reincarnation: dbRow.reincarnation ?? null,
                   updatedAtTs: dbRow.updatedAtTs ?? dbRow.updated_at_ts!,

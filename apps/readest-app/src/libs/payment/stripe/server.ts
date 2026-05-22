@@ -1,9 +1,9 @@
-import Stripe from 'stripe';
 import { eq, sql } from 'drizzle-orm';
-import type { UserPlan } from '@/types/quota';
+import Stripe from 'stripe';
 import type { db } from '@/db/client';
-import type { PaymentStatus, StripeProductMetadata } from '@/types/payment';
 import { payments, subscriptions, user } from '@/db/schema';
+import type { PaymentStatus, StripeProductMetadata } from '@/types/payment';
+import type { UserPlan } from '@/types/quota';
 import { updateUserStorage } from '../storage';
 
 type TxLike = Parameters<Parameters<typeof db.transaction>[0]>[0];
@@ -153,4 +153,3 @@ export const createOrUpdatePayment = async (
     throw error;
   }
 };
-

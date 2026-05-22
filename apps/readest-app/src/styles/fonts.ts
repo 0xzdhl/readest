@@ -1,6 +1,6 @@
+import { md5Fingerprint } from '@/utils/md5';
 import { isCJKEnv } from '@/utils/misc';
 import { getFilename } from '@/utils/path';
-import { md5Fingerprint } from '@/utils/md5';
 
 export type FontFormat = 'ttf' | 'otf' | 'woff' | 'woff2';
 

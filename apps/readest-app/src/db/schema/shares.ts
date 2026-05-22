@@ -1,12 +1,4 @@
-import {
-  pgTable,
-  text,
-  timestamp,
-  uuid,
-  bigint,
-  integer,
-  index,
-} from 'drizzle-orm/pg-core';
+import { bigint, index, integer, pgTable, text, timestamp, uuid } from 'drizzle-orm/pg-core';
 import { user } from './auth';
 
 export const bookShares = pgTable(
