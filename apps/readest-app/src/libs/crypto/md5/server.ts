@@ -1,4 +1,3 @@
-import { createHash } from 'node:crypto';
 import { Effect, Layer } from 'effect';
 import { type Md5Input, toHashInput } from './core';
 import { Md5hash } from './service';
@@ -6,9 +5,16 @@ import { Md5hash } from './service';
 export const Md5HashServerLive = Layer.succeed(
   Md5hash,
   Md5hash.of({
-    md5: (input) => Effect.sync(() => createHash('md5').update(toHashInput(input)).digest('hex')),
+    md5: (input) =>
+      Effect.sync(() => {
+        //  prevent static AST analysis
+        const { createHash } = require('node:crypto');
+        return createHash('md5').update(toHashInput(input)).digest('hex');
+      }),
     partialMd5: (file) =>
       Effect.promise(async () => {
+        const { createHash } = require('node:crypto');
+
         const step = 1024;
         const size = 1024;
         const hasher = createHash('md5');
@@ -30,6 +36,7 @@ export const Md5HashServerLive = Layer.succeed(
       }),
     md5Fingerprint: (value) =>
       Effect.sync(() => {
+        const { createHash } = require('node:crypto');
         const md5Fn = (input: Md5Input) =>
           createHash('md5').update(toHashInput(input)).digest('hex');
 
