@@ -1,4 +1,4 @@
-import { partialMD5 } from '@/utils/md5';
+import { partialMd5 } from '@/utils/md5';
 import { getBaseFilename } from './path';
 import { detectLanguage } from './lang';
 import { configureZip } from './zip';
@@ -128,7 +128,7 @@ export class TxtToEpubConverter {
     const author = matchedAuthor || filenameMeta.author || providedAuthor || '';
     const language = providedLanguage || detectLanguage(fileHeader);
     // console.log(`Detected language: ${language}`);
-    const identifier = await partialMD5(txtFile);
+    const identifier = await partialMd5(txtFile);
     const metadata = { bookTitle, author, language, identifier };
 
     const fallbackParagraphsPerChapter = 100;
@@ -183,7 +183,7 @@ export class TxtToEpubConverter {
       providedLanguage,
     );
     // console.log(`Detected language: ${language}`);
-    const identifier = await partialMD5(txtFile);
+    const identifier = await partialMd5(txtFile);
     const metadata = { bookTitle, author, language, identifier };
 
     const fallbackParagraphsPerChapter = 100;

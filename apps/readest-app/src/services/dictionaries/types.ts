@@ -63,7 +63,7 @@ export interface ImportedDictionary {
   name: string;
   /**
    * Stable cross-device content-hash id derived from
-   * `partialMD5(primary) + byteSize + sortedFilenames`. Used as the
+   * `partialMd5(primary) + byteSize + sortedFilenames`. Used as the
    * `replica_id` for cross-device sync (see services/sync/adapters/dictionary.ts).
    * Optional for legacy imports written before this field existed; the
    * sync wiring treats absent contentId as "needs rehash before sync".

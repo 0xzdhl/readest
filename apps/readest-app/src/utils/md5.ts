@@ -1,45 +1,33 @@
-import { createHash } from 'node:crypto';
+import { Effect } from 'effect';
+import type { Md5Input } from '@/libs/crypto/md5/core';
+import { Md5HashLayer } from '@/libs/crypto/md5/layer';
+import { Md5hash } from '@/libs/crypto/md5/service';
 
-type Md5Input = string | ArrayBuffer | ArrayBufferView | number[];
+// Wrap effect, because md5 utils are pure functions we could invoke Effect.run* safely
+export const md5 = (input: Md5Input) =>
+  Effect.runSync(
+    Md5hash.pipe(
+      Effect.flatMap((s) => s.md5(input)),
+      Effect.provide(Md5HashLayer),
+    ),
+  );
 
-function toHashInput(value: Md5Input): string | Uint8Array {
-  if (typeof value === 'string') return value;
-  if (value instanceof ArrayBuffer) return new Uint8Array(value);
-  if (ArrayBuffer.isView(value)) {
-    return new Uint8Array(value.buffer, value.byteOffset, value.byteLength);
-  }
-  return Uint8Array.from(value);
-}
+export const md5Fingerprint = (value: string) =>
+  Effect.runSync(
+    Md5hash.pipe(
+      Effect.flatMap((s) => s.md5Fingerprint(value)),
+      Effect.provide(Md5HashLayer),
+    ),
+  );
 
-export function md5(value: Md5Input): string {
-  return createHash('md5').update(toHashInput(value)).digest('hex');
-}
+export const partialMd5 = (file: File) =>
+  Effect.runPromise(
+    Md5hash.pipe(
+      Effect.flatMap((s) => s.partialMd5(file)),
+      Effect.provide(Md5HashLayer),
+    ),
+  );
 
 export function isMd5(value: string): boolean {
   return /^[0-9a-f]{32}$/.test(value);
-}
-
-export function md5Fingerprint(value: string): string {
-  return md5(value).slice(0, 7);
-}
-
-export async function partialMD5(file: File): Promise<string> {
-  const step = 1024;
-  const size = 1024;
-  const hasher = createHash('md5');
-
-  for (let i = -1; i <= 10; i++) {
-    const start = Math.min(file.size, step << (2 * i));
-    const end = Math.min(start + size, file.size);
-
-    if (start >= file.size) break;
-
-    const blobSlice = file.slice(start, end);
-    const arrayBuffer = await blobSlice.arrayBuffer();
-    const uint8Array = new Uint8Array(arrayBuffer);
-
-    hasher.update(uint8Array);
-  }
-
-  return hasher.digest('hex');
 }

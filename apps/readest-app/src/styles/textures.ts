@@ -10,7 +10,7 @@ export interface BackgroundTexture {
 
   /**
    * Cross-device content hash. Set on imports new enough to participate
-   * in replica sync (`partialMD5 + byteSize + filename`). Legacy textures
+   * in replica sync (`partialMd5 + byteSize + filename`). Legacy textures
    * (created before replica sync) leave this undefined and never publish
    * — re-import to enable cloud sync.
    */

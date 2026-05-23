@@ -1,4 +1,4 @@
-import { partialMD5 } from '@/utils/md5';
+import { partialMd5 } from '@/utils/md5';
 import { uniqueId } from '@/utils/misc';
 import { queueReplicaBinaryUpload } from '@/services/sync/replicaBinaryUpload';
 import type { EnvConfigType } from '@/services/environment';
@@ -52,7 +52,7 @@ export interface MigrateLegacyReplicasDeps<T extends LegacyReplicaRecord> {
  *
  * For each candidate:
  *   1. Read bytes from `<baseDir>/<filename>`.
- *   2. Compute partialMD5 + size + filename → contentId.
+ *   2. Compute partialMd5 + size + filename → contentId.
  *   3. Mint `bundleDir = uniqueId()`; copy the file to
  *      `<baseDir>/<bundleDir>/<filename>` and remove the flat-path one.
  *   4. Patch the in-memory record (contentId, bundleDir, byteSize,
@@ -81,10 +81,10 @@ export const migrateLegacyReplicas = async <T extends LegacyReplicaRecord>(
 
       const file = await appService.openFile(legacy.path, deps.baseDir);
       const bytes = await file.arrayBuffer();
-      const partialMd5 = await partialMD5(file);
+      const partialMD5 = await partialMd5(file);
       const byteSize = bytes.byteLength;
       const filename = legacy.path;
-      const contentId = deps.computeContentId(partialMd5, byteSize, filename);
+      const contentId = deps.computeContentId(partialMD5, byteSize, filename);
       const bundleDir = uniqueId();
       const newPath = `${bundleDir}/${filename}`;
 

@@ -1,13 +1,13 @@
-import type { FileSystem } from '@/types/system';
-import { getFilename } from '@/utils/path';
-import { md5, partialMD5 } from '@/utils/md5';
-import { uniqueId } from '@/utils/misc';
 import type { CustomFont, CustomFontInfo } from '@/styles/fonts';
+import type { FileSystem } from '@/types/system';
 import { parseFontInfo } from '@/utils/font';
+import { md5, partialMd5 } from '@/utils/md5';
+import { uniqueId } from '@/utils/misc';
+import { getFilename } from '@/utils/path';
 
 /**
  * Build the cross-device content id for a font:
- * `md5(partialMD5 ‖ byteSize ‖ filename)`. Same recipe shape as
+ * `md5(partialMd5 ‖ byteSize ‖ filename)`. Same recipe shape as
  * dictionary.computeReplicaId — keeps the kinds aligned.
  */
 export const computeFontContentId = (
@@ -48,9 +48,9 @@ export async function importFont(
   await fs.writeFile(fontPath, 'Fonts', bytes);
 
   const fontFile = await fs.openFile(fontPath, 'Fonts');
-  const partialMd5 = await partialMD5(fontFile);
+  const partialMD5 = await partialMd5(fontFile);
   const byteSize = bytes.byteLength;
-  const contentId = computeFontContentId(partialMd5, byteSize, filename);
+  const contentId = computeFontContentId(partialMD5, byteSize, filename);
 
   return {
     path: fontPath,

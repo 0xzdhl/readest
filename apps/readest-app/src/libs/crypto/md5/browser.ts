@@ -1,4 +1,44 @@
-type Md5Input = string | ArrayBuffer | ArrayBufferView | number[];
+import { Effect, Layer } from 'effect';
+import type { Md5Input } from './core';
+import { Md5hash } from './service';
+
+export const Md5HashBrowserLive = Layer.succeed(
+  Md5hash,
+  Md5hash.of({
+    md5: (input) => Effect.succeed(pureMd5(input)),
+    partialMd5: (file) =>
+      Effect.promise(async () => {
+        const step = 1024;
+        const size = 1024;
+        const chunks: Uint8Array[] = [];
+        let totalLength = 0;
+
+        for (let i = -1; i <= 10; i++) {
+          const start = Math.min(file.size, step << (2 * i));
+          const end = Math.min(start + size, file.size);
+
+          if (start >= file.size) break;
+
+          const bytes = new Uint8Array(await file.slice(start, end).arrayBuffer());
+          chunks.push(bytes);
+          totalLength += bytes.length;
+        }
+
+        const sampled = new Uint8Array(totalLength);
+        let offset = 0;
+        for (const chunk of chunks) {
+          sampled.set(chunk, offset);
+          offset += chunk.length;
+        }
+
+        return pureMd5(sampled);
+      }),
+    md5Fingerprint: (value) =>
+      Effect.sync(() => {
+        return pureMd5(value).slice(0, 7);
+      }),
+  }),
+);
 
 function toBytes(value: Md5Input): Uint8Array {
   if (typeof value === 'string') return new TextEncoder().encode(value);
@@ -30,7 +70,7 @@ function toHexWord(value: number): string {
   return hex;
 }
 
-export function md5(value: Md5Input): string {
+function pureMd5(value: Md5Input) {
   const bytes = toBytes(value);
   const words = new Uint32Array((((bytes.length + 8) >>> 6) + 1) * 16);
   const bitLength = bytes.length * 8;
@@ -132,39 +172,4 @@ export function md5(value: Md5Input): string {
   }
 
   return [a, b, c, d].map(toHexWord).join('');
-}
-
-export function isMd5(value: string): boolean {
-  return /^[0-9a-f]{32}$/.test(value);
-}
-
-export function md5Fingerprint(value: string): string {
-  return md5(value).slice(0, 7);
-}
-
-export async function partialMD5(file: File): Promise<string> {
-  const step = 1024;
-  const size = 1024;
-  const chunks: Uint8Array[] = [];
-  let totalLength = 0;
-
-  for (let i = -1; i <= 10; i++) {
-    const start = Math.min(file.size, step << (2 * i));
-    const end = Math.min(start + size, file.size);
-
-    if (start >= file.size) break;
-
-    const bytes = new Uint8Array(await file.slice(start, end).arrayBuffer());
-    chunks.push(bytes);
-    totalLength += bytes.length;
-  }
-
-  const sampled = new Uint8Array(totalLength);
-  let offset = 0;
-  for (const chunk of chunks) {
-    sampled.set(chunk, offset);
-    offset += chunk.length;
-  }
-
-  return md5(sampled);
 }

@@ -23,7 +23,7 @@ import {
   getMetadataHash,
 } from '@/utils/book';
 import type { BookNav } from '@/services/nav';
-import { partialMD5, md5 } from '@/utils/md5';
+import { partialMd5, md5 } from '@/utils/md5';
 import { getBaseFilename, getFilename } from '@/utils/path';
 import { type BookDoc, DocumentLoader, EXTS } from '@/libs/document';
 import { isPseStreamFileName, openPseStreamBook, parsePseStreamFileName } from './opds/pseStream';
@@ -284,7 +284,7 @@ export async function importBook(
       throw new Error(`Failed to open the book file: ${(error as Error).message || error}`);
     }
 
-    const hash = isPseStream ? md5(file as string) : await partialMD5(fileobj!);
+    const hash = isPseStream ? md5(file as string) : await partialMd5(fileobj!);
 
     const metaHash = getMetadataHash(loadedBook.metadata);
     let existingBook = lookupIndex
