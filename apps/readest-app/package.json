@@ -135,6 +135,7 @@
     "dayjs": "^1.11.13",
     "dompurify": "^3.4.0",
     "drizzle-orm": "^0.45.2",
+    "effect": "^3.21.2",
     "fflate": "^0.8.2",
     "foliate-js": "workspace:*",
     "franc-min": "^6.2.0",
