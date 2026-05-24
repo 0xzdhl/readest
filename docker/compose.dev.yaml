@@ -6,9 +6,9 @@
 # Quickstart:
 #   cp docker/.env.example docker/.env
 #   docker compose -f docker/compose.dev.yaml --env-file docker/.env up -d
-#   cp apps/readest-app/.env.web.example apps/readest-app/.env.web
+#   cp apps/readest-app/.env.example apps/readest-app/.env
 #   cd apps/readest-app && pnpm db:migrate && cd ../..
-#   # fill in BETTER_AUTH_SECRET in .env.web with `openssl rand -hex 32`
+#   # fill in BETTER_AUTH_SECRET in .env with `openssl rand -base64 32`
 #   pnpm dev-web
 #
 # Difference vs ../docker/compose.yaml: no `client` build/serve service.

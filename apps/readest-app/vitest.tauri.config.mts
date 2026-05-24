@@ -2,8 +2,8 @@ import { webdriverio } from '@vitest/browser-webdriverio';
 import { defineConfig } from 'vitest/config';
 import { loadEnvFile } from './vitest.env.mts';
 
-// Load .env and .env.tauri so tauri tests have the same env as the desktop app.
-const env = { ...loadEnvFile('.env'), ...loadEnvFile('.env.tauri'), CWD: process.cwd() };
+// Tauri tests use the same shared .env as the desktop app.
+const env = { ...loadEnvFile('.env'), VITE_APP_PLATFORM: 'tauri', CWD: process.cwd() };
 
 export default defineConfig({
   define: {

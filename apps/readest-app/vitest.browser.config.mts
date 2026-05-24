@@ -3,8 +3,8 @@ import { playwright } from '@vitest/browser-playwright';
 import { defineConfig } from 'vitest/config';
 import { loadEnvFile } from './vitest.env.mts';
 
-// Load .env and .env.web so browser tests have the same env as the web app.
-const env = { ...loadEnvFile('.env'), ...loadEnvFile('.env.web') };
+// Browser tests use the same shared .env as the web app.
+const env = { ...loadEnvFile('.env'), VITE_APP_PLATFORM: 'web' };
 
 export default defineConfig({
   plugins: [react()],

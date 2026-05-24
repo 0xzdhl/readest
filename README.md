@@ -78,9 +78,9 @@ browser). `docker/compose.dev.yaml` brings up those local dependencies; run
 Drizzle migrations manually from the app package:
 
 ```bash
-# 1. Env files (edit afterwards: set BETTER_AUTH_SECRET to `openssl rand -hex 32`)
+# 1. Env files (edit afterwards: set BETTER_AUTH_SECRET to `openssl rand -base64 32`)
 cp docker/.env.example docker/.env
-cp apps/readest-app/.env.web.example apps/readest-app/.env.web
+cp apps/readest-app/.env.example apps/readest-app/.env
 
 # 2. Start infra
 docker compose -f docker/compose.dev.yaml --env-file docker/.env up -d

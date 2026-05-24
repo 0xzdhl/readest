@@ -29,7 +29,7 @@ cleanup() {
 trap cleanup EXIT INT TERM
 
 echo "Starting Vite dev server..."
-dotenv -e .env.tauri -- vite dev &
+dotenv -e .env -v VITE_APP_PLATFORM=tauri -- vite dev &
 DEV_PID=$!
 
 echo "Waiting for dev server on port $DEV_PORT..."
@@ -48,7 +48,7 @@ while ! curl -sf "http://localhost:${DEV_PORT}" >/dev/null 2>&1; do
 done
 
 echo "Starting Tauri app with webdriver (no-watch, skip beforeDevCommand)..."
-dotenv -e .env.tauri -- tauri dev --features webdriver --no-watch \
+dotenv -e .env -v VITE_APP_PLATFORM=tauri -- tauri dev --features webdriver --no-watch \
   --config '{"build":{"beforeDevCommand":""}}' &
 TAURI_PID=$!
 

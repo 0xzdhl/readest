@@ -102,7 +102,7 @@ services:
 #      - /app/apps/readest-app/.next
 #      - /app/packages/foliate-js/node_modules
     environment:
-      # better-auth + drizzle wiring (see apps/readest-app/.env.web.example)
+      # better-auth + drizzle wiring (see apps/readest-app/.env.example)
       BETTER_AUTH_SECRET: ${BETTER_AUTH_SECRET}
       BETTER_AUTH_URL: ${BETTER_AUTH_URL}
       DATABASE_URL: postgres://readest_app:readest_app@db:5432/${POSTGRES_DB}

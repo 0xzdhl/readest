@@ -110,7 +110,7 @@ just the dependencies and run the app locally:
 
 ```bash
 cd apps/readest-app
-cp .env.web.example .env
+cp .env.example .env
 cd ../../docker
 docker compose up -d db minio minio-setup mailpit
 cd ../apps/readest-app
