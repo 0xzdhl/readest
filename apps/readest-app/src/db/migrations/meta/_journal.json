@@ -15,6 +15,13 @@
       "when": 1779271800000,
       "tag": "0001_rls_and_pg_funcs",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1779633654745,
+      "tag": "0002_petite_sister_grimm",
+      "breakpoints": true
     }
   ]
 }

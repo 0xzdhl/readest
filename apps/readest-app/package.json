@@ -25,6 +25,7 @@
     "test:pr:tauri": "bash scripts/test-tauri.sh",
     "test:all": "pnpm test -- --watch=false && pnpm test:browser && bash scripts/test-tauri.sh",
     "test:e2e": "wdio run wdio.conf.ts",
+    "auth:generate": "pnpm dlx auth@latest generate --config ./src/auth/server.ts --output ./src/db/schema/auth.ts -y",
     "db:migrate": "drizzle-kit migrate",
     "db:generate": "dotenv -e .env -- drizzle-kit generate",
     "db:studio": "dotenv -e .env -- drizzle-kit studio",
