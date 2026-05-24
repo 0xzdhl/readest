@@ -23,7 +23,7 @@
     "verbatimModuleSyntax": true,
     "jsx": "react-jsx",
     "incremental": true,
-    "types": ["vite/client", "react", "react-dom", "./cloudflare-env.d.ts"],
+    "types": ["vite/client", "react", "react-dom", "./cloudflare-env.d.ts", "node"],
     "paths": {
       "@/*": ["./src/*"],
       "@/components/ui/*": ["./src/components/primitives/*"],

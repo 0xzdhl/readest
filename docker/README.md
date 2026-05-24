@@ -2,13 +2,13 @@
 
 ## Stack
 
-| service         | Image                  | Description                                                  |
-| --------------- | ---------------------- | ------------------------------------------------------------ |
-| **client**      | from `../Dockerfile`   | readest frontend (better-auth lives in-process)              |
-| **db**          | `postgres:16-alpine`   | psql db; `readest_app` role bootstrapped on first boot       |
-| **minio**       | `minio/minio`          | s3 storage                                                   |
-| **minio-setup** | `minio/mc`             | helper container to create s3 buckets                        |
-| **mailpit**     | `axllent/mailpit`      | dev SMTP sink for better-auth verification / magic-link mail |
+| service         | Image                | Description                                                  |
+| --------------- | -------------------- | ------------------------------------------------------------ |
+| **client**      | from `../Dockerfile` | readest frontend (better-auth lives in-process)              |
+| **db**          | `postgres:16-alpine` | psql db; `readest_app` role bootstrapped on first boot       |
+| **minio**       | `minio/minio`        | s3 storage                                                   |
+| **minio-setup** | `minio/mc`           | helper container to create s3 buckets                        |
+| **mailpit**     | `axllent/mailpit`    | dev SMTP sink for better-auth verification / magic-link mail |
 
 ### Exposed ports
 
@@ -57,10 +57,13 @@ Run them once after the stack is up:
 
 ```bash
 cd ../apps/readest-app
-DATABASE_URL=postgres://postgres:$POSTGRES_PASSWORD@localhost:5432/postgres pnpm db:migrate
+pnpm db:migrate
 ```
 
-(Migrations connect as `postgres` so they can `CREATE ROLE`, `CREATE EXTENSION`, etc.; the running app connects as `readest_app` per `DATABASE_URL` in `compose.yaml`.)
+`pnpm db:migrate` runs `drizzle-kit migrate` and reads `DATABASE_URL` from
+`apps/readest-app/.env`. Migrations connect as `postgres` so they can
+`CREATE ROLE`, `CREATE EXTENSION`, etc.; the running app connects as
+`readest_app` per `DATABASE_URL` in `compose.yaml`.
 
 ### 4. Access
 

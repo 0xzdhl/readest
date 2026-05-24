@@ -65,3 +65,5 @@ src-tauri/gen
 .claude/settings.local.json
 .claude/skills
 
+# env files
+.env

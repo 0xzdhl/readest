@@ -494,6 +494,9 @@ importers:
       daisyui:
         specifier: ^4.12.24
         version: 4.12.24(postcss@8.5.14)
+      dotenv:
+        specifier: ^16.6.1
+        version: 16.6.1
       dotenv-cli:
         specifier: ^7.4.4
         version: 7.4.4

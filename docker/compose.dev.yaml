@@ -1,12 +1,13 @@
 # Local-dev infrastructure compose. Brings up Postgres, MinIO (+ bucket
-# setup), Mailpit, and a one-shot drizzle migrator. Run the Vite dev
-# server (`pnpm dev-web`) on the host — or use the VSCode devcontainer at
+# setup), and Mailpit. Run drizzle migrations and the Vite dev server
+# (`pnpm dev-web`) on the host — or use the VSCode devcontainer at
 # .devcontainer/ which extends this file.
 #
 # Quickstart:
 #   cp docker/.env.example docker/.env
 #   docker compose -f docker/compose.dev.yaml --env-file docker/.env up -d
 #   cp apps/readest-app/.env.web.example apps/readest-app/.env.web
+#   cd apps/readest-app && pnpm db:migrate && cd ../..
 #   # fill in BETTER_AUTH_SECRET in .env.web with `openssl rand -hex 32`
 #   pnpm dev-web
 #
@@ -78,22 +79,6 @@ services:
     environment:
       MP_SMTP_AUTH_ACCEPT_ANY: "true"
       MP_SMTP_AUTH_ALLOW_INSECURE: "true"
-
-  # One-shot drizzle migrator. Connects as the postgres superuser because
-  # migration 0001 issues CREATE ROLE / GRANT statements. After the role
-  # exists, the app process connects as `readest_app` (constrained role
-  # whose RLS policies are gated on `app.user_id`).
-  migrate:
-    container_name: readest-dev-migrate
-    build:
-      context: ..
-      dockerfile: docker/migrate.Dockerfile
-    depends_on:
-      db:
-        condition: service_healthy
-    restart: "no"
-    environment:
-      DATABASE_URL: postgres://postgres:${POSTGRES_PASSWORD:-readest-dev}@db:5432/${POSTGRES_DB:-postgres}
 
 volumes:
   db-data:
