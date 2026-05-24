@@ -9,7 +9,7 @@ import { defineConfig } from 'vite';
 const tauriDevHost = process.env.TAURI_DEV_HOST;
 const isTauri = process.env.VITE_APP_PLATFORM === 'tauri';
 
-export default defineConfig(({ isSsrBuild }) => ({
+export default defineConfig(() => ({
   plugins: [
     tanstackStart({
       srcDirectory: './src',
@@ -48,14 +48,6 @@ export default defineConfig(({ isSsrBuild }) => ({
         find: /^@\/components\/ui\/(.*)/,
         replacement: path.resolve('src/components/primitives/$1'),
       },
-      ...(isSsrBuild !== true
-        ? [
-            {
-              find: /^@\/utils\/md5$/,
-              replacement: path.resolve('src/utils/md5.browser.ts'),
-            },
-          ]
-        : []),
       {
         find: /^@pdfjs\/(.*)/,
         replacement: path.resolve('public/vendor/pdfjs/$1'),

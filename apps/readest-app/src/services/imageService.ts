@@ -1,12 +1,12 @@
-import type { FileSystem } from '@/types/system';
-import { getFilename } from '@/utils/path';
-import { md5, partialMD5 } from '@/utils/md5';
-import { uniqueId } from '@/utils/misc';
 import { type CustomTextureInfo, getTextureName } from '@/styles/textures';
+import type { FileSystem } from '@/types/system';
+import { md5, partialMd5 } from '@/utils/md5';
+import { uniqueId } from '@/utils/misc';
+import { getFilename } from '@/utils/path';
 
 /**
  * Build the cross-device content id for a texture:
- * `md5(partialMD5 ‖ byteSize ‖ filename)`. Same recipe shape as
+ * `md5(partialMd5 ‖ byteSize ‖ filename)`. Same recipe shape as
  * fontService.computeFontContentId — keeps the kinds aligned.
  */
 export const computeTextureContentId = (
@@ -48,9 +48,9 @@ export async function importImage(
   await fs.writeFile(texturePath, 'Images', bytes);
 
   const textureFile = await fs.openFile(texturePath, 'Images');
-  const partialMd5 = await partialMD5(textureFile);
+  const partialMD5 = await partialMd5(textureFile);
   const byteSize = bytes.byteLength;
-  const contentId = computeTextureContentId(partialMd5, byteSize, filename);
+  const contentId = computeTextureContentId(partialMD5, byteSize, filename);
 
   return {
     name: getTextureName(filename),

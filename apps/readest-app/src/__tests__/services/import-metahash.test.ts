@@ -7,7 +7,7 @@ const mockPartialMD5 = vi.hoisted(() => vi.fn());
 
 vi.mock('@/utils/md5', async () => {
   const actual = await vi.importActual<typeof import('@/utils/md5')>('@/utils/md5');
-  return { ...actual, partialMD5: mockPartialMD5 };
+  return { ...actual, partialMd5: mockPartialMD5 };
 });
 
 vi.mock('@/libs/document', async () => {

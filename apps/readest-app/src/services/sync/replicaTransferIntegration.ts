@@ -1,10 +1,10 @@
-import { eventDispatcher } from '@/utils/event';
-import { partialMD5 } from '@/utils/md5';
-import { getReplicaAdapter } from './replicaRegistry';
-import { publishReplicaManifest } from './replicaPublish';
-import type { AppService } from '@/types/system';
-import type { ClosableFile } from '@/utils/file';
 import type { ReplicaTransferFile } from '@/store/transferStore';
+import type { AppService } from '@/types/system';
+import { eventDispatcher } from '@/utils/event';
+import type { ClosableFile } from '@/utils/file';
+import { partialMd5 } from '@/utils/md5';
+import { publishReplicaManifest } from './replicaPublish';
+import { getReplicaAdapter } from './replicaRegistry';
 
 interface ReplicaTransferCompleteDetail {
   kind: string;
@@ -50,10 +50,10 @@ const handleReplicaUpload = async (detail: ReplicaTransferCompleteDetail): Promi
     const manifestFiles = await Promise.all(
       detail.files.map(async (f) => {
         const file = await appServiceRef!.openFile(f.lfp, base);
-        const partialMd5 = await partialMD5(file);
+        const partialMD5Value = await partialMd5(file);
         const closable = file as ClosableFile;
-        if (closable && closable.close) await closable.close();
-        return { filename: f.logical, byteSize: f.byteSize, partialMd5 };
+        if (closable?.close) await closable.close();
+        return { filename: f.logical, byteSize: f.byteSize, partialMd5: partialMD5Value };
       }),
     );
     await publishReplicaManifest(

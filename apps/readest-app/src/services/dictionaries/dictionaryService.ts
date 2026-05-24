@@ -286,7 +286,7 @@ async function importStarDictBundle(
     }
   }
 
-  // Stardict primary = .ifo (small text; partialMD5 is effectively full-hash).
+  // Stardict primary = .ifo (small text; partialMd5 is effectively full-hash).
   const stardictFilenames = [group.ifo.name, group.idx.name, group.dict.name];
   if (group.syn?.name) stardictFilenames.push(group.syn.name);
   const contentId = await computeDictionaryContentId(ifoFile, stardictFilenames);
