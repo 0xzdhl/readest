@@ -2,9 +2,9 @@ import posthog from 'posthog-js';
 import { useEffect } from 'react';
 import type { ReactNode } from 'react';
 import { PostHogProvider } from 'posthog-js/react';
+import { env } from '@/env';
 import { TELEMETRY_OPT_OUT_KEY } from '@/utils/telemetry';
 import { getAppVersion } from '@/utils/version';
-import { readPublicEnv } from '@/utils/publicEnv';
 
 const tryDecodeBase64 = (value: string | undefined) => {
   if (!value) return undefined;
@@ -20,14 +20,10 @@ const shouldDisablePostHog = () => {
   return localStorage.getItem(TELEMETRY_OPT_OUT_KEY) === 'true';
 };
 
-const posthogUrl =
-  readPublicEnv('VITE_POSTHOG_HOST') ||
-  tryDecodeBase64(readPublicEnv('VITE_DEFAULT_POSTHOG_URL_BASE64'));
-const posthogKey =
-  readPublicEnv('VITE_POSTHOG_KEY') ||
-  tryDecodeBase64(readPublicEnv('VITE_DEFAULT_POSTHOG_KEY_BASE64'));
+const posthogUrl = env.VITE_POSTHOG_HOST || tryDecodeBase64(env.VITE_DEFAULT_POSTHOG_URL_BASE64);
+const posthogKey = env.VITE_POSTHOG_KEY || tryDecodeBase64(env.VITE_DEFAULT_POSTHOG_KEY_BASE64);
 
-if (typeof window !== 'undefined' && process.env['NODE_ENV'] === 'production' && posthogKey) {
+if (typeof window !== 'undefined' && env.NODE_ENV === 'production' && posthogKey) {
   if (!shouldDisablePostHog()) {
     posthog.init(posthogKey, {
       api_host: posthogUrl,

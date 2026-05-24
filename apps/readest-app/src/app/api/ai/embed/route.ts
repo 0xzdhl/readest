@@ -1,5 +1,6 @@
 import { createFileRoute } from '@tanstack/react-router';
 import { embed, embedMany, createGateway } from 'ai';
+import { env } from '@/env';
 import { runAuth } from '@/libs/server/route-helpers';
 
 interface EmbedRequest {
@@ -43,15 +44,13 @@ export const Route = createFileRoute('/api/ai/embed')({
             }
             const { texts, single, apiKey } = body;
 
-            const gatewayApiKey = apiKey || process.env['AI_GATEWAY_API_KEY'];
+            const gatewayApiKey = apiKey || env.AI_GATEWAY_API_KEY;
             if (!gatewayApiKey) {
               return Response.json({ error: 'API key required' }, { status: 401 });
             }
 
             const gateway = createGateway({ apiKey: gatewayApiKey });
-            const model = gateway.embeddingModel(
-              process.env['AI_GATEWAY_EMBEDDING_MODEL'] || 'openai/text-embedding-3-small',
-            );
+            const model = gateway.embeddingModel(env.AI_GATEWAY_EMBEDDING_MODEL);
 
             if (single) {
               const { embedding } = await embed({ model, value: texts[0]! });

@@ -1,6 +1,7 @@
 import { eq, sql } from 'drizzle-orm';
 import type { db } from '@/db/client';
 import { googleIapSubscriptions, payments, user } from '@/db/schema';
+import { env } from '@/env';
 import { updateUserStorage } from '@/libs/payment/storage';
 import { IAPError, type VerifiedIAP } from '../types';
 import {
@@ -178,7 +179,7 @@ export async function processPurchaseData(
 
   // Check environment (test purchases have specific patterns in orderId)
   const isTestPurchase = purchaseData.purchaseType === 0; // 0 = Test, 1 = Promo, undefined = Real
-  if (isTestPurchase && process.env['NODE_ENV'] === 'production') {
+  if (isTestPurchase && env.NODE_ENV === 'production') {
     console.warn('Test purchase in production environment');
   }
 

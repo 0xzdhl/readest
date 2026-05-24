@@ -15,6 +15,7 @@ import Menu from '@/components/Menu';
 import MenuItem from '@/components/MenuItem';
 import { useRouter } from '@tanstack/react-router';
 import { useEnv } from '@/context/EnvContext';
+import { env } from '@/env';
 import { useTranslation } from '@/hooks/useTranslation';
 import { isWebAppPlatform } from '@/services/environment';
 import { useCustomOPDSStore } from '@/store/customOPDSStore';
@@ -193,11 +194,7 @@ export function CatalogManager({ inSubPage = false }: CatalogManagerProps = {}) 
       return;
     }
 
-    if (
-      process.env['NODE_ENV'] === 'production' &&
-      isWebAppPlatform() &&
-      isLanAddress(newCatalog.url)
-    ) {
+    if (env.NODE_ENV === 'production' && isWebAppPlatform() && isLanAddress(newCatalog.url)) {
       setUrlError(_('Adding LAN addresses is not supported in the web app version.'));
       return;
     }

@@ -2,6 +2,7 @@ import { google } from 'googleapis';
 import type { androidpublisher_v3 } from 'googleapis';
 import { GoogleAuth } from 'google-auth-library';
 import type { GoogleAuthOptions } from 'google-auth-library';
+import { env } from '@/env';
 import type { IAPStatus } from '../types';
 
 export interface VerifyPurchaseParams {
@@ -73,9 +74,9 @@ export class GoogleIAPVerifier {
       scopes: ['https://www.googleapis.com/auth/androidpublisher'],
     };
 
-    if (process.env['GOOGLE_IAP_SERVICE_ACCOUNT_KEY']) {
+    if (env.GOOGLE_IAP_SERVICE_ACCOUNT_KEY) {
       try {
-        authOptions.credentials = JSON.parse(process.env['GOOGLE_IAP_SERVICE_ACCOUNT_KEY']);
+        authOptions.credentials = JSON.parse(env.GOOGLE_IAP_SERVICE_ACCOUNT_KEY);
       } catch (e) {
         console.error('Failed to parse GOOGLE_SERVICE_ACCOUNT_KEY:', e);
         throw new Error('Invalid Google service account credentials');

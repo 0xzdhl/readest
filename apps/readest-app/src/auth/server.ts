@@ -2,22 +2,8 @@ import { betterAuth, type BetterAuthOptions } from 'better-auth';
 import { drizzleAdapter } from 'better-auth/adapters/drizzle';
 import { bearer, magicLink } from 'better-auth/plugins';
 import { db } from '@/db/client';
+import { env } from '@/env';
 import { sendEmail } from './email';
-
-/**
- * Return the env var if set, otherwise the dev fallback. In production
- * (`NODE_ENV === 'production'`) a missing required env throws instead —
- * better-auth's own `validateSecret` only warns for short/low-entropy
- * secrets, so without this guard a prod deploy would silently boot with
- * the dev secret / a non-https baseURL (no Secure cookie flag).
- */
-function requireEnvInProd(name: string, value: string | undefined, devFallback: string): string {
-  if (value && value.length > 0) return value;
-  if (process.env['NODE_ENV'] === 'production') {
-    throw new Error(`${name} is required in production`);
-  }
-  return devFallback;
-}
 
 /**
  * Build a social-provider config block only when both id and secret are
@@ -27,12 +13,7 @@ function requireEnvInProd(name: string, value: string | undefined, devFallback: 
  * entirely makes the route 404 instead, which is the desired fail-closed
  * behavior.
  */
-function socialConfig(
-  idEnv: string,
-  secretEnv: string,
-): { clientId: string; clientSecret: string } | null {
-  const clientId = process.env[idEnv];
-  const clientSecret = process.env[secretEnv];
+function socialConfig(clientId: string | undefined, clientSecret: string | undefined) {
   if (!clientId || !clientSecret) return null;
   return { clientId, clientSecret };
 }
@@ -42,24 +23,15 @@ type SocialEntry = [string, { clientId: string; clientSecret: string }];
 const socialProviders: NonNullable<BetterAuthOptions['socialProviders']> = Object.fromEntries(
   (
     [
-      ['google', socialConfig('GOOGLE_CLIENT_ID', 'GOOGLE_CLIENT_SECRET')],
-      ['github', socialConfig('GITHUB_CLIENT_ID', 'GITHUB_CLIENT_SECRET')],
-      ['discord', socialConfig('DISCORD_CLIENT_ID', 'DISCORD_CLIENT_SECRET')],
-      ['apple', socialConfig('APPLE_CLIENT_ID', 'APPLE_CLIENT_SECRET')],
+      ['google', socialConfig(env.GOOGLE_CLIENT_ID, env.GOOGLE_CLIENT_SECRET)],
+      ['github', socialConfig(env.GITHUB_CLIENT_ID, env.GITHUB_CLIENT_SECRET)],
+      ['discord', socialConfig(env.DISCORD_CLIENT_ID, env.DISCORD_CLIENT_SECRET)],
+      ['apple', socialConfig(env.APPLE_CLIENT_ID, env.APPLE_CLIENT_SECRET)],
     ] satisfies [string, { clientId: string; clientSecret: string } | null][]
   ).filter((entry): entry is SocialEntry => entry[1] !== null),
 );
 
-const secret = requireEnvInProd(
-  'BETTER_AUTH_SECRET',
-  process.env['BETTER_AUTH_SECRET'],
-  'dev-secret-replace-me',
-);
-const baseURL = requireEnvInProd(
-  'BETTER_AUTH_URL',
-  process.env['BETTER_AUTH_URL'],
-  'http://localhost:3000',
-);
+const { BETTER_AUTH_SECRET: secret, BETTER_AUTH_URL: baseURL } = env;
 
 export const auth = betterAuth({
   database: drizzleAdapter(db, { provider: 'pg' }),

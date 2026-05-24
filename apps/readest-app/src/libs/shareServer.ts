@@ -69,7 +69,7 @@ const toIso = (d: Date | string | null | undefined): string | null => {
 /**
  * Tx parameter type imported lazily via a type-only import so the runtime
  * `@/db/client` module isn't pulled into pure-function tests. The
- * `@/db/client` module reads `process.env.DATABASE_URL` at import time and
+ * `@/db/client` module validates `DATABASE_URL` at import time and
  * throws when unset; a `import type` is erased at compile time and doesn't
  * trigger that side effect.
  */

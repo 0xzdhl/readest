@@ -2,6 +2,7 @@ import { createFileRoute } from '@tanstack/react-router';
 import { runAuth } from '@/libs/server/route-helpers';
 import { streamText, createGateway } from 'ai';
 import type { ModelMessage } from 'ai';
+import { env } from '@/env';
 import { isRecord } from '@/utils/unknown';
 
 const isModelMessageArray = (value: unknown): value is ModelMessage[] => Array.isArray(value);
@@ -30,7 +31,7 @@ export const Route = createFileRoute('/api/ai/chat')({
             }
 
             const gatewayApiKey =
-              typeof apiKey === 'string' && apiKey ? apiKey : process.env['AI_GATEWAY_API_KEY'];
+              typeof apiKey === 'string' && apiKey ? apiKey : env.AI_GATEWAY_API_KEY;
             if (!gatewayApiKey) {
               return new Response(JSON.stringify({ error: 'API key required' }), {
                 status: 401,

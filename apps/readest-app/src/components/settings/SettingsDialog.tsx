@@ -18,6 +18,7 @@ import { useCommandPalette } from '@/components/command-palette';
 import Dialog from '@/components/Dialog';
 import Dropdown from '@/components/Dropdown';
 import { useEnv } from '@/context/EnvContext';
+import { env } from '@/env';
 import { useResponsiveSize } from '@/hooks/useResponsiveSize';
 import { useTranslation } from '@/hooks/useTranslation';
 import { getCommandPaletteShortcut } from '@/services/environment';
@@ -115,7 +116,7 @@ const SettingsDialog: React.FC<{ bookKey: string }> = ({ bookKey }) => {
       tab: 'AI',
       icon: PiRobot,
       label: _('AI Assistant'),
-      disabled: process.env['NODE_ENV'] === 'production',
+      disabled: env.NODE_ENV === 'production',
     },
     {
       tab: 'Integrations',

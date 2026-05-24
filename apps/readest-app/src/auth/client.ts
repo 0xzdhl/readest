@@ -1,5 +1,6 @@
 import { createAuthClient } from 'better-auth/react';
 import { inferAdditionalFields, magicLinkClient } from 'better-auth/client/plugins';
+import { env } from '@/env';
 import type { auth } from './server';
 
 /**
@@ -11,7 +12,7 @@ import type { auth } from './server';
  * access without an extra DB query.
  */
 export const authClient = createAuthClient({
-  baseURL: import.meta.env['VITE_BETTER_AUTH_URL'] ?? '',
+  baseURL: env.VITE_BETTER_AUTH_URL,
   plugins: [magicLinkClient(), inferAdditionalFields<typeof auth>()],
 });
 

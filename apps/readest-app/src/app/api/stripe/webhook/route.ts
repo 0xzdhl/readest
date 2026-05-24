@@ -3,6 +3,7 @@ import { eq, sql } from 'drizzle-orm';
 import type Stripe from 'stripe';
 import type { db } from '@/db/client';
 import { customers, subscriptions, user } from '@/db/schema';
+import { env } from '@/env';
 import {
   createOrUpdatePayment,
   createOrUpdateSubscription,
@@ -34,11 +35,7 @@ export const Route = createFileRoute('/api/stripe/webhook')({
         const stripe = getStripe();
         let event: Stripe.Event;
         try {
-          event = stripe.webhooks.constructEvent(
-            body,
-            signature,
-            process.env['STRIPE_WEBHOOK_SECRET']!,
-          );
+          event = stripe.webhooks.constructEvent(body, signature, env.STRIPE_WEBHOOK_SECRET!);
         } catch (err) {
           const message = err instanceof Error ? err.message : 'Unknown error';
           console.error(`Webhook signature verification failed: ${message}`);

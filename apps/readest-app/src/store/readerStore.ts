@@ -11,6 +11,7 @@ import {
 } from '@/types/book';
 import type { Insets } from '@/types/misc';
 import type { EnvConfigType } from '@/services/environment';
+import { env } from '@/env';
 import type { FoliateView } from '@/types/view';
 import { DocumentLoader, type TOCItem } from '@/libs/document';
 import {
@@ -208,7 +209,7 @@ export const useReaderStore = create<ReaderStore>((set, get) => ({
       // Load cached book navigation (TOC + section fragments) or compute and persist.
       if (book.format === 'EPUB' && bookDoc.rendition?.layout !== 'pre-paginated') {
         const cachedNav = await appService.loadBookNav(book);
-        if (cachedNav?.version === BOOK_NAV_VERSION && process.env['NODE_ENV'] === 'production') {
+        if (cachedNav?.version === BOOK_NAV_VERSION && env.NODE_ENV === 'production') {
           hydrateBookNav(bookDoc, cachedNav);
         } else {
           const freshNav = await computeBookNav(bookDoc);

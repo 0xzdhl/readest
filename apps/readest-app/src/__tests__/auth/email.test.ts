@@ -59,6 +59,10 @@ describe('sendEmail', () => {
     delete process.env['RESEND_FROM_EMAIL'];
     delete process.env['SMTP_HOST'];
     delete process.env['SMTP_PORT'];
+    process.env['DATABASE_URL'] = 'postgres://postgres:postgres@localhost:5432/postgres';
+    process.env['BETTER_AUTH_SECRET'] = 'test-secret';
+    process.env['BETTER_AUTH_URL'] = 'http://localhost:5173';
+    process.env['VITE_APP_PLATFORM'] = 'web';
   });
 
   afterEach(() => {
@@ -95,9 +99,9 @@ describe('sendEmail', () => {
     } satisfies ResendSendResult);
 
     const { sendEmail } = await import('@/auth/email');
-    await expect(
-      sendEmail({ to: 'user@example.com', subject: 's', html: 'h' }),
-    ).rejects.toThrow(/boom/);
+    await expect(sendEmail({ to: 'user@example.com', subject: 's', html: 'h' })).rejects.toThrow(
+      /boom/,
+    );
   });
 
   it('falls back to nodemailer SMTP when RESEND_API_KEY is unset', async () => {

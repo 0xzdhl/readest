@@ -2,6 +2,7 @@ import { eq, sql } from 'drizzle-orm';
 import Stripe from 'stripe';
 import type { db } from '@/db/client';
 import { payments, subscriptions, user } from '@/db/schema';
+import { env } from '@/env';
 import type { PaymentStatus, StripeProductMetadata } from '@/types/payment';
 import type { UserPlan } from '@/types/quota';
 import { updateUserStorage } from '../storage';
@@ -13,9 +14,7 @@ let stripe: Stripe | null;
 export const getStripe = () => {
   if (!stripe) {
     const stripeSecretKey =
-      process.env['NODE_ENV'] === 'production'
-        ? process.env['STRIPE_SECRET_KEY']
-        : process.env['STRIPE_SECRET_KEY_DEV'];
+      env.NODE_ENV === 'production' ? env.STRIPE_SECRET_KEY : env.STRIPE_SECRET_KEY_DEV;
     stripe = new Stripe(stripeSecretKey!, {
       httpClient: Stripe.createFetchHttpClient(),
     });

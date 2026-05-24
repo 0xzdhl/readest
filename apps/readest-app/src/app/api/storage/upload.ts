@@ -1,6 +1,7 @@
 import { createFileRoute } from '@tanstack/react-router';
 import { and, eq } from 'drizzle-orm';
 import { files } from '@/db/schema';
+import { env } from '@/env';
 import {
   getStoragePlanData,
   runProtected,
@@ -40,7 +41,7 @@ export const Route = createFileRoute('/api/storage/upload')({
                 .slice(0, 10);
               const userStr = user.id.slice(0, 8);
               const fileKey = `temp/img/${timeStr}/${userStr}/${fileName}`;
-              const bucketName = process.env['TEMP_STORAGE_PUBLIC_BUCKET_NAME'] || '';
+              const bucketName = env.TEMP_STORAGE_PUBLIC_BUCKET_NAME;
               const uploadUrl = await getUploadSignedUrl(fileKey, fileSize ?? 0, 1800, bucketName);
               const downloadUrl = await getDownloadSignedUrl(fileKey, 3 * 86400, bucketName);
               const pathname = new URL(downloadUrl).pathname;
@@ -63,10 +64,7 @@ export const Route = createFileRoute('/api/storage/upload')({
 
             const { usage, quota } = getStoragePlanData(user);
             if (usage + fileSize > quota + STORAGE_QUOTA_GRACE_BYTES) {
-              return Response.json(
-                { error: 'Insufficient storage quota', usage },
-                { status: 403 },
-              );
+              return Response.json({ error: 'Insufficient storage quota', usage }, { status: 403 });
             }
 
             const fileKey = `${user.id}/${fileName}`;

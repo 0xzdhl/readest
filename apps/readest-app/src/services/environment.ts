@@ -1,4 +1,5 @@
 import type { AppService } from '@/types/system';
+import { env } from '@/env';
 import { readPublicEnv } from '@/utils/publicEnv';
 import { READEST_NODE_BASE_URL, READEST_WEB_BASE_URL } from './constants';
 
@@ -20,7 +21,7 @@ export const isMacPlatform = () =>
 
 export const getCommandPaletteShortcut = () => (isMacPlatform() ? '⌘⇧P' : 'Ctrl+Shift+P');
 
-const isWebDevMode = () => process.env['NODE_ENV'] === 'development' && isWebAppPlatform();
+const isWebDevMode = () => env.NODE_ENV === 'development' && isWebAppPlatform();
 
 // Dev API only in development mode and web platform
 // with command `pnpm dev-web`

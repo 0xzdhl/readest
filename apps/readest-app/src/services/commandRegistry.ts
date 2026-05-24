@@ -9,6 +9,7 @@ import { PiRobot, PiSpeakerHigh, PiSun, PiMoon } from 'react-icons/pi';
 import { TbSunMoon } from 'react-icons/tb';
 import { MdRefresh } from 'react-icons/md';
 import type { IconType } from 'react-icons';
+import { env } from '@/env';
 import { stubTranslation as _ } from '@/utils/misc';
 
 export type CommandCategory = 'settings' | 'actions' | 'navigation';
@@ -713,7 +714,7 @@ export const buildCommandRegistry = (options: CommandRegistryOptions): CommandIt
   }
 
   // add ai panel items (only in dev, as of now atleast)
-  if (process.env['NODE_ENV'] !== 'production') {
+  if (env.NODE_ENV !== 'production') {
     for (const def of aiPanelItems) {
       items.push(createSettingsItem(def, 'AI'));
     }

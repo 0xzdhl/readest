@@ -1,6 +1,7 @@
 import { eq, sql } from 'drizzle-orm';
 import type { db } from '@/db/client';
 import { appleIapSubscriptions, payments, user } from '@/db/schema';
+import { env } from '@/env';
 import { updateUserStorage } from '@/libs/payment/storage';
 import { IAPError, type VerifiedIAP } from '../types';
 import {
@@ -162,7 +163,7 @@ export async function processPurchaseData(
 ): Promise<VerifiedPurchase> {
   const transaction = verificationResult.transaction!;
 
-  if (transaction.environment === 'Sandbox' && process.env['NODE_ENV'] === 'production') {
+  if (transaction.environment === 'Sandbox' && env.NODE_ENV === 'production') {
     console.warn('Sandbox transaction in production environment');
   }
 

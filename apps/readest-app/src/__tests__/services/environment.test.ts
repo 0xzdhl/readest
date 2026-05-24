@@ -24,6 +24,10 @@ const setPublicEnv = (key: (typeof PUBLIC_ENV_KEYS)[number], value: string) => {
 beforeEach(() => {
   vi.unstubAllEnvs();
   vi.resetModules();
+  vi.stubEnv('DATABASE_URL', 'postgres://postgres:postgres@localhost:5432/postgres');
+  vi.stubEnv('BETTER_AUTH_SECRET', 'test-secret');
+  vi.stubEnv('BETTER_AUTH_URL', 'http://localhost:5173');
+  vi.stubEnv('VITE_APP_PLATFORM', 'web');
   (window as unknown as { __PUBLIC_ENV?: Partial<Record<string, string>> }).__PUBLIC_ENV = {};
   // Clean up any window globals we set
   delete (window as unknown as Record<string, unknown>)['__READEST_CLI_ACCESS'];

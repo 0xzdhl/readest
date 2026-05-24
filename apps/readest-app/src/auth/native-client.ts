@@ -1,5 +1,6 @@
 import { createAuthClient } from 'better-auth/react';
 import { inferAdditionalFields, magicLinkClient } from 'better-auth/client/plugins';
+import { env } from '@/env';
 import type { auth } from './server';
 
 /**
@@ -50,7 +51,7 @@ function storeToken(token: string | null): void {
  * <token>` on subsequent requests.
  */
 export const nativeAuthClient = createAuthClient({
-  baseURL: import.meta.env['VITE_BETTER_AUTH_URL'] ?? '',
+  baseURL: env.VITE_BETTER_AUTH_URL,
   plugins: [magicLinkClient(), inferAdditionalFields<typeof auth>()],
   fetchOptions: {
     auth: {

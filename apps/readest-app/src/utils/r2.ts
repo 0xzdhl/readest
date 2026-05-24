@@ -1,19 +1,19 @@
 import { createServerOnlyFn } from '@tanstack/react-start';
+import { env } from '@/env';
 
 const createR2Client = createServerOnlyFn(async () => {
   const { AwsClient } = await import('aws4fetch');
 
   return new AwsClient({
     service: 's3',
-    region: process.env['R2_REGION'] || 'auto',
-    accessKeyId: process.env['R2_ACCESS_KEY_ID']!,
-    secretAccessKey: process.env['R2_SECRET_ACCESS_KEY']!,
+    region: env.R2_REGION,
+    accessKeyId: env.R2_ACCESS_KEY_ID,
+    secretAccessKey: env.R2_SECRET_ACCESS_KEY,
   });
 });
 
 const getR2Url = createServerOnlyFn(() => {
-  const R2_ACCOUNT_ID = process.env['R2_ACCOUNT_ID']!;
-  return `https://${R2_ACCOUNT_ID}.r2.cloudflarestorage.com`;
+  return `https://${env.R2_ACCOUNT_ID}.r2.cloudflarestorage.com`;
 });
 
 export const r2Storage = {

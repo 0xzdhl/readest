@@ -2,6 +2,7 @@ import { createFileRoute } from '@tanstack/react-router';
 import { MetadataService } from '@/services/metadata/service';
 import type { SearchRequest } from '@/services/metadata/types';
 import { runAuth } from '@/libs/server/route-helpers';
+import { env } from '@/env';
 
 interface ApiResponse<T> {
   success: boolean;
@@ -89,7 +90,7 @@ let metadataService: MetadataService;
 function getMetadataService(): MetadataService {
   if (!metadataService) {
     metadataService = new MetadataService({
-      googleBooksApiKeys: process.env['GOOGLE_BOOKS_API_KEYS'],
+      googleBooksApiKeys: env.GOOGLE_BOOKS_API_KEYS,
     });
   }
   return metadataService;

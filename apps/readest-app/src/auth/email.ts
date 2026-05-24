@@ -1,13 +1,12 @@
 import nodemailer from 'nodemailer';
 import { Resend } from 'resend';
+import { env } from '@/env';
 
 export interface SendEmailArgs {
   to: string;
   subject: string;
   html: string;
 }
-
-const DEFAULT_FROM = 'noreply@readest.app';
 
 /**
  * Send a transactional email.
@@ -23,8 +22,8 @@ const DEFAULT_FROM = 'noreply@readest.app';
  * password-reset callbacks (see `auth/server.ts`).
  */
 export async function sendEmail({ to, subject, html }: SendEmailArgs): Promise<void> {
-  const apiKey = process.env['RESEND_API_KEY'];
-  const from = process.env['RESEND_FROM_EMAIL'] ?? DEFAULT_FROM;
+  const apiKey = env.RESEND_API_KEY;
+  const from = env.RESEND_FROM_EMAIL;
 
   if (apiKey) {
     const resend = new Resend(apiKey);
@@ -35,8 +34,10 @@ export async function sendEmail({ to, subject, html }: SendEmailArgs): Promise<v
     return;
   }
 
-  const host = process.env['SMTP_HOST'] ?? 'localhost';
-  const port = Number.parseInt(process.env['SMTP_PORT'] ?? '', 10) || 1025;
-  const transport = nodemailer.createTransport({ host, port, secure: false });
+  const transport = nodemailer.createTransport({
+    host: env.SMTP_HOST,
+    port: env.SMTP_PORT,
+    secure: false,
+  });
   await transport.sendMail({ from, to, subject, html });
 }

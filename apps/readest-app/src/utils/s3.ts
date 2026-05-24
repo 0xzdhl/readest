@@ -1,15 +1,16 @@
 import { createServerOnlyFn } from '@tanstack/react-start';
+import { env } from '@/env';
 
 const createS3Client = createServerOnlyFn(async () => {
   const { S3Client } = await import('@aws-sdk/client-s3');
 
   return new S3Client({
     forcePathStyle: true,
-    region: process.env['S3_REGION'] || 'auto',
-    endpoint: process.env['S3_ENDPOINT'] || '',
+    region: env.S3_REGION,
+    endpoint: env.S3_ENDPOINT,
     credentials: {
-      accessKeyId: process.env['S3_ACCESS_KEY_ID'] || '',
-      secretAccessKey: process.env['S3_SECRET_ACCESS_KEY'] || '',
+      accessKeyId: env.S3_ACCESS_KEY_ID,
+      secretAccessKey: env.S3_SECRET_ACCESS_KEY,
     },
   });
 });

@@ -1,3 +1,5 @@
+import { env } from '@/env';
+
 export const readPublicEnv = (key: string): string | undefined => {
   if (
     typeof window !== 'undefined' &&
@@ -5,7 +7,8 @@ export const readPublicEnv = (key: string): string | undefined => {
   ) {
     return (window as unknown as { __PUBLIC_ENV?: Record<string, string> }).__PUBLIC_ENV?.[key];
   }
-  return (import.meta as unknown as { env?: Record<string, string> }).env?.[key];
+  const value = (env as Record<string, unknown>)[key];
+  return value === undefined ? undefined : String(value);
 };
 
 export const readPublicFlag = (key: string): boolean => {

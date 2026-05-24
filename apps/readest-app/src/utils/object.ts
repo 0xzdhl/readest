@@ -1,4 +1,5 @@
 import { createServerOnlyFn } from '@tanstack/react-start';
+import { env } from '@/env';
 import { getStorageType } from './storage';
 
 export const getDownloadSignedUrl = createServerOnlyFn(
@@ -6,11 +7,11 @@ export const getDownloadSignedUrl = createServerOnlyFn(
     const storageType = getStorageType();
     if (storageType === 'r2') {
       const { r2Storage } = await import('./r2');
-      bucketName = bucketName || process.env['R2_BUCKET_NAME'] || '';
+      bucketName = bucketName || env.R2_BUCKET_NAME;
       return await r2Storage.getDownloadSignedUrl(bucketName, fileKey, expiresIn);
     } else {
       const { s3Storage } = await import('./s3');
-      bucketName = bucketName || process.env['S3_BUCKET_NAME'] || '';
+      bucketName = bucketName || env.S3_BUCKET_NAME;
       return await s3Storage.getDownloadSignedUrl(bucketName, fileKey, expiresIn);
     }
   },
@@ -21,11 +22,11 @@ export const getUploadSignedUrl = createServerOnlyFn(
     const storageType = getStorageType();
     if (storageType === 'r2') {
       const { r2Storage } = await import('./r2');
-      bucketName = bucketName || process.env['R2_BUCKET_NAME'] || '';
+      bucketName = bucketName || env.R2_BUCKET_NAME;
       return await r2Storage.getUploadSignedUrl(bucketName, fileKey, contentLength, expiresIn);
     } else {
       const { s3Storage } = await import('./s3');
-      bucketName = bucketName || process.env['S3_BUCKET_NAME'] || '';
+      bucketName = bucketName || env.S3_BUCKET_NAME;
       return await s3Storage.getUploadSignedUrl(bucketName, fileKey, contentLength, expiresIn);
     }
   },
@@ -35,11 +36,11 @@ export const deleteObject = createServerOnlyFn(async (fileKey: string, bucketNam
   const storageType = getStorageType();
   if (storageType === 'r2') {
     const { r2Storage } = await import('./r2');
-    bucketName = bucketName || process.env['R2_BUCKET_NAME'] || '';
+    bucketName = bucketName || env.R2_BUCKET_NAME;
     return await r2Storage.deleteObject(bucketName, fileKey);
   } else {
     const { s3Storage } = await import('./s3');
-    bucketName = bucketName || process.env['S3_BUCKET_NAME'] || '';
+    bucketName = bucketName || env.S3_BUCKET_NAME;
     return await s3Storage.deleteObject(bucketName, fileKey);
   }
 });
@@ -52,12 +53,12 @@ export const objectExists = createServerOnlyFn(
     try {
       if (storageType === 'r2') {
         const { r2Storage } = await import('./r2');
-        bucketName = bucketName || process.env['R2_BUCKET_NAME'] || '';
+        bucketName = bucketName || env.R2_BUCKET_NAME;
         const response = await r2Storage.headObject(bucketName, fileKey);
         return response.ok;
       } else {
         const { s3Storage } = await import('./s3');
-        bucketName = bucketName || process.env['S3_BUCKET_NAME'] || '';
+        bucketName = bucketName || env.S3_BUCKET_NAME;
         await s3Storage.headObject(bucketName, fileKey);
         return true;
       }
@@ -74,11 +75,11 @@ export const copyObject = createServerOnlyFn(
     const storageType = getStorageType();
     if (storageType === 'r2') {
       const { r2Storage } = await import('./r2');
-      bucketName = bucketName || process.env['R2_BUCKET_NAME'] || '';
+      bucketName = bucketName || env.R2_BUCKET_NAME;
       return await r2Storage.copyObject(bucketName, sourceFileKey, destFileKey);
     } else {
       const { s3Storage } = await import('./s3');
-      bucketName = bucketName || process.env['S3_BUCKET_NAME'] || '';
+      bucketName = bucketName || env.S3_BUCKET_NAME;
       return await s3Storage.copyObject(bucketName, sourceFileKey, destFileKey);
     }
   },

@@ -5,6 +5,7 @@ import {
   Environment,
   TransactionType,
 } from 'app-store-server-api';
+import { env } from '@/env';
 import type { PlanType } from '@/types/quota';
 import type { IAPStatus } from '../types';
 import { IAPError } from '../types';
@@ -150,14 +151,11 @@ let defaultIAPVerifier: AppleIAPVerifier | undefined;
 export const getAppleIAPVerifier = () => {
   if (!defaultIAPVerifier) {
     defaultIAPVerifier = createAppleIAPVerifier({
-      keyId: process.env['APPLE_IAP_KEY_ID']!,
-      issuerId: process.env['APPLE_IAP_ISSUER_ID']!,
-      bundleId: process.env['APPLE_IAP_BUNDLE_ID']!,
-      privateKey: Buffer.from(
-        process.env['APPLE_IAP_PRIVATE_KEY_BASE64']! || '',
-        'base64',
-      ).toString('utf-8'),
-      environment: process.env['NODE_ENV'] === 'production' ? 'production' : 'sandbox',
+      keyId: env.APPLE_IAP_KEY_ID!,
+      issuerId: env.APPLE_IAP_ISSUER_ID!,
+      bundleId: env.APPLE_IAP_BUNDLE_ID!,
+      privateKey: Buffer.from(env.APPLE_IAP_PRIVATE_KEY_BASE64 ?? '', 'base64').toString('utf-8'),
+      environment: env.NODE_ENV === 'production' ? 'production' : 'sandbox',
     });
   }
   return defaultIAPVerifier;

@@ -1,9 +1,9 @@
 import type { Session } from '@/auth/server';
 import type { db } from '@/db/client';
 import { withBypassRls, withRls } from '@/db/rls';
+import { env } from '@/env';
 import { DEFAULT_STORAGE_QUOTA } from '@/services/constants';
 import type { UserPlan } from '@/types/quota';
-import { readPublicEnv } from '@/utils/publicEnv';
 import { resolveSessionOr401 } from './auth-fn';
 
 /**
@@ -148,7 +148,7 @@ export function getStoragePlanData(user: StoragePlanUserFields): {
   const plan = ((user.plan ?? 'free') as UserPlan) || 'free';
   const usage = user.storageUsageBytes ?? 0;
   const purchasedQuota = user.storagePurchasedBytes ?? 0;
-  const fixedQuota = Number.parseInt(readPublicEnv('VITE_STORAGE_FIXED_QUOTA') || '0', 10);
+  const fixedQuota = env.VITE_STORAGE_FIXED_QUOTA ?? 0;
   const planQuota = fixedQuota || DEFAULT_STORAGE_QUOTA[plan] || DEFAULT_STORAGE_QUOTA['free'];
   const quota = planQuota + purchasedQuota;
   return { plan, usage, quota };

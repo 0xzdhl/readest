@@ -1,5 +1,6 @@
 import crypto from 'node:crypto';
 import { createFileRoute } from '@tanstack/react-router';
+import { env as appEnv } from '@/env';
 
 // TODO: use t3-env
 async function getCloudflareContext(): Promise<{ env: Record<string, unknown> }> {
@@ -14,9 +15,6 @@ async function getCloudflareContext(): Promise<{ env: Record<string, unknown> }>
 import { runAuth } from '@/libs/server/route-helpers';
 import { ErrorCodes } from '@/services/translators';
 import { getDailyTranslationPlanData, getSubscriptionPlan } from '@/utils/access';
-
-const DEFAULT_DEEPL_FREE_API = 'https://api-free.deepl.com/v2/translate';
-const DEFAULT_DEEPL_PRO_API = 'https://api.deepl.com/v2/translate';
 
 interface KVNamespace {
   get(key: string): Promise<string | null>;
@@ -77,7 +75,7 @@ async function callDeepLAPI(
     method: 'POST',
     headers: {
       Authorization: `DeepL-Auth-Key ${authKey}`,
-      'x-fingerprint': process.env['DEEPL_X_FINGERPRINT'] || '',
+      'x-fingerprint': appEnv.DEEPL_X_FINGERPRINT,
       'Content-Type': 'application/json',
     },
     body: JSON.stringify(requestBody),
@@ -132,16 +130,15 @@ export const Route = createFileRoute('/api/deepl/translate')({
           }
           const hasKVCache = !!env['TRANSLATIONS_KV'];
 
-          const { DEEPL_PRO_API, DEEPL_FREE_API } = process.env;
-          const deepFreeApiUrl = DEEPL_FREE_API || DEFAULT_DEEPL_FREE_API;
-          const deeplProApiUrl = DEEPL_PRO_API || DEFAULT_DEEPL_PRO_API;
+          const deepFreeApiUrl = appEnv.DEEPL_FREE_API;
+          const deeplProApiUrl = appEnv.DEEPL_PRO_API;
 
           const userPlan = getSubscriptionPlan(user);
           const deeplApiUrl = userPlan === 'pro' ? deeplProApiUrl : deepFreeApiUrl;
           const deeplAuthKey =
             deeplApiUrl === deeplProApiUrl
-              ? getDeepLAPIKey(process.env['DEEPL_PRO_API_KEYS'])
-              : getDeepLAPIKey(process.env['DEEPL_FREE_API_KEYS']);
+              ? getDeepLAPIKey(appEnv.DEEPL_PRO_API_KEYS)
+              : getDeepLAPIKey(appEnv.DEEPL_FREE_API_KEYS);
 
           // Per-character daily-quota cap (advisory): block requests that would
           // burst-write more than the plan's daily allowance in a single call.
