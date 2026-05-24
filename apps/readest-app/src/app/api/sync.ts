@@ -11,7 +11,7 @@ import {
   sql,
 } from 'drizzle-orm';
 import type { PgTable } from 'drizzle-orm/pg-core';
-import type { db } from '@/db/client';
+import type { DbTransaction } from '@/db/client';
 import { withRls } from '@/db/rls';
 import { bookConfigs, bookNotes, books } from '@/db/schema';
 import { resolveSessionOr401 } from '@/libs/server/auth-fn';
@@ -127,7 +127,7 @@ export interface SyncHandlerContext {
   user: { id: string };
   // `db.transaction(...)`'s callback parameter type — exposed via
   // `Parameters<...>` to avoid leaking drizzle-internal symbols.
-  tx: Parameters<Parameters<typeof db.transaction>[0]>[0];
+  tx: Parameters<Parameters<DbTransaction>[0]>[0];
 }
 
 const SYNC_TYPE_FOR_TABLE: Record<'books' | 'bookConfigs' | 'bookNotes', SyncType> = {

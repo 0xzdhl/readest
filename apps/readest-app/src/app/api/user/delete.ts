@@ -1,5 +1,5 @@
 import { createFileRoute } from '@tanstack/react-router';
-import { auth } from '@/auth/server';
+import { authMiddleware } from '@/middlewares/auth';
 
 /**
  * Phase 6 of the supabase→better-auth migration: replaces the legacy
@@ -36,8 +36,10 @@ const hasStatusCode = (error: unknown): error is { statusCode: number; body?: { 
 
 export const Route = createFileRoute('/api/user/delete')({
   server: {
+    middleware: [authMiddleware],
     handlers: {
-      DELETE: async ({ request }) => {
+      DELETE: async ({ request, context }) => {
+        const auth = context.auth;
         try {
           await auth.api.deleteUser({
             headers: request.headers,

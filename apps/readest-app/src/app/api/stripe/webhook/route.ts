@@ -1,7 +1,7 @@
 import { createFileRoute } from '@tanstack/react-router';
 import { eq, sql } from 'drizzle-orm';
 import type Stripe from 'stripe';
-import type { db } from '@/db/client';
+import type { DbTransaction } from '@/db/client';
 import { customers, subscriptions, user } from '@/db/schema';
 import { env } from '@/env';
 import {
@@ -11,7 +11,7 @@ import {
 } from '@/libs/payment/stripe/server';
 import { runService } from '@/libs/server/route-helpers';
 
-type TxLike = Parameters<Parameters<typeof db.transaction>[0]>[0];
+type TxLike = Parameters<Parameters<DbTransaction>[0]>[0];
 
 /**
  * Phase 6 of the supabase→better-auth migration. Stripe webhook lives on

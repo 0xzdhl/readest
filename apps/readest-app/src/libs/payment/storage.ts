@@ -1,9 +1,9 @@
 import { and, eq, inArray, sql } from 'drizzle-orm';
-import type { db } from '@/db/client';
+import type { DbTransaction } from '@/db/client';
 import { payments, user } from '@/db/schema';
 import { COMPLETED_PAYMENT_STATUSES } from '@/types/payment';
 
-type TxLike = Parameters<Parameters<typeof db.transaction>[0]>[0];
+type TxLike = Parameters<Parameters<DbTransaction>[0]>[0];
 
 /**
  * Recompute the user's purchased storage from the `payments` ledger and write

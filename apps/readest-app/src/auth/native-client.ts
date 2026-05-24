@@ -1,7 +1,7 @@
-import { createAuthClient } from 'better-auth/react';
 import { inferAdditionalFields, magicLinkClient } from 'better-auth/client/plugins';
+import { createAuthClient } from 'better-auth/react';
 import { env } from '@/env';
-import type { auth } from './server';
+import type { Auth } from './server';
 
 /**
  * Storage key for the better-auth bearer token, used by Tauri (desktop +
@@ -52,7 +52,7 @@ function storeToken(token: string | null): void {
  */
 export const nativeAuthClient = createAuthClient({
   baseURL: env.VITE_BETTER_AUTH_URL,
-  plugins: [magicLinkClient(), inferAdditionalFields<typeof auth>()],
+  plugins: [magicLinkClient(), inferAdditionalFields<Auth>()],
   fetchOptions: {
     auth: {
       type: 'Bearer',

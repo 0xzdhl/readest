@@ -1,7 +1,8 @@
-import { createMiddleware, createServerFn } from '@tanstack/react-start';
-import { getRequest } from '@tanstack/react-start/server';
-import { auth, type Session } from '@/auth/server';
-import { withBypassRls, withRls } from '@/db/rls';
+import { createMiddleware, createServerFn } from "@tanstack/react-start";
+import { getRequest } from "@tanstack/react-start/server";
+import type { Auth, Session } from "@/auth/server";
+import { withBypassRls, withRls } from "@/db/rls";
+import { authMiddleware } from "@/middlewares/auth";
 
 /**
  * Resolve the better-auth session from incoming request headers, or throw a
@@ -12,12 +13,15 @@ import { withBypassRls, withRls } from '@/db/rls';
  * `createServerFn().middleware([...])` machinery — that wiring is
  * exercised end-to-end by the API-route tests added in Phase 4+.
  */
-export async function resolveSessionOr401(headers: Headers): Promise<NonNullable<Session>> {
-  const session = await auth.api.getSession({ headers });
-  if (!session) {
-    throw new Response('Unauthorized', { status: 401 });
-  }
-  return session;
+export async function resolveSessionOr401(
+	auth: Auth,
+	headers: Headers,
+): Promise<NonNullable<Session>> {
+	const session = await auth.api.getSession({ headers });
+	if (!session) {
+		throw new Response("Unauthorized", { status: 401 });
+	}
+	return session;
 }
 
 /**
@@ -26,15 +30,17 @@ export async function resolveSessionOr401(headers: Headers): Promise<NonNullable
  * `db/migrations/0001_rls_and_pg_funcs.sql`) allow access to the caller's
  * rows. Injects `{ user, session, tx }` onto `context`.
  */
-export const requireAuthMiddleware = createMiddleware({ type: 'function' }).server(
-  async ({ next }) => {
-    const request = getRequest();
-    const session = await resolveSessionOr401(request.headers);
-    return withRls(session.user.id, (tx) =>
-      next({ context: { user: session.user, session, tx } }),
-    );
-  },
-);
+export const requireAuthMiddleware = createMiddleware({ type: "function" })
+	.middleware([authMiddleware])
+	.server(async ({ next, context }) => {
+    const auth = context.auth;
+    const db = 
+		const request = getRequest();
+		const session = await resolveSessionOr401(auth, request.headers);
+		return withRls(session.user.id, (tx) =>
+			next({ context: { user: session.user, session, tx } }),
+		);
+	});
 
 /**
  * Middleware: no session check, RLS bypassed via `app.bypass_rls = 'true'`.
@@ -43,9 +49,9 @@ export const requireAuthMiddleware = createMiddleware({ type: 'function' }).serv
  * and admin scripts. The route is responsible for verifying the signature
  * *before* its handler runs.
  */
-export const bypassRlsMiddleware = createMiddleware({ type: 'function' }).server(
-  async ({ next }) => withBypassRls((tx) => next({ context: { tx } })),
-);
+export const bypassRlsMiddleware = createMiddleware({
+	type: "function",
+}).server(async ({ next }) => withBypassRls((tx) => next({ context: { tx } })));
 
 /**
  * Protected server function: composes `requireAuthMiddleware`.

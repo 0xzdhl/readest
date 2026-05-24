@@ -1,7 +1,7 @@
-import { sql } from 'drizzle-orm';
-import { db } from './client';
+import { sql } from "drizzle-orm";
+import type { DbClient, DbTransaction } from "./client";
 
-type TxLike = Parameters<Parameters<typeof db.transaction>[0]>[0];
+type TxLike = Parameters<Parameters<DbTransaction>[0]>[0];
 
 /**
  * Run `fn` inside a transaction with `app.user_id` set so the per-table RLS
@@ -20,15 +20,16 @@ type TxLike = Parameters<Parameters<typeof db.transaction>[0]>[0];
  * pass the `tx` parameter through rather than re-entering.
  */
 export async function withRls<T>(
-  userId: string | null,
-  fn: (tx: TxLike) => Promise<T>,
+	userId: string | null,
+	db: DbClient,
+	fn: (tx: TxLike) => Promise<T>,
 ): Promise<T> {
-  return db.transaction(async (tx) => {
-    if (userId) {
-      await tx.execute(sql`SELECT set_config('app.user_id', ${userId}, true)`);
-    }
-    return fn(tx);
-  });
+	return db.transaction(async (tx) => {
+		if (userId) {
+			await tx.execute(sql`SELECT set_config('app.user_id', ${userId}, true)`);
+		}
+		return fn(tx);
+	});
 }
 
 /**
@@ -42,10 +43,11 @@ export async function withRls<T>(
  * of the outer transaction.
  */
 export async function withBypassRls<T>(
-  fn: (tx: TxLike) => Promise<T>,
+	db: DbClient,
+	fn: (tx: TxLike) => Promise<T>,
 ): Promise<T> {
-  return db.transaction(async (tx) => {
-    await tx.execute(sql`SELECT set_config('app.bypass_rls', 'true', true)`);
-    return fn(tx);
-  });
+	return db.transaction(async (tx) => {
+		await tx.execute(sql`SELECT set_config('app.bypass_rls', 'true', true)`);
+		return fn(tx);
+	});
 }

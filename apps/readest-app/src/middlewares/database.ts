@@ -1,8 +1,16 @@
-import { createMiddleware } from '@tanstack/react-start';
+import { createMiddleware } from "@tanstack/react-start";
+import { createDbClient } from "@/db/client";
 
 /**
  * Initialize drizzle-orm
  */
-export const databaseMiddleware = createMiddleware().server(async ({ next }) => {
-  return next();
-});
+export const databaseMiddleware = createMiddleware().server(
+	async ({ next }) => {
+		const db = createDbClient();
+		return next({
+			context: {
+				db,
+			},
+		});
+	},
+);
