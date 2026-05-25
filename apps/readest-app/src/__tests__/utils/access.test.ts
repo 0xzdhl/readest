@@ -7,9 +7,10 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 // and mock the daily-translation usage helper so we can pin translation
 // math.
 
+let isTauri = false;
 vi.mock('@/services/environment', () => ({
-  isWebAppPlatform: () => true,
-  isTauriAppPlatform: () => false,
+  isWebAppPlatform: () => !isTauri,
+  isTauriAppPlatform: () => isTauri,
 }));
 
 vi.mock('@/utils/publicEnv', () => ({
@@ -22,7 +23,7 @@ vi.mock('@/services/translators/utils', () => ({
 }));
 
 vi.mock('@/auth', () => ({
-  loadToken: vi.fn(() => null),
+  loadSessionToken: vi.fn(() => null),
   authClient: {
     getSession: vi.fn(async () => ({ data: null })),
   },
@@ -36,8 +37,10 @@ import {
   getDailyTranslationPlanData,
   getTranslationQuota,
   STORAGE_QUOTA_GRACE_BYTES,
+  getNativeSessionToken,
 } from '@/utils/access';
 import { getDailyUsage } from '@/services/translators/utils';
+import { loadSessionToken } from '@/auth';
 
 type StubUser = {
   id: string;
@@ -58,7 +61,9 @@ const mkUser = (overrides: Partial<StubUser> = {}): StubUser => ({
 
 describe('access.ts (better-auth)', () => {
   beforeEach(() => {
+    isTauri = false;
     vi.mocked(getDailyUsage).mockReturnValue(0);
+    vi.mocked(loadSessionToken).mockReturnValue(null);
   });
   afterEach(() => {
     vi.restoreAllMocks();
@@ -84,9 +89,9 @@ describe('access.ts (better-auth)', () => {
 
   describe('getUserProfilePlan', () => {
     it("returns 'purchase' when free user has purchased storage", () => {
-      expect(
-        getUserProfilePlan(mkUser({ plan: 'free', storagePurchasedBytes: 100 })),
-      ).toBe('purchase');
+      expect(getUserProfilePlan(mkUser({ plan: 'free', storagePurchasedBytes: 100 }))).toBe(
+        'purchase',
+      );
     });
     it("keeps 'free' when no purchase", () => {
       expect(getUserProfilePlan(mkUser({ plan: 'free' }))).toBe('free');
@@ -140,6 +145,19 @@ describe('access.ts (better-auth)', () => {
     it('returns plan + quota only', () => {
       const data = getDailyTranslationPlanData(mkUser({ plan: 'pro' }));
       expect(data).toEqual({ plan: 'pro', quota: 500 * 1024 });
+    });
+  });
+
+  describe('getNativeSessionToken', () => {
+    it('returns null on web so callers rely on cookie credentials', async () => {
+      await expect(getNativeSessionToken()).resolves.toBeNull();
+    });
+
+    it('returns the stored Better Auth session token on native', async () => {
+      isTauri = true;
+      vi.mocked(loadSessionToken).mockReturnValueOnce('session-token-123');
+
+      await expect(getNativeSessionToken()).resolves.toBe('session-token-123');
     });
   });
 });

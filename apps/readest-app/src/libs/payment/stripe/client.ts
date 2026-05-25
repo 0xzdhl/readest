@@ -1,12 +1,12 @@
+import { loadStripe, type Stripe as StripeClient } from '@stripe/stripe-js';
+import { openUrl } from '@tauri-apps/plugin-opener';
 import posthog from 'posthog-js';
 import type Stripe from 'stripe';
-import { loadStripe, type Stripe as StripeClient } from '@stripe/stripe-js';
-import { getAPIBaseUrl, isTauriAppPlatform, isWebAppPlatform } from '@/services/environment';
-import { openUrl } from '@tauri-apps/plugin-opener';
 import { env } from '@/env';
-import { getAccessToken } from '@/utils/access';
+import { getAPIBaseUrl, isTauriAppPlatform, isWebAppPlatform } from '@/services/environment';
 import type { StripeProductMetadata } from '@/types/payment';
 import type { AvailablePlan, PlanInterval, PlanType, UserPlan } from '@/types/quota';
+import { fetchWithAuth } from '@/utils/fetch';
 
 let stripePromise: Promise<StripeClient | null>;
 
@@ -113,21 +113,14 @@ export const createStripeCheckoutSession = async (
   productId: string,
   planType: PlanType = 'subscription',
 ): Promise<StripeCheckoutResponse> => {
-  const token = await getAccessToken();
   const isEmbeddedCheckout = isTauriAppPlatform();
-
-  const response = await fetch(WEB_STRIPE_CHECKOUT_URL, {
+  const response = await fetchWithAuth(WEB_STRIPE_CHECKOUT_URL, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      Authorization: `Bearer ${token}`,
     },
     body: JSON.stringify({ priceId: productId, planType, embedded: isEmbeddedCheckout }),
   });
-
-  if (!response.ok) {
-    throw new Error('Failed to create Stripe checkout session');
-  }
 
   const data = await response.json();
   if (!isStripeCheckoutResponse(data)) {
@@ -149,13 +142,10 @@ export const redirectToStripeCheckout = async (url?: string): Promise<void> => {
 };
 
 export const createStripePortalSession = async () => {
-  const token = await getAccessToken();
-
-  const response = await fetch(WEB_STRIPE_PORTAL_URL, {
+  const response = await fetchWithAuth(WEB_STRIPE_PORTAL_URL, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      Authorization: `Bearer ${token}`,
     },
   });
 

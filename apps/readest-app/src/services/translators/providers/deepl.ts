@@ -1,13 +1,14 @@
 import { getAPIBaseUrl } from '@/services/environment';
-import { stubTranslation as _ } from '@/utils/misc';
-import { ErrorCodes, type TranslationProvider } from '../types';
 import type { UserPlan } from '@/types/quota';
 import { getTranslationQuota } from '@/utils/access';
+import { fetchWithAuth } from '@/utils/fetch';
 import { normalizeToShortLang } from '@/utils/lang';
-import { getStringProperty, isRecord } from '@/utils/unknown';
+import { stubTranslation as _ } from '@/utils/misc';
+import { isRecord } from '@/utils/unknown';
+import { ErrorCodes, type TranslationProvider } from '../types';
 import { saveDailyUsage } from '../utils';
 
-const DEEPL_API_ENDPOINT = getAPIBaseUrl() + '/deepl/translate';
+const DEEPL_API_ENDPOINT = `${getAPIBaseUrl()}/deepl/translate`;
 
 interface DeepLTranslation {
   text?: string;
@@ -28,15 +29,9 @@ export const deeplProvider: TranslationProvider = {
     text: string[],
     sourceLang: string,
     targetLang: string,
-    token?: string | null,
+    _token?: string | null,
     useCache: boolean = false,
   ): Promise<string[]> => {
-    const authRequired = deeplProvider.authRequired;
-
-    const headers: Record<string, string> = {
-      'Content-Type': 'application/json',
-    };
-
     // Plan-aware quota math is now enforced exclusively by the server
     // (apps/readest-app/src/app/api/deepl/translate.ts reads
     // `session.user.plan` from better-auth). Client-side we treat every
@@ -44,13 +39,6 @@ export const deeplProvider: TranslationProvider = {
     // saveDailyUsage write rate-limits politely; the server returns the
     // authoritative `daily_usage` on every response anyway.
     const userPlan: UserPlan = 'free';
-    if (token) {
-      headers['Authorization'] = `Bearer ${token}`;
-    }
-
-    if (authRequired && !token) {
-      throw new Error('Authentication token is required for DeepL translation');
-    }
 
     const normalizedSourceLang = normalizeToShortLang(sourceLang).toUpperCase();
     const body = JSON.stringify({
@@ -62,17 +50,13 @@ export const deeplProvider: TranslationProvider = {
 
     const quota = getTranslationQuota(userPlan);
     try {
-      const response = await fetch(DEEPL_API_ENDPOINT, { method: 'POST', headers, body });
-
-      if (!response.ok) {
-        const data: unknown = await response.json();
-        if (getStringProperty(data, 'error') === ErrorCodes.DAILY_QUOTA_EXCEEDED) {
-          saveDailyUsage(quota);
-          deeplProvider.quotaExceeded = true;
-          throw new Error(ErrorCodes.DAILY_QUOTA_EXCEEDED);
-        }
-        throw new Error(`Translation failed with status ${response.status}`);
-      }
+      const response = await fetchWithAuth(DEEPL_API_ENDPOINT, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body,
+      });
 
       const data = (await response.json()) as DeepLResponse;
       if (!data.translations) {
@@ -91,6 +75,11 @@ export const deeplProvider: TranslationProvider = {
         return translation?.text || line;
       });
     } catch (error) {
+      if (error instanceof Error && error.message === ErrorCodes.DAILY_QUOTA_EXCEEDED) {
+        saveDailyUsage(quota);
+        deeplProvider.quotaExceeded = true;
+        throw error;
+      }
       throw error;
     }
   },

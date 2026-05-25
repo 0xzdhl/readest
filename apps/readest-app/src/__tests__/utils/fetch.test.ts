@@ -2,14 +2,19 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 
 // Mock the access module before importing fetch utilities
 vi.mock('@/utils/access', () => ({
-  getAccessToken: vi.fn(),
+  getNativeSessionToken: vi.fn(),
+}));
+
+var isTauri = false;
+vi.mock('@/services/environment', () => ({
+  isTauriAppPlatform: () => isTauri,
 }));
 
 const mockFetch = vi.fn();
 vi.stubGlobal('fetch', mockFetch);
 
 import { fetchWithTimeout, fetchWithAuth } from '@/utils/fetch';
-import { getAccessToken } from '@/utils/access';
+import { getNativeSessionToken } from '@/utils/access';
 
 describe('fetchWithTimeout', () => {
   beforeEach(() => {
@@ -117,8 +122,9 @@ describe('fetchWithTimeout', () => {
 
 describe('fetchWithAuth', () => {
   beforeEach(() => {
+    isTauri = false;
     mockFetch.mockReset();
-    vi.mocked(getAccessToken).mockReset();
+    vi.mocked(getNativeSessionToken).mockReset();
     vi.spyOn(console, 'error').mockImplementation(() => {});
   });
 
@@ -126,8 +132,23 @@ describe('fetchWithAuth', () => {
     vi.restoreAllMocks();
   });
 
-  it('throws when not authenticated (no token)', async () => {
-    vi.mocked(getAccessToken).mockResolvedValueOnce(null);
+  it('web without token falls back to cookie session auth', async () => {
+    vi.mocked(getNativeSessionToken).mockResolvedValueOnce(null);
+    mockFetch.mockResolvedValueOnce(new Response('OK', { status: 200 }));
+
+    await fetchWithAuth('https://api.example.com/data', { method: 'GET' });
+
+    expect(mockFetch).toHaveBeenCalledOnce();
+    const opts = mockFetch.mock.calls[0]![1];
+    expect(opts.credentials).toBe('include');
+    const headers = new Headers(opts.headers);
+    expect(headers.get('Authorization')).toBeNull();
+    expect(headers.get('Cookie')).toBeNull();
+  });
+
+  it('native without token still throws', async () => {
+    isTauri = true;
+    vi.mocked(getNativeSessionToken).mockResolvedValueOnce(null);
 
     await expect(fetchWithAuth('https://api.example.com/data', { method: 'GET' })).rejects.toThrow(
       'Not authenticated',
@@ -136,18 +157,22 @@ describe('fetchWithAuth', () => {
     expect(mockFetch).not.toHaveBeenCalled();
   });
 
-  it('adds Authorization header with Bearer token', async () => {
-    vi.mocked(getAccessToken).mockResolvedValueOnce('my-token-123');
+  it('native adds a Better Auth session cookie header from the stored session token', async () => {
+    isTauri = true;
+    vi.mocked(getNativeSessionToken).mockResolvedValueOnce('my-token-123');
     mockFetch.mockResolvedValueOnce(new Response('OK', { status: 200 }));
 
     await fetchWithAuth('https://api.example.com/data', { method: 'GET' });
 
     const opts = mockFetch.mock.calls[0]![1];
-    expect(opts.headers.Authorization).toBe('Bearer my-token-123');
+    const headers = new Headers(opts.headers);
+    expect(headers.get('Authorization')).toBeNull();
+    expect(headers.get('Cookie')).toContain('my-token-123');
   });
 
-  it('merges existing headers with Authorization', async () => {
-    vi.mocked(getAccessToken).mockResolvedValueOnce('token');
+  it('merges existing headers with the Better Auth session cookie header on native', async () => {
+    isTauri = true;
+    vi.mocked(getNativeSessionToken).mockResolvedValueOnce('token');
     mockFetch.mockResolvedValueOnce(new Response('OK', { status: 200 }));
 
     await fetchWithAuth('https://api.example.com', {
@@ -156,12 +181,14 @@ describe('fetchWithAuth', () => {
     });
 
     const opts = mockFetch.mock.calls[0]![1];
-    expect(opts.headers.Authorization).toBe('Bearer token');
-    expect(opts.headers['Content-Type']).toBe('application/json');
+    const headers = new Headers(opts.headers);
+    expect(headers.get('Authorization')).toBeNull();
+    expect(headers.get('Cookie')).toContain('token');
+    expect(headers.get('Content-Type')).toBe('application/json');
   });
 
   it('returns the response on success', async () => {
-    vi.mocked(getAccessToken).mockResolvedValueOnce('token');
+    vi.mocked(getNativeSessionToken).mockResolvedValueOnce('token');
     const mockResponse = new Response('data', { status: 200 });
     mockFetch.mockResolvedValueOnce(mockResponse);
 
@@ -170,7 +197,7 @@ describe('fetchWithAuth', () => {
   });
 
   it('throws when response is not ok', async () => {
-    vi.mocked(getAccessToken).mockResolvedValueOnce('token');
+    vi.mocked(getNativeSessionToken).mockResolvedValueOnce('token');
     mockFetch.mockResolvedValueOnce({
       ok: false,
       statusText: 'Forbidden',
@@ -183,7 +210,7 @@ describe('fetchWithAuth', () => {
   });
 
   it('uses statusText when error field is missing from response', async () => {
-    vi.mocked(getAccessToken).mockResolvedValueOnce('token');
+    vi.mocked(getNativeSessionToken).mockResolvedValueOnce('token');
     mockFetch.mockResolvedValueOnce({
       ok: false,
       statusText: 'Internal Server Error',

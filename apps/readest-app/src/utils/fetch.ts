@@ -1,4 +1,6 @@
-import { getAccessToken } from './access';
+import { isTauriAppPlatform } from '@/services/environment';
+import { buildSessionCookieHeader } from '@/auth';
+import { getNativeSessionToken } from './access';
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   typeof value === 'object' && value !== null;
@@ -20,17 +22,35 @@ export const fetchWithTimeout = (url: string, options: RequestInit = {}, timeout
   }).finally(() => clearTimeout(id));
 };
 
-export const fetchWithAuth = async (url: string, options: RequestInit) => {
-  const token = await getAccessToken();
-  if (!token) {
+export const buildAuthFetchOptions = async (options: RequestInit = {}): Promise<RequestInit> => {
+  const token = await getNativeSessionToken();
+  const headers = new Headers(options.headers);
+  headers.delete('Authorization');
+  if (token) {
+    const cookieHeader = buildSessionCookieHeader(token);
+    return {
+      ...options,
+      credentials: 'omit',
+      headers: cookieHeader
+        ? (() => {
+            headers.set('Cookie', cookieHeader);
+            return headers;
+          })()
+        : headers,
+    };
+  }
+  if (isTauriAppPlatform()) {
     throw new Error('Not authenticated');
   }
-  const headers = {
-    ...options.headers,
-    Authorization: `Bearer ${token}`,
+  return {
+    ...options,
+    headers,
+    credentials: options.credentials ?? 'include',
   };
+};
 
-  const response = await fetch(url, { ...options, headers });
+export const fetchWithAuth = async (url: string, options: RequestInit) => {
+  const response = await fetch(url, await buildAuthFetchOptions(options));
 
   if (!response.ok) {
     const errorData = await response.json();

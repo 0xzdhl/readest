@@ -100,10 +100,11 @@ vi.mock('@/app/auth/utils/appleIdAuth', () => ({ getAppleIdAuth: vi.fn() }));
 vi.mock('@/app/auth/utils/nativeAuth', () => ({
   authWithSafari: vi.fn(),
   authWithCustomTab: vi.fn(),
-  extractBearerFromCallback: vi.fn(),
+  extractSessionTokenFromCallback: vi.fn(),
+  storeSessionTokenFromCallback: vi.fn(),
 }));
 
-import { AuthComponent } from "@/components/Auth";
+import { AuthComponent } from '@/components/Auth';
 
 describe('AuthComponent (better-auth)', () => {
   beforeEach(() => {

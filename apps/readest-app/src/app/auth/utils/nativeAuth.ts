@@ -2,7 +2,7 @@ import { invoke } from '@tauri-apps/api/core';
 import { listen } from '@tauri-apps/api/event';
 import { type as osType } from '@tauri-apps/plugin-os';
 
-import { storeToken } from '@/auth';
+import { storeSessionToken } from '@/auth';
 
 export interface AuthRequest {
   authUrl: string;
@@ -20,7 +20,7 @@ export interface AuthResponse {
  * task and resolve when the host fires `safari-auth-complete`. The auth
  * URL is the OAuth provider's authorise endpoint (Google, GitHub, etc.);
  * the response carries the deep-link the provider redirected to —
- * `readest://auth-callback?token=…` for the better-auth bearer flow.
+ * `readest://auth-callback?token=…` for the native session-token bridge.
  */
 export async function authWithSafari(request: AuthRequest): Promise<AuthResponse> {
   const OS_TYPE = osType();
@@ -31,13 +31,10 @@ export async function authWithSafari(request: AuthRequest): Promise<AuthResponse
     return result;
   } else if (OS_TYPE === 'macos') {
     return new Promise<AuthResponse>(async (resolve, reject) => {
-      const unlistenComplete = await listen<AuthResponse>(
-        'safari-auth-complete',
-        ({ payload }) => {
-          cleanup();
-          resolve(payload);
-        },
-      );
+      const unlistenComplete = await listen<AuthResponse>('safari-auth-complete', ({ payload }) => {
+        cleanup();
+        resolve(payload);
+      });
 
       function cleanup() {
         unlistenComplete();
@@ -69,19 +66,19 @@ export async function authWithCustomTab(request: AuthRequest): Promise<AuthRespo
 }
 
 /**
- * Pull the better-auth bearer token out of a deep-link callback URL.
+ * Pull the Better Auth session token out of a deep-link callback URL.
  *
- * better-auth's bearer plugin sets `set-auth-token` on the HTTP response
- * during web flows, but the OAuth callback URL we receive on native is
- * just a redirect — better-auth's server appends the token directly to
- * the callback URL it redirected to. The token can land in either the
- * query string or the hash fragment depending on whether the provider
- * preserved the original `response_mode`; check both.
+ * better-auth's bearer plugin exposes the signed `session_token` cookie
+ * value through `set-auth-token`. During native social OAuth, the server
+ * appends that token to the callback URL so the WebView can resume the
+ * session after the external browser round-trip. The token can land in
+ * either the query string or the hash fragment depending on whether the
+ * provider preserved the original `response_mode`; check both.
  *
  * Returns `null` when no token is found (the caller should treat that
  * as a failed sign-in and bail).
  */
-export function extractBearerFromCallback(callbackUrl: string): string | null {
+export function extractSessionTokenFromCallback(callbackUrl: string): string | null {
   let queryToken: string | null = null;
   let hashToken: string | null = null;
   try {
@@ -103,13 +100,13 @@ export function extractBearerFromCallback(callbackUrl: string): string | null {
 }
 
 /**
- * Convenience wrapper used by the auth page: extract the bearer from a
+ * Convenience wrapper used by the auth page: extract the session token from a
  * provider redirect URL and stash it in the native client's localStorage
- * slot. After this call the existing `nativeAuthClient.useSession()` will
- * pick the token up on its next request.
+ * slot. After this call the native auth client replays the Better Auth
+ * session cookie on its next request.
  */
-export function storeBearerFromCallback(callbackUrl: string): string | null {
-  const token = extractBearerFromCallback(callbackUrl);
-  if (token) storeToken(token);
+export function storeSessionTokenFromCallback(callbackUrl: string): string | null {
+  const token = extractSessionTokenFromCallback(callbackUrl);
+  if (token) storeSessionToken(token);
   return token;
 }

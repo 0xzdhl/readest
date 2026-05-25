@@ -1,51 +1,50 @@
 import { useEffect } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { useEnv } from '@/context/EnvContext';
-import { useCustomDictionaryStore, findDictionaryByContentId } from '@/store/customDictionaryStore';
-import {
-  useCustomFontStore,
-  findFontByContentId,
-  migrateLegacyFonts,
-} from '@/store/customFontStore';
-import {
-  useCustomTextureStore,
-  findTextureByContentId,
-  migrateLegacyTextures,
-} from '@/store/customTextureStore';
-import { useCustomOPDSStore, findOPDSCatalogByContentId } from '@/store/customOPDSStore';
-import { transferManager } from '@/services/transferManager';
-import { getReplicaSync, subscribeReplicaSyncReady } from '@/services/sync/replicaSync';
+import type { ImportedDictionary } from '@/services/dictionaries/types';
+import type { EnvConfigType } from '@/services/environment';
 import { dictionaryAdapter } from '@/services/sync/adapters/dictionary';
 import { fontAdapter } from '@/services/sync/adapters/font';
-import { textureAdapter } from '@/services/sync/adapters/texture';
 import { opdsCatalogAdapter } from '@/services/sync/adapters/opdsCatalog';
-import { settingsAdapter, type SettingsRemoteRecord } from '@/services/sync/adapters/settings';
+import { type SettingsRemoteRecord, settingsAdapter } from '@/services/sync/adapters/settings';
+import { textureAdapter } from '@/services/sync/adapters/texture';
+import { queueReplicaBinaryUpload } from '@/services/sync/replicaBinaryUpload';
+import {
+  type PullAndApplyDeps,
+  type ReplicaLocalRecord,
+  replicaPullAndApply,
+} from '@/services/sync/replicaPullAndApply';
+import type { ReplicaAdapter } from '@/services/sync/replicaRegistry';
 import {
   applyRemoteSettings,
   clearStoredEncryptedHashes,
   getStoredLastSeenCipher,
   publishSettingsIfChanged,
 } from '@/services/sync/replicaSettingsSync';
-import { useSettingsStore } from '@/store/settingsStore';
-import { queueReplicaBinaryUpload } from '@/services/sync/replicaBinaryUpload';
-import {
-  replicaPullAndApply,
-  type PullAndApplyDeps,
-  type ReplicaLocalRecord,
-} from '@/services/sync/replicaPullAndApply';
-import type { ReplicaAdapter } from '@/services/sync/replicaRegistry';
-import { getAccessToken } from '@/utils/access';
-import { isSyncCategoryEnabled } from '@/services/sync/syncCategories';
-import { uniqueId } from '@/utils/misc';
-import type { EnvConfigType } from '@/services/environment';
-import type { AppService, BaseDir } from '@/types/system';
+import { getReplicaSync, subscribeReplicaSyncReady } from '@/services/sync/replicaSync';
 import type { ReplicaSyncManager } from '@/services/sync/replicaSyncManager';
-import type { ImportedDictionary } from '@/services/dictionaries/types';
+import { isSyncCategoryEnabled } from '@/services/sync/syncCategories';
+import { transferManager } from '@/services/transferManager';
+import { findDictionaryByContentId, useCustomDictionaryStore } from '@/store/customDictionaryStore';
+import {
+  findFontByContentId,
+  migrateLegacyFonts,
+  useCustomFontStore,
+} from '@/store/customFontStore';
+import { findOPDSCatalogByContentId, useCustomOPDSStore } from '@/store/customOPDSStore';
+import {
+  findTextureByContentId,
+  migrateLegacyTextures,
+  useCustomTextureStore,
+} from '@/store/customTextureStore';
+import { useSettingsStore } from '@/store/settingsStore';
 import type { CustomFont } from '@/styles/fonts';
 import type { CustomTexture } from '@/styles/textures';
 import type { OPDSCatalog } from '@/types/opds';
 import type { Hlc, ReplicaRow } from '@/types/replica';
 import type { SystemSettings } from '@/types/settings';
+import type { AppService, BaseDir } from '@/types/system';
+import { uniqueId } from '@/utils/misc';
 
 export type ReplicaKind = 'dictionary' | 'font' | 'texture' | 'opds_catalog' | 'settings';
 
@@ -191,16 +190,12 @@ const buildReplicaPullDeps = <T extends ReplicaLocalRecord>(
   // The pull skips when this resolves false. We piggyback the
   // user-facing category gate here so disabling a kind in
   // `User → Manage Sync` no-ops the pull (no HTTP, no warnings)
-  // alongside the auth precheck — same effect, half the wiring.
+  // on boot. Web auth is cookie-based, so bearer-token presence is
+  // not a valid login signal here.
   // Skipped on the incremental path: the orchestrator pre-filters
   // by category before dispatching the batched request, so this
   // would just re-check what's already been gated.
-  isAuthenticated: pullOverride
-    ? undefined
-    : async () => {
-        if (!isSyncCategoryEnabled(config.kind)) return false;
-        return !!(await getAccessToken());
-      },
+  isAuthenticated: pullOverride ? undefined : async () => isSyncCategoryEnabled(config.kind),
 });
 
 const dictionaryPullConfig: ReplicaPullConfig<ImportedDictionary> = {
@@ -474,7 +469,9 @@ const ensureSettingsBootPulled = (service: AppService, envConfig: EnvConfigType)
   registeredKinds.add('settings');
   pulledKinds.add('settings');
   pullInFlight.add('settings');
-  settingsBootPullPromise = runPullForKind('settings', service, envConfig, { since: null })
+  settingsBootPullPromise = runPullForKind('settings', service, envConfig, {
+    since: null,
+  })
     .catch((err) => {
       console.warn('replica settings pull failed', err);
       pulledKinds.delete('settings');

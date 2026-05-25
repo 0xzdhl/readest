@@ -1,15 +1,15 @@
+import { isTauriAppPlatform } from '@/services/environment';
 import { authClient as webClient } from './client';
 import { nativeAuthClient } from './native-client';
-import { isTauriAppPlatform } from '@/services/environment';
 
 /**
  * Platform-routed better-auth client.
  *
  * Web (cookie session)    → `client.ts`'s `authClient`.
  * Tauri / iOS / Android  → `native-client.ts`'s `nativeAuthClient`,
- *                          which persists the bearer token in the WebView's
- *                          localStorage and replays it via
- *                          `Authorization: Bearer …` headers.
+ *                          which persists the Better Auth session-token
+ *                          bridge in the WebView's localStorage and replays
+ *                          it as a `Cookie` header.
  *
  * Both clients are interface-compatible: they share `signIn` / `signOut` /
  * `signUp` / `useSession` / `getSession` / `magicLink` (via the plugin
@@ -24,4 +24,9 @@ import { isTauriAppPlatform } from '@/services/environment';
 export const authClient = isTauriAppPlatform() ? nativeAuthClient : webClient;
 
 export const { signIn, signOut, signUp, useSession, getSession } = authClient;
-export { loadToken, storeToken } from './native-client';
+export {
+  buildSessionCookieHeader,
+  getNativeSessionCookieHeader,
+  loadSessionToken,
+  storeSessionToken,
+} from './native-client';
