@@ -2,26 +2,20 @@ import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from 'vites
 import postgres from 'postgres';
 import { drizzle } from 'drizzle-orm/postgres-js';
 import { migrate } from 'drizzle-orm/postgres-js/migrator';
+import { runRoute } from '../utils/run-route';
 
 /**
- * Phase 5 integration test for the storage route tree (upload / download /
- * list / purge / stats / delete). Same scaffolding as `sync.test.ts`:
- *   - migrations applied as superuser
- *   - route module talks to PG as the constrained `readest_app` role so RLS
- *     is actually enforced (the table-owner pool would bypass it silently)
- *   - `@/auth/server.getSession` is mocked so individual cases can wire up
- *     the better-auth session a route handler sees
- *   - the storage object plane (`@/utils/object`) is mocked because the
- *     tests don't have R2/S3 access — only the auth + DB queries change
- *     in Phase 5, the object operations are unchanged
+ * Integration test for the storage route tree (upload / download / list /
+ * purge / stats / delete) using `rlsMiddleware`. Routes go through the
+ * middleware chain end-to-end via `runRoute` so RLS scoping is exercised
+ * against the real `readest_app` pool.
  */
 
 const getSessionMock = vi.hoisted(() => vi.fn());
 vi.mock('@/auth/server', () => ({
-  auth: { api: { getSession: getSessionMock } },
+  createAuth: () => ({ api: { getSession: getSessionMock } }),
 }));
 
-// Stub all storage primitives so tests don't reach for the network.
 vi.mock('@/utils/object', () => ({
   getDownloadSignedUrl: vi
     .fn()
@@ -54,18 +48,6 @@ let purgeModule: PurgeRoute;
 let statsModule: StatsRoute;
 let deleteModule: DeleteRoute;
 
-interface RouteShape {
-  options: {
-    server: {
-      handlers: {
-        GET?: (args: { request: Request }) => Promise<Response>;
-        POST?: (args: { request: Request }) => Promise<Response>;
-        DELETE?: (args: { request: Request }) => Promise<Response>;
-      };
-    };
-  };
-}
-
 const userA = '11111111-1111-1111-1111-111111111111';
 const userB = '22222222-2222-2222-2222-222222222222';
 
@@ -84,7 +66,9 @@ const sessionFor = (userId: string) => ({
   session: { id: 'sess-' + userId, userId, token: 't', expiresAt: new Date() },
 });
 
-describe.skipIf(!url)('/api/storage/* (drizzle + runProtected)', () => {
+type RouteLike = Parameters<typeof runRoute>[0];
+
+describe.skipIf(!url)('/api/storage/* (rlsMiddleware + RLS)', () => {
   beforeAll(async () => {
     adminClient = postgres(url!, { max: 1 });
     const adminDb = drizzle(adminClient);
@@ -103,7 +87,7 @@ describe.skipIf(!url)('/api/storage/* (drizzle + runProtected)', () => {
       throw new Error(`storage.test: connected as ${currentUser}, expected readest_app`);
     }
 
-    vi.doMock('@/db/client', () => ({ db: appDb, type: undefined }));
+    vi.doMock('@/db/client', () => ({ createDbClient: () => appDb }));
 
     uploadModule = await import('@/app/api/storage/upload');
     downloadModule = await import('@/app/api/storage/download');
@@ -131,12 +115,11 @@ describe.skipIf(!url)('/api/storage/* (drizzle + runProtected)', () => {
   // ─── upload ──────────────────────────────────────────────────────────────
   it('upload: 401 when no session', async () => {
     getSessionMock.mockResolvedValueOnce(null);
-    const post = (uploadModule.Route as unknown as RouteShape).options.server.handlers.POST!;
     const request = new Request('http://localhost/api/storage/upload', {
       method: 'POST',
       body: JSON.stringify({ fileName: 'x.epub', fileSize: 100 }),
     });
-    const response = await post({ request });
+    const response = await runRoute(uploadModule.Route as RouteLike, 'POST', { request });
     expect(response.status).toBe(401);
     const body = (await response.json()) as { error?: string };
     expect(body.error).toBe('Not authenticated');
@@ -144,12 +127,11 @@ describe.skipIf(!url)('/api/storage/* (drizzle + runProtected)', () => {
 
   it('upload: inserts files row and returns signed URL on first upload', async () => {
     getSessionMock.mockResolvedValueOnce(sessionFor(userA));
-    const post = (uploadModule.Route as unknown as RouteShape).options.server.handlers.POST!;
     const request = new Request('http://localhost/api/storage/upload', {
       method: 'POST',
       body: JSON.stringify({ fileName: 'book.epub', fileSize: 1000, bookHash: 'hash-A-1' }),
     });
-    const response = await post({ request });
+    const response = await runRoute(uploadModule.Route as RouteLike, 'POST', { request });
     expect(response.status).toBe(200);
     const body = (await response.json()) as { uploadUrl?: string; fileKey?: string };
     expect(body.fileKey).toBe(`${userA}/book.epub`);
@@ -168,28 +150,24 @@ describe.skipIf(!url)('/api/storage/* (drizzle + runProtected)', () => {
     await adminClient`INSERT INTO files (user_id, book_hash, file_key, file_size)
                       VALUES (${userA}, 'hash-A-2', ${userA + '/file.epub'}, 200)`;
     getSessionMock.mockResolvedValueOnce(sessionFor(userA));
-    const get = (downloadModule.Route as unknown as RouteShape).options.server.handlers.GET!;
     const request = new Request(
       `http://localhost/api/storage/download?fileKey=${encodeURIComponent(userA + '/file.epub')}`,
       { method: 'GET' },
     );
-    const response = await get({ request });
+    const response = await runRoute(downloadModule.Route as RouteLike, 'GET', { request });
     expect(response.status).toBe(200);
     const body = (await response.json()) as { downloadUrl?: string };
     expect(body.downloadUrl).toContain('signed.test');
   });
 
   it('download GET: cross-user RLS denial returns 404 (not 200 with other user URL)', async () => {
-    // Insert userA file, ask as userB. RLS hides the row; the handler then
-    // returns 404 "File not found" rather than minting a URL.
     await adminClient`INSERT INTO files (user_id, book_hash, file_key, file_size)
                       VALUES (${userA}, 'hash-secret', 'secret-key', 200)`;
     getSessionMock.mockResolvedValueOnce(sessionFor(userB));
-    const get = (downloadModule.Route as unknown as RouteShape).options.server.handlers.GET!;
     const request = new Request(`http://localhost/api/storage/download?fileKey=secret-key`, {
       method: 'GET',
     });
-    const response = await get({ request });
+    const response = await runRoute(downloadModule.Route as RouteLike, 'GET', { request });
     expect(response.status).toBe(404);
   });
 
@@ -199,9 +177,8 @@ describe.skipIf(!url)('/api/storage/* (drizzle + runProtected)', () => {
                       VALUES (${userA}, 'hash-A-3', ${userA + '/a.epub'}, 300),
                              (${userB}, 'hash-B-3', ${userB + '/b.epub'}, 400)`;
     getSessionMock.mockResolvedValueOnce(sessionFor(userA));
-    const get = (listModule.Route as unknown as RouteShape).options.server.handlers.GET!;
     const request = new Request('http://localhost/api/storage/list', { method: 'GET' });
-    const response = await get({ request });
+    const response = await runRoute(listModule.Route as RouteLike, 'GET', { request });
     expect(response.status).toBe(200);
     const body = (await response.json()) as { files: { file_key: string }[]; total: number };
     expect(body.total).toBe(1);
@@ -214,13 +191,11 @@ describe.skipIf(!url)('/api/storage/* (drizzle + runProtected)', () => {
                       VALUES (${userA}, 'hash-A-4', 'a-purge-key', 100),
                              (${userB}, 'hash-B-4', 'b-purge-key', 100)`;
     getSessionMock.mockResolvedValueOnce(sessionFor(userA));
-    const del = (purgeModule.Route as unknown as RouteShape).options.server.handlers.DELETE!;
     const request = new Request('http://localhost/api/storage/purge', {
       method: 'DELETE',
       body: JSON.stringify({ fileKeys: ['a-purge-key', 'b-purge-key'] }),
     });
-    const response = await del({ request });
-    // a-purge-key succeeds, b-purge-key not visible to userA → "File not found or already deleted"
+    const response = await runRoute(purgeModule.Route as RouteLike, 'DELETE', { request });
     expect(response.status).toBe(207);
     const body = (await response.json()) as {
       success: string[];
@@ -229,7 +204,6 @@ describe.skipIf(!url)('/api/storage/* (drizzle + runProtected)', () => {
     expect(body.success).toContain('a-purge-key');
     expect(body.failed.map((f) => f.fileKey)).toContain('b-purge-key');
 
-    // userB's row still exists
     const remaining = await adminClient<
       { file_key: string }[]
     >`SELECT file_key FROM files WHERE file_key = 'b-purge-key'`;
@@ -244,9 +218,8 @@ describe.skipIf(!url)('/api/storage/* (drizzle + runProtected)', () => {
                              (${userA}, 'hash-Y', ${userA + '/y.epub'}, 500),
                              (${userB}, 'hash-X', ${userB + '/x.epub'}, 9999)`;
     getSessionMock.mockResolvedValueOnce(sessionFor(userA));
-    const get = (statsModule.Route as unknown as RouteShape).options.server.handlers.GET!;
     const request = new Request('http://localhost/api/storage/stats', { method: 'GET' });
-    const response = await get({ request });
+    const response = await runRoute(statsModule.Route as RouteLike, 'GET', { request });
     expect(response.status).toBe(200);
     const body = (await response.json()) as {
       totalFiles: number;
@@ -255,7 +228,6 @@ describe.skipIf(!url)('/api/storage/* (drizzle + runProtected)', () => {
     };
     expect(body.totalFiles).toBe(3);
     expect(body.totalSize).toBe(1600);
-    // hash-X has more bytes than hash-Y, so it sorts first by totalSize desc.
     expect(body.byBookHash[0]?.bookHash).toBe('hash-X');
     expect(body.byBookHash[0]?.totalSize).toBe(1100);
     expect(body.byBookHash[1]?.bookHash).toBe('hash-Y');
@@ -268,21 +240,20 @@ describe.skipIf(!url)('/api/storage/* (drizzle + runProtected)', () => {
                       VALUES (${userA}, 'hash-A-5', 'a-del-key', 100),
                              (${userB}, 'hash-B-5', 'b-del-key', 100)`;
     getSessionMock.mockResolvedValueOnce(sessionFor(userA));
-    const del = (deleteModule.Route as unknown as RouteShape).options.server.handlers.DELETE!;
 
-    // Owner can delete
     const ownReq = new Request(`http://localhost/api/storage/delete?fileKey=a-del-key`, {
       method: 'DELETE',
     });
-    const ownResp = await del({ request: ownReq });
+    const ownResp = await runRoute(deleteModule.Route as RouteLike, 'DELETE', { request: ownReq });
     expect(ownResp.status).toBe(200);
 
-    // Cross-user 404
     getSessionMock.mockResolvedValueOnce(sessionFor(userA));
     const crossReq = new Request(`http://localhost/api/storage/delete?fileKey=b-del-key`, {
       method: 'DELETE',
     });
-    const crossResp = await del({ request: crossReq });
+    const crossResp = await runRoute(deleteModule.Route as RouteLike, 'DELETE', {
+      request: crossReq,
+    });
     expect(crossResp.status).toBe(404);
   });
 });

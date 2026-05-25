@@ -2,16 +2,16 @@ import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from 'vites
 import postgres from 'postgres';
 import { drizzle } from 'drizzle-orm/postgres-js';
 import { migrate } from 'drizzle-orm/postgres-js/migrator';
+import { runRoute } from '../utils/run-route';
 
 /**
- * Phase 5 integration test for /api/sync/replicas and /api/sync/replica-keys.
- * Same scaffolding as `sync.test.ts` and `storage.test.ts`: superuser
- * migrations + readest_app role for the route, mock the better-auth session.
+ * Integration tests for /api/sync/replicas and /api/sync/replica-keys
+ * under the new `rlsMiddleware` chain.
  */
 
 const getSessionMock = vi.hoisted(() => vi.fn());
 vi.mock('@/auth/server', () => ({
-  auth: { api: { getSession: getSessionMock } },
+  createAuth: () => ({ api: { getSession: getSessionMock } }),
 }));
 
 const url = process.env['TEST_DATABASE_URL'];
@@ -25,18 +25,6 @@ type ReplicaKeysRoute = typeof import('@/app/api/sync/replica-keys');
 
 let replicasModule: ReplicasRoute;
 let replicaKeysModule: ReplicaKeysRoute;
-
-interface RouteShape {
-  options: {
-    server: {
-      handlers: {
-        GET?: (args: { request: Request }) => Promise<Response>;
-        POST?: (args: { request: Request }) => Promise<Response>;
-        DELETE?: (args: { request: Request }) => Promise<Response>;
-      };
-    };
-  };
-}
 
 const userA = '11111111-1111-1111-1111-111111111111';
 const userB = '22222222-2222-2222-2222-222222222222';
@@ -63,6 +51,8 @@ const makeHlc = (offsetMs = 0): string => {
   return `${ms}-00000000-A`;
 };
 
+type RouteLike = Parameters<typeof runRoute>[0];
+
 describe.skipIf(!url)('/api/sync/replicas + /api/sync/replica-keys', () => {
   beforeAll(async () => {
     adminClient = postgres(url!, { max: 1 });
@@ -80,7 +70,7 @@ describe.skipIf(!url)('/api/sync/replicas + /api/sync/replica-keys', () => {
       throw new Error(`sync-replicas.test: connected as ${currentUser}, expected readest_app`);
     }
 
-    vi.doMock('@/db/client', () => ({ db: appDb, type: undefined }));
+    vi.doMock('@/db/client', () => ({ createDbClient: () => appDb }));
 
     replicasModule = await import('@/app/api/sync/replicas');
     replicaKeysModule = await import('@/app/api/sync/replica-keys');
@@ -105,11 +95,10 @@ describe.skipIf(!url)('/api/sync/replicas + /api/sync/replica-keys', () => {
   // ─── replicas pull (GET) ─────────────────────────────────────────────────
   it('replicas GET: 401 when no session', async () => {
     getSessionMock.mockResolvedValueOnce(null);
-    const get = (replicasModule.Route as unknown as RouteShape).options.server.handlers.GET!;
     const request = new Request('http://localhost/api/sync/replicas?kind=settings', {
       method: 'GET',
     });
-    const response = await get({ request });
+    const response = await runRoute(replicasModule.Route as RouteLike, 'GET', { request });
     expect(response.status).toBe(401);
   });
 
@@ -120,11 +109,10 @@ describe.skipIf(!url)('/api/sync/replicas + /api/sync/replica-keys', () => {
                       VALUES (${userA}, 'settings', 'r-a', '{}'::jsonb, ${tsA}, 1),
                              (${userB}, 'settings', 'r-b', '{}'::jsonb, ${tsB}, 1)`;
     getSessionMock.mockResolvedValueOnce(sessionFor(userA));
-    const get = (replicasModule.Route as unknown as RouteShape).options.server.handlers.GET!;
     const request = new Request('http://localhost/api/sync/replicas?kind=settings', {
       method: 'GET',
     });
-    const response = await get({ request });
+    const response = await runRoute(replicasModule.Route as RouteLike, 'GET', { request });
     expect(response.status).toBe(200);
     const body = (await response.json()) as { rows: Array<{ user_id: string; replica_id: string }> };
     expect(body.rows).toHaveLength(1);
@@ -135,7 +123,6 @@ describe.skipIf(!url)('/api/sync/replicas + /api/sync/replica-keys', () => {
   // ─── replicas push (POST) ────────────────────────────────────────────────
   it('replicas POST push: merges via crdt_merge_replica', async () => {
     getSessionMock.mockResolvedValueOnce(sessionFor(userA));
-    const post = (replicasModule.Route as unknown as RouteShape).options.server.handlers.POST!;
     const ts = makeHlc();
     const request = new Request('http://localhost/api/sync/replicas', {
       method: 'POST',
@@ -156,7 +143,7 @@ describe.skipIf(!url)('/api/sync/replicas + /api/sync/replica-keys', () => {
         ],
       }),
     });
-    const response = await post({ request });
+    const response = await runRoute(replicasModule.Route as RouteLike, 'POST', { request });
     expect(response.status).toBe(200);
     const body = (await response.json()) as { rows: Array<{ replica_id: string }> };
     expect(body.rows).toHaveLength(1);
@@ -171,24 +158,21 @@ describe.skipIf(!url)('/api/sync/replicas + /api/sync/replica-keys', () => {
   // ─── replica-keys ────────────────────────────────────────────────────────
   it('replica-keys POST: creates a 32-byte salt and returns base64 string', async () => {
     getSessionMock.mockResolvedValueOnce(sessionFor(userA));
-    const post = (replicaKeysModule.Route as unknown as RouteShape).options.server.handlers.POST!;
     const request = new Request('http://localhost/api/sync/replica-keys', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ alg: 'pbkdf2-600k-sha256' }),
     });
-    const response = await post({ request });
+    const response = await runRoute(replicaKeysModule.Route as RouteLike, 'POST', { request });
     expect(response.status).toBe(201);
     const body = (await response.json()) as {
       row: { saltId: string; alg: string; salt: string; createdAt: string };
     };
     expect(body.row.alg).toBe('pbkdf2-600k-sha256');
-    // 32 bytes -> 44 chars base64 with padding.
     const decoded = Buffer.from(body.row.salt, 'base64');
     expect(decoded.length).toBe(32);
     expect(body.row.saltId).toMatch(/^[0-9a-f-]{36}$/);
 
-    // Persisted in DB
     const rows = await adminClient<
       { salt_id: string; alg: string }[]
     >`SELECT salt_id, alg FROM replica_keys WHERE user_id = ${userA}`;
@@ -198,13 +182,12 @@ describe.skipIf(!url)('/api/sync/replicas + /api/sync/replica-keys', () => {
 
   it('replica-keys POST: rejects unsupported alg with 422', async () => {
     getSessionMock.mockResolvedValueOnce(sessionFor(userA));
-    const post = (replicaKeysModule.Route as unknown as RouteShape).options.server.handlers.POST!;
     const request = new Request('http://localhost/api/sync/replica-keys', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ alg: 'unsupported-alg' }),
     });
-    const response = await post({ request });
+    const response = await runRoute(replicaKeysModule.Route as RouteLike, 'POST', { request });
     expect(response.status).toBe(422);
   });
 
@@ -215,9 +198,8 @@ describe.skipIf(!url)('/api/sync/replicas + /api/sync/replica-keys', () => {
                       VALUES (${userA}, 'salt-A', 'pbkdf2-600k-sha256', ${saltA}),
                              (${userB}, 'salt-B', 'pbkdf2-600k-sha256', ${saltB})`;
     getSessionMock.mockResolvedValueOnce(sessionFor(userA));
-    const get = (replicaKeysModule.Route as unknown as RouteShape).options.server.handlers.GET!;
     const request = new Request('http://localhost/api/sync/replica-keys', { method: 'GET' });
-    const response = await get({ request });
+    const response = await runRoute(replicaKeysModule.Route as RouteLike, 'GET', { request });
     expect(response.status).toBe(200);
     const body = (await response.json()) as { rows: Array<{ saltId: string; salt: string }> };
     expect(body.rows).toHaveLength(1);
@@ -232,9 +214,8 @@ describe.skipIf(!url)('/api/sync/replicas + /api/sync/replica-keys', () => {
                       VALUES (${userA}, 'salt-A', 'pbkdf2-600k-sha256', ${saltA}),
                              (${userB}, 'salt-B', 'pbkdf2-600k-sha256', ${saltB})`;
     getSessionMock.mockResolvedValueOnce(sessionFor(userA));
-    const del = (replicaKeysModule.Route as unknown as RouteShape).options.server.handlers.DELETE!;
     const request = new Request('http://localhost/api/sync/replica-keys', { method: 'DELETE' });
-    const response = await del({ request });
+    const response = await runRoute(replicaKeysModule.Route as RouteLike, 'DELETE', { request });
     expect(response.status).toBe(200);
 
     const remaining = await adminClient<
@@ -245,7 +226,6 @@ describe.skipIf(!url)('/api/sync/replicas + /api/sync/replica-keys', () => {
   });
 
   it('replica-keys DELETE: strips cipher envelopes from the caller’s replicas', async () => {
-    // Seed a row with one plain envelope and one cipher envelope.
     const ts = makeHlc();
     const fields = {
       plain: { v: 'hello', t: ts },
@@ -254,9 +234,8 @@ describe.skipIf(!url)('/api/sync/replicas + /api/sync/replica-keys', () => {
     await adminClient`INSERT INTO replicas (user_id, kind, replica_id, fields_jsonb, updated_at_ts, schema_version)
                       VALUES (${userA}, 'settings', 'r-cipher', ${JSON.stringify(fields)}::jsonb, ${ts}, 1)`;
     getSessionMock.mockResolvedValueOnce(sessionFor(userA));
-    const del = (replicaKeysModule.Route as unknown as RouteShape).options.server.handlers.DELETE!;
     const request = new Request('http://localhost/api/sync/replica-keys', { method: 'DELETE' });
-    const response = await del({ request });
+    const response = await runRoute(replicaKeysModule.Route as RouteLike, 'DELETE', { request });
     expect(response.status).toBe(200);
 
     const after = await adminClient<{ fields_jsonb: Record<string, unknown> }[]>`

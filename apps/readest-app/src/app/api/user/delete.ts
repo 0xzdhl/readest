@@ -1,34 +1,28 @@
 import { createFileRoute } from '@tanstack/react-router';
-import { auth } from '@/auth/server';
+import { betterAuthMiddleware } from '@/middlewares/better-auth';
 
 /**
- * Phase 6 of the supabase→better-auth migration: replaces the legacy
- * `supabaseAdmin.auth.admin.deleteUser(user.id)` call with better-auth's
- * own self-deletion endpoint.
+ * Self-delete: uses `betterAuthMiddleware` for the `auth` instance only —
+ * NO session/tx middleware. Reasons:
  *
- * Auth is enforced INSIDE `auth.api.deleteUser` — it pulls the session
- * straight from the forwarded request headers (better-auth bearer + cookie),
- * throws an APIError(UNAUTHORIZED) on its own if there's no session, and
- * refuses if the session isn't "fresh" enough (default 1 day; controlled
- * by `sessionConfig.freshAge`). On success it tears down the `user` row;
- * the schema's FK `ON DELETE CASCADE` on every business table's `user_id`
- * column then removes books, configs, notes, files, shares, replicas,
- * payments, subscriptions, etc., in one shot — so this route owns NO
- * manual fan-out logic.
+ *   - `auth.api.deleteUser` enforces auth itself (UNAUTHORIZED on missing
+ *     session + freshness check via `sessionConfig.freshAge`), so a
+ *     `protectedMiddleware` gate would only duplicate that work.
+ *   - The call writes through better-auth's own internal adapter (its own
+ *     pool), not the request tx, so opening an RLS tx via `rlsMiddleware`
+ *     would just leave an empty tx hanging. FK `ON DELETE CASCADE` on every
+ *     business table's `user_id` then fans the delete out — this route owns
+ *     no manual fan-out.
  *
- * We don't compose `runProtected` here because `auth.api.deleteUser` writes
- * through better-auth's own internal adapter (its own pool), not our
- * request tx, so wrapping in `withRls` would just open an empty tx that
- * commits nothing.
- *
- * The legacy supabase route returned `{ error: 'Not authenticated' }` 401
- * JSON when no session — we re-shape better-auth's 401/403 below to keep
- * that wire contract intact. We duck-type on `statusCode` rather than
- * `instanceof APIError` so the check survives differing module instances
- * (vitest re-bundles `better-auth/api`'s transitive `better-call` re-exports
- * and the `instanceof` chain breaks).
+ * 401 wire-format reshape: better-auth throws an APIError with statusCode
+ * 401/403; we duck-type on `statusCode` rather than `instanceof APIError`
+ * so the check survives differing module instances (vitest re-bundles
+ * `better-auth/api`'s transitive `better-call` re-exports and the
+ * `instanceof` chain breaks).
  */
-const hasStatusCode = (error: unknown): error is { statusCode: number; body?: { message?: string }; message?: string } =>
+const hasStatusCode = (
+  error: unknown,
+): error is { statusCode: number; body?: { message?: string }; message?: string } =>
   typeof error === 'object' &&
   error !== null &&
   'statusCode' in error &&
@@ -36,8 +30,10 @@ const hasStatusCode = (error: unknown): error is { statusCode: number; body?: { 
 
 export const Route = createFileRoute('/api/user/delete')({
   server: {
+    middleware: [betterAuthMiddleware],
     handlers: {
-      DELETE: async ({ request }) => {
+      DELETE: async ({ request, context }) => {
+        const { auth } = context;
         try {
           await auth.api.deleteUser({
             headers: request.headers,

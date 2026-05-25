@@ -1,13 +1,13 @@
 import { eq, sql } from 'drizzle-orm';
 import Stripe from 'stripe';
-import type { db } from '@/db/client';
+import type { DbTransaction } from '@/db/client';
 import { payments, subscriptions, user } from '@/db/schema';
 import { env } from '@/env';
 import type { PaymentStatus, StripeProductMetadata } from '@/types/payment';
 import type { UserPlan } from '@/types/quota';
 import { updateUserStorage } from '../storage';
 
-type TxLike = Parameters<Parameters<typeof db.transaction>[0]>[0];
+type TxLike = Parameters<Parameters<DbTransaction>[0]>[0];
 
 let stripe: Stripe | null;
 

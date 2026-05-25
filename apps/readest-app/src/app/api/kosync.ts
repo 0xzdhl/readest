@@ -1,6 +1,6 @@
 import { createFileRoute } from '@tanstack/react-router';
-import { isLanAddress } from '@/utils/network';
 import type { KoSyncProxyPayload } from '@/types/kosync';
+import { isLanAddress } from '@/utils/network';
 
 const validEndpoints = [/\/users\/create/, /\/users\/auth/, /\/syncs\/progress/];
 

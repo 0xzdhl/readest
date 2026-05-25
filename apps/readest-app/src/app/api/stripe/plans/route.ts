@@ -1,57 +1,56 @@
-import Stripe from 'stripe';
 import { createFileRoute } from '@tanstack/react-router';
+import type Stripe from 'stripe';
 import { getStripe } from '@/libs/payment/stripe/server';
-import { runProtected } from '@/libs/server/route-helpers';
+import { protectedMiddleware } from '@/middlewares/protected';
 import type { StripeProductMetadata } from '@/types/payment';
 
 /**
- * Phase 6: owner-only — only authenticated users browse plans. No DB
- * interaction beyond the runProtected session check; the price catalogue
- * comes straight from Stripe.
+ * Owner-only — only authenticated users browse plans. No DB interaction;
+ * `protectedMiddleware` enforces the session check without opening a tx.
  */
 export const Route = createFileRoute('/api/stripe/plans')({
   server: {
+    middleware: [protectedMiddleware],
     handlers: {
-      GET: async ({ request }) =>
-        runProtected(request, async () => {
-          try {
-            const stripe = getStripe();
-            const prices = await stripe.prices.list({
-              expand: ['data.product'],
-              active: true,
+      GET: async () => {
+        try {
+          const stripe = getStripe();
+          const prices = await stripe.prices.list({
+            expand: ['data.product'],
+            active: true,
+          });
+
+          const plans = prices.data
+            .filter((price) => {
+              const product = price.product as Stripe.Product;
+              return product.active === true;
+            })
+            .map((price) => {
+              const product = price.product as Stripe.Product & {
+                metadata: StripeProductMetadata;
+              };
+              return {
+                plan: product.metadata.plan,
+                productId: price.id,
+                price: price.unit_amount,
+                currency: price.currency,
+                interval: price.recurring?.interval,
+                product: price.product,
+                productName: product.name,
+                metadata: product.metadata,
+                price_id: price.id, // deprecated
+              };
             });
 
-            const plans = prices.data
-              .filter((price) => {
-                const product = price.product as Stripe.Product;
-                return product.active === true;
-              })
-              .map((price) => {
-                const product = price.product as Stripe.Product & {
-                  metadata: StripeProductMetadata;
-                };
-                return {
-                  plan: product.metadata.plan,
-                  productId: price.id,
-                  price: price.unit_amount,
-                  currency: price.currency,
-                  interval: price.recurring?.interval,
-                  product: price.product,
-                  productName: product.name,
-                  metadata: product.metadata,
-                  price_id: price.id, // deprecated
-                };
-              });
-
-            return Response.json(plans);
-          } catch (error) {
-            console.error(error);
-            return Response.json(
-              { error: 'Error fetching subscription plans' },
-              { status: 500 },
-            );
-          }
-        }),
+          return Response.json(plans);
+        } catch (error) {
+          console.error(error);
+          return Response.json(
+            { error: 'Error fetching subscription plans' },
+            { status: 500 },
+          );
+        }
+      },
     },
   },
 });

@@ -1,5 +1,6 @@
 import { and, eq, isNull } from 'drizzle-orm';
 import { customAlphabet } from 'nanoid';
+import type { DbTx } from '@/db/rls';
 import { bookShares, files } from '@/db/schema';
 
 // 22-char URL-safe alphabet (alphanumeric only — no `-` or `_`). Avoids
@@ -66,47 +67,26 @@ const toIso = (d: Date | string | null | undefined): string | null => {
   return String(d);
 };
 
-/**
- * Tx parameter type imported lazily via a type-only import so the runtime
- * `@/db/client` module isn't pulled into pure-function tests. The
- * `@/db/client` module validates `DATABASE_URL` at import time and
- * throws when unset; a `import type` is erased at compile time and doesn't
- * trigger that side effect.
- */
-import type { db as _dbForType } from '@/db/client';
-
-type TxLike = Parameters<Parameters<typeof _dbForType.transaction>[0]>[0];
 
 /**
  * Single source of truth for the "is this share alive and usable?" check.
  * Used by the public metadata, download, cover, og.png, and import routes
  * so the validation logic stays in one place.
  *
- * Phase 5 refactor: this function now takes a drizzle tx (typically the
- * bypass-RLS tx from `runPublic`) so the caller controls the transaction
- * scope. When no tx is supplied, the helper opens its own withBypassRls
- * tx — used by `og[.]png/render.tsx` which builds the response outside the
- * shared route helper, and by any incidental caller that just wants the
- * resolved share without a wider transaction.
- *
- * The two queries (book_shares row + the corresponding files rows) need
- * `withBypassRls` because there's no `app.user_id` for an anonymous
- * caller. The token's secrecy IS the security boundary; the
- * `WHERE token_hash = $1` filter is the lookup gate.
+ * Caller is responsible for providing a drizzle tx with RLS bypass set so
+ * the cross-user reads (the sharer's `book_shares` and `files` rows) are
+ * visible. In practice this means routes either compose `publicMiddleware`
+ * (anonymous: a bypass-RLS tx already), or — when called from inside an
+ * `rlsMiddleware` route that needs to read across user boundaries — first
+ * flip the caller's tx with `setRlsBypass(tx)`. The token's secrecy IS the
+ * security boundary; the `WHERE token_hash = $1` filter is the lookup gate.
  */
 export const resolveActiveShare = async (
   rawToken: string,
-  tx?: TxLike,
+  tx: DbTx,
 ): Promise<{ ok: true; share: ResolvedShare } | { ok: false; reason: ShareLookupRejection }> => {
   if (!isValidShareToken(rawToken)) {
     return { ok: false, reason: { kind: 'invalid_token' } };
-  }
-  if (!tx) {
-    // Lazy import to keep this module free of any top-level `@/db/client`
-    // side effects (see comment on `TxLike`). The dynamic import is only
-    // hit at runtime when a caller doesn't pass a tx.
-    const { withBypassRls } = await import('@/db/rls');
-    return withBypassRls((newTx) => resolveActiveShare(rawToken, newTx));
   }
 
   const tokenHash = await hashShareToken(rawToken);

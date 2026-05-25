@@ -11,10 +11,9 @@ import {
   sql,
 } from 'drizzle-orm';
 import type { PgTable } from 'drizzle-orm/pg-core';
-import type { db } from '@/db/client';
-import { withRls } from '@/db/rls';
+import type { DbTx } from '@/db/rls';
 import { bookConfigs, bookNotes, books } from '@/db/schema';
-import { resolveSessionOr401 } from '@/libs/server/auth-fn';
+import { rlsMiddleware } from '@/middlewares/rls';
 import type { SyncData, SyncType } from '@/libs/sync';
 import type { DBBook, DBBookConfig, DBBookNote } from '@/types/records';
 import {
@@ -24,22 +23,9 @@ import {
 } from '@/utils/transform';
 
 /**
- * Phase 4 of supabase→better-auth migration. Citations:
- *   - §3.3 RLS Strategy: every business table has a `_self` policy keyed
- *     on `current_setting('app.user_id', true)`, so once the route is
- *     inside `withRls(userId, ...)` no explicit `WHERE user_id = ?` is
- *     needed — Postgres enforces it.
- *   - §3.4 `withRls` Helper: opens the per-request transaction and sets
- *     `app.user_id`. Re-entered here both from the file-route handler
- *     (HTTP path) and from the integration test (which talks straight to
- *     the helpers; the protectedFn server-function wrapper is exercised
- *     by Phase 3 unit tests in `libs/server/auth-fn.test.ts`).
- *   - §4.3 Protected Server Function Template: `protectedFn` from
- *     `@/libs/server/auth-fn` composes the same `resolveSessionOr401` +
- *     `withRls` we call directly below. We don't compose it via
- *     `createServerFn` because file-route HTTP handlers and serverFn RPCs
- *     are separate dispatch paths in TanStack Start; the auth/RLS
- *     contract is identical either way.
+ * `rlsMiddleware` opens a per-request tx with `app.user_id` set so RLS
+ * enforces the per-row scoping — handler bodies never write `WHERE
+ * user_id = ?` themselves.
  */
 
 // Drizzle row types — internal to this module. The wire format is the
@@ -119,15 +105,13 @@ function bookNotesRowToDB(r: BookNotesRow): DBBookNote {
   };
 }
 
-// Context passed by `protectedFn`-equivalent wiring (the route handler
-// below, or the integration test). `tx` is a drizzle transaction already
+// Context passed by `rlsMiddleware` (or by the integration test, which
+// drives the handlers directly). `tx` is a drizzle transaction already
 // bound to `app.user_id = user.id`, so all RLS-protected reads/writes are
 // scoped to the caller automatically.
 export interface SyncHandlerContext {
   user: { id: string };
-  // `db.transaction(...)`'s callback parameter type — exposed via
-  // `Parameters<...>` to avoid leaking drizzle-internal symbols.
-  tx: Parameters<Parameters<typeof db.transaction>[0]>[0];
+  tx: DbTx;
 }
 
 const SYNC_TYPE_FOR_TABLE: Record<'books' | 'bookConfigs' | 'bookNotes', SyncType> = {
@@ -156,7 +140,6 @@ function buildExcludedSet<TTable extends PgTable>(
   const result: Record<string, SQL> = {};
   for (const [key, col] of Object.entries(cols)) {
     if ((exclude as readonly string[]).includes(key)) continue;
-    // `col.name` is the SQL column name (snake_case in our schema).
     result[key] = sql.raw(`excluded.${col.name}`);
   }
   return result;
@@ -176,11 +159,6 @@ function buildExcludedSet<TTable extends PgTable>(
  * === 0` in the legacy JS: a null timestamp compares as "infinitely old", so
  * a non-null `excluded.deleted_at` always beats a null `<table>.deleted_at`
  * (matching the legacy tombstone semantics).
- *
- * The `WHERE` clause references `<table>.<col>` (existing row) and
- * `EXCLUDED.<col>` (proposed row); we emit raw column names via
- * `sql.raw(table_name)` so the helper works across all three tables without
- * needing per-table specialisation.
  */
 function lwwSetWhere<TTable extends PgTable>(table: TTable): SQL {
   const cols = getTableColumns(table) as Record<string, { name: string }>;
@@ -219,9 +197,6 @@ export async function handleGet(request: Request, ctx: SyncHandlerContext): Prom
       table: TTable,
     ): SQL | undefined => {
       const freshness = or(gt(table.updatedAt, since), gt(table.deletedAt, since));
-      // Original behaviour: when BOTH `book` and `meta_hash` are present the
-      // route OR'd them ("either match" — used to fetch a book and any
-      // duplicate by metadata in one shot); when only one was present, AND'd.
       if (bookParam && metaHashParam) {
         return and(or(eq(table.bookHash, bookParam), eq(table.metaHash, metaHashParam)), freshness);
       }
@@ -240,10 +215,6 @@ export async function handleGet(request: Request, ctx: SyncHandlerContext): Prom
       notes: DBBookNote[];
     } = { books: [], configs: [], notes: [] };
 
-    // Drizzle's `tx.select().from(T)` infers `T` so tightly that wrapping it
-    // in a generic helper trips one of the "cannot reference a data-modifying
-    // subquery" guard types. Inlining per table keeps the inference happy and
-    // each query is a 3-liner — no real DRY win in extracting it.
     if (!typeParam || typeParam === SYNC_TYPE_FOR_TABLE['books']) {
       const rows = await tx
         .select()
@@ -292,10 +263,6 @@ export async function handlePost(request: Request, ctx: SyncHandlerContext): Pro
   const { books: booksPayload = [], configs: configsPayload = [], notes: notesPayload = [] } = body;
 
   try {
-    // Upsert helpers — one per table because the conflict target / column
-    // shape differs. Drizzle's `.onConflictDoUpdate({ target, set })` maps to
-    // PG's `ON CONFLICT (...) DO UPDATE SET ...` with `excluded.col` as the
-    // proposed-row reference (see drizzle docs §"Multi-row upsert").
     let outBooks: BooksRow[] = [];
     if (booksPayload.length > 0) {
       const rows = booksPayload
@@ -320,12 +287,6 @@ export async function handlePost(request: Request, ctx: SyncHandlerContext): Pro
           deletedAt: dbRec.deleted_at ? new Date(dbRec.deleted_at) : null,
           uploadedAt: dbRec.uploaded_at ? new Date(dbRec.uploaded_at) : null,
         }));
-      // `setWhere` gates the UPDATE so stale client payloads (older
-      // updated_at / deleted_at than the existing server row) are silently
-      // dropped, matching the legacy supabase route's per-record LWW.
-      // `.returning()` would only yield rows actually written; the legacy
-      // API returned authoritative state for every incoming key, so we
-      // SELECT them back after the upsert.
       await tx
         .insert(books)
         .values(rows)
@@ -356,10 +317,6 @@ export async function handlePost(request: Request, ctx: SyncHandlerContext): Pro
           metaHash: dbRec.meta_hash ?? null,
           location: dbRec.location ?? null,
           xpointer: dbRec.xpointer ?? null,
-          // `progress`, `rsvpPosition`, `searchConfig`, `viewSettings` come
-          // back JSON-stringified from transformBookConfigToDB but the
-          // jsonb columns want a parsed value. Re-parse so PG stores
-          // structured JSON, not a JSON-encoded string.
           progress: dbRec.progress ? JSON.parse(dbRec.progress) : null,
           rsvpPosition: dbRec.rsvp_position ?? null,
           searchConfig: dbRec.search_config ? JSON.parse(dbRec.search_config) : null,
@@ -418,8 +375,6 @@ export async function handlePost(request: Request, ctx: SyncHandlerContext): Pro
           set: buildExcludedSet(bookNotes, ['userId', 'bookHash', 'id']),
           setWhere: lwwSetWhere(bookNotes),
         });
-      // Notes have a 3-column PK, so filter by (bookHash, id) pairs to
-      // pick up exactly the incoming keys.
       const noteKeys = rows.map((r) =>
         and(eq(bookNotes.bookHash, r.bookHash), eq(bookNotes.id, r.id)),
       );
@@ -442,41 +397,14 @@ export async function handlePost(request: Request, ctx: SyncHandlerContext): Pro
   }
 }
 
-// File-route HTTP handler. The protectedFn server-function (see
-// `@/libs/server/auth-fn`) shares the same `resolveSessionOr401` +
-// `withRls` machinery; file-routes can't compose a serverFn directly
-// (different dispatch path), so we inline the two-step equivalent here
-// and feed the resulting `{ user, tx }` context into the pure handlers
-// above — which are the same surface the integration test exercises.
-async function runProtected(
-  request: Request,
-  inner: (ctx: SyncHandlerContext) => Promise<Response>,
-): Promise<Response> {
-  try {
-    const session = await resolveSessionOr401(request.headers);
-    return withRls(session.user.id, (tx) => inner({ user: { id: session.user.id }, tx }));
-  } catch (e) {
-    if (e instanceof Response) {
-      // `resolveSessionOr401` throws a bare `Response('Unauthorized', 401)`.
-      // The legacy supabase route returned `{ error: 'Not authenticated' }`
-      // as JSON, and `apps/readest-app/src/hooks/useSync.ts:148` matches on
-      // that substring to trigger silent re-login. Re-shape unauthenticated
-      // responses so that contract holds; pass other Response throws
-      // through unchanged.
-      if (e.status === 401) {
-        return Response.json({ error: 'Not authenticated' }, { status: 401 });
-      }
-      return e;
-    }
-    throw e;
-  }
-}
-
 export const Route = createFileRoute('/api/sync')({
   server: {
+    middleware: [rlsMiddleware],
     handlers: {
-      GET: ({ request }) => runProtected(request, (ctx) => handleGet(request, ctx)),
-      POST: ({ request }) => runProtected(request, (ctx) => handlePost(request, ctx)),
+      GET: ({ request, context }) =>
+        handleGet(request, { user: { id: context.user.id }, tx: context.tx }),
+      POST: ({ request, context }) =>
+        handlePost(request, { user: { id: context.user.id }, tx: context.tx }),
     },
   },
 });
