@@ -3,7 +3,7 @@ import { describe, expect, it, vi } from 'vitest';
 // Stub the middleware so this test only verifies lazy verifier loading,
 // not the full middleware chain (auth/db/etc.) — keeps the import cheap so
 // the test doesn't time out under parallel suite load.
-vi.mock('@/middlewares/auth', () => ({
+vi.mock('@/middlewares/rls', () => ({
   rlsMiddleware: { options: { server: () => {} } },
 }));
 
