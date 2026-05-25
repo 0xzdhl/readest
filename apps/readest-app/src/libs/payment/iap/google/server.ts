@@ -1,5 +1,5 @@
 import { eq, sql } from 'drizzle-orm';
-import type { db } from '@/db/client';
+import type { DbClient } from '@/db/client';
 import { googleIapSubscriptions, payments, user } from '@/db/schema';
 import { env } from '@/env';
 import { updateUserStorage } from '@/libs/payment/storage';
@@ -17,7 +17,7 @@ import type {
   VerifyPurchaseParams,
 } from './verifier';
 
-type TxLike = Parameters<Parameters<typeof db.transaction>[0]>[0];
+type TxLike = Parameters<Parameters<DbClient['transaction']>[0]>[0];
 
 export type VerifiedPurchase = VerifiedIAP & {
   purchaseToken: string;

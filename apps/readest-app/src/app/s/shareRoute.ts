@@ -1,3 +1,6 @@
+import { createServerFn } from '@tanstack/react-start';
+import { createDbClient } from '@/db/client';
+import { setRlsBypass } from '@/db/rls';
 import { resolveActiveShare } from '@/libs/shareServer';
 import { READEST_WEB_BASE_URL, SHARE_BASE_URL } from '@/services/constants';
 
@@ -8,12 +11,28 @@ export interface SharePageData {
   shareUrl?: string;
 }
 
+/**
+ * Server-side share lookup wrapped in a createServerFn so the DB client +
+ * RLS-bypass tx never load in client bundles. The loader in `index.tsx`
+ * runs isomorphically; calling this helper RPCs to the server when invoked
+ * from the client and runs inline on the server during SSR.
+ */
+const fetchActiveShare = createServerFn({ method: 'GET' })
+  .inputValidator((data: { token: string }) => data)
+  .handler(async ({ data }) => {
+    const db = createDbClient();
+    return db.transaction(async (tx) => {
+      await setRlsBypass(tx);
+      return resolveActiveShare(data.token, tx);
+    });
+  });
+
 export const loadSharePage = async (token: string): Promise<SharePageData | null> => {
   if (!token) {
     return null;
   }
 
-  const result = await resolveActiveShare(token);
+  const result = await fetchActiveShare({ data: { token } });
   if (!result.ok) {
     return null;
   }

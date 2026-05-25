@@ -1,7 +1,7 @@
 import { createFileRoute } from '@tanstack/react-router';
 import { MetadataService } from '@/services/metadata/service';
 import type { SearchRequest } from '@/services/metadata/types';
-import { runAuth } from '@/libs/server/route-helpers';
+import { protectedMiddleware } from '@/middlewares/protected';
 import { env } from '@/env';
 
 interface ApiResponse<T> {
@@ -98,58 +98,58 @@ function getMetadataService(): MetadataService {
 
 export const Route = createFileRoute('/api/metadata/search')({
   server: {
+    middleware: [protectedMiddleware],
     handlers: {
-      POST: async ({ request }) =>
-        runAuth(request, async () => {
-          const startTime = Date.now();
+      POST: async ({ request }) => {
+        const startTime = Date.now();
 
-          try {
-            const body = await request.json();
-            const validation = validateSearchRequest(body);
-            if (!validation.isValid) {
-              const responseTime = Date.now() - startTime;
-              return Response.json(createResponse(false, null, validation.error!, responseTime), {
-                status: 400,
-              });
-            }
-
-            const service = getMetadataService();
-            const result = await service.search(validation.data!);
+        try {
+          const body = await request.json();
+          const validation = validateSearchRequest(body);
+          if (!validation.isValid) {
             const responseTime = Date.now() - startTime;
-
-            if (!result) {
-              return Response.json(createResponse(false, null, 'Book not found', responseTime), {
-                status: 404,
-              });
-            }
-
-            return Response.json(createResponse(true, result, null, responseTime), {
-              status: 200,
-            });
-          } catch (error) {
-            const responseTime = Date.now() - startTime;
-            console.error('Search API error:', error);
-
-            let errorMessage = 'Internal server error';
-            let statusCode = 500;
-
-            if (error instanceof Error) {
-              errorMessage = error.message;
-
-              if (error.message.includes('rate limit')) {
-                statusCode = 429;
-              } else if (error.message.includes('forbidden') || error.message.includes('API key')) {
-                statusCode = 403;
-              } else if (error.message.includes('Invalid ISBN')) {
-                statusCode = 400;
-              }
-            }
-
-            return Response.json(createResponse(false, null, errorMessage, responseTime), {
-              status: statusCode,
+            return Response.json(createResponse(false, null, validation.error!, responseTime), {
+              status: 400,
             });
           }
-        }),
+
+          const service = getMetadataService();
+          const result = await service.search(validation.data!);
+          const responseTime = Date.now() - startTime;
+
+          if (!result) {
+            return Response.json(createResponse(false, null, 'Book not found', responseTime), {
+              status: 404,
+            });
+          }
+
+          return Response.json(createResponse(true, result, null, responseTime), {
+            status: 200,
+          });
+        } catch (error) {
+          const responseTime = Date.now() - startTime;
+          console.error('Search API error:', error);
+
+          let errorMessage = 'Internal server error';
+          let statusCode = 500;
+
+          if (error instanceof Error) {
+            errorMessage = error.message;
+
+            if (error.message.includes('rate limit')) {
+              statusCode = 429;
+            } else if (error.message.includes('forbidden') || error.message.includes('API key')) {
+              statusCode = 403;
+            } else if (error.message.includes('Invalid ISBN')) {
+              statusCode = 400;
+            }
+          }
+
+          return Response.json(createResponse(false, null, errorMessage, responseTime), {
+            status: statusCode,
+          });
+        }
+      },
     },
   },
 });

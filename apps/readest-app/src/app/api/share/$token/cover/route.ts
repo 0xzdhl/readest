@@ -1,7 +1,7 @@
 import { createFileRoute } from '@tanstack/react-router';
 import { getDownloadSignedUrl } from '@/utils/object';
 import { rejectionToHttp, resolveActiveShare } from '@/libs/shareServer';
-import { runPublic } from '@/libs/server/route-helpers';
+import { publicMiddleware } from '@/middlewares/public';
 import { SHARE_PRESIGN_TTL_SECONDS } from '@/services/constants';
 
 /**
@@ -11,33 +11,33 @@ import { SHARE_PRESIGN_TTL_SECONDS } from '@/services/constants';
  */
 export const Route = createFileRoute('/api/share/$token/cover')({
   server: {
+    middleware: [publicMiddleware],
     handlers: {
-      GET: async ({ params }) =>
-        runPublic(async ({ tx }) => {
-          const result = await resolveActiveShare(params.token, tx);
-          if (!result.ok) {
-            const { status, body } = rejectionToHttp(result.reason);
-            return Response.json(body, { status });
-          }
-          const { share } = result;
-          if (!share.coverFileKey) {
-            return Response.json({ error: 'No cover for this share' }, { status: 404 });
-          }
-          let url: string;
-          try {
-            url = await getDownloadSignedUrl(share.coverFileKey, SHARE_PRESIGN_TTL_SECONDS);
-          } catch (err) {
-            console.error('Share cover presign failed:', err);
-            return Response.json({ error: 'Could not sign cover URL' }, { status: 500 });
-          }
-          return new Response(null, {
-            status: 302,
-            headers: {
-              Location: url,
-              'Cache-Control': 'public, max-age=300',
-            },
-          });
-        }),
+      GET: async ({ params, context }) => {
+        const result = await resolveActiveShare(params.token, context.tx);
+        if (!result.ok) {
+          const { status, body } = rejectionToHttp(result.reason);
+          return Response.json(body, { status });
+        }
+        const { share } = result;
+        if (!share.coverFileKey) {
+          return Response.json({ error: 'No cover for this share' }, { status: 404 });
+        }
+        let url: string;
+        try {
+          url = await getDownloadSignedUrl(share.coverFileKey, SHARE_PRESIGN_TTL_SECONDS);
+        } catch (err) {
+          console.error('Share cover presign failed:', err);
+          return Response.json({ error: 'Could not sign cover URL' }, { status: 500 });
+        }
+        return new Response(null, {
+          status: 302,
+          headers: {
+            Location: url,
+            'Cache-Control': 'public, max-age=300',
+          },
+        });
+      },
     },
   },
 });

@@ -1,19 +1,16 @@
 import { createFileRoute } from '@tanstack/react-router';
 import { and, eq, inArray, isNull } from 'drizzle-orm';
+import type { DbTx } from '@/db/rls';
 import { files } from '@/db/schema';
-import { runProtected, type ProtectedRouteContext } from '@/libs/server/route-helpers';
+import { rlsMiddleware } from '@/middlewares/rls';
 import { getDownloadSignedUrl } from '@/utils/object';
 
 /**
  * GET / POST /api/storage/download — owner-only. Mints short-lived presigned
- * GET URLs for one (GET) or many (POST) keys. Phase 5 swaps the supabase
- * admin client for an RLS-scoped drizzle tx; the presigner is unchanged.
- *
- * The fallback path (lookup-by-book_hash when a literal file_key match
- * misses) preserves the legacy behaviour where the client can pass a
- * client-side reconstructed `${userId}/Readest/Book/{hash}/{filename}` key
- * and the server resolves it to whatever file actually backs the book hash
- * + extension — needed for cases where the on-disk filename drifted.
+ * GET URLs for one (GET) or many (POST) keys. The fallback (lookup-by-book_hash
+ * when a literal file_key match misses) preserves the legacy behaviour where
+ * the client can pass a client-side reconstructed key and the server resolves
+ * it to whatever file actually backs the book hash + extension.
  */
 
 interface FileRow {
@@ -25,7 +22,7 @@ interface FileRow {
 async function processFileKeys(
   fileKeys: string[],
   userId: string,
-  tx: ProtectedRouteContext['tx'],
+  tx: DbTx,
 ): Promise<Record<string, string | undefined>> {
   let fileRecords: FileRow[] = [];
   try {
@@ -132,69 +129,70 @@ async function processFileKeys(
 
 export const Route = createFileRoute('/api/storage/download')({
   server: {
+    middleware: [rlsMiddleware],
     handlers: {
-      GET: async ({ request }) =>
-        runProtected(request, async ({ user, tx }) => {
-          try {
-            const url = new URL(request.url);
-            let fileKey = url.searchParams.get('fileKey');
+      GET: async ({ request, context }) => {
+        const { user, tx } = context;
+        try {
+          const url = new URL(request.url);
+          let fileKey = url.searchParams.get('fileKey');
 
-            // Also parse fileKey directly from raw URL to handle special characters like & in filenames.
-            // Frameworks may incorrectly split parameters when the fileKey value contains
-            // encoded & (%26), treating it as a parameter separator.
-            if (request.url.includes('fileKey=') && request.url.includes('&')) {
-              const fileKeyFromUrl = request.url
-                .substring(request.url.indexOf('fileKey=') + 8)
-                .replace(/\+/g, '%20')
-                .replace(/&/g, '%26')
-                .replace(/=$/, '');
-              fileKey = decodeURIComponent(fileKeyFromUrl);
-            }
-
-            if (!fileKey) {
-              return Response.json({ error: 'Missing or invalid fileKey' }, { status: 400 });
-            }
-
-            const downloadUrlsMap = await processFileKeys([fileKey], user.id, tx);
-            const downloadUrl = downloadUrlsMap[fileKey];
-
-            if (!downloadUrl) {
-              return Response.json({ error: 'File not found' }, { status: 404 });
-            }
-
-            return Response.json({ downloadUrl });
-          } catch (error) {
-            console.error(error);
-            return Response.json({ error: 'Something went wrong' }, { status: 500 });
+          // Also parse fileKey directly from raw URL to handle special characters
+          // like & in filenames. Frameworks may incorrectly split parameters when
+          // the fileKey value contains encoded & (%26), treating it as a separator.
+          if (request.url.includes('fileKey=') && request.url.includes('&')) {
+            const fileKeyFromUrl = request.url
+              .substring(request.url.indexOf('fileKey=') + 8)
+              .replace(/\+/g, '%20')
+              .replace(/&/g, '%26')
+              .replace(/=$/, '');
+            fileKey = decodeURIComponent(fileKeyFromUrl);
           }
-        }),
 
-      POST: async ({ request }) =>
-        runProtected(request, async ({ user, tx }) => {
-          try {
-            const body: { fileKeys?: unknown } = await request.json();
-            const { fileKeys } = body;
-
-            if (!fileKeys || !Array.isArray(fileKeys)) {
-              return Response.json(
-                { error: 'Missing or invalid fileKeys array' },
-                { status: 400 },
-              );
-            }
-            if (fileKeys.length === 0) {
-              return Response.json({ error: 'fileKeys array cannot be empty' }, { status: 400 });
-            }
-            if (!fileKeys.every((key) => typeof key === 'string')) {
-              return Response.json({ error: 'All fileKeys must be strings' }, { status: 400 });
-            }
-
-            const downloadUrls = await processFileKeys(fileKeys, user.id, tx);
-            return Response.json({ downloadUrls });
-          } catch (error) {
-            console.error(error);
-            return Response.json({ error: 'Something went wrong' }, { status: 500 });
+          if (!fileKey) {
+            return Response.json({ error: 'Missing or invalid fileKey' }, { status: 400 });
           }
-        }),
+
+          const downloadUrlsMap = await processFileKeys([fileKey], user.id, tx);
+          const downloadUrl = downloadUrlsMap[fileKey];
+
+          if (!downloadUrl) {
+            return Response.json({ error: 'File not found' }, { status: 404 });
+          }
+
+          return Response.json({ downloadUrl });
+        } catch (error) {
+          console.error(error);
+          return Response.json({ error: 'Something went wrong' }, { status: 500 });
+        }
+      },
+
+      POST: async ({ request, context }) => {
+        const { user, tx } = context;
+        try {
+          const body: { fileKeys?: unknown } = await request.json();
+          const { fileKeys } = body;
+
+          if (!fileKeys || !Array.isArray(fileKeys)) {
+            return Response.json(
+              { error: 'Missing or invalid fileKeys array' },
+              { status: 400 },
+            );
+          }
+          if (fileKeys.length === 0) {
+            return Response.json({ error: 'fileKeys array cannot be empty' }, { status: 400 });
+          }
+          if (!fileKeys.every((key) => typeof key === 'string')) {
+            return Response.json({ error: 'All fileKeys must be strings' }, { status: 400 });
+          }
+
+          const downloadUrls = await processFileKeys(fileKeys, user.id, tx);
+          return Response.json({ downloadUrls });
+        } catch (error) {
+          console.error(error);
+          return Response.json({ error: 'Something went wrong' }, { status: 500 });
+        }
+      },
     },
   },
 });

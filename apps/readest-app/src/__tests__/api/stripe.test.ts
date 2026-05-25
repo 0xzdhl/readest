@@ -2,17 +2,20 @@ import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from 'vites
 import postgres from 'postgres';
 import { drizzle } from 'drizzle-orm/postgres-js';
 import { migrate } from 'drizzle-orm/postgres-js/migrator';
+import { runRoute } from '../utils/run-route';
 
 /**
- * Phase 6 integration tests for the stripe route tree.
+ * Integration tests for the stripe route tree.
  *
- *   Owner-only (auth-gated, RLS-scoped via runProtected):
+ *   Owner-only (rlsMiddleware):
  *     - /api/stripe/check
  *     - /api/stripe/checkout
  *     - /api/stripe/portal
+ *
+ *   Session-only (protectedMiddleware, no DB tx):
  *     - /api/stripe/plans
  *
- *   Service (no session, RLS bypassed; signature-verified):
+ *   Public webhook (publicMiddleware; signature-verified):
  *     - /api/stripe/webhook       — signature failure 400 BEFORE any DB write
  *
  * The Stripe SDK and the webhook signature verifier are mocked because the
@@ -22,12 +25,9 @@ import { migrate } from 'drizzle-orm/postgres-js/migrator';
 
 const getSessionMock = vi.hoisted(() => vi.fn());
 vi.mock('@/auth/server', () => ({
-  auth: { api: { getSession: getSessionMock } },
+  createAuth: () => ({ api: { getSession: getSessionMock } }),
 }));
 
-// Stripe SDK mock. Holders are reassigned per-test via the `setStripeMocks`
-// helper below; the constructor on `Stripe.default` returns a closure over
-// the mutable spies so existing module-level imports still see them.
 const stripeSpies = vi.hoisted(() => ({
   constructEvent: vi.fn<(body: string, sig: string, secret: string) => unknown>(),
   subscriptionsRetrieve: vi.fn(),
@@ -43,16 +43,16 @@ vi.mock('stripe', () => {
   const ctor = vi.fn().mockImplementation(() => ({
     webhooks: { constructEvent: stripeSpies.constructEvent },
     subscriptions: { retrieve: stripeSpies.subscriptionsRetrieve },
-    checkout: { sessions: {
-      retrieve: stripeSpies.checkoutSessionsRetrieve,
-      create: stripeSpies.checkoutSessionsCreate,
-    } },
+    checkout: {
+      sessions: {
+        retrieve: stripeSpies.checkoutSessionsRetrieve,
+        create: stripeSpies.checkoutSessionsCreate,
+      },
+    },
     customers: { create: stripeSpies.customersCreate },
     billingPortal: { sessions: { create: stripeSpies.billingPortalCreate } },
     prices: { list: stripeSpies.pricesList },
   }));
-  // Make `Stripe.createFetchHttpClient()` callable on the constructor itself
-  // (it's accessed as a static in `getStripe()`).
   (ctor as unknown as { createFetchHttpClient: () => unknown }).createFetchHttpClient = () => ({});
   (ctor as unknown as { errors: { StripeError: typeof StripeError } }).errors = { StripeError };
   return { default: ctor };
@@ -76,17 +76,6 @@ let portalModule: PortalRoute;
 let plansModule: PlansRoute;
 let webhookModule: WebhookRoute;
 
-interface RouteShape {
-  options: {
-    server: {
-      handlers: {
-        GET?: (args: { request: Request }) => Promise<Response>;
-        POST?: (args: { request: Request }) => Promise<Response>;
-      };
-    };
-  };
-}
-
 const userA = '11111111-1111-1111-1111-111111111111';
 const userB = '22222222-2222-2222-2222-222222222222';
 
@@ -105,7 +94,9 @@ const sessionFor = (userId: string) => ({
   session: { id: 'sess-' + userId, userId, token: 't', expiresAt: new Date() },
 });
 
-describe.skipIf(!url)('/api/stripe/* (drizzle + runProtected/runService)', () => {
+type RouteLike = Parameters<typeof runRoute>[0];
+
+describe.skipIf(!url)('/api/stripe/* (rlsMiddleware/protectedMiddleware/publicMiddleware)', () => {
   beforeAll(async () => {
     process.env['STRIPE_SECRET_KEY'] = 'sk_test_unused';
     process.env['STRIPE_SECRET_KEY_DEV'] = 'sk_test_unused';
@@ -126,7 +117,7 @@ describe.skipIf(!url)('/api/stripe/* (drizzle + runProtected/runService)', () =>
       throw new Error(`stripe.test: connected as ${currentUser}, expected readest_app`);
     }
 
-    vi.doMock('@/db/client', () => ({ db: appDb, type: undefined }));
+    vi.doMock('@/db/client', () => ({ createDbClient: () => appDb }));
 
     checkModule = await import('@/app/api/stripe/check/route');
     checkoutModule = await import('@/app/api/stripe/checkout/route');
@@ -159,12 +150,11 @@ describe.skipIf(!url)('/api/stripe/* (drizzle + runProtected/runService)', () =>
     await adminClient`DELETE FROM customers WHERE user_id IN (${userA}, ${userB})`;
   });
 
-  // ─── plans (owner-only, no DB writes) ──────────────────────────────────
+  // ─── plans (protectedMiddleware, no DB writes) ──────────────────────────
   it('plans: 401 when no session', async () => {
     getSessionMock.mockResolvedValueOnce(null);
-    const get = (plansModule.Route as unknown as RouteShape).options.server.handlers.GET!;
     const request = new Request('http://localhost/api/stripe/plans', { method: 'GET' });
-    const response = await get({ request });
+    const response = await runRoute(plansModule.Route as RouteLike, 'GET', { request });
     expect(response.status).toBe(401);
     const body = (await response.json()) as { error?: string };
     expect(body.error).toBe('Not authenticated');
@@ -188,21 +178,19 @@ describe.skipIf(!url)('/api/stripe/* (drizzle + runProtected/runService)', () =>
         },
       ],
     });
-    const get = (plansModule.Route as unknown as RouteShape).options.server.handlers.GET!;
     const request = new Request('http://localhost/api/stripe/plans', { method: 'GET' });
-    const response = await get({ request });
+    const response = await runRoute(plansModule.Route as RouteLike, 'GET', { request });
     expect(response.status).toBe(200);
     const body = (await response.json()) as Array<{ plan: string; productId: string }>;
     expect(body[0]?.plan).toBe('pro');
     expect(body[0]?.productId).toBe('price_123');
   });
 
-  // ─── portal (owner-only) ────────────────────────────────────────────────
+  // ─── portal (rlsMiddleware) ────────────────────────────────────────────
   it('portal: 401 when no session', async () => {
     getSessionMock.mockResolvedValueOnce(null);
-    const post = (portalModule.Route as unknown as RouteShape).options.server.handlers.POST!;
     const request = new Request('http://localhost/api/stripe/portal', { method: 'POST' });
-    const response = await post({ request });
+    const response = await runRoute(portalModule.Route as RouteLike, 'POST', { request });
     expect(response.status).toBe(401);
     const body = (await response.json()) as { error?: string };
     expect(body.error).toBe('Not authenticated');
@@ -210,9 +198,8 @@ describe.skipIf(!url)('/api/stripe/* (drizzle + runProtected/runService)', () =>
 
   it('portal: 500 when caller has no customer row', async () => {
     getSessionMock.mockResolvedValueOnce(sessionFor(userA));
-    const post = (portalModule.Route as unknown as RouteShape).options.server.handlers.POST!;
     const request = new Request('http://localhost/api/stripe/portal', { method: 'POST' });
-    const response = await post({ request });
+    const response = await runRoute(portalModule.Route as RouteLike, 'POST', { request });
     expect(response.status).toBe(500);
   });
 
@@ -221,33 +208,31 @@ describe.skipIf(!url)('/api/stripe/* (drizzle + runProtected/runService)', () =>
                       VALUES (${userA}, 'cus_aaa')`;
     stripeSpies.billingPortalCreate.mockResolvedValueOnce({ url: 'https://billing.test/aaa' });
     getSessionMock.mockResolvedValueOnce(sessionFor(userA));
-    const post = (portalModule.Route as unknown as RouteShape).options.server.handlers.POST!;
     const request = new Request('http://localhost/api/stripe/portal', { method: 'POST' });
-    const response = await post({ request });
+    const response = await runRoute(portalModule.Route as RouteLike, 'POST', { request });
     expect(response.status).toBe(200);
     const body = (await response.json()) as { url: string };
     expect(body.url).toBe('https://billing.test/aaa');
   });
 
-  // ─── checkout (owner-only) ──────────────────────────────────────────────
+  // ─── checkout (rlsMiddleware) ──────────────────────────────────────────
   it('checkout: 401 when no session', async () => {
     getSessionMock.mockResolvedValueOnce(null);
-    const post = (checkoutModule.Route as unknown as RouteShape).options.server.handlers.POST!;
     const request = new Request('http://localhost/api/stripe/checkout', {
       method: 'POST',
       body: JSON.stringify({ priceId: 'price_1', planType: 'subscription', embedded: true }),
     });
-    const response = await post({ request });
+    const response = await runRoute(checkoutModule.Route as RouteLike, 'POST', { request });
     expect(response.status).toBe(401);
   });
 
   it('checkout: 400 on invalid body', async () => {
-    const post = (checkoutModule.Route as unknown as RouteShape).options.server.handlers.POST!;
+    getSessionMock.mockResolvedValueOnce(sessionFor(userA));
     const request = new Request('http://localhost/api/stripe/checkout', {
       method: 'POST',
       body: JSON.stringify({}),
     });
-    const response = await post({ request });
+    const response = await runRoute(checkoutModule.Route as RouteLike, 'POST', { request });
     expect(response.status).toBe(400);
   });
 
@@ -259,12 +244,11 @@ describe.skipIf(!url)('/api/stripe/* (drizzle + runProtected/runService)', () =>
       client_secret: 'cs_secret',
     });
     getSessionMock.mockResolvedValueOnce(sessionFor(userA));
-    const post = (checkoutModule.Route as unknown as RouteShape).options.server.handlers.POST!;
     const request = new Request('http://localhost/api/stripe/checkout', {
       method: 'POST',
       body: JSON.stringify({ priceId: 'price_1', planType: 'subscription', embedded: true }),
     });
-    const response = await post({ request });
+    const response = await runRoute(checkoutModule.Route as RouteLike, 'POST', { request });
     expect(response.status).toBe(200);
     const body = (await response.json()) as { sessionId: string };
     expect(body.sessionId).toBe('cs_1');
@@ -274,25 +258,24 @@ describe.skipIf(!url)('/api/stripe/* (drizzle + runProtected/runService)', () =>
     expect(rows[0]?.stripe_customer_id).toBe('cus_new');
   });
 
-  // ─── check (owner-only) ─────────────────────────────────────────────────
+  // ─── check (rlsMiddleware) ─────────────────────────────────────────────
   it('check: 401 when no session', async () => {
     getSessionMock.mockResolvedValueOnce(null);
-    const post = (checkModule.Route as unknown as RouteShape).options.server.handlers.POST!;
     const request = new Request('http://localhost/api/stripe/check', {
       method: 'POST',
       body: JSON.stringify({ sessionId: 'cs_x' }),
     });
-    const response = await post({ request });
+    const response = await runRoute(checkModule.Route as RouteLike, 'POST', { request });
     expect(response.status).toBe(401);
   });
 
   it('check: 400 on missing sessionId', async () => {
-    const post = (checkModule.Route as unknown as RouteShape).options.server.handlers.POST!;
+    getSessionMock.mockResolvedValueOnce(sessionFor(userA));
     const request = new Request('http://localhost/api/stripe/check', {
       method: 'POST',
       body: JSON.stringify({}),
     });
-    const response = await post({ request });
+    const response = await runRoute(checkModule.Route as RouteLike, 'POST', { request });
     expect(response.status).toBe(400);
   });
 
@@ -305,12 +288,11 @@ describe.skipIf(!url)('/api/stripe/* (drizzle + runProtected/runService)', () =>
       payment_intent: null,
     });
     getSessionMock.mockResolvedValueOnce(sessionFor(userA));
-    const post = (checkModule.Route as unknown as RouteShape).options.server.handlers.POST!;
     const request = new Request('http://localhost/api/stripe/check', {
       method: 'POST',
       body: JSON.stringify({ sessionId: 'cs_unpaid' }),
     });
-    const response = await post({ request });
+    const response = await runRoute(checkModule.Route as RouteLike, 'POST', { request });
     expect(response.status).toBe(200);
 
     const subs = await adminClient<{ c: string }[]>`
@@ -318,14 +300,13 @@ describe.skipIf(!url)('/api/stripe/* (drizzle + runProtected/runService)', () =>
     expect(Number(subs[0]?.c)).toBe(0);
   });
 
-  // ─── webhook (runService; signature-verified) ──────────────────────────
+  // ─── webhook (publicMiddleware; signature-verified) ────────────────────
   it('webhook: 401 when stripe-signature header missing', async () => {
-    const post = (webhookModule.Route as unknown as RouteShape).options.server.handlers.POST!;
     const request = new Request('http://localhost/api/stripe/webhook', {
       method: 'POST',
       body: '{}',
     });
-    const response = await post({ request });
+    const response = await runRoute(webhookModule.Route as RouteLike, 'POST', { request });
     expect(response.status).toBe(401);
   });
 
@@ -333,7 +314,6 @@ describe.skipIf(!url)('/api/stripe/* (drizzle + runProtected/runService)', () =>
     stripeSpies.constructEvent.mockImplementationOnce(() => {
       throw new Error('Invalid signature');
     });
-    const post = (webhookModule.Route as unknown as RouteShape).options.server.handlers.POST!;
     const request = new Request('http://localhost/api/stripe/webhook', {
       method: 'POST',
       headers: { 'stripe-signature': 'bad' },
@@ -342,12 +322,12 @@ describe.skipIf(!url)('/api/stripe/* (drizzle + runProtected/runService)', () =>
         data: { object: { metadata: { userId: userA }, mode: 'payment', id: 'cs_evil' } },
       }),
     });
-    const response = await post({ request });
+    const response = await runRoute(webhookModule.Route as RouteLike, 'POST', { request });
     expect(response.status).toBe(400);
     const body = (await response.json()) as { error?: string };
     expect(body.error).toContain('Webhook signature verification failed');
 
-    // Critical: signature failed BEFORE any DB write happened.
+    // Signature failure → handler returns 400 before any write happens.
     const subs = await adminClient<{ c: string }[]>`
       SELECT count(*)::text AS c FROM subscriptions WHERE user_id = ${userA}`;
     expect(Number(subs[0]?.c)).toBe(0);
@@ -366,13 +346,12 @@ describe.skipIf(!url)('/api/stripe/* (drizzle + runProtected/runService)', () =>
       type: 'customer.subscription.deleted',
       data: { object: { id: 'sub_cancel' } },
     });
-    const post = (webhookModule.Route as unknown as RouteShape).options.server.handlers.POST!;
     const request = new Request('http://localhost/api/stripe/webhook', {
       method: 'POST',
       headers: { 'stripe-signature': 'good' },
       body: '{}',
     });
-    const response = await post({ request });
+    const response = await runRoute(webhookModule.Route as RouteLike, 'POST', { request });
     expect(response.status).toBe(200);
 
     const subRow = await adminClient<{ status: string; cancelled_at: Date | null }[]>`

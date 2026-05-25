@@ -9,22 +9,25 @@ import {
   createOrUpdateSubscription,
   getStripe,
 } from '@/libs/payment/stripe/server';
-import { runService } from '@/libs/server/route-helpers';
+import { publicMiddleware } from '@/middlewares/public';
 
 type TxLike = Parameters<Parameters<DbTransaction>[0]>[0];
 
 /**
- * Phase 6 of the supabase→better-auth migration. Stripe webhook lives on
- * `runService` (RLS bypassed) because there's no end-user session — its own
- * authenticity is established by the Stripe signature check, which still
- * runs BEFORE any DB write. If signature verification fails, we short-circuit
- * with 400 and never open the bypass-RLS transaction, so a forged request
- * cannot mutate state.
+ * Stripe webhook lives on `publicMiddleware` (RLS bypassed) because there's
+ * no end-user session — its own authenticity is established by the Stripe
+ * signature check, which still runs BEFORE any DB write. If signature
+ * verification fails, we short-circuit with 400 and never enter the bypass
+ * tx, so a forged request cannot mutate state.
+ *
+ * Signature verification is intentionally outside the middleware-managed
+ * tx so we don't pay the connection-acquisition cost on rejected requests.
  */
 export const Route = createFileRoute('/api/stripe/webhook')({
   server: {
+    middleware: [publicMiddleware],
     handlers: {
-      POST: async ({ request }) => {
+      POST: async ({ request, context }) => {
         const body = await request.text();
         const signature = request.headers.get('stripe-signature');
 
@@ -45,52 +48,51 @@ export const Route = createFileRoute('/api/stripe/webhook')({
           );
         }
 
-        return runService(async ({ tx }) => {
-          try {
-            switch (event.type) {
-              case 'checkout.session.completed': {
-                const session = event.data.object;
-                const userId = session.metadata?.['userId'];
-                if (userId) {
-                  const customerId = session.customer as string;
-                  if (session.mode === 'subscription' && session.subscription) {
-                    await createOrUpdateSubscription(
-                      tx,
-                      userId,
-                      customerId,
-                      session.subscription as string,
-                    );
-                  } else if (session.id) {
-                    await createOrUpdatePayment(tx, userId, customerId, session.id);
-                  }
+        const { tx } = context;
+        try {
+          switch (event.type) {
+            case 'checkout.session.completed': {
+              const session = event.data.object;
+              const userId = session.metadata?.['userId'];
+              if (userId) {
+                const customerId = session.customer as string;
+                if (session.mode === 'subscription' && session.subscription) {
+                  await createOrUpdateSubscription(
+                    tx,
+                    userId,
+                    customerId,
+                    session.subscription as string,
+                  );
+                } else if (session.id) {
+                  await createOrUpdatePayment(tx, userId, customerId, session.id);
                 }
-                break;
               }
-
-              case 'invoice.payment_succeeded':
-                await handleSuccessfulInvoice(tx, event.data.object);
-                break;
-
-              case 'invoice.payment_failed':
-                await handleFailedInvoice(tx, event.data.object);
-                break;
-
-              case 'customer.subscription.updated':
-                await handleSubscriptionUpdated(tx, event.data.object);
-                break;
-
-              case 'customer.subscription.deleted':
-                await handleSubscriptionCancelled(tx, event.data.object);
-                break;
+              break;
             }
 
-            return Response.json({ received: true });
-          } catch (error) {
-            const message = error instanceof Error ? error.message : 'Unknown error';
-            console.error('Webhook error:', message);
-            return Response.json({ error: message }, { status: 500 });
+            case 'invoice.payment_succeeded':
+              await handleSuccessfulInvoice(tx, event.data.object);
+              break;
+
+            case 'invoice.payment_failed':
+              await handleFailedInvoice(tx, event.data.object);
+              break;
+
+            case 'customer.subscription.updated':
+              await handleSubscriptionUpdated(tx, event.data.object);
+              break;
+
+            case 'customer.subscription.deleted':
+              await handleSubscriptionCancelled(tx, event.data.object);
+              break;
           }
-        });
+
+          return Response.json({ received: true });
+        } catch (error) {
+          const message = error instanceof Error ? error.message : 'Unknown error';
+          console.error('Webhook error:', message);
+          return Response.json({ error: message }, { status: 500 });
+        }
       },
     },
   },
