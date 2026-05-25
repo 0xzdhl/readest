@@ -1,8 +1,8 @@
-import { getAccessToken } from '@/utils/access';
-import { getAPIBaseUrl } from '@/services/environment';
-import { SyncError } from '@/libs/errors';
-import type { Hlc, ReplicaRow } from '@/types/replica';
 import type { SyncErrorCode } from '@/libs/errors';
+import { SyncError } from '@/libs/errors';
+import { getAPIBaseUrl } from '@/services/environment';
+import type { Hlc, ReplicaRow } from '@/types/replica';
+import { buildAuthFetchOptions } from '@/utils/fetch';
 
 const ENDPOINT = () => `${getAPIBaseUrl()}/sync/replicas`;
 const KEYS_ENDPOINT = () => `${getAPIBaseUrl()}/sync/replica-keys`;
@@ -38,26 +38,30 @@ const parseErrorBody = async (response: Response): Promise<ErrorBody> => {
   }
 };
 
-const requireToken = async (): Promise<string> => {
-  const token = await getAccessToken();
-  if (!token) throw new SyncError('AUTH', 'Not authenticated');
-  return token;
+const buildReplicaAuthOptions = async (options: RequestInit = {}): Promise<RequestInit> => {
+  try {
+    return await buildAuthFetchOptions(options);
+  } catch (cause) {
+    if (cause instanceof Error && cause.message.includes('Not authenticated')) {
+      throw new SyncError('AUTH', 'Not authenticated', { cause });
+    }
+    throw new SyncError('SERVER', 'Failed to prepare authenticated request', { cause });
+  }
 };
 
 export class ReplicaSyncClient {
   async push(rows: ReplicaRow[]): Promise<ReplicaRow[]> {
     if (rows.length === 0) return [];
-    const token = await requireToken();
+    const requestInit = await buildReplicaAuthOptions({
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ rows }),
+    });
     let response: Response;
     try {
-      response = await fetch(ENDPOINT(), {
-        method: 'POST',
-        headers: {
-          Authorization: `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ rows }),
-      });
+      response = await fetch(ENDPOINT(), requestInit);
     } catch (cause) {
       throw new SyncError('SERVER', 'Network failure during push', { cause });
     }
@@ -73,16 +77,15 @@ export class ReplicaSyncClient {
   }
 
   async pull(kind: string, since: Hlc | null): Promise<ReplicaRow[]> {
-    const token = await requireToken();
+    const requestInit = await buildReplicaAuthOptions({
+      method: 'GET',
+    });
     const params = new URLSearchParams({ kind });
     if (since) params.set('since', since);
     const url = `${ENDPOINT()}?${params.toString()}`;
     let response: Response;
     try {
-      response = await fetch(url, {
-        method: 'GET',
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      response = await fetch(url, requestInit);
     } catch (cause) {
       throw new SyncError('SERVER', 'Network failure during pull', { cause });
     }
@@ -113,17 +116,16 @@ export class ReplicaSyncClient {
     cursors: { kind: string; since: Hlc | null }[],
   ): Promise<{ kind: string; rows: ReplicaRow[] }[]> {
     if (cursors.length === 0) return [];
-    const token = await requireToken();
+    const requestInit = await buildReplicaAuthOptions({
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ cursors }),
+    });
     let response: Response;
     try {
-      response = await fetch(ENDPOINT(), {
-        method: 'POST',
-        headers: {
-          Authorization: `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ cursors }),
-      });
+      response = await fetch(ENDPOINT(), requestInit);
     } catch (cause) {
       throw new SyncError('SERVER', 'Network failure during batch pull', { cause });
     }
@@ -165,13 +167,12 @@ export class ReplicaSyncClient {
   }
 
   private async fetchReplicaKeys(): Promise<ReplicaKeyRow[]> {
-    const token = await requireToken();
+    const requestInit = await buildReplicaAuthOptions({
+      method: 'GET',
+    });
     let response: Response;
     try {
-      response = await fetch(KEYS_ENDPOINT(), {
-        method: 'GET',
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      response = await fetch(KEYS_ENDPOINT(), requestInit);
     } catch (cause) {
       throw new SyncError('SERVER', 'Network failure during replica-keys list', { cause });
     }
@@ -212,13 +213,12 @@ export class ReplicaSyncClient {
   }
 
   async forgetReplicaKeys(): Promise<void> {
-    const token = await requireToken();
+    const requestInit = await buildReplicaAuthOptions({
+      method: 'DELETE',
+    });
     let response: Response;
     try {
-      response = await fetch(KEYS_ENDPOINT(), {
-        method: 'DELETE',
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      response = await fetch(KEYS_ENDPOINT(), requestInit);
     } catch (cause) {
       throw new SyncError('SERVER', 'Network failure during replica-keys forget', { cause });
     }
@@ -237,17 +237,16 @@ export class ReplicaSyncClient {
   }
 
   async createReplicaKey(alg: string): Promise<ReplicaKeyRow> {
-    const token = await requireToken();
+    const requestInit = await buildReplicaAuthOptions({
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ alg }),
+    });
     let response: Response;
     try {
-      response = await fetch(KEYS_ENDPOINT(), {
-        method: 'POST',
-        headers: {
-          Authorization: `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ alg }),
-      });
+      response = await fetch(KEYS_ENDPOINT(), requestInit);
     } catch (cause) {
       throw new SyncError('SERVER', 'Network failure during replica-keys create', { cause });
     }

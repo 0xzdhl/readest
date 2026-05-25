@@ -12,7 +12,7 @@ import { getAppleIdAuth, type Scope } from '@/app/auth/utils/appleIdAuth';
 import {
   authWithCustomTab,
   authWithSafari,
-  storeBearerFromCallback,
+  storeSessionTokenFromCallback,
 } from '@/app/auth/utils/nativeAuth';
 import { authClient } from '@/auth';
 import { useEnv } from '@/context/EnvContext';
@@ -83,10 +83,10 @@ export function AuthComponent() {
 
   useTheme({ systemUIVisible: false });
 
-  // Magic-link is a web-only convenience — better-auth's bearer flow on
-  // native lacks the email-confirmation round-trip the magic-link plugin
-  // assumes, and we don't expose Tauri's `mailto:` UX for it. Hide it on
-  // the desktop / mobile apps; cookie sessions on the web get the option.
+  // Magic-link is a web-only convenience — the native app's deep-link
+  // callback bridge does not model the mail-confirmation round-trip the
+  // magic-link plugin assumes. Hide it on the desktop / mobile apps;
+  // browser cookie sessions on the web still get the option.
   const showMagicLink = !isTauriAppPlatform();
 
   const getTauriRedirectTo = (isOAuth: boolean) => {
@@ -109,7 +109,7 @@ export function AuthComponent() {
   };
 
   const handleOAuthUrl = async (url: string) => {
-    storeBearerFromCallback(url);
+    storeSessionTokenFromCallback(url);
     router.navigate({ to: '/library' });
   };
 

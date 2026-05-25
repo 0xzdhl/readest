@@ -1,14 +1,14 @@
-﻿import type Stripe from 'stripe';
+﻿import { createFileRoute, useRouter } from '@tanstack/react-router';
 import { Suspense, useEffect, useState } from 'react';
-import { createFileRoute, useRouter } from '@tanstack/react-router';
+import type Stripe from 'stripe';
 import { z } from 'zod';
+import Spinner from '@/components/Spinner';
 import { useAuth } from '@/context/AuthContext';
 import { useTranslation } from '@/hooks/useTranslation';
-import { getAPIBaseUrl, getNodeAPIBaseUrl } from '@/services/environment';
-import { getAccessToken } from '@/utils/access';
-import type { PlanType } from '@/types/quota';
 import type { VerifiedIAP } from '@/libs/payment/iap/types';
-import Spinner from '@/components/Spinner';
+import { getAPIBaseUrl, getNodeAPIBaseUrl } from '@/services/environment';
+import type { PlanType } from '@/types/quota';
+import { fetchWithAuth } from '@/utils/fetch';
 
 const STRIPE_CHECK_URL = `${getAPIBaseUrl()}/stripe/check`;
 const APPLE_IAP_VERIFY_URL = `${getNodeAPIBaseUrl()}/apple/iap-verify`;
@@ -142,19 +142,13 @@ const SubscriptionSuccessContent = () => {
 
   const updateStripeSessionStatus = async () => {
     try {
-      const token = await getAccessToken();
-      const response = await fetch(STRIPE_CHECK_URL, {
+      const response = await fetchWithAuth(STRIPE_CHECK_URL, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({ sessionId }),
       });
-
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
 
       const stripeCheck = parseStripeCheckResponse(await response.json());
 
@@ -191,22 +185,16 @@ const SubscriptionSuccessContent = () => {
       return;
     }
     try {
-      const token = await getAccessToken();
-      const response = await fetch(APPLE_IAP_VERIFY_URL, {
+      const response = await fetchWithAuth(APPLE_IAP_VERIFY_URL, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({
           transactionId,
           originalTransactionId,
         }),
       });
-
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
 
       const iapVerification = parseIAPVerifyResponse(await response.json());
 
@@ -245,12 +233,10 @@ const SubscriptionSuccessContent = () => {
     }
 
     try {
-      const token = await getAccessToken();
-      const response = await fetch(ANDROID_IAP_VERIFY_URL, {
+      const response = await fetchWithAuth(ANDROID_IAP_VERIFY_URL, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({
           purchaseToken,
@@ -259,10 +245,6 @@ const SubscriptionSuccessContent = () => {
           packageName,
         }),
       });
-
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
 
       const iapVerification = parseIAPVerifyResponse(await response.json());
 

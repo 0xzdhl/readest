@@ -1,10 +1,12 @@
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
 
 vi.mock('@/utils/access', () => ({
-  getAccessToken: vi.fn(async () => 'fake-token'),
+  getNativeSessionToken: vi.fn(async () => 'fake-token'),
 }));
+var isTauri = false;
 vi.mock('@/services/environment', () => ({
   getAPIBaseUrl: () => 'https://example.test',
+  isTauriAppPlatform: () => isTauri,
 }));
 
 import { ReplicaSyncClient } from '@/libs/replicaSyncClient';
@@ -29,6 +31,7 @@ const sampleRow: ReplicaRow = {
 const mockFetch = vi.fn();
 
 beforeEach(() => {
+  isTauri = false;
   mockFetch.mockReset();
   globalThis.fetch = mockFetch as unknown as typeof fetch;
 });
@@ -38,7 +41,7 @@ afterEach(() => {
 });
 
 describe('ReplicaSyncClient.push', () => {
-  test('POSTs rows to /sync/replicas with bearer token', async () => {
+  test('POSTs rows to /sync/replicas with the native session cookie when available', async () => {
     mockFetch.mockResolvedValueOnce(
       new Response(JSON.stringify({ rows: [sampleRow] }), { status: 200 }),
     );
@@ -48,8 +51,10 @@ describe('ReplicaSyncClient.push', () => {
     const [url, init] = mockFetch.mock.calls[0]!;
     expect(url).toBe('https://example.test/sync/replicas');
     expect(init.method).toBe('POST');
-    expect(init.headers.Authorization).toBe('Bearer fake-token');
-    expect(init.headers['Content-Type']).toBe('application/json');
+    const headers = new Headers(init.headers);
+    expect(headers.get('Authorization')).toBeNull();
+    expect(headers.get('Cookie')).toBe('better-auth.session_token=fake-token');
+    expect(headers.get('Content-Type')).toBe('application/json');
     expect(JSON.parse(init.body)).toEqual({ rows: [sampleRow] });
     expect(result).toEqual([sampleRow]);
   });
@@ -177,12 +182,9 @@ describe('ReplicaSyncClient.listReplicaKeys (cache + dedupe)', () => {
       client.listReplicaKeys(),
       client.listReplicaKeys(),
     ]);
-    // Drain microtasks so the queued requireToken() awaits resolve and
-    // we reach the fetch call. Two ticks is enough for the three
-    // concurrent calls' first await to settle.
-    await Promise.resolve();
-    await Promise.resolve();
-    expect(mockFetch).toHaveBeenCalledTimes(1);
+    await vi.waitFor(() => {
+      expect(mockFetch).toHaveBeenCalledTimes(1);
+    });
     resolveFetch(new Response(JSON.stringify({ rows: [sampleKey] }), { status: 200 }));
     const [r1, r2, r3] = await all;
     expect(r1).toEqual([sampleKey]);
@@ -266,6 +268,36 @@ describe('ReplicaSyncClient.listReplicaKeys (cache + dedupe)', () => {
 });
 
 describe('ReplicaSyncClient.pullBatch', () => {
+  test('web pullBatch falls back to cookie auth when no native session token exists', async () => {
+    const { getNativeSessionToken } = await import('@/utils/access');
+    vi.mocked(getNativeSessionToken).mockResolvedValueOnce(null);
+    mockFetch.mockResolvedValueOnce(
+      new Response(JSON.stringify({ results: [{ kind: 'dictionary', rows: [sampleRow] }] }), {
+        status: 200,
+      }),
+    );
+
+    const client = new ReplicaSyncClient();
+    const result = await client.pullBatch([{ kind: 'dictionary', since: null }]);
+
+    expect(result).toEqual([{ kind: 'dictionary', rows: [sampleRow] }]);
+    const [, init] = mockFetch.mock.calls[0]!;
+    expect(init.headers.Authorization).toBeUndefined();
+    expect(init.credentials).toBe('include');
+  });
+
+  test('native pullBatch without native session token raises AUTH', async () => {
+    isTauri = true;
+    const { getNativeSessionToken } = await import('@/utils/access');
+    vi.mocked(getNativeSessionToken).mockResolvedValueOnce(null);
+
+    const client = new ReplicaSyncClient();
+    await expect(client.pullBatch([{ kind: 'dictionary', since: null }])).rejects.toMatchObject({
+      code: 'AUTH',
+    });
+    expect(mockFetch).not.toHaveBeenCalled();
+  });
+
   test('POSTs cursors to /sync/replicas and returns the per-kind results', async () => {
     const fontRow: ReplicaRow = { ...sampleRow, kind: 'font', replica_id: 'f1' };
     mockFetch.mockResolvedValueOnce(

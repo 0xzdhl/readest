@@ -1,9 +1,9 @@
-import type { UserPlan } from '@/types/quota';
+import { authClient, loadSessionToken } from '@/auth';
 import { env } from '@/env';
 import { DEFAULT_DAILY_TRANSLATION_QUOTA, DEFAULT_STORAGE_QUOTA } from '@/services/constants';
 import { isTauriAppPlatform } from '@/services/environment';
 import { getDailyUsage } from '@/services/translators/utils';
-import { authClient, loadToken } from '@/auth';
+import type { UserPlan } from '@/types/quota';
 
 /**
  * Subset of better-auth's `session.user` we read in the UI layer. Mirrors
@@ -73,26 +73,24 @@ export const getDailyTranslationPlanData = (user: PlanUser | null | undefined) =
 };
 
 /**
- * Get the access token used for `Authorization: Bearer …` headers when the
- * UI calls our own API.
+ * Get the stored Better Auth session token used by native clients to replay
+ * the `session_token` cookie manually when calling our own API.
  *
- * Web: returns `null`. better-auth's web client is cookie-based — the
- * `better-auth.session_token` cookie is sent automatically on same-origin
- * requests, so callers should pass `credentials: 'include'` (already the
- * default when running on the same origin) instead of relying on a header.
+ * Web: returns `null`. better-auth's web client is browser-cookie based, so
+ * callers should rely on `credentials: 'include'` instead of reading a token.
  *
- * Native (Tauri / iOS / Android): returns the bearer token that
- * `native-client.ts` captured from the `set-auth-token` response header on
- * the most recent sign-in / refresh, stored in localStorage under
- * `readest:bearer-token`.
+ * Native (Tauri / iOS / Android): returns the signed Better Auth
+ * session-cookie token that `native-client.ts` captured from the
+ * `set-auth-token` response header on the most recent sign-in / refresh,
+ * stored in localStorage under `readest:session-token`.
  *
  * Stays async for backwards compatibility — pre-Phase-7 callers awaited
  * `supabase.auth.getSession()` here, and converting them all to sync would
- * be churn for no benefit (the bearer load is microtask-cheap).
+ * be churn for no benefit (the native session-token read is microtask-cheap).
  */
-export const getAccessToken = async (): Promise<string | null> => {
+export const getNativeSessionToken = async (): Promise<string | null> => {
   if (isTauriAppPlatform()) {
-    return loadToken();
+    return loadSessionToken();
   }
   return null;
 };

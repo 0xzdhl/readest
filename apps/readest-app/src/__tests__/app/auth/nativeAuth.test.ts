@@ -9,16 +9,17 @@ vi.mock('@tauri-apps/api/core', () => ({ invoke: (...a: unknown[]) => invokeMock
 vi.mock('@tauri-apps/api/event', () => ({ listen: (...a: unknown[]) => listenMock(...a) }));
 vi.mock('@tauri-apps/plugin-os', () => ({ type: () => osTypeMock() }));
 vi.mock('@/auth', () => ({
-  storeToken: (...a: unknown[]) => storeTokenMock(...a),
+  storeSessionToken: (...a: unknown[]) => storeTokenMock(...a),
 }));
 
 import {
   authWithSafari,
   authWithCustomTab,
-  extractBearerFromCallback,
+  extractSessionTokenFromCallback,
+  storeSessionTokenFromCallback,
 } from '@/app/auth/utils/nativeAuth';
 
-describe('nativeAuth helpers (better-auth bearer flow)', () => {
+describe('nativeAuth helpers (native callback token bridge)', () => {
   beforeEach(() => {
     invokeMock.mockReset();
     listenMock.mockReset();
@@ -29,18 +30,26 @@ describe('nativeAuth helpers (better-auth bearer flow)', () => {
     vi.restoreAllMocks();
   });
 
-  describe('extractBearerFromCallback', () => {
+  describe('extractSessionTokenFromCallback', () => {
     it('reads `token` from the better-auth callback query string', () => {
       const url = 'readest://auth-callback?token=ABC123&redirect=%2Flibrary';
-      expect(extractBearerFromCallback(url)).toBe('ABC123');
+      expect(extractSessionTokenFromCallback(url)).toBe('ABC123');
     });
     it('falls back to hash fragment', () => {
       const url = 'readest://auth-callback#token=XYZ&type=signin';
-      expect(extractBearerFromCallback(url)).toBe('XYZ');
+      expect(extractSessionTokenFromCallback(url)).toBe('XYZ');
     });
     it('returns null when no token is present', () => {
-      expect(extractBearerFromCallback('readest://auth-callback')).toBeNull();
-      expect(extractBearerFromCallback('not-a-url')).toBeNull();
+      expect(extractSessionTokenFromCallback('readest://auth-callback')).toBeNull();
+      expect(extractSessionTokenFromCallback('not-a-url')).toBeNull();
+    });
+  });
+
+  describe('storeSessionTokenFromCallback', () => {
+    it('stores the callback token for the native auth client', () => {
+      const token = storeSessionTokenFromCallback('readest://auth-callback?token=ABC123');
+      expect(token).toBe('ABC123');
+      expect(storeTokenMock).toHaveBeenCalledWith('ABC123');
     });
   });
 

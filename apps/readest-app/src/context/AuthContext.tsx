@@ -1,7 +1,6 @@
-import { createContext, useCallback, useContext, useEffect, useMemo, useRef } from 'react';
-import type { ReactNode } from 'react';
 import posthog from 'posthog-js';
-
+import type { ReactNode } from 'react';
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef } from 'react';
 import { authClient } from '@/auth';
 import type { Session } from '@/auth/server';
 
@@ -14,9 +13,9 @@ import type { Session } from '@/auth/server';
  * (`plan`, `storageUsageBytes`, `storagePurchasedBytes`) in camelCase,
  * thanks to `inferAdditionalFields<typeof auth>` on the client. This
  * context is now a thin pass-through over that hook — there's no separate
- * `token` field (web is cookie-backed, native carries the bearer in
- * `localStorage` via `@/auth/native-client`) and no localStorage mirroring
- * of the user object.
+ * `token` field and no localStorage mirroring of the user object. Web uses
+ * browser cookies directly; native uses the same Better Auth session model
+ * but replays the session cookie through the native auth transport helper.
  */
 export type AuthUser = NonNullable<Session>['user'];
 export type AuthSession = NonNullable<Session>['session'];

@@ -1,10 +1,9 @@
-import type { Book, BookConfig, BookNote, BookDataRecord } from '@/types/book';
 import { getAPIBaseUrl } from '@/services/environment';
-import { getAccessToken } from '@/utils/access';
-import { fetchWithTimeout } from '@/utils/fetch';
+import type { Book, BookConfig, BookDataRecord, BookNote } from '@/types/book';
+import { buildAuthFetchOptions, fetchWithTimeout } from '@/utils/fetch';
 import { getJsonErrorMessage } from '@/utils/unknown';
 
-const SYNC_API_ENDPOINT = getAPIBaseUrl() + '/sync';
+const SYNC_API_ENDPOINT = `${getAPIBaseUrl()}/sync`;
 
 export type SyncType = 'books' | 'configs' | 'notes';
 export type SyncOp = 'push' | 'pull' | 'both';
@@ -38,19 +37,9 @@ export class SyncClient {
     book?: string,
     metaHash?: string,
   ): Promise<SyncResult> {
-    const token = await getAccessToken();
-    if (!token) throw new Error('Not authenticated');
-
     const url = `${SYNC_API_ENDPOINT}?since=${encodeURIComponent(since)}&type=${type ?? ''}&book=${book ?? ''}&meta_hash=${metaHash ?? ''}`;
-    const res = await fetchWithTimeout(
-      url,
-      {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      },
-      8000,
-    );
+    const options = await buildAuthFetchOptions({});
+    const res = await fetchWithTimeout(url, options, 8000);
 
     if (!res.ok) {
       const error: unknown = await res.json();
@@ -65,21 +54,14 @@ export class SyncClient {
    * Uses last-writer-wins logic as implemented on the server side.
    */
   async pushChanges(payload: SyncData): Promise<SyncResult> {
-    const token = await getAccessToken();
-    if (!token) throw new Error('Not authenticated');
-
-    const res = await fetchWithTimeout(
-      SYNC_API_ENDPOINT,
-      {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify(payload),
+    const options = await buildAuthFetchOptions({
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
       },
-      8000,
-    );
+      body: JSON.stringify(payload),
+    });
+    const res = await fetchWithTimeout(SYNC_API_ENDPOINT, options, 8000);
 
     if (!res.ok) {
       const error: unknown = await res.json();

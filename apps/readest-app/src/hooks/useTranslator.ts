@@ -1,17 +1,19 @@
-import { useState, useCallback, useEffect } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import {
   ErrorCodes,
+  getFromCache,
   getTranslator,
   getTranslators,
   isTranslatorAvailable,
+  polish,
+  preprocess,
+  storeInCache,
   type TranslatorName,
+  type UseTranslatorOptions,
 } from '@/services/translators';
-import { getFromCache, storeInCache, type UseTranslatorOptions } from '@/services/translators';
-import { polish, preprocess } from '@/services/translators';
 import { eventDispatcher } from '@/utils/event';
 import { getLocale } from '@/utils/misc';
-import { getAccessToken } from '@/utils/access';
 import { useTranslation } from './useTranslation';
 
 export function useTranslator({
@@ -22,12 +24,10 @@ export function useTranslator({
   enablePreprocessing = true,
 }: UseTranslatorOptions = {}) {
   const _ = useTranslation();
-  // After Phase 7 we no longer keep a synchronous "token" mirror in the
-  // React context (web is cookie-based; native carries a bearer in
-  // localStorage). The translator API still needs an `Authorization:
-  // Bearer` header on native, so we lazy-load the bearer via the
-  // platform-routed helper, and use `!!user` as the "is authenticated"
-  // flag everywhere else.
+  // Authentication is tracked through `useSession()`/`useAuth()` only.
+  // Translator routes now use the same Better Auth session transport as the
+  // rest of the app instead of threading a bespoke bearer token through the
+  // UI layer.
   const { user } = useAuth();
   const hasAuth = !!user;
   const [loading, setLoading] = useState(false);
@@ -40,9 +40,7 @@ export function useTranslator({
   }, [provider, sourceLang, targetLang]);
 
   useEffect(() => {
-    const availableTranslators = getTranslators().filter((t) =>
-      isTranslatorAvailable(t, hasAuth),
-    );
+    const availableTranslators = getTranslators().filter((t) => isTranslatorAvailable(t, hasAuth));
     const selectedTranslator =
       availableTranslators.find((t) => t.name === provider) || availableTranslators[0]!;
     const selectedProviderName = selectedTranslator.name as TranslatorName;
@@ -104,16 +102,11 @@ export function useTranslator({
         if (!translator) {
           throw new Error(`No translator found for provider: ${selectedProvider}`);
         }
-        // Bearer is only used on native (`@/utils/access.getAccessToken`
-        // returns null on web — cookie auth carries the session
-        // automatically). Translator providers that don't need auth
-        // simply ignore the argument.
-        const bearer = await getAccessToken();
         const translatedTexts = await translator.translate(
           textsNeedingTranslation,
           sourceLanguage,
           targetLanguage,
-          bearer,
+          null,
           useCache,
         );
 
