@@ -2,18 +2,18 @@ import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from 'vites
 import postgres from 'postgres';
 import { drizzle } from 'drizzle-orm/postgres-js';
 import { migrate } from 'drizzle-orm/postgres-js/migrator';
+import { runRoute } from '../utils/run-route';
 
 /**
- * Phase 6 integration tests for /api/apple/iap-verify and
- * /api/google/iap-verify. Same scaffolding as `stripe.test.ts`: the
- * verifier modules are mocked (they reach for the App Store / Play Store
- * API in production) and the route's drizzle writes go to the real test
- * DB via `readest_app`.
+ * Integration tests for /api/apple/iap-verify and /api/google/iap-verify
+ * under the new `rlsMiddleware` chain. The verifier modules are mocked
+ * (they reach for App Store / Play Store APIs in production); the route's
+ * drizzle writes go through the real test DB via `readest_app`.
  */
 
 const getSessionMock = vi.hoisted(() => vi.fn());
 vi.mock('@/auth/server', () => ({
-  auth: { api: { getSession: getSessionMock } },
+  createAuth: () => ({ api: { getSession: getSessionMock } }),
 }));
 
 const appleVerifierSpies = vi.hoisted(() => ({
@@ -34,9 +34,6 @@ vi.mock('@/libs/payment/iap/google/verifier', () => ({
   }),
 }));
 
-// Stub the product-id helpers so the test doesn't need real product IDs
-// to map to a plan. The handlers don't care about plan name correctness —
-// they only need to be told whether something is a storage purchase.
 vi.mock('@/libs/payment/iap/utils', () => ({
   isStoragePurchase: (productId: string) => productId.includes('storage'),
   parseStorageGB: () => 5,
@@ -56,16 +53,6 @@ type GoogleRoute = typeof import('@/app/api/google/iap-verify/route');
 let appleModule: AppleRoute;
 let googleModule: GoogleRoute;
 
-interface RouteShape {
-  options: {
-    server: {
-      handlers: {
-        POST?: (args: { request: Request }) => Promise<Response>;
-      };
-    };
-  };
-}
-
 const userA = '11111111-1111-1111-1111-111111111111';
 const userB = '22222222-2222-2222-2222-222222222222';
 
@@ -84,7 +71,9 @@ const sessionFor = (userId: string) => ({
   session: { id: 'sess-' + userId, userId, token: 't', expiresAt: new Date() },
 });
 
-describe.skipIf(!url)('/api/{apple,google}/iap-verify (drizzle + runProtected)', () => {
+type RouteLike = Parameters<typeof runRoute>[0];
+
+describe.skipIf(!url)('/api/{apple,google}/iap-verify (rlsMiddleware)', () => {
   beforeAll(async () => {
     adminClient = postgres(url!, { max: 1 });
     const adminDb = drizzle(adminClient);
@@ -101,7 +90,7 @@ describe.skipIf(!url)('/api/{apple,google}/iap-verify (drizzle + runProtected)',
       throw new Error(`iap.test: connected as ${currentUser}, expected readest_app`);
     }
 
-    vi.doMock('@/db/client', () => ({ db: appDb, type: undefined }));
+    vi.doMock('@/db/client', () => ({ createDbClient: () => appDb }));
 
     appleModule = await import('@/app/api/apple/iap-verify/route');
     googleModule = await import('@/app/api/google/iap-verify/route');
@@ -130,22 +119,21 @@ describe.skipIf(!url)('/api/{apple,google}/iap-verify (drizzle + runProtected)',
   // ─── Apple ──────────────────────────────────────────────────────────────
   it('apple: 401 when no session', async () => {
     getSessionMock.mockResolvedValueOnce(null);
-    const post = (appleModule.Route as unknown as RouteShape).options.server.handlers.POST!;
     const request = new Request('http://localhost/api/apple/iap-verify', {
       method: 'POST',
       body: JSON.stringify({ transactionId: 't1', originalTransactionId: 'ot1' }),
     });
-    const response = await post({ request });
+    const response = await runRoute(appleModule.Route as RouteLike, 'POST', { request });
     expect(response.status).toBe(401);
   });
 
   it('apple: 400 on invalid body', async () => {
-    const post = (appleModule.Route as unknown as RouteShape).options.server.handlers.POST!;
+    getSessionMock.mockResolvedValueOnce(sessionFor(userA));
     const request = new Request('http://localhost/api/apple/iap-verify', {
       method: 'POST',
       body: JSON.stringify({}),
     });
-    const response = await post({ request });
+    const response = await runRoute(appleModule.Route as RouteLike, 'POST', { request });
     expect(response.status).toBe(400);
   });
 
@@ -169,12 +157,11 @@ describe.skipIf(!url)('/api/{apple,google}/iap-verify (drizzle + runProtected)',
       expiresDate: new Date('2024-02-01'),
     });
     getSessionMock.mockResolvedValueOnce(sessionFor(userA));
-    const post = (appleModule.Route as unknown as RouteShape).options.server.handlers.POST!;
     const request = new Request('http://localhost/api/apple/iap-verify', {
       method: 'POST',
       body: JSON.stringify({ transactionId: 'apple-tx-1', originalTransactionId: 'apple-ot-1' }),
     });
-    const response = await post({ request });
+    const response = await runRoute(appleModule.Route as RouteLike, 'POST', { request });
     expect(response.status).toBe(200);
 
     const subs = await adminClient<{ status: string; product_id: string }[]>`
@@ -191,7 +178,6 @@ describe.skipIf(!url)('/api/{apple,google}/iap-verify (drizzle + runProtected)',
   // ─── Google ─────────────────────────────────────────────────────────────
   it('google: 401 when no session', async () => {
     getSessionMock.mockResolvedValueOnce(null);
-    const post = (googleModule.Route as unknown as RouteShape).options.server.handlers.POST!;
     const request = new Request('http://localhost/api/google/iap-verify', {
       method: 'POST',
       body: JSON.stringify({
@@ -201,17 +187,17 @@ describe.skipIf(!url)('/api/{apple,google}/iap-verify (drizzle + runProtected)',
         purchaseToken: 'token-1',
       }),
     });
-    const response = await post({ request });
+    const response = await runRoute(googleModule.Route as RouteLike, 'POST', { request });
     expect(response.status).toBe(401);
   });
 
   it('google: 400 on invalid body', async () => {
-    const post = (googleModule.Route as unknown as RouteShape).options.server.handlers.POST!;
+    getSessionMock.mockResolvedValueOnce(sessionFor(userA));
     const request = new Request('http://localhost/api/google/iap-verify', {
       method: 'POST',
       body: JSON.stringify({}),
     });
-    const response = await post({ request });
+    const response = await runRoute(googleModule.Route as RouteLike, 'POST', { request });
     expect(response.status).toBe(400);
   });
 
@@ -234,7 +220,6 @@ describe.skipIf(!url)('/api/{apple,google}/iap-verify (drizzle + runProtected)',
       purchaseDate: new Date('2024-03-01'),
     });
     getSessionMock.mockResolvedValueOnce(sessionFor(userA));
-    const post = (googleModule.Route as unknown as RouteShape).options.server.handlers.POST!;
     const request = new Request('http://localhost/api/google/iap-verify', {
       method: 'POST',
       body: JSON.stringify({
@@ -244,7 +229,7 @@ describe.skipIf(!url)('/api/{apple,google}/iap-verify (drizzle + runProtected)',
         purchaseToken: 'g-token-1',
       }),
     });
-    const response = await post({ request });
+    const response = await runRoute(googleModule.Route as RouteLike, 'POST', { request });
     expect(response.status).toBe(200);
 
     const pays = await adminClient<

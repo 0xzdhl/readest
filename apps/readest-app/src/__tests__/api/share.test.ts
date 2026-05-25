@@ -2,17 +2,18 @@ import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from 'vites
 import postgres from 'postgres';
 import { drizzle } from 'drizzle-orm/postgres-js';
 import { migrate } from 'drizzle-orm/postgres-js/migrator';
+import { runRoute } from '../utils/run-route';
 
 /**
- * Phase 5 integration tests for the share route tree.
+ * Integration tests for the share route tree.
  *
- *   Owner-only (auth-gated, RLS-scoped):
+ *   Owner-only (rlsMiddleware):
  *     - /api/share/create
  *     - /api/share/list
  *     - /api/share/$token/revoke
- *     - /api/share/$token/import          (authed; uses publicly resolved share + recipient RLS tx)
+ *     - /api/share/$token/import
  *
- *   Public (token-only, withBypassRls):
+ *   Public (publicMiddleware, bypass-RLS tx):
  *     - /api/share/$token                  metadata
  *     - /api/share/$token/cover            302 to presigned cover URL
  *     - /api/share/$token/download         302 to presigned book URL
@@ -25,10 +26,9 @@ import { migrate } from 'drizzle-orm/postgres-js/migrator';
 
 const getSessionMock = vi.hoisted(() => vi.fn());
 vi.mock('@/auth/server', () => ({
-  auth: { api: { getSession: getSessionMock } },
+  createAuth: () => ({ api: { getSession: getSessionMock } }),
 }));
 
-// Mock the storage object plane so we don't need real R2/S3 connectivity.
 vi.mock('@/utils/object', () => ({
   getDownloadSignedUrl: vi
     .fn()
@@ -66,17 +66,6 @@ let downloadConfirmModule: DownloadConfirmRoute;
 let importModule: ImportRoute;
 let shareServer: typeof import('@/libs/shareServer');
 
-interface RouteShape<P = unknown> {
-  options: {
-    server: {
-      handlers: {
-        GET?: (args: { request: Request; params: P }) => Promise<Response>;
-        POST?: (args: { request: Request; params: P }) => Promise<Response>;
-      };
-    };
-  };
-}
-
 const userA = '11111111-1111-1111-1111-111111111111';
 const userB = '22222222-2222-2222-2222-222222222222';
 
@@ -95,7 +84,9 @@ const sessionFor = (userId: string) => ({
   session: { id: 'sess-' + userId, userId, token: 't', expiresAt: new Date() },
 });
 
-describe.skipIf(!url)('/api/share/* (drizzle + runProtected/runPublic)', () => {
+type RouteLike = Parameters<typeof runRoute>[0];
+
+describe.skipIf(!url)('/api/share/* (rlsMiddleware + publicMiddleware)', () => {
   beforeAll(async () => {
     adminClient = postgres(url!, { max: 1 });
     const adminDb = drizzle(adminClient);
@@ -112,7 +103,7 @@ describe.skipIf(!url)('/api/share/* (drizzle + runProtected/runPublic)', () => {
       throw new Error(`share.test: connected as ${currentUser}, expected readest_app`);
     }
 
-    vi.doMock('@/db/client', () => ({ db: appDb, type: undefined }));
+    vi.doMock('@/db/client', () => ({ createDbClient: () => appDb }));
 
     createModule = await import('@/app/api/share/create/route');
     listModule = await import('@/app/api/share/list/route');
@@ -141,7 +132,6 @@ describe.skipIf(!url)('/api/share/* (drizzle + runProtected/runPublic)', () => {
     await adminClient`DELETE FROM files WHERE user_id IN (${userA}, ${userB})`;
   });
 
-  // Seed helper: book file, optional cover.
   const seedBookFile = async (userId: string, bookHash: string, withCover = false) => {
     await adminClient`INSERT INTO files (user_id, book_hash, file_key, file_size)
                       VALUES (${userId}, ${bookHash}, ${userId + '/' + bookHash + '/book.epub'}, 1000)`;
@@ -154,12 +144,11 @@ describe.skipIf(!url)('/api/share/* (drizzle + runProtected/runPublic)', () => {
   // ─── create (owner-only) ─────────────────────────────────────────────────
   it('create: 401 when no session', async () => {
     getSessionMock.mockResolvedValueOnce(null);
-    const post = (createModule.Route as unknown as RouteShape).options.server.handlers.POST!;
     const request = new Request('http://localhost/api/share/create', {
       method: 'POST',
       body: JSON.stringify({}),
     });
-    const response = await post({ request, params: {} });
+    const response = await runRoute(createModule.Route as RouteLike, 'POST', { request });
     expect(response.status).toBe(401);
     const body = (await response.json()) as { error?: string };
     expect(body.error).toBe('Not authenticated');
@@ -168,7 +157,6 @@ describe.skipIf(!url)('/api/share/* (drizzle + runProtected/runPublic)', () => {
   it('create: inserts a book_shares row for the caller', async () => {
     await seedBookFile(userA, 'hash-A-1');
     getSessionMock.mockResolvedValueOnce(sessionFor(userA));
-    const post = (createModule.Route as unknown as RouteShape).options.server.handlers.POST!;
     const request = new Request('http://localhost/api/share/create', {
       method: 'POST',
       body: JSON.stringify({
@@ -178,7 +166,7 @@ describe.skipIf(!url)('/api/share/* (drizzle + runProtected/runPublic)', () => {
         format: 'EPUB',
       }),
     });
-    const response = await post({ request, params: {} });
+    const response = await runRoute(createModule.Route as RouteLike, 'POST', { request });
     expect(response.status).toBe(200);
     const body = (await response.json()) as { token: string; url: string };
     expect(body.token).toBeTruthy();
@@ -201,9 +189,8 @@ describe.skipIf(!url)('/api/share/* (drizzle + runProtected/runPublic)', () => {
                 ${new Date(Date.now() + 86400000)})`;
 
     getSessionMock.mockResolvedValueOnce(sessionFor(userB));
-    const get = (listModule.Route as unknown as RouteShape).options.server.handlers.GET!;
     const request = new Request('http://localhost/api/share/list', { method: 'GET' });
-    const response = await get({ request, params: {} });
+    const response = await runRoute(listModule.Route as RouteLike, 'GET', { request });
     expect(response.status).toBe(200);
     const body = (await response.json()) as { shares: unknown[] };
     expect(body.shares).toEqual([]);
@@ -220,10 +207,11 @@ describe.skipIf(!url)('/api/share/* (drizzle + runProtected/runPublic)', () => {
                 ${new Date(Date.now() + 86400000)})`;
 
     getSessionMock.mockResolvedValueOnce(sessionFor(userA));
-    const post = (revokeModule.Route as unknown as RouteShape<{ token: string }>).options.server
-      .handlers.POST!;
     const request = new Request(`http://localhost/api/share/${token}/revoke`, { method: 'POST' });
-    const response = await post({ request, params: { token } });
+    const response = await runRoute(revokeModule.Route as RouteLike, 'POST', {
+      request,
+      params: { token },
+    });
     expect(response.status).toBe(204);
 
     const persisted = await adminClient<
@@ -242,10 +230,11 @@ describe.skipIf(!url)('/api/share/* (drizzle + runProtected/runPublic)', () => {
         VALUES (${tokenHash}, ${token}, ${userA}, 'hash-A-4', 'The Book', 'The Author', 'EPUB',
                 1000, ${new Date(Date.now() + 86400000)})`;
 
-    const get = (tokenModule.Route as unknown as RouteShape<{ token: string }>).options.server
-      .handlers.GET!;
     const request = new Request(`http://localhost/api/share/${token}`, { method: 'GET' });
-    const response = await get({ request, params: { token } });
+    const response = await runRoute(tokenModule.Route as RouteLike, 'GET', {
+      request,
+      params: { token },
+    });
     expect(response.status).toBe(200);
     const body = (await response.json()) as {
       title: string;
@@ -258,12 +247,13 @@ describe.skipIf(!url)('/api/share/* (drizzle + runProtected/runPublic)', () => {
   });
 
   it('$token GET: 404 not_found for unknown token', async () => {
-    const get = (tokenModule.Route as unknown as RouteShape<{ token: string }>).options.server
-      .handlers.GET!;
     const request = new Request('http://localhost/api/share/NOPENOPENOPENOPENOPEXX', {
       method: 'GET',
     });
-    const response = await get({ request, params: { token: 'NOPENOPENOPENOPENOPEXX' } });
+    const response = await runRoute(tokenModule.Route as RouteLike, 'GET', {
+      request,
+      params: { token: 'NOPENOPENOPENOPENOPEXX' },
+    });
     expect(response.status).toBe(404);
   });
 
@@ -276,10 +266,11 @@ describe.skipIf(!url)('/api/share/* (drizzle + runProtected/runPublic)', () => {
         VALUES (${tokenHash}, ${token}, ${userA}, 'hash-A-rev', 'A', 'EPUB', 1000,
                 ${new Date(Date.now() + 86400000)}, ${new Date()})`;
 
-    const get = (tokenModule.Route as unknown as RouteShape<{ token: string }>).options.server
-      .handlers.GET!;
     const request = new Request(`http://localhost/api/share/${token}`, { method: 'GET' });
-    const response = await get({ request, params: { token } });
+    const response = await runRoute(tokenModule.Route as RouteLike, 'GET', {
+      request,
+      params: { token },
+    });
     expect(response.status).toBe(410);
     const body = (await response.json()) as { code?: string };
     expect(body.code).toBe('revoked');
@@ -295,10 +286,11 @@ describe.skipIf(!url)('/api/share/* (drizzle + runProtected/runPublic)', () => {
         VALUES (${tokenHash}, ${token}, ${userA}, 'hash-A-cov', 'A', 'EPUB', 1000,
                 ${new Date(Date.now() + 86400000)})`;
 
-    const get = (coverModule.Route as unknown as RouteShape<{ token: string }>).options.server
-      .handlers.GET!;
     const request = new Request(`http://localhost/api/share/${token}/cover`, { method: 'GET' });
-    const response = await get({ request, params: { token } });
+    const response = await runRoute(coverModule.Route as RouteLike, 'GET', {
+      request,
+      params: { token },
+    });
     expect(response.status).toBe(302);
     expect(response.headers.get('Location')).toMatch(/^https:\/\/signed.test\//);
   });
@@ -312,10 +304,11 @@ describe.skipIf(!url)('/api/share/* (drizzle + runProtected/runPublic)', () => {
         VALUES (${tokenHash}, ${token}, ${userA}, 'hash-A-dl', 'A', 'EPUB', 1000,
                 ${new Date(Date.now() + 86400000)})`;
 
-    const get = (downloadModule.Route as unknown as RouteShape<{ token: string }>).options.server
-      .handlers.GET!;
     const request = new Request(`http://localhost/api/share/${token}/download`, { method: 'GET' });
-    const response = await get({ request, params: { token } });
+    const response = await runRoute(downloadModule.Route as RouteLike, 'GET', {
+      request,
+      params: { token },
+    });
     expect(response.status).toBe(302);
     expect(response.headers.get('Location')).toMatch(/^https:\/\/signed.test\//);
   });
@@ -330,12 +323,13 @@ describe.skipIf(!url)('/api/share/* (drizzle + runProtected/runPublic)', () => {
         VALUES (${tokenHash}, ${token}, ${userA}, 'hash-A-cnf', 'A', 'EPUB', 1000,
                 ${new Date(Date.now() + 86400000)}, 0)`;
 
-    const post = (downloadConfirmModule.Route as unknown as RouteShape<{ token: string }>).options
-      .server.handlers.POST!;
     const request = new Request(`http://localhost/api/share/${token}/download/confirm`, {
       method: 'POST',
     });
-    const response = await post({ request, params: { token } });
+    const response = await runRoute(downloadConfirmModule.Route as RouteLike, 'POST', {
+      request,
+      params: { token },
+    });
     expect(response.status).toBe(204);
 
     const after = await adminClient<
@@ -353,12 +347,13 @@ describe.skipIf(!url)('/api/share/* (drizzle + runProtected/runPublic)', () => {
         VALUES (${tokenHash}, ${token}, ${userA}, 'hash-A-cnf-rev', 'A', 'EPUB', 1000,
                 ${new Date(Date.now() + 86400000)}, ${new Date()}, 0)`;
 
-    const post = (downloadConfirmModule.Route as unknown as RouteShape<{ token: string }>).options
-      .server.handlers.POST!;
     const request = new Request(`http://localhost/api/share/${token}/download/confirm`, {
       method: 'POST',
     });
-    const response = await post({ request, params: { token } });
+    const response = await runRoute(downloadConfirmModule.Route as RouteLike, 'POST', {
+      request,
+      params: { token },
+    });
     expect(response.status).toBe(204);
 
     const after = await adminClient<
@@ -378,10 +373,11 @@ describe.skipIf(!url)('/api/share/* (drizzle + runProtected/runPublic)', () => {
                 ${new Date(Date.now() + 86400000)})`;
 
     getSessionMock.mockResolvedValueOnce(sessionFor(userB));
-    const post = (importModule.Route as unknown as RouteShape<{ token: string }>).options.server
-      .handlers.POST!;
     const request = new Request(`http://localhost/api/share/${token}/import`, { method: 'POST' });
-    const response = await post({ request, params: { token } });
+    const response = await runRoute(importModule.Route as RouteLike, 'POST', {
+      request,
+      params: { token },
+    });
     expect(response.status).toBe(200);
     const body = (await response.json()) as { alreadyOwned: boolean; bookHash: string };
     expect(body.alreadyOwned).toBe(false);
@@ -397,7 +393,7 @@ describe.skipIf(!url)('/api/share/* (drizzle + runProtected/runPublic)', () => {
 
   it('import POST: idempotent when recipient already owns the book', async () => {
     await seedBookFile(userA, 'hash-A-idem');
-    await seedBookFile(userB, 'hash-A-idem'); // recipient already has it
+    await seedBookFile(userB, 'hash-A-idem');
     const token = 'EBCDEFGHIJKLMNOPQRSTUV';
     const tokenHash = await shareServer.hashShareToken(token);
     await adminClient`INSERT INTO book_shares
@@ -406,15 +402,15 @@ describe.skipIf(!url)('/api/share/* (drizzle + runProtected/runPublic)', () => {
                 ${new Date(Date.now() + 86400000)})`;
 
     getSessionMock.mockResolvedValueOnce(sessionFor(userB));
-    const post = (importModule.Route as unknown as RouteShape<{ token: string }>).options.server
-      .handlers.POST!;
     const request = new Request(`http://localhost/api/share/${token}/import`, { method: 'POST' });
-    const response = await post({ request, params: { token } });
+    const response = await runRoute(importModule.Route as RouteLike, 'POST', {
+      request,
+      params: { token },
+    });
     expect(response.status).toBe(200);
     const body = (await response.json()) as { alreadyOwned: boolean };
     expect(body.alreadyOwned).toBe(true);
 
-    // No extra file row inserted.
     const count = await adminClient<
       { c: string }[]
     >`SELECT count(*)::text AS c FROM files WHERE user_id = ${userB}`;

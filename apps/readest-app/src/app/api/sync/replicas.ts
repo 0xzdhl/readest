@@ -2,7 +2,7 @@ import { createFileRoute } from '@tanstack/react-router';
 import { and, asc, eq, gt, sql } from 'drizzle-orm';
 import { replicas } from '@/db/schema';
 import { validatePullBatch, validatePullParams, validatePushBatch } from '@/libs/replicaSyncServer';
-import { runProtected } from '@/libs/server/route-helpers';
+import { rlsMiddleware } from '@/middlewares/rls';
 import type { Hlc, ReplicaRow } from '@/types/replica';
 
 const errorResponse = (status: number, code: string, message: string, offendingIndex?: number) =>
@@ -48,93 +48,54 @@ const rowToWire = (r: ReplicaDbRow): ReplicaRow => ({
  *
  * GET = single-kind pull.
  * POST `{ cursors: [...] }` = batched pull (collapses N parallel GETs).
- * POST `{ rows: [...] }`    = CRDT push, routed through `crdt_merge_replica`
- *                             (ported into Phase 2's `0001_rls_and_pg_funcs.sql`).
- *
- * Phase 5 swaps the supabase RPC + table calls for drizzle equivalents on
- * the RLS-scoped tx.
+ * POST `{ rows: [...] }`    = CRDT push, routed through `crdt_merge_replica`.
  */
 export const Route = createFileRoute('/api/sync/replicas')({
   server: {
+    middleware: [rlsMiddleware],
     handlers: {
-      GET: async ({ request }) =>
-        runProtected(request, async ({ tx }) => {
-          const { searchParams } = new URL(request.url);
-          const validation = validatePullParams(
-            searchParams.get('kind'),
-            searchParams.get('since'),
-          );
-          if (!validation.ok) {
-            return errorResponse(validation.status, validation.code, validation.message);
-          }
-          const { kind, since } = validation.params;
+      GET: async ({ request, context }) => {
+        const { tx } = context;
+        const { searchParams } = new URL(request.url);
+        const validation = validatePullParams(
+          searchParams.get('kind'),
+          searchParams.get('since'),
+        );
+        if (!validation.ok) {
+          return errorResponse(validation.status, validation.code, validation.message);
+        }
+        const { kind, since } = validation.params;
 
-          try {
-            const where = since
-              ? and(eq(replicas.kind, kind), gt(replicas.updatedAtTs, since))
-              : eq(replicas.kind, kind);
-            const rows = await tx
-              .select()
-              .from(replicas)
-              .where(where)
-              .orderBy(asc(replicas.updatedAtTs))
-              .limit(PULL_LIMIT);
-            return Response.json({ rows: rows.map(rowToWire) }, { status: 200 });
-          } catch (error) {
-            console.error('pull replicas failed', { kind, since, error });
-            const message = error instanceof Error ? error.message : 'unknown error';
-            return errorResponse(500, 'SERVER', message);
-          }
-        }),
+        try {
+          const where = since
+            ? and(eq(replicas.kind, kind), gt(replicas.updatedAtTs, since))
+            : eq(replicas.kind, kind);
+          const rows = await tx
+            .select()
+            .from(replicas)
+            .where(where)
+            .orderBy(asc(replicas.updatedAtTs))
+            .limit(PULL_LIMIT);
+          return Response.json({ rows: rows.map(rowToWire) }, { status: 200 });
+        } catch (error) {
+          console.error('pull replicas failed', { kind, since, error });
+          const message = error instanceof Error ? error.message : 'unknown error';
+          return errorResponse(500, 'SERVER', message);
+        }
+      },
 
-      POST: async ({ request }) =>
-        runProtected(request, async ({ user, tx }) => {
-          let body: unknown;
-          try {
-            body = await request.json();
-          } catch {
-            return errorResponse(400, 'VALIDATION', 'Invalid JSON body');
-          }
+      POST: async ({ request, context }) => {
+        const { user, tx } = context;
+        let body: unknown;
+        try {
+          body = await request.json();
+        } catch {
+          return errorResponse(400, 'VALIDATION', 'Invalid JSON body');
+        }
 
-          // Batched pull discriminator: `{ cursors: [...] }`.
-          if (typeof body === 'object' && body !== null && 'cursors' in body) {
-            const validation = validatePullBatch(body);
-            if (!validation.ok) {
-              return errorResponse(
-                validation.status,
-                validation.code,
-                validation.message,
-                validation.offendingIndex,
-              );
-            }
-            const { cursors } = validation.params;
-            if (cursors.length === 0) {
-              return Response.json({ results: [] }, { status: 200 });
-            }
-            try {
-              const tasks = cursors.map(async ({ kind, since }) => {
-                const where = since
-                  ? and(eq(replicas.kind, kind), gt(replicas.updatedAtTs, since))
-                  : eq(replicas.kind, kind);
-                const rows = await tx
-                  .select()
-                  .from(replicas)
-                  .where(where)
-                  .orderBy(asc(replicas.updatedAtTs))
-                  .limit(PULL_LIMIT);
-                return { kind, rows: rows.map(rowToWire) };
-              });
-              const results = await Promise.all(tasks);
-              return Response.json({ results }, { status: 200 });
-            } catch (error) {
-              console.error('batch pull replicas failed', { cursors, error });
-              const message = error instanceof Error ? error.message : 'unknown error';
-              return errorResponse(500, 'SERVER', message);
-            }
-          }
-
-          // Otherwise: push branch.
-          const validation = validatePushBatch(body, user.id, Date.now());
+        // Batched pull discriminator: `{ cursors: [...] }`.
+        if (typeof body === 'object' && body !== null && 'cursors' in body) {
+          const validation = validatePullBatch(body);
           if (!validation.ok) {
             return errorResponse(
               validation.status,
@@ -143,74 +104,105 @@ export const Route = createFileRoute('/api/sync/replicas')({
               validation.offendingIndex,
             );
           }
-
-          const merged: ReplicaRow[] = [];
-          for (const row of validation.rows) {
-            try {
-              // `crdt_merge_replica` returns `public.replicas` (a composite
-              // row). drizzle's `tx.execute` surfaces it as a single-column
-              // result whose column name matches the function name. We
-              // ROW(.).* expand it to columns so the result rows look like
-              // a plain SELECT from `replicas`.
-              const result = await tx.execute<ReplicaDbRow>(sql`
-                SELECT (m).*
-                FROM public.crdt_merge_replica(
-                  ${row.user_id},
-                  ${row.kind},
-                  ${row.replica_id},
-                  ${row.fields_jsonb}::jsonb,
-                  ${row.manifest_jsonb}::jsonb,
-                  ${row.deleted_at_ts},
-                  ${row.reincarnation},
-                  ${row.updated_at_ts},
-                  ${row.schema_version}
-                ) AS m
-              `);
-              const rowsOut = Array.isArray(result)
-                ? (result as ReplicaDbRow[])
-                : ((result as { rows?: ReplicaDbRow[] }).rows ?? []);
-              const first = rowsOut[0];
-              if (first) {
-                // The composite-row expansion comes back snake_case. drizzle
-                // returns raw columns from .execute(sql`...`), so map both
-                // shapes (camel or snake) to be safe across postgres-js
-                // result layouts.
-                const dbRow = first as ReplicaDbRow & {
-                  user_id?: string;
-                  replica_id?: string;
-                  fields_jsonb?: ReplicaRow['fields_jsonb'];
-                  manifest_jsonb?: ReplicaRow['manifest_jsonb'];
-                  deleted_at_ts?: string | null;
-                  updated_at_ts?: string;
-                  schema_version?: number;
-                };
-                const normalized: ReplicaDbRow = {
-                  userId: dbRow.userId ?? dbRow.user_id!,
-                  kind: dbRow.kind,
-                  replicaId: dbRow.replicaId ?? dbRow.replica_id!,
-                  fieldsJsonb: (dbRow.fieldsJsonb ??
-                    dbRow.fields_jsonb)! as ReplicaDbRow['fieldsJsonb'],
-                  manifestJsonb: (dbRow.manifestJsonb ??
-                    dbRow.manifest_jsonb ??
-                    null) as ReplicaDbRow['manifestJsonb'],
-                  deletedAtTs: dbRow.deletedAtTs ?? dbRow.deleted_at_ts ?? null,
-                  reincarnation: dbRow.reincarnation ?? null,
-                  updatedAtTs: dbRow.updatedAtTs ?? dbRow.updated_at_ts!,
-                  schemaVersion: dbRow.schemaVersion ?? dbRow.schema_version!,
-                  createdAt: dbRow.createdAt ?? new Date(),
-                  modifiedAt: dbRow.modifiedAt ?? new Date(),
-                };
-                merged.push(rowToWire(normalized));
-              }
-            } catch (error) {
-              console.error('crdt_merge_replica failed', { row, error });
-              const message = error instanceof Error ? error.message : 'unknown error';
-              return errorResponse(500, 'SERVER', message);
-            }
+          const { cursors } = validation.params;
+          if (cursors.length === 0) {
+            return Response.json({ results: [] }, { status: 200 });
           }
+          try {
+            const tasks = cursors.map(async ({ kind, since }) => {
+              const where = since
+                ? and(eq(replicas.kind, kind), gt(replicas.updatedAtTs, since))
+                : eq(replicas.kind, kind);
+              const rows = await tx
+                .select()
+                .from(replicas)
+                .where(where)
+                .orderBy(asc(replicas.updatedAtTs))
+                .limit(PULL_LIMIT);
+              return { kind, rows: rows.map(rowToWire) };
+            });
+            const results = await Promise.all(tasks);
+            return Response.json({ results }, { status: 200 });
+          } catch (error) {
+            console.error('batch pull replicas failed', { cursors, error });
+            const message = error instanceof Error ? error.message : 'unknown error';
+            return errorResponse(500, 'SERVER', message);
+          }
+        }
 
-          return Response.json({ rows: merged }, { status: 200 });
-        }),
+        // Otherwise: push branch.
+        const validation = validatePushBatch(body, user.id, Date.now());
+        if (!validation.ok) {
+          return errorResponse(
+            validation.status,
+            validation.code,
+            validation.message,
+            validation.offendingIndex,
+          );
+        }
+
+        const merged: ReplicaRow[] = [];
+        for (const row of validation.rows) {
+          try {
+            const result = await tx.execute<ReplicaDbRow>(sql`
+              SELECT (m).*
+              FROM public.crdt_merge_replica(
+                ${row.user_id},
+                ${row.kind},
+                ${row.replica_id},
+                ${row.fields_jsonb}::jsonb,
+                ${row.manifest_jsonb}::jsonb,
+                ${row.deleted_at_ts},
+                ${row.reincarnation},
+                ${row.updated_at_ts},
+                ${row.schema_version}
+              ) AS m
+            `);
+            const rowsOut = Array.isArray(result)
+              ? (result as ReplicaDbRow[])
+              : ((result as { rows?: ReplicaDbRow[] }).rows ?? []);
+            const first = rowsOut[0];
+            if (first) {
+              // The composite-row expansion comes back snake_case. drizzle
+              // returns raw columns from .execute(sql`...`), so map both
+              // shapes (camel or snake) to be safe across postgres-js
+              // result layouts.
+              const dbRow = first as ReplicaDbRow & {
+                user_id?: string;
+                replica_id?: string;
+                fields_jsonb?: ReplicaRow['fields_jsonb'];
+                manifest_jsonb?: ReplicaRow['manifest_jsonb'];
+                deleted_at_ts?: string | null;
+                updated_at_ts?: string;
+                schema_version?: number;
+              };
+              const normalized: ReplicaDbRow = {
+                userId: dbRow.userId ?? dbRow.user_id!,
+                kind: dbRow.kind,
+                replicaId: dbRow.replicaId ?? dbRow.replica_id!,
+                fieldsJsonb: (dbRow.fieldsJsonb ??
+                  dbRow.fields_jsonb)! as ReplicaDbRow['fieldsJsonb'],
+                manifestJsonb: (dbRow.manifestJsonb ??
+                  dbRow.manifest_jsonb ??
+                  null) as ReplicaDbRow['manifestJsonb'],
+                deletedAtTs: dbRow.deletedAtTs ?? dbRow.deleted_at_ts ?? null,
+                reincarnation: dbRow.reincarnation ?? null,
+                updatedAtTs: dbRow.updatedAtTs ?? dbRow.updated_at_ts!,
+                schemaVersion: dbRow.schemaVersion ?? dbRow.schema_version!,
+                createdAt: dbRow.createdAt ?? new Date(),
+                modifiedAt: dbRow.modifiedAt ?? new Date(),
+              };
+              merged.push(rowToWire(normalized));
+            }
+          } catch (error) {
+            console.error('crdt_merge_replica failed', { row, error });
+            const message = error instanceof Error ? error.message : 'unknown error';
+            return errorResponse(500, 'SERVER', message);
+          }
+        }
+
+        return Response.json({ rows: merged }, { status: 200 });
+      },
     },
   },
 });

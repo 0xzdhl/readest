@@ -1,4 +1,5 @@
 import { createFileRoute } from '@tanstack/react-router';
+import { publicMiddleware } from '@/middlewares/public';
 import { renderShareOgImage } from './render';
 
 /**
@@ -12,14 +13,15 @@ import { renderShareOgImage } from './render';
  * route file stays serializable and the heavy WASM module is dynamically
  * loaded only when an OG fetch actually arrives (cf. CF Workers cold start).
  *
- * Public endpoint — no auth gate. `renderShareOgImage` calls
- * `resolveActiveShare` which opens its own `withBypassRls` tx (the token
- * itself is the security boundary).
+ * Public endpoint — `publicMiddleware` opens a bypass-RLS tx (the token
+ * itself is the security boundary) which is passed to `renderShareOgImage`
+ * for the share lookup.
  */
 export const Route = createFileRoute('/api/share/$token/og.png')({
   server: {
+    middleware: [publicMiddleware],
     handlers: {
-      GET: async ({ params }) => renderShareOgImage(params.token),
+      GET: async ({ params, context }) => renderShareOgImage(params.token, context.tx),
     },
   },
 });
