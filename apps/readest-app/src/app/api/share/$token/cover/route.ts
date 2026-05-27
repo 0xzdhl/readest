@@ -1,5 +1,6 @@
 import { createFileRoute } from '@tanstack/react-router';
-import { getDownloadSignedUrl } from '@/utils/object';
+import { Effect } from 'effect';
+import { ObjectStorage, runStorageProgram } from '@/storage';
 import { rejectionToHttp, resolveActiveShare } from '@/libs/shareServer';
 import { publicMiddleware } from '@/middlewares/public';
 import { SHARE_PRESIGN_TTL_SECONDS } from '@/services/constants';
@@ -25,7 +26,15 @@ export const Route = createFileRoute('/api/share/$token/cover')({
         }
         let url: string;
         try {
-          url = await getDownloadSignedUrl(share.coverFileKey, SHARE_PRESIGN_TTL_SECONDS);
+          url = await runStorageProgram(
+            Effect.gen(function* () {
+              const storage = yield* ObjectStorage;
+              return yield* storage.getDownloadSignedUrl(
+                share.coverFileKey,
+                SHARE_PRESIGN_TTL_SECONDS,
+              );
+            }),
+          );
         } catch (err) {
           console.error('Share cover presign failed:', err);
           return Response.json({ error: 'Could not sign cover URL' }, { status: 500 });
