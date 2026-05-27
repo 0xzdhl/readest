@@ -44,6 +44,9 @@ describe('makeStorageConfig', () => {
     expect(cfg.endpoint).toBe('https://acct123.r2.cloudflarestorage.com');
     expect(cfg.region).toBe('auto');
     expect(cfg.bucketName).toBe('bucket-r2');
+    expect(cfg.tempBucketName).toBe('temp-r2');
+    expect(cfg.accessKeyId).toBe('key-r2');
+    expect(cfg.secretAccessKey).toBe('secret-r2');
   });
 
   it('throws StorageConfigError when S3 endpoint missing', async () => {
