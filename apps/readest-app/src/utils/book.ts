@@ -2,7 +2,6 @@ import { type BookMetadata, EXTS } from '@/libs/document';
 import type { Book, BookConfig, BookProgress, WritingMode } from '@/types/book';
 import { SUPPORTED_LANGS } from '@/services/constants';
 import { getLocale, getUserLang, makeSafeFilename } from './misc';
-import { getStorageType } from './storage';
 import { getDirFromLanguage } from './rtl';
 import { code6392to6391, isValidLang, normalizedLangCode } from './lang';
 import { md5 } from '@/utils/md5';
@@ -17,14 +16,10 @@ export const getLibraryBackupFilename = () => {
   return 'library_backup.json';
 };
 export const getRemoteBookFilename = (book: Book) => {
-  // S3 storage: https://docs.aws.amazon.com/zh_cn/AmazonS3/latest/userguide/object-keys.html
-  if (getStorageType() === 'r2') {
-    return `${book.hash}/${makeSafeFilename(book.sourceTitle || book.title)}.${EXTS[book.format]}`;
-  } else if (getStorageType() === 's3') {
-    return `${book.hash}/${book.hash}.${EXTS[book.format]}`;
-  } else {
-    return '';
-  }
+  // S3-compatible naming for all backends. Old R2 file_keys remain readable
+  // because /api/storage/download.ts resolves file_key from the files DB row,
+  // not from this function. New uploads use the unified scheme.
+  return `${book.hash}/${book.hash}.${EXTS[book.format]}`;
 };
 export const getLocalBookFilename = (book: Book) => {
   return `${book.hash}/${makeSafeFilename(book.sourceTitle || book.title)}.${EXTS[book.format]}`;
