@@ -5,7 +5,8 @@ import { env } from '@/env';
 import { getStoragePlanData, STORAGE_QUOTA_GRACE_BYTES } from '@/libs/server/storage-plan';
 import { rlsMiddleware } from '@/middlewares/rls';
 import { READEST_PUBLIC_STORAGE_BASE_URL } from '@/services/constants';
-import { getDownloadSignedUrl, getUploadSignedUrl } from '@/utils/object';
+import { Effect } from 'effect';
+import { ObjectStorage, runStorageProgram } from '@/storage';
 
 /**
  * POST /api/storage/upload — owner-only. Mints a presigned PUT URL for a new
@@ -38,8 +39,18 @@ export const Route = createFileRoute('/api/storage/upload')({
             const userStr = user.id.slice(0, 8);
             const fileKey = `temp/img/${timeStr}/${userStr}/${fileName}`;
             const bucketName = env.TEMP_STORAGE_PUBLIC_BUCKET_NAME;
-            const uploadUrl = await getUploadSignedUrl(fileKey, fileSize ?? 0, 1800, bucketName);
-            const downloadUrl = await getDownloadSignedUrl(fileKey, 3 * 86400, bucketName);
+            const uploadUrl = await runStorageProgram(
+              Effect.gen(function* () {
+                const storage = yield* ObjectStorage;
+                return yield* storage.getUploadSignedUrl(fileKey, fileSize ?? 0, 1800, bucketName);
+              }),
+            );
+            const downloadUrl = await runStorageProgram(
+              Effect.gen(function* () {
+                const storage = yield* ObjectStorage;
+                return yield* storage.getDownloadSignedUrl(fileKey, 3 * 86400, bucketName);
+              }),
+            );
             const pathname = new URL(downloadUrl).pathname;
             const publicBaseUrl = READEST_PUBLIC_STORAGE_BASE_URL;
             const publicDownloadUrl = `${publicBaseUrl}${pathname.replace(`/${bucketName}`, '')}`;
@@ -91,7 +102,12 @@ export const Route = createFileRoute('/api/storage/upload')({
           }
 
           try {
-            const uploadUrl = await getUploadSignedUrl(fileKey, objSize, 1800);
+            const uploadUrl = await runStorageProgram(
+              Effect.gen(function* () {
+                const storage = yield* ObjectStorage;
+                return yield* storage.getUploadSignedUrl(fileKey, objSize, 1800);
+              }),
+            );
             return Response.json({
               uploadUrl,
               fileKey,

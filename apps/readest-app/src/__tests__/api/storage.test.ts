@@ -16,16 +16,10 @@ vi.mock('@/auth/server', () => ({
   createAuth: () => ({ api: { getSession: getSessionMock } }),
 }));
 
-vi.mock('@/utils/object', () => ({
-  getDownloadSignedUrl: vi
-    .fn()
-    .mockImplementation(async (key: string) => `https://signed.test/${key}`),
-  getUploadSignedUrl: vi
-    .fn()
-    .mockImplementation(async (key: string) => `https://upload.test/${key}`),
-  deleteObject: vi.fn().mockResolvedValue(undefined),
-  objectExists: vi.fn().mockResolvedValue(true),
-  copyObject: vi.fn().mockResolvedValue(undefined),
+const runStorageProgramMock = vi.hoisted(() => vi.fn());
+
+vi.mock('@/storage/run', () => ({
+  runStorageProgram: runStorageProgramMock,
 }));
 
 const url = process.env['TEST_DATABASE_URL'];
@@ -109,6 +103,9 @@ describe.skipIf(!url)('/api/storage/* (rlsMiddleware + RLS)', () => {
 
   beforeEach(async () => {
     getSessionMock.mockReset();
+    runStorageProgramMock.mockReset();
+    // Default storage behaviour: presigns succeed with placeholder URL.
+    runStorageProgramMock.mockImplementation(async () => 'https://signed.test/default');
     await adminClient`DELETE FROM files WHERE user_id IN (${userA}, ${userB})`;
   });
 
@@ -131,6 +128,7 @@ describe.skipIf(!url)('/api/storage/* (rlsMiddleware + RLS)', () => {
       method: 'POST',
       body: JSON.stringify({ fileName: 'book.epub', fileSize: 1000, bookHash: 'hash-A-1' }),
     });
+    runStorageProgramMock.mockResolvedValueOnce('https://upload.test/book.epub');
     const response = await runRoute(uploadModule.Route as RouteLike, 'POST', { request });
     expect(response.status).toBe(200);
     const body = (await response.json()) as { uploadUrl?: string; fileKey?: string };
@@ -154,6 +152,7 @@ describe.skipIf(!url)('/api/storage/* (rlsMiddleware + RLS)', () => {
       `http://localhost/api/storage/download?fileKey=${encodeURIComponent(userA + '/file.epub')}`,
       { method: 'GET' },
     );
+    runStorageProgramMock.mockResolvedValueOnce('https://signed.test/file');
     const response = await runRoute(downloadModule.Route as RouteLike, 'GET', { request });
     expect(response.status).toBe(200);
     const body = (await response.json()) as { downloadUrl?: string };

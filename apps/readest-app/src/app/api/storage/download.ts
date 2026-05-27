@@ -3,7 +3,8 @@ import { and, eq, inArray, isNull } from 'drizzle-orm';
 import type { DbTx } from '@/db/rls';
 import { files } from '@/db/schema';
 import { rlsMiddleware } from '@/middlewares/rls';
-import { getDownloadSignedUrl } from '@/utils/object';
+import { Effect } from 'effect';
+import { ObjectStorage, runStorageProgram } from '@/storage';
 
 /**
  * GET / POST /api/storage/download — owner-only. Mints short-lived presigned
@@ -34,11 +35,7 @@ async function processFileKeys(
       })
       .from(files)
       .where(
-        and(
-          eq(files.userId, userId),
-          inArray(files.fileKey, fileKeys),
-          isNull(files.deletedAt),
-        ),
+        and(eq(files.userId, userId), inArray(files.fileKey, fileKeys), isNull(files.deletedAt)),
       );
   } catch (error) {
     console.error('Error querying files:', error);
@@ -106,7 +103,12 @@ async function processFileKeys(
         return { fileKey, downloadUrl: undefined };
       }
       try {
-        const downloadUrl = await getDownloadSignedUrl(fileRecord.fileKey, 1800);
+        const downloadUrl = await runStorageProgram(
+          Effect.gen(function* () {
+            const storage = yield* ObjectStorage;
+            return yield* storage.getDownloadSignedUrl(fileRecord.fileKey, 1800);
+          }),
+        );
         return { fileKey, downloadUrl };
       } catch (error) {
         console.error('Error creating signed URL for %s:', fileKey, error);
@@ -174,10 +176,7 @@ export const Route = createFileRoute('/api/storage/download')({
           const { fileKeys } = body;
 
           if (!fileKeys || !Array.isArray(fileKeys)) {
-            return Response.json(
-              { error: 'Missing or invalid fileKeys array' },
-              { status: 400 },
-            );
+            return Response.json({ error: 'Missing or invalid fileKeys array' }, { status: 400 });
           }
           if (fileKeys.length === 0) {
             return Response.json({ error: 'fileKeys array cannot be empty' }, { status: 400 });
