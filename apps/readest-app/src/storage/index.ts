@@ -7,3 +7,4 @@ export {
 export { StorageLive } from './live';
 export { runStorageProgram } from './run';
 export { ObjectStorage } from './service';
+export { StorageConfig, type StorageConfigShape } from './config';

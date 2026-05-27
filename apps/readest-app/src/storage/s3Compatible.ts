@@ -18,6 +18,7 @@ export const S3CompatibleStorageLive = Layer.effect(
       region: config.region,
       accessKeyId: config.accessKeyId,
       secretAccessKey: config.secretAccessKey,
+      retries: 0,
     });
 
     const objectUrl = (bucket: string, key: string): string =>
