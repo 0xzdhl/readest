@@ -29,16 +29,10 @@ vi.mock('@/auth/server', () => ({
   createAuth: () => ({ api: { getSession: getSessionMock } }),
 }));
 
-vi.mock('@/utils/object', () => ({
-  getDownloadSignedUrl: vi
-    .fn()
-    .mockImplementation(async (key: string) => `https://signed.test/${key}`),
-  getUploadSignedUrl: vi
-    .fn()
-    .mockImplementation(async (key: string) => `https://upload.test/${key}`),
-  deleteObject: vi.fn().mockResolvedValue(undefined),
-  objectExists: vi.fn().mockResolvedValue(true),
-  copyObject: vi.fn().mockResolvedValue(undefined),
+const runStorageProgramMock = vi.hoisted(() => vi.fn());
+
+vi.mock('@/storage/run', () => ({
+  runStorageProgram: runStorageProgramMock,
 }));
 
 const url = process.env['TEST_DATABASE_URL'];
@@ -128,6 +122,8 @@ describe.skipIf(!url)('/api/share/* (rlsMiddleware + publicMiddleware)', () => {
 
   beforeEach(async () => {
     getSessionMock.mockReset();
+    runStorageProgramMock.mockReset();
+    runStorageProgramMock.mockImplementation(async () => 'https://signed.test/default');
     await adminClient`DELETE FROM book_shares WHERE user_id IN (${userA}, ${userB})`;
     await adminClient`DELETE FROM files WHERE user_id IN (${userA}, ${userB})`;
   });
