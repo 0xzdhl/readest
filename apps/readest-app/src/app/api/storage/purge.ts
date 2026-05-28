@@ -2,7 +2,8 @@ import { createFileRoute } from '@tanstack/react-router';
 import { and, eq, inArray, isNull } from 'drizzle-orm';
 import { files } from '@/db/schema';
 import { rlsMiddleware } from '@/middlewares/rls';
-import { deleteObject } from '@/utils/object';
+import { Effect } from 'effect';
+import { ObjectStorage, runStorageProgram } from '@/storage';
 
 interface BulkDeleteResult {
   success: string[];
@@ -25,10 +26,7 @@ export const Route = createFileRoute('/api/storage/purge')({
           const { fileKeys } = body;
 
           if (!fileKeys || !Array.isArray(fileKeys)) {
-            return Response.json(
-              { error: 'Missing or invalid fileKeys array' },
-              { status: 400 },
-            );
+            return Response.json({ error: 'Missing or invalid fileKeys array' }, { status: 400 });
           }
           if (fileKeys.length === 0) {
             return Response.json({ error: 'fileKeys array cannot be empty' }, { status: 400 });
@@ -78,7 +76,16 @@ export const Route = createFileRoute('/api/storage/purge')({
           const results = await Promise.allSettled(
             fileRecords.map(async (fileRecord) => {
               try {
-                await deleteObject(fileRecord.fileKey);
+                await runStorageProgram(
+                  Effect.gen(function* () {
+                    const storage = yield* ObjectStorage;
+                    yield* storage.deleteObject(fileRecord.fileKey).pipe(
+                      // Idempotent bulk delete: NotFound counts as success for the
+                      // per-key Promise.allSettled accounting.
+                      Effect.catchTag('StorageNotFoundError', () => Effect.void),
+                    );
+                  }),
+                );
                 await tx.delete(files).where(eq(files.id, fileRecord.id));
                 return { fileKey: fileRecord.fileKey, success: true as const };
               } catch (error) {

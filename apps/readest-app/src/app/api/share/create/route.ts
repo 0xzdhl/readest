@@ -9,7 +9,8 @@ import {
   SHARE_EXPIRATION_DAYS,
   SHARE_MAX_PER_USER,
 } from '@/services/constants';
-import { objectExists } from '@/utils/object';
+import { Effect } from 'effect';
+import { ObjectStorage, runStorageProgram, StorageNotFoundError } from '@/storage';
 
 interface CreateShareBody {
   bookHash?: unknown;
@@ -83,10 +84,7 @@ export const Route = createFileRoute('/api/share/create')({
         if (body.cfi != null) {
           cfi = trimText(body.cfi, SHARE_CFI_MAX_LENGTH);
           if (cfi && isControlChar(cfi)) {
-            return Response.json(
-              { error: 'cfi contains invalid characters' },
-              { status: 400 },
-            );
+            return Response.json({ error: 'cfi contains invalid characters' }, { status: 400 });
           }
         }
 
@@ -97,12 +95,7 @@ export const Route = createFileRoute('/api/share/create')({
           const result = await tx
             .select({ value: count() })
             .from(bookShares)
-            .where(
-              and(
-                isNull(bookShares.revokedAt),
-                gt(bookShares.expiresAt, new Date()),
-              ),
-            );
+            .where(and(isNull(bookShares.revokedAt), gt(bookShares.expiresAt, new Date())));
           activeCount = result[0]?.value ?? 0;
         } catch (error) {
           console.error('book_shares cap query failed:', error);
@@ -127,11 +120,7 @@ export const Route = createFileRoute('/api/share/create')({
             .select({ fileKey: files.fileKey, fileSize: files.fileSize })
             .from(files)
             .where(
-              and(
-                eq(files.userId, user.id),
-                eq(files.bookHash, bookHash),
-                isNull(files.deletedAt),
-              ),
+              and(eq(files.userId, user.id), eq(files.bookHash, bookHash), isNull(files.deletedAt)),
             );
         } catch (error) {
           console.error('book_shares files lookup failed:', error);
@@ -158,15 +147,25 @@ export const Route = createFileRoute('/api/share/create')({
         // The `files` row is inserted before bytes upload (storage/upload.ts),
         // so a ghost row can exist if the client aborted. HEAD R2 to confirm
         // bytes are really there before we make the share publicly resolvable.
-        const exists = await objectExists(bookFile.fileKey);
-        if (!exists) {
-          return Response.json(
-            {
-              error: 'Book upload is incomplete; please retry',
-              code: 'upload_incomplete',
-            },
-            { status: 409 },
+        try {
+          await runStorageProgram(
+            Effect.gen(function* () {
+              const storage = yield* ObjectStorage;
+              yield* storage.headObject(bookFile.fileKey);
+            }),
           );
+        } catch (err) {
+          if (err instanceof StorageNotFoundError) {
+            return Response.json(
+              {
+                error: 'Book upload is incomplete; please retry',
+                code: 'upload_incomplete',
+              },
+              { status: 409 },
+            );
+          }
+          console.error('Share create headObject failed:', err);
+          return Response.json({ error: 'Could not verify book upload' }, { status: 500 });
         }
 
         const { raw, hash } = await generateShareToken();

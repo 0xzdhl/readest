@@ -5,7 +5,8 @@ import { files } from '@/db/schema';
 import { rlsMiddleware } from '@/middlewares/rls';
 import { getStoragePlanData, STORAGE_QUOTA_GRACE_BYTES } from '@/libs/server/storage-plan';
 import { rejectionToHttp, resolveActiveShare } from '@/libs/shareServer';
-import { copyObject, objectExists } from '@/utils/object';
+import { Effect } from 'effect';
+import { ObjectStorage, runStorageProgram, StorageNotFoundError } from '@/storage';
 
 const isCoverKey = (fileKey: string): boolean => /\.(png|jpe?g|webp|gif)$/i.test(fileKey);
 
@@ -146,15 +147,6 @@ export const Route = createFileRoute('/api/share/$token/import')({
           );
           return Response.json({ error: 'Cannot remap shared file' }, { status: 500 });
         }
-        // Verify source bytes still exist before allocating a destination row.
-        const sourceExists = await objectExists(share.bookFileKey);
-        if (!sourceExists) {
-          return Response.json(
-            { error: 'Shared book is no longer available', code: 'source_deleted' },
-            { status: 410 },
-          );
-        }
-
         // Insert destination row first (to grab a stable id), then copy
         // bytes, then mark the row clean. On copy failure we soft-delete
         // the row so the user's library doesn't show a phantom book.
@@ -180,21 +172,14 @@ export const Route = createFileRoute('/api/share/$token/import')({
         }
 
         try {
-          const copyResp = await copyObject(share.bookFileKey, destBookKey);
-          // R2 (aws4fetch) returns a Response; S3 SDK returns a structured
-          // object. Both throw on hard failures; treat any non-ok HTTP
-          // response as a fail.
-          if (
-            copyResp &&
-            typeof (copyResp as Response).ok === 'boolean' &&
-            !(copyResp as Response).ok
-          ) {
-            throw new Error(`R2 copy failed: ${(copyResp as Response).status}`);
-          }
+          await runStorageProgram(
+            Effect.gen(function* () {
+              const storage = yield* ObjectStorage;
+              yield* storage.copyObject(share.bookFileKey, destBookKey);
+            }),
+          );
         } catch (err) {
-          console.error('Share import book copy failed:', err);
-          // Soft-delete the orphaned row so it doesn't count against quota
-          // or appear in the library list.
+          // Soft-delete the orphan row in either error case.
           try {
             await tx
               .update(files)
@@ -203,6 +188,14 @@ export const Route = createFileRoute('/api/share/$token/import')({
           } catch (cleanupErr) {
             console.error('Share import cleanup failed:', cleanupErr);
           }
+
+          if (err instanceof StorageNotFoundError) {
+            return Response.json(
+              { error: 'Shared book is no longer available', code: 'source_deleted' },
+              { status: 410 },
+            );
+          }
+          console.error('Share import book copy failed:', err);
           return Response.json({ error: 'Could not import book' }, { status: 500 });
         }
 
@@ -213,17 +206,20 @@ export const Route = createFileRoute('/api/share/$token/import')({
           const destCoverKey = remap(share.coverFileKey);
           if (destCoverKey) {
             try {
-              const coverExists = await objectExists(share.coverFileKey);
-              if (coverExists) {
-                await copyObject(share.coverFileKey, destCoverKey);
-                await tx.insert(files).values({
-                  userId: user.id,
-                  bookHash: share.bookHash,
-                  fileKey: destCoverKey,
-                  fileSize: 0, // unknown; not material — covers don't bill
-                });
-              }
+              await runStorageProgram(
+                Effect.gen(function* () {
+                  const storage = yield* ObjectStorage;
+                  yield* storage.copyObject(share.coverFileKey!, destCoverKey);
+                }),
+              );
+              await tx.insert(files).values({
+                userId: user.id,
+                bookHash: share.bookHash,
+                fileKey: destCoverKey,
+                fileSize: 0,
+              });
             } catch (err) {
+              // Cover is best-effort. NotFound or any other error is non-fatal.
               console.error('Share import cover copy failed (non-fatal):', err);
             }
           }
