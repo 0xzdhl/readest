@@ -49,6 +49,8 @@ export const env = createEnv({
     DEEPL_FREE_API: z.url().default('https://api-free.deepl.com/v2/translate'),
     DEEPL_X_FINGERPRINT: z.string().default(''),
 
+    OBJECT_STORAGE_TYPE: z.enum(['r2', 's3']).default('s3'),
+
     R2_TOKEN_VALUE: optionalString,
     R2_ACCESS_KEY_ID: z.string().default(''),
     R2_SECRET_ACCESS_KEY: z.string().default(''),

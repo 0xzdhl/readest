@@ -1,5 +1,4 @@
 import { Context, Layer } from 'effect';
-import { clientEnv } from '@/clientEnv';
 import { env } from '@/env';
 import { StorageConfigError } from './errors';
 
@@ -18,7 +17,7 @@ export class StorageConfig extends Context.Tag('StorageConfig')<
 >() {}
 
 export const makeStorageConfig = (): StorageConfigShape => {
-  if (clientEnv.VITE_OBJECT_STORAGE_TYPE === 'r2') {
+  if (env.OBJECT_STORAGE_TYPE === 'r2') {
     if (
       !env.R2_ACCOUNT_ID ||
       !env.R2_BUCKET_NAME ||

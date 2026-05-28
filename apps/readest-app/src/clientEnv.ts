@@ -27,7 +27,6 @@ export const clientEnv = createEnv({
     VITE_BETTER_AUTH_URL: z.url().default('http://localhost:5173'),
     VITE_STORAGE_FIXED_QUOTA: z.coerce.number().int().nonnegative().optional(),
     VITE_TRANSLATION_FIXED_QUOTA: z.coerce.number().int().nonnegative().optional(),
-    VITE_OBJECT_STORAGE_TYPE: z.enum(['r2', 's3']).default('s3'),
 
     VITE_POSTHOG_KEY: optionalString,
     VITE_POSTHOG_HOST: optionalUrl,

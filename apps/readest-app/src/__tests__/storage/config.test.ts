@@ -13,7 +13,7 @@ const loadConfig = async (envOverrides: Record<string, string>) => {
 describe('makeStorageConfig', () => {
   it('builds S3 config from env', async () => {
     const { makeStorageConfig } = await loadConfig({
-      VITE_OBJECT_STORAGE_TYPE: 's3',
+      OBJECT_STORAGE_TYPE: 's3',
       S3_ENDPOINT: 'https://s3.example.com',
       S3_REGION: 'us-east-1',
       S3_BUCKET_NAME: 'bucket-s3',
@@ -32,7 +32,7 @@ describe('makeStorageConfig', () => {
 
   it('builds R2 config from env (endpoint uses account id)', async () => {
     const { makeStorageConfig } = await loadConfig({
-      VITE_OBJECT_STORAGE_TYPE: 'r2',
+      OBJECT_STORAGE_TYPE: 'r2',
       R2_ACCOUNT_ID: 'acct123',
       R2_REGION: 'auto',
       R2_BUCKET_NAME: 'bucket-r2',
@@ -51,7 +51,7 @@ describe('makeStorageConfig', () => {
 
   it('throws StorageConfigError when S3 endpoint missing', async () => {
     const { makeStorageConfig, StorageConfigError } = await loadConfig({
-      VITE_OBJECT_STORAGE_TYPE: 's3',
+      OBJECT_STORAGE_TYPE: 's3',
       S3_ENDPOINT: '',
       S3_REGION: 'us-east-1',
       S3_BUCKET_NAME: 'bucket-s3',
@@ -63,7 +63,7 @@ describe('makeStorageConfig', () => {
 
   it('throws StorageConfigError when R2 account id missing', async () => {
     const { makeStorageConfig, StorageConfigError } = await loadConfig({
-      VITE_OBJECT_STORAGE_TYPE: 'r2',
+      OBJECT_STORAGE_TYPE: 'r2',
       R2_ACCOUNT_ID: '',
       R2_BUCKET_NAME: 'bucket-r2',
       R2_ACCESS_KEY_ID: 'key-r2',
