@@ -1,6 +1,6 @@
 import { inferAdditionalFields, magicLinkClient } from 'better-auth/client/plugins';
 import { createAuthClient } from 'better-auth/react';
-import { env } from '@/env';
+import { clientEnv } from '@/clientEnv';
 import type { Auth } from './server';
 
 /**
@@ -16,7 +16,7 @@ import type { Auth } from './server';
 const SESSION_TOKEN_KEY = 'readest:session-token';
 
 const getSessionCookieName = () =>
-  env.VITE_BETTER_AUTH_URL.startsWith('https://')
+  clientEnv.VITE_BETTER_AUTH_URL.startsWith('https://')
     ? '__Secure-better-auth.session_token'
     : 'better-auth.session_token';
 
@@ -93,7 +93,7 @@ const shouldClearStoredSession = (url: string | URL) => {
  *
  */
 export const nativeAuthClient = createAuthClient({
-  baseURL: env.VITE_BETTER_AUTH_URL,
+  baseURL: clientEnv.VITE_BETTER_AUTH_URL,
   plugins: [magicLinkClient(), inferAdditionalFields<Auth>()],
   fetchOptions: {
     customFetchImpl: nativeSessionFetch,

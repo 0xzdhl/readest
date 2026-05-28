@@ -1,4 +1,4 @@
-import { env } from '@/env';
+import { clientEnv } from '@/clientEnv';
 
 export const readPublicEnv = (key: string): string | undefined => {
   if (
@@ -7,7 +7,7 @@ export const readPublicEnv = (key: string): string | undefined => {
   ) {
     return (window as unknown as { __PUBLIC_ENV?: Record<string, string> }).__PUBLIC_ENV?.[key];
   }
-  const value = (env as Record<string, unknown>)[key];
+  const value = (clientEnv as Record<string, unknown>)[key];
   return value === undefined ? undefined : String(value);
 };
 

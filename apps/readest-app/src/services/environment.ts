@@ -1,6 +1,5 @@
+import { clientEnv } from '@/clientEnv';
 import type { AppService } from '@/types/system';
-import { env } from '@/env';
-import { readPublicEnv } from '@/utils/publicEnv';
 import { READEST_NODE_BASE_URL, READEST_WEB_BASE_URL } from './constants';
 
 declare global {
@@ -9,19 +8,19 @@ declare global {
   }
 }
 
-export const isTauriAppPlatform = () => readPublicEnv('VITE_APP_PLATFORM') === 'tauri';
-export const isWebAppPlatform = () => readPublicEnv('VITE_APP_PLATFORM') === 'web';
+export const isTauriAppPlatform = () => clientEnv.VITE_APP_PLATFORM === 'tauri';
+export const isWebAppPlatform = () => clientEnv.VITE_APP_PLATFORM === 'web';
 export const hasCli = () => window.__READEST_CLI_ACCESS === true;
 export const isPWA = () => window.matchMedia('(display-mode: standalone)').matches;
-export const getBaseUrl = () => readPublicEnv('VITE_API_BASE_URL') ?? READEST_WEB_BASE_URL;
-export const getNodeBaseUrl = () => readPublicEnv('VITE_NODE_BASE_URL') ?? READEST_NODE_BASE_URL;
+export const getBaseUrl = () => clientEnv.VITE_API_BASE_URL ?? READEST_WEB_BASE_URL;
+export const getNodeBaseUrl = () => clientEnv.VITE_NODE_BASE_URL ?? READEST_NODE_BASE_URL;
 
 export const isMacPlatform = () =>
   typeof window !== 'undefined' && /Mac|iPod|iPhone|iPad/.test(navigator.platform);
 
 export const getCommandPaletteShortcut = () => (isMacPlatform() ? '⌘⇧P' : 'Ctrl+Shift+P');
 
-const isWebDevMode = () => env.NODE_ENV === 'development' && isWebAppPlatform();
+const isWebDevMode = () => clientEnv.NODE_ENV === 'development' && isWebAppPlatform();
 
 // Dev API only in development mode and web platform
 // with command `pnpm dev-web`

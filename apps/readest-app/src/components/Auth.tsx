@@ -15,8 +15,8 @@ import {
   storeSessionTokenFromCallback,
 } from '@/app/auth/utils/nativeAuth';
 import { authClient } from '@/auth';
+import { clientEnv } from '@/clientEnv';
 import { useEnv } from '@/context/EnvContext';
-import { env } from '@/env';
 import { useTheme } from '@/hooks/useTheme';
 import { useTranslation } from '@/hooks/useTranslation';
 import { getBaseUrl, isTauriAppPlatform } from '@/services/environment';
@@ -41,7 +41,7 @@ interface ProviderLoginProp {
 
 const WEB_AUTH_CALLBACK = `${getBaseUrl()}/auth/callback`;
 const DEEPLINK_CALLBACK = 'readest://auth-callback';
-const USE_APPLE_SIGN_IN = env.VITE_USE_APPLE_SIGN_IN === 'true';
+const USE_APPLE_SIGN_IN = clientEnv.VITE_USE_APPLE_SIGN_IN === 'true';
 
 const ProviderLogin: React.FC<ProviderLoginProp> = ({ provider, handleSignIn, Icon, label }) => {
   return (
@@ -92,7 +92,7 @@ export function AuthComponent() {
   const getTauriRedirectTo = (isOAuth: boolean) => {
     if (
       !useCustomeOAuth.current &&
-      (env.NODE_ENV === 'production' || appService?.isMobileApp || USE_APPLE_SIGN_IN)
+      (clientEnv.NODE_ENV === 'production' || appService?.isMobileApp || USE_APPLE_SIGN_IN)
     ) {
       if (appService?.isMobileApp) {
         return isOAuth ? DEEPLINK_CALLBACK : WEB_AUTH_CALLBACK;
@@ -103,7 +103,7 @@ export function AuthComponent() {
   };
 
   const getWebRedirectTo = () => {
-    return env.NODE_ENV === 'production'
+    return clientEnv.NODE_ENV === 'production'
       ? WEB_AUTH_CALLBACK
       : `${window.location.origin}/auth/callback`;
   };
@@ -265,7 +265,7 @@ export function AuthComponent() {
     try {
       if (
         !useCustomeOAuth.current &&
-        (env.NODE_ENV === 'production' || appService?.isMobileApp || USE_APPLE_SIGN_IN)
+        (clientEnv.NODE_ENV === 'production' || appService?.isMobileApp || USE_APPLE_SIGN_IN)
       ) {
         const { getCurrentWindow } = await import('@tauri-apps/api/window');
         const currentWindow = getCurrentWindow();

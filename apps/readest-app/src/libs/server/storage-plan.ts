@@ -1,4 +1,4 @@
-import { env } from '@/env';
+import { clientEnv } from '@/clientEnv';
 import { DEFAULT_STORAGE_QUOTA } from '@/services/constants';
 import type { UserPlan } from '@/types/quota';
 
@@ -28,7 +28,7 @@ export function getStoragePlanData(user: StoragePlanUserFields): {
   const plan = ((user.plan ?? 'free') as UserPlan) || 'free';
   const usage = user.storageUsageBytes ?? 0;
   const purchasedQuota = user.storagePurchasedBytes ?? 0;
-  const fixedQuota = env.VITE_STORAGE_FIXED_QUOTA ?? 0;
+  const fixedQuota = clientEnv.VITE_STORAGE_FIXED_QUOTA ?? 0;
   const planQuota = fixedQuota || DEFAULT_STORAGE_QUOTA[plan] || DEFAULT_STORAGE_QUOTA['free'];
   const quota = planQuota + purchasedQuota;
   return { plan, usage, quota };

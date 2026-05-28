@@ -11,14 +11,8 @@ vi.mock('@/services/constants', () => ({
 
 const PUBLIC_ENV_KEYS = ['VITE_APP_PLATFORM', 'VITE_API_BASE_URL', 'VITE_NODE_BASE_URL'] as const;
 
-const publicEnv = () => {
-  const target = window as unknown as { __PUBLIC_ENV?: Partial<Record<string, string>> };
-  target.__PUBLIC_ENV ??= {};
-  return target.__PUBLIC_ENV;
-};
-
 const setPublicEnv = (key: (typeof PUBLIC_ENV_KEYS)[number], value: string) => {
-  publicEnv()[key] = value;
+  vi.stubEnv(key, value);
 };
 
 beforeEach(() => {
@@ -27,8 +21,6 @@ beforeEach(() => {
   vi.stubEnv('DATABASE_URL', 'postgres://postgres:postgres@localhost:5432/postgres');
   vi.stubEnv('BETTER_AUTH_SECRET', 'test-secret');
   vi.stubEnv('BETTER_AUTH_URL', 'http://localhost:5173');
-  vi.stubEnv('VITE_APP_PLATFORM', 'web');
-  (window as unknown as { __PUBLIC_ENV?: Partial<Record<string, string>> }).__PUBLIC_ENV = {};
   // Clean up any window globals we set
   delete (window as unknown as Record<string, unknown>)['__READEST_CLI_ACCESS'];
 });
@@ -72,9 +64,9 @@ describe('environment', () => {
       expect(isWebAppPlatform()).toBe(false);
     });
 
-    test('returns false when VITE_APP_PLATFORM is not set', async () => {
+    test('returns true when VITE_APP_PLATFORM is not set', async () => {
       const { isWebAppPlatform } = await import('@/services/environment');
-      expect(isWebAppPlatform()).toBe(false);
+      expect(isWebAppPlatform()).toBe(true);
     });
   });
 

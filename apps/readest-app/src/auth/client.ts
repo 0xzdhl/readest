@@ -1,10 +1,7 @@
-import {
-	inferAdditionalFields,
-	magicLinkClient,
-} from "better-auth/client/plugins";
-import { createAuthClient } from "better-auth/react";
-import { env } from "@/env";
-import type { Auth } from "./server";
+import { inferAdditionalFields, magicLinkClient } from 'better-auth/client/plugins';
+import { createAuthClient } from 'better-auth/react';
+import { clientEnv } from '@/clientEnv';
+import type { Auth } from './server';
 
 /**
  * Web auth client — cookie session (better-auth default).
@@ -15,8 +12,8 @@ import type { Auth } from "./server";
  * access without an extra DB query.
  */
 export const authClient = createAuthClient({
-	baseURL: env.VITE_BETTER_AUTH_URL,
-	plugins: [magicLinkClient(), inferAdditionalFields<Auth>()],
+  baseURL: clientEnv.VITE_BETTER_AUTH_URL,
+  plugins: [magicLinkClient(), inferAdditionalFields<Auth>()],
 });
 
 export const { signIn, signOut, signUp, useSession, getSession } = authClient;

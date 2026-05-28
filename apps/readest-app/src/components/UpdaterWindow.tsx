@@ -18,7 +18,7 @@ import { installPackage } from '@/utils/bridge';
 import { join } from '@tauri-apps/api/path';
 import { getLocale } from '@/utils/misc';
 import { setLastShownReleaseNotesVersion } from '@/helpers/updater';
-import { env } from '@/env';
+import { clientEnv } from '@/clientEnv';
 import { READEST_UPDATER_FILE, READEST_CHANGELOG_FILE } from '@/services/constants';
 import { getUpdaterManifest } from '@/types/updater';
 import Dialog from '@/components/Dialog';
@@ -420,7 +420,7 @@ export const UpdaterContent = ({
       }
     });
     console.log('package installed');
-    if (!appService?.isAndroidApp && env.NODE_ENV === 'production') {
+    if (!appService?.isAndroidApp && clientEnv.NODE_ENV === 'production') {
       await relaunch();
     }
   };

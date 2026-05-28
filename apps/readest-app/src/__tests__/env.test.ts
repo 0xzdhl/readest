@@ -1,6 +1,7 @@
 // @vitest-environment node
 
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { clientEnv } from '@/clientEnv';
 
 const stubMinimumEnv = () => {
   vi.stubEnv('DATABASE_URL', 'postgres://postgres:postgres@localhost:5432/postgres');
@@ -22,7 +23,7 @@ describe('env', () => {
 
     expect(env.DATABASE_URL).toBe('postgres://postgres:postgres@localhost:5432/postgres');
     expect(env.BETTER_AUTH_URL).toBe('http://localhost:5173');
-    expect(env.VITE_APP_PLATFORM).toBe('web');
+    expect(clientEnv.VITE_APP_PLATFORM).toBe('web');
     expect(env.DATABASE_POOL_MAX).toBe(10);
     expect(env.RESEND_FROM_EMAIL).toBe('noreply@readest.app');
     expect(env.SMTP_HOST).toBe('localhost');

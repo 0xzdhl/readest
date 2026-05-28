@@ -13,8 +13,8 @@ vi.mock('better-auth/client/plugins', () => ({
   inferAdditionalFields: () => inferAdditionalFieldsMock(),
 }));
 
-vi.mock('@/env', () => ({
-  env: {
+vi.mock('@/clientEnv', () => ({
+  clientEnv: {
     VITE_BETTER_AUTH_URL: 'https://auth.example.com',
   },
 }));

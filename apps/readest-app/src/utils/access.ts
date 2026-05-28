@@ -1,5 +1,5 @@
 import { authClient, loadSessionToken } from '@/auth';
-import { env } from '@/env';
+import { clientEnv } from '@/clientEnv';
 import { DEFAULT_DAILY_TRANSLATION_QUOTA, DEFAULT_STORAGE_QUOTA } from '@/services/constants';
 import { isTauriAppPlatform } from '@/services/environment';
 import { getDailyUsage } from '@/services/translators/utils';
@@ -43,7 +43,7 @@ export const getStoragePlanData = (user: PlanUser | null | undefined) => {
   const plan = pickPlan(user);
   const usage = user?.storageUsageBytes ?? 0;
   const purchasedQuota = user?.storagePurchasedBytes ?? 0;
-  const fixedQuota = env.VITE_STORAGE_FIXED_QUOTA ?? 0;
+  const fixedQuota = clientEnv.VITE_STORAGE_FIXED_QUOTA ?? 0;
   const planQuota = fixedQuota || DEFAULT_STORAGE_QUOTA[plan] || DEFAULT_STORAGE_QUOTA['free'];
   const quota = planQuota + purchasedQuota;
 
@@ -51,7 +51,7 @@ export const getStoragePlanData = (user: PlanUser | null | undefined) => {
 };
 
 export const getTranslationQuota = (plan: UserPlan): number => {
-  const fixedQuota = env.VITE_TRANSLATION_FIXED_QUOTA ?? 0;
+  const fixedQuota = clientEnv.VITE_TRANSLATION_FIXED_QUOTA ?? 0;
   return (
     fixedQuota || DEFAULT_DAILY_TRANSLATION_QUOTA[plan] || DEFAULT_DAILY_TRANSLATION_QUOTA['free']
   );

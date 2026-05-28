@@ -2,7 +2,7 @@ import { loadStripe, type Stripe as StripeClient } from '@stripe/stripe-js';
 import { openUrl } from '@tauri-apps/plugin-opener';
 import posthog from 'posthog-js';
 import type Stripe from 'stripe';
-import { env } from '@/env';
+import { clientEnv } from '@/clientEnv';
 import { getAPIBaseUrl, isTauriAppPlatform, isWebAppPlatform } from '@/services/environment';
 import type { StripeProductMetadata } from '@/types/payment';
 import type { AvailablePlan, PlanInterval, PlanType, UserPlan } from '@/types/quota';
@@ -58,9 +58,9 @@ const tryDecodeBase64 = (value: string | undefined) => {
 export const getStripe = () => {
   if (!stripePromise) {
     const publishableKey =
-      env.NODE_ENV === 'production'
-        ? tryDecodeBase64(env.VITE_STRIPE_PUBLISHABLE_KEY_BASE64)
-        : tryDecodeBase64(env.VITE_STRIPE_PUBLISHABLE_KEY_DEV_BASE64);
+      clientEnv.NODE_ENV === 'production'
+        ? tryDecodeBase64(clientEnv.VITE_STRIPE_PUBLISHABLE_KEY_BASE64)
+        : tryDecodeBase64(clientEnv.VITE_STRIPE_PUBLISHABLE_KEY_DEV_BASE64);
 
     if (!publishableKey) {
       console.warn(

@@ -2,7 +2,7 @@ import posthog from 'posthog-js';
 import { useEffect } from 'react';
 import type { ReactNode } from 'react';
 import { PostHogProvider } from 'posthog-js/react';
-import { env } from '@/env';
+import { clientEnv } from '@/clientEnv';
 import { TELEMETRY_OPT_OUT_KEY } from '@/utils/telemetry';
 import { getAppVersion } from '@/utils/version';
 
@@ -20,10 +20,12 @@ const shouldDisablePostHog = () => {
   return localStorage.getItem(TELEMETRY_OPT_OUT_KEY) === 'true';
 };
 
-const posthogUrl = env.VITE_POSTHOG_HOST || tryDecodeBase64(env.VITE_DEFAULT_POSTHOG_URL_BASE64);
-const posthogKey = env.VITE_POSTHOG_KEY || tryDecodeBase64(env.VITE_DEFAULT_POSTHOG_KEY_BASE64);
+const posthogUrl =
+  clientEnv.VITE_POSTHOG_HOST || tryDecodeBase64(clientEnv.VITE_DEFAULT_POSTHOG_URL_BASE64);
+const posthogKey =
+  clientEnv.VITE_POSTHOG_KEY || tryDecodeBase64(clientEnv.VITE_DEFAULT_POSTHOG_KEY_BASE64);
 
-if (typeof window !== 'undefined' && env.NODE_ENV === 'production' && posthogKey) {
+if (typeof window !== 'undefined' && clientEnv.NODE_ENV === 'production' && posthogKey) {
   if (!shouldDisablePostHog()) {
     posthog.init(posthogKey, {
       api_host: posthogUrl,
