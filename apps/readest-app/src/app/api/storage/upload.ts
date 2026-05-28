@@ -87,9 +87,13 @@ export const Route = createFileRoute('/api/storage/upload')({
             .limit(1);
 
           const existingRecord = existing[0];
-          let objSize = fileSize;
           if (existingRecord) {
-            objSize = existingRecord.fileSize;
+            if (existingRecord.fileSize !== fileSize) {
+              await tx
+                .update(files)
+                .set({ fileSize, updatedAt: new Date() })
+                .where(eq(files.id, existingRecord.id));
+            }
           } else {
             await tx.insert(files).values({
               userId: user.id,
@@ -105,7 +109,7 @@ export const Route = createFileRoute('/api/storage/upload')({
             const uploadUrl = await runStorageProgram(
               Effect.gen(function* () {
                 const storage = yield* ObjectStorage;
-                return yield* storage.getUploadSignedUrl(fileKey, objSize, 1800);
+                return yield* storage.getUploadSignedUrl(fileKey, fileSize, 1800);
               }),
             );
             return Response.json({
