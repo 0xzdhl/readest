@@ -2,10 +2,10 @@
   <a href="https://readest.com?utm_source=github&utm_medium=referral&utm_campaign=readme" target="_blank">
     <img src="https://github.com/readest/readest/blob/main/apps/readest-app/src-tauri/icons/icon.png?raw=true" alt="Readest Logo" width="20%" />
   </a>
-  <h1>Readen - Cloudflare selfhost (unofficial)</h1>
+  <h1>Readen - Cloudflare self-host E-book Reader</h1>
   <br>
 
-This is a **unofficial version** of Readest, which makes you deploy Readest on Cloudflare. If you encounter any issues, report it on this repository, **DO NOT** open issue on Readest official repo.
+This is a **lightweight version** of Readest, which makes you deploy it on Cloudflare Worker. If you encounter any issues, report it on this repository, **DO NOT** open issue on Readest official repo.
 
 <br>
 
@@ -13,14 +13,10 @@ This is a **unofficial version** of Readest, which makes you deploy Readest on C
 
 ## Key changes
 
-<div align="left">✅ Implemented</div>
-
-| Changes   | Description                               | Status |
-| --------- | ----------------------------------------- | ------ |
-| Framework | From Next.js to Tanstack Start            | 🔄     |
-| Auth      | From Supabase to better auth              | 🔄     |
-| Database  | From Supabase postgreSQL to Cloudflare D1 | 🔄     |
-| Storage   | From Supabase storage to Cloudflare R2    | 🔄     |
+- Framework: Next.js 16 to Tanstack Start (more lightweight).
+- Database: Supabase Auth to vanilla PostgresSQL.
+- Authentication: Supabase Auth to Better Auth.
+- Storage: Connect to any S3 compatible endpoint, first-class support to Cloudflare R2.
 
 ## Requirements
 
