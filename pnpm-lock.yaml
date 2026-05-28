@@ -506,9 +506,6 @@ importers:
       drizzle-kit:
         specifier: ^0.31.10
         version: 0.31.10
-      drizzle-query-logger:
-        specifier: ^1.1.2
-        version: 1.1.2(drizzle-orm@0.45.2(@opentelemetry/api@1.9.1)(kysely@0.28.17)(postgres@3.4.9))(typescript@6.0.3)
       i18next-scanner:
         specifier: ^4.6.0
         version: 4.6.0(typescript@6.0.3)
@@ -3560,9 +3557,6 @@ packages:
   '@speed-highlight/core@1.2.15':
     resolution: {integrity: sha512-BMq1K3DsElxDWawkX6eLg9+CKJrTVGCBAWVuHXVUV2u0s2711qiChLSId6ikYPfxhdYocLNt3wWwSvDiTvFabw==}
 
-  '@sqltools/formatter@1.2.5':
-    resolution: {integrity: sha512-Uy0+khmZqUrUGm5dmMqVlnvufZRSK0FbYzVgp0UMstm+F5+W2/jnEEQyc9vo1ZR/E5ZI/B1WjjoTqBqwJL6Krw==}
-
   '@stablelib/base64@1.0.1':
     resolution: {integrity: sha512-1bnPQqSxSuc3Ii6MhBysoWCg58j97aUjuCSZrGSmDxNqtytIi0k8utUenAwTZN4V5mXXYGsVUI9zeBqy+jBOSQ==}
 
@@ -5229,12 +5223,6 @@ packages:
         optional: true
       sqlite3:
         optional: true
-
-  drizzle-query-logger@1.1.2:
-    resolution: {integrity: sha512-/VyJOlC5BDnENuhdQws1CfKwBEUK6qycpsZiCmDfEjVc3P/x7vpyY5C9wz/hDkPu/GHAiQPz2OTnpv8/AFEItA==}
-    peerDependencies:
-      drizzle-orm: '>=0.44.3 <1.0.0'
-      typescript: ^5
 
   dunder-proto@1.0.1:
     resolution: {integrity: sha512-KIN/nDJBQRcXw0MLVhZE9iQHmG68qAVIBg9CqmUYjmQIhgij9U5MFvrqkUL5FbtyyzZuOeOt0zdeRe4UY7ct+A==}
@@ -11113,8 +11101,6 @@ snapshots:
 
   '@speed-highlight/core@1.2.15': {}
 
-  '@sqltools/formatter@1.2.5': {}
-
   '@stablelib/base64@1.0.1': {}
 
   '@standard-schema/spec@1.1.0': {}
@@ -12839,12 +12825,6 @@ snapshots:
       '@opentelemetry/api': 1.9.1
       kysely: 0.28.17
       postgres: 3.4.9
-
-  drizzle-query-logger@1.1.2(drizzle-orm@0.45.2(@opentelemetry/api@1.9.1)(kysely@0.28.17)(postgres@3.4.9))(typescript@6.0.3):
-    dependencies:
-      '@sqltools/formatter': 1.2.5
-      drizzle-orm: 0.45.2(@opentelemetry/api@1.9.1)(kysely@0.28.17)(postgres@3.4.9)
-      typescript: 6.0.3
 
   dunder-proto@1.0.1:
     dependencies:
