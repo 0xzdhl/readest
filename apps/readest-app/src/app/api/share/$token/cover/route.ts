@@ -24,15 +24,13 @@ export const Route = createFileRoute('/api/share/$token/cover')({
         if (!share.coverFileKey) {
           return Response.json({ error: 'No cover for this share' }, { status: 404 });
         }
+        const coverFileKey = share.coverFileKey;
         let url: string;
         try {
           url = await runStorageProgram(
             Effect.gen(function* () {
               const storage = yield* ObjectStorage;
-              return yield* storage.getDownloadSignedUrl(
-                share.coverFileKey,
-                SHARE_PRESIGN_TTL_SECONDS,
-              );
+              return yield* storage.getDownloadSignedUrl(coverFileKey, SHARE_PRESIGN_TTL_SECONDS);
             }),
           );
         } catch (err) {
