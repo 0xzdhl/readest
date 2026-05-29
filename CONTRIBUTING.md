@@ -71,22 +71,27 @@ pnpm tauri dev
 
 The web app needs Postgres (with the `readest_app` role + RLS policies),
 S3-compatible storage (MinIO), and SMTP (Mailpit). `docker/compose.dev.yaml`
-brings up all three plus a one-shot drizzle migrator:
+brings up those dependencies only; apply drizzle migrations manually:
 
 ```bash
 # 1. Env files — fill BETTER_AUTH_SECRET with `openssl rand -hex 32`
 cp docker/.env.example docker/.env
-cp apps/readest-app/.env.web.example apps/readest-app/.env.web
+cp apps/readest-app/.env.example apps/readest-app/.env
 
-# 2. Start infra (first run builds the migrator image; ~3–5 min)
+# 2. Start infra
 docker compose -f docker/compose.dev.yaml --env-file docker/.env up -d
 
-# 3. Run the dev server
+# 3. Apply migrations from apps/readest-app/.env DATABASE_URL
+cd apps/readest-app
+pnpm db:migrate
+cd ../..
+
+# 4. Run the dev server
 pnpm dev-web
 ```
 
 App: http://localhost:5173 · Mailpit: http://localhost:8025 · MinIO console: http://localhost:9001.
-Re-run migrations with `docker compose -f docker/compose.dev.yaml up migrate` (cached image) or `pnpm db:migrate` on the host.
+After any schema change, re-run `pnpm db:migrate` from `apps/readest-app`.
 
 ##### VSCode devcontainer (alternative)
 
@@ -107,13 +112,13 @@ Now you're all setup and can start implementing your changes.
 
 This project is a monorepo. The code for the `readest-app` is in the `apps/readest-app` directory. Here are some useful scripts for developing the frontend only without compiling Tauri:
 
-| Command          | Description                                        |
-| ---------------- | -------------------------------------------------- |
-| `pnpm dev-web`   | Starts the development server for the web app only |
-| `pnpm build-web` | Builds the web app                                 |
-| `pnpm db:migrate`| Applies drizzle migrations against `DATABASE_URL`  |
-| `pnpm test`      | Runs the vitest unit suite                         |
-| `pnpm lint`      | Biome + tsgo typecheck                             |
+| Command           | Description                                        |
+| ----------------- | -------------------------------------------------- |
+| `pnpm dev-web`    | Starts the development server for the web app only |
+| `pnpm build-web`  | Builds the web app                                 |
+| `pnpm db:migrate` | Applies drizzle migrations against `DATABASE_URL`  |
+| `pnpm test`       | Runs the vitest unit suite                         |
+| `pnpm lint`       | Biome + tsgo typecheck                             |
 
 Recommended Visual Studio Code plugins for development (the devcontainer
 installs these automatically):

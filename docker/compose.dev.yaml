@@ -22,6 +22,8 @@ services:
     image: postgres:16-alpine
     restart: unless-stopped
     volumes:
+      # Only bootstrap the DB login role on first init. Schema changes are
+      # applied manually via `pnpm db:migrate`.
       - ./volumes/db/init:/docker-entrypoint-initdb.d:Z
       - db-data:/var/lib/postgresql/data:Z
     environment:
@@ -61,13 +63,10 @@ services:
     depends_on:
       minio:
         condition: service_healthy
-    entrypoint: >
-      /bin/sh -c "
-      mc alias set myminio http://minio:9000
-        ${MINIO_ROOT_USER:-minioadmin}
-        ${MINIO_ROOT_PASSWORD:-minioadmin-secret-password} &&
-      mc mb --ignore-existing myminio/${S3_BUCKET_NAME:-readest-files}
-      "
+    entrypoint:
+      - /bin/sh
+      - -ec
+      - mc alias set myminio http://minio:9000 ${MINIO_ROOT_USER:-minioadmin} ${MINIO_ROOT_PASSWORD:-minioadmin-secret-password} && mc mb --ignore-existing myminio/${S3_BUCKET_NAME:-readest-files}
 
   mailpit:
     container_name: readest-dev-mailpit
