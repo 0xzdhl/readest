@@ -1,3 +1,4 @@
+import { Either } from 'effect';
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import postgres from 'postgres';
 import { drizzle } from 'drizzle-orm/postgres-js';
@@ -123,7 +124,8 @@ describe.skipIf(!url)('/api/share/* (rlsMiddleware + publicMiddleware)', () => {
   beforeEach(async () => {
     getSessionMock.mockReset();
     runStorageProgramMock.mockReset();
-    runStorageProgramMock.mockImplementation(async () => 'https://signed.test/default');
+    // `runStorageProgram` resolves to an `Either`, never rejects.
+    runStorageProgramMock.mockImplementation(async () => Either.right('https://signed.test/default'));
     await adminClient`DELETE FROM book_shares WHERE user_id IN (${userA}, ${userB})`;
     await adminClient`DELETE FROM files WHERE user_id IN (${userA}, ${userB})`;
   });

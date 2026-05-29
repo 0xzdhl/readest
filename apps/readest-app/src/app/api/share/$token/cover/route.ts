@@ -1,5 +1,5 @@
 import { createFileRoute } from '@tanstack/react-router';
-import { Effect } from 'effect';
+import { Effect, Either } from 'effect';
 import { ObjectStorage, runStorageProgram } from '@/storage';
 import { rejectionToHttp, resolveActiveShare } from '@/libs/shareServer';
 import { publicMiddleware } from '@/middlewares/public';
@@ -24,27 +24,28 @@ export const Route = createFileRoute('/api/share/$token/cover')({
         if (!share.coverFileKey) {
           return Response.json({ error: 'No cover for this share' }, { status: 404 });
         }
-        let url: string;
-        try {
-          url = await runStorageProgram(
-            Effect.gen(function* () {
-              const storage = yield* ObjectStorage;
-              return yield* storage.getDownloadSignedUrl(
-                share.coverFileKey,
-                SHARE_PRESIGN_TTL_SECONDS,
-              );
-            }),
-          );
-        } catch (err) {
-          console.error('Share cover presign failed:', err);
-          return Response.json({ error: 'Could not sign cover URL' }, { status: 500 });
-        }
-        return new Response(null, {
-          status: 302,
-          headers: {
-            Location: url,
-            'Cache-Control': 'public, max-age=300',
+        const signed = await runStorageProgram(
+          Effect.gen(function* () {
+            const storage = yield* ObjectStorage;
+            return yield* storage.getDownloadSignedUrl(
+              share.coverFileKey!,
+              SHARE_PRESIGN_TTL_SECONDS,
+            );
+          }),
+        );
+        return Either.match(signed, {
+          onLeft: (err) => {
+            console.error('Share cover presign failed:', err);
+            return Response.json({ error: 'Could not sign cover URL' }, { status: 500 });
           },
+          onRight: (url) =>
+            new Response(null, {
+              status: 302,
+              headers: {
+                Location: url,
+                'Cache-Control': 'public, max-age=300',
+              },
+            }),
         });
       },
     },

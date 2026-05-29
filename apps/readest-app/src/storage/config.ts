@@ -1,4 +1,4 @@
-import { Context, Layer } from 'effect';
+import { Context, Effect, Layer } from 'effect';
 import { env } from '@/env';
 import { StorageConfigError } from './errors';
 
@@ -55,4 +55,13 @@ export const makeStorageConfig = (): StorageConfigShape => {
   };
 };
 
-export const StorageConfigLive = Layer.sync(StorageConfig, makeStorageConfig);
+// Adapt the (throwing) `makeStorageConfig` into a typed failure so a
+// misconfiguration surfaces in the Effect error channel and is captured by
+// `Effect.either` in `runStorageProgram`, rather than escaping as a defect.
+export const StorageConfigLive = Layer.effect(
+  StorageConfig,
+  Effect.try({
+    try: makeStorageConfig,
+    catch: (e) => (e instanceof StorageConfigError ? e : new StorageConfigError(String(e))),
+  }),
+);

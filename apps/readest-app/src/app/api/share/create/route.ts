@@ -9,8 +9,8 @@ import {
   SHARE_EXPIRATION_DAYS,
   SHARE_MAX_PER_USER,
 } from '@/services/constants';
-import { Effect } from 'effect';
-import { ObjectStorage, runStorageProgram, StorageNotFoundError } from '@/storage';
+import { Effect, Either } from 'effect';
+import { ObjectStorage, runStorageProgram } from '@/storage';
 
 interface CreateShareBody {
   bookHash?: unknown;
@@ -147,15 +147,14 @@ export const Route = createFileRoute('/api/share/create')({
         // The `files` row is inserted before bytes upload (storage/upload.ts),
         // so a ghost row can exist if the client aborted. HEAD R2 to confirm
         // bytes are really there before we make the share publicly resolvable.
-        try {
-          await runStorageProgram(
-            Effect.gen(function* () {
-              const storage = yield* ObjectStorage;
-              yield* storage.headObject(bookFile.fileKey);
-            }),
-          );
-        } catch (err) {
-          if (err instanceof StorageNotFoundError) {
+        const headResult = await runStorageProgram(
+          Effect.gen(function* () {
+            const storage = yield* ObjectStorage;
+            yield* storage.headObject(bookFile.fileKey);
+          }),
+        );
+        if (Either.isLeft(headResult)) {
+          if (headResult.left._tag === 'StorageNotFoundError') {
             return Response.json(
               {
                 error: 'Book upload is incomplete; please retry',
@@ -164,7 +163,7 @@ export const Route = createFileRoute('/api/share/create')({
               { status: 409 },
             );
           }
-          console.error('Share create headObject failed:', err);
+          console.error('Share create headObject failed:', headResult.left);
           return Response.json({ error: 'Could not verify book upload' }, { status: 500 });
         }
 

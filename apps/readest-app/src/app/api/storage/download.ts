@@ -3,7 +3,7 @@ import { and, eq, inArray, isNull } from 'drizzle-orm';
 import type { DbTx } from '@/db/rls';
 import { files } from '@/db/schema';
 import { rlsMiddleware } from '@/middlewares/rls';
-import { Effect } from 'effect';
+import { Effect, Either } from 'effect';
 import { ObjectStorage, runStorageProgram } from '@/storage';
 
 /**
@@ -102,18 +102,17 @@ async function processFileKeys(
       if (fileRecord.userId !== userId) {
         return { fileKey, downloadUrl: undefined };
       }
-      try {
-        const downloadUrl = await runStorageProgram(
-          Effect.gen(function* () {
-            const storage = yield* ObjectStorage;
-            return yield* storage.getDownloadSignedUrl(fileRecord.fileKey, 1800);
-          }),
-        );
-        return { fileKey, downloadUrl };
-      } catch (error) {
-        console.error('Error creating signed URL for %s:', fileKey, error);
+      const signed = await runStorageProgram(
+        Effect.gen(function* () {
+          const storage = yield* ObjectStorage;
+          return yield* storage.getDownloadSignedUrl(fileRecord.fileKey, 1800);
+        }),
+      );
+      if (Either.isLeft(signed)) {
+        console.error('Error creating signed URL for %s:', fileKey, signed.left);
         return { fileKey, downloadUrl: undefined };
       }
+      return { fileKey, downloadUrl: signed.right };
     }),
   );
 
