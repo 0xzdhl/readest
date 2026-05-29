@@ -48,7 +48,12 @@ describe('PDF CFI resolution with real document', () => {
 
     doc3 = await book.sections[3]!.createDocument();
     doc4 = await book.sections[4]!.createDocument();
-  }, 30_000);
+    // Importing the full pdf.js bundle + parsing a real PDF takes <10s in
+    // isolation, but under the full suite's concurrent jsdom load it can spike
+    // well past 30s on contended machines. Give generous headroom so this
+    // setup-heavy suite doesn't flake (mirrors the raised `testTimeout` in
+    // vitest.config.mts).
+  }, 120_000);
 
   // ---------- DOM structure -------------------------------------------------
 

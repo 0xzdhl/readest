@@ -21,6 +21,13 @@ beforeEach(() => {
   vi.stubEnv('DATABASE_URL', 'postgres://postgres:postgres@localhost:5432/postgres');
   vi.stubEnv('BETTER_AUTH_SECRET', 'test-secret');
   vi.stubEnv('BETTER_AUTH_URL', 'http://localhost:5173');
+  // Clean baseline for the base-URL vars: a local `.env` sets these to
+  // http://localhost:5173, which would otherwise mask the "env var not set"
+  // fallback tests below. Empty → undefined (emptyStringAsUndefined), so
+  // getBaseUrl/getNodeBaseUrl hit their READEST_*_BASE_URL fallback. Tests that
+  // need a value re-stub it explicitly via setPublicEnv().
+  vi.stubEnv('VITE_API_BASE_URL', '');
+  vi.stubEnv('VITE_NODE_BASE_URL', '');
   // Clean up any window globals we set
   delete (window as unknown as Record<string, unknown>)['__READEST_CLI_ACCESS'];
 });

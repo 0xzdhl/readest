@@ -18,6 +18,17 @@ vi.mock('@/utils/publicEnv', () => ({
   readPublicFlag: () => false,
 }));
 
+// Pin the fixed-quota overrides to undefined so the helpers fall back to their
+// plan-tier defaults. Without this, a local `.env`'s VITE_*_FIXED_QUOTA values
+// (e.g. VITE_STORAGE_FIXED_QUOTA=1073741824) would leak in and break the
+// plan-default assertions — the suite must not depend on ambient env.
+vi.mock('@/clientEnv', () => ({
+  clientEnv: {
+    VITE_STORAGE_FIXED_QUOTA: undefined,
+    VITE_TRANSLATION_FIXED_QUOTA: undefined,
+  },
+}));
+
 vi.mock('@/services/translators/utils', () => ({
   getDailyUsage: vi.fn(() => 0),
 }));
