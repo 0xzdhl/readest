@@ -1,7 +1,7 @@
 import type { DbTx } from '@/db/rls';
 import { rejectionToHttp, resolveActiveShare } from '@/libs/shareServer';
 import { SHARE_PRESIGN_TTL_SECONDS } from '@/services/constants';
-import { Effect } from 'effect';
+import { Effect, Either } from 'effect';
 import { ObjectStorage, runStorageProgram } from '@/storage';
 
 // JSX renderer for the share OG image. Lives in a non-route `.tsx` so it can
@@ -93,25 +93,28 @@ export const renderShareOgImage = async (token: string, tx: DbTx): Promise<Respo
 
   let coverDataUrl: string | null = null;
   if (share.coverFileKey) {
-    try {
-      const signedUrl = await runStorageProgram(
-        Effect.gen(function* () {
-          const storage = yield* ObjectStorage;
-          return yield* storage.getDownloadSignedUrl(
-            share.coverFileKey!,
-            SHARE_PRESIGN_TTL_SECONDS,
-          );
-        }),
-      );
-      const response = await fetch(signedUrl);
-      if (response.ok) {
-        const buffer = await response.arrayBuffer();
-        const contentType = response.headers.get('content-type') ?? 'image/jpeg';
-        coverDataUrl = `data:${contentType};base64,${arrayBufferToBase64(buffer)}`;
+    const signed = await runStorageProgram(
+      Effect.gen(function* () {
+        const storage = yield* ObjectStorage;
+        return yield* storage.getDownloadSignedUrl(share.coverFileKey!, SHARE_PRESIGN_TTL_SECONDS);
+      }),
+    );
+    if (Either.isLeft(signed)) {
+      // Best-effort: fall through to the text-only card on presign failure.
+      console.error('Share og.png cover presign failed:', signed.left);
+    } else {
+      try {
+        const response = await fetch(signed.right);
+        if (response.ok) {
+          const buffer = await response.arrayBuffer();
+          const contentType = response.headers.get('content-type') ?? 'image/jpeg';
+          coverDataUrl = `data:${contentType};base64,${arrayBufferToBase64(buffer)}`;
+        }
+      } catch (err) {
+        // The raw cover fetch is outside the Effect; a network failure here
+        // is still non-fatal — fall through to the text-only card.
+        console.error('Share og.png cover fetch failed:', err);
       }
-    } catch (err) {
-      console.error('Share og.png cover fetch failed:', err);
-      // Fall through to text-only card.
     }
   }
 

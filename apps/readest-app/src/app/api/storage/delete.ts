@@ -2,7 +2,7 @@ import { createFileRoute } from '@tanstack/react-router';
 import { and, eq, isNull } from 'drizzle-orm';
 import { files } from '@/db/schema';
 import { rlsMiddleware } from '@/middlewares/rls';
-import { Effect } from 'effect';
+import { Effect, Either } from 'effect';
 import { ObjectStorage, runStorageProgram } from '@/storage';
 
 /**
@@ -42,23 +42,23 @@ export const Route = createFileRoute('/api/storage/delete')({
             return Response.json({ error: 'Unauthorized access to the file' }, { status: 403 });
           }
 
-          try {
-            await runStorageProgram(
-              Effect.gen(function* () {
-                const storage = yield* ObjectStorage;
-                yield* storage.deleteObject(fileKey).pipe(
-                  // Idempotent: storage already gone counts as success;
-                  // the DB delete below still runs.
-                  Effect.catchTag('StorageNotFoundError', () => Effect.void),
-                );
-              }),
-            );
-            await tx.delete(files).where(eq(files.id, fileRecord.id));
-            return Response.json({ message: 'File deleted successfully' });
-          } catch (error) {
-            console.error('Error deleting file from storage:', error);
+          const deleteResult = await runStorageProgram(
+            Effect.gen(function* () {
+              const storage = yield* ObjectStorage;
+              yield* storage.deleteObject(fileKey).pipe(
+                // Idempotent: storage already gone counts as success;
+                // the DB delete below still runs.
+                Effect.catchTag('StorageNotFoundError', () => Effect.void),
+              );
+            }),
+          );
+          if (Either.isLeft(deleteResult)) {
+            console.error('Error deleting file from storage:', deleteResult.left);
             return Response.json({ error: 'Could not delete file from storage' }, { status: 500 });
           }
+          // A DB failure here falls through to the outer handler's 500.
+          await tx.delete(files).where(eq(files.id, fileRecord.id));
+          return Response.json({ message: 'File deleted successfully' });
         } catch (error) {
           console.error(error);
           return Response.json({ error: 'Something went wrong' }, { status: 500 });

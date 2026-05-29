@@ -2,7 +2,7 @@ import { createFileRoute } from '@tanstack/react-router';
 import { and, eq, inArray, isNull } from 'drizzle-orm';
 import { files } from '@/db/schema';
 import { rlsMiddleware } from '@/middlewares/rls';
-import { Effect } from 'effect';
+import { Effect, Either } from 'effect';
 import { ObjectStorage, runStorageProgram } from '@/storage';
 
 interface BulkDeleteResult {
@@ -75,17 +75,28 @@ export const Route = createFileRoute('/api/storage/purge')({
 
           const results = await Promise.allSettled(
             fileRecords.map(async (fileRecord) => {
+              const deleteResult = await runStorageProgram(
+                Effect.gen(function* () {
+                  const storage = yield* ObjectStorage;
+                  yield* storage.deleteObject(fileRecord.fileKey).pipe(
+                    // Idempotent bulk delete: NotFound counts as success for the
+                    // per-key Promise.allSettled accounting.
+                    Effect.catchTag('StorageNotFoundError', () => Effect.void),
+                  );
+                }),
+              );
+              if (Either.isLeft(deleteResult)) {
+                console.error(`Error deleting file ${fileRecord.fileKey}:`, deleteResult.left);
+                return {
+                  fileKey: fileRecord.fileKey,
+                  success: false as const,
+                  error: deleteResult.left.message,
+                };
+              }
+              // The DB delete is a throwing call outside the Effect; keep it
+              // guarded so a failure is reported against the right fileKey
+              // rather than surfacing as a rejected (unknown-key) promise.
               try {
-                await runStorageProgram(
-                  Effect.gen(function* () {
-                    const storage = yield* ObjectStorage;
-                    yield* storage.deleteObject(fileRecord.fileKey).pipe(
-                      // Idempotent bulk delete: NotFound counts as success for the
-                      // per-key Promise.allSettled accounting.
-                      Effect.catchTag('StorageNotFoundError', () => Effect.void),
-                    );
-                  }),
-                );
                 await tx.delete(files).where(eq(files.id, fileRecord.id));
                 return { fileKey: fileRecord.fileKey, success: true as const };
               } catch (error) {

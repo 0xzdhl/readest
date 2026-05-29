@@ -1,5 +1,5 @@
 import { createFileRoute } from '@tanstack/react-router';
-import { Effect } from 'effect';
+import { Effect, Either } from 'effect';
 import { ObjectStorage, runStorageProgram } from '@/storage';
 import { rejectionToHttp, resolveActiveShare } from '@/libs/shareServer';
 import { publicMiddleware } from '@/middlewares/public';
@@ -25,30 +25,28 @@ export const Route = createFileRoute('/api/share/$token/download')({
           return Response.json(body, { status });
         }
         const { share } = result;
-        let url: string;
-        try {
-          url = await runStorageProgram(
-            Effect.gen(function* () {
-              const storage = yield* ObjectStorage;
-              return yield* storage.getDownloadSignedUrl(
-                share.bookFileKey,
-                SHARE_PRESIGN_TTL_SECONDS,
-              );
-            }),
-          );
-        } catch (err) {
-          console.error('Share download presign failed:', err);
-          return Response.json({ error: 'Could not sign download URL' }, { status: 500 });
-        }
-        return new Response(null, {
-          status: 302,
-          headers: {
-            Location: url,
-            // Don't let intermediaries cache the redirect target itself; the
-            // presign expires fast but caching the 302 would point future
-            // requests at a soon-to-be-dead URL.
-            'Cache-Control': 'private, no-store',
+        const signed = await runStorageProgram(
+          Effect.gen(function* () {
+            const storage = yield* ObjectStorage;
+            return yield* storage.getDownloadSignedUrl(share.bookFileKey, SHARE_PRESIGN_TTL_SECONDS);
+          }),
+        );
+        return Either.match(signed, {
+          onLeft: (err) => {
+            console.error('Share download presign failed:', err);
+            return Response.json({ error: 'Could not sign download URL' }, { status: 500 });
           },
+          onRight: (url) =>
+            new Response(null, {
+              status: 302,
+              headers: {
+                Location: url,
+                // Don't let intermediaries cache the redirect target itself; the
+                // presign expires fast but caching the 302 would point future
+                // requests at a soon-to-be-dead URL.
+                'Cache-Control': 'private, no-store',
+              },
+            }),
         });
       },
     },

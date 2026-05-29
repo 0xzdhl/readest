@@ -1,3 +1,4 @@
+import { Either } from 'effect';
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import postgres from 'postgres';
 import { drizzle } from 'drizzle-orm/postgres-js';
@@ -105,7 +106,8 @@ describe.skipIf(!url)('/api/storage/* (rlsMiddleware + RLS)', () => {
     getSessionMock.mockReset();
     runStorageProgramMock.mockReset();
     // Default storage behaviour: presigns succeed with placeholder URL.
-    runStorageProgramMock.mockImplementation(async () => 'https://signed.test/default');
+    // `runStorageProgram` resolves to an `Either`, never rejects.
+    runStorageProgramMock.mockImplementation(async () => Either.right('https://signed.test/default'));
     await adminClient`DELETE FROM files WHERE user_id IN (${userA}, ${userB})`;
   });
 
@@ -128,7 +130,7 @@ describe.skipIf(!url)('/api/storage/* (rlsMiddleware + RLS)', () => {
       method: 'POST',
       body: JSON.stringify({ fileName: 'book.epub', fileSize: 1000, bookHash: 'hash-A-1' }),
     });
-    runStorageProgramMock.mockResolvedValueOnce('https://upload.test/book.epub');
+    runStorageProgramMock.mockResolvedValueOnce(Either.right('https://upload.test/book.epub'));
     const response = await runRoute(uploadModule.Route as RouteLike, 'POST', { request });
     expect(response.status).toBe(200);
     const body = (await response.json()) as { uploadUrl?: string; fileKey?: string };
@@ -152,7 +154,7 @@ describe.skipIf(!url)('/api/storage/* (rlsMiddleware + RLS)', () => {
       `http://localhost/api/storage/download?fileKey=${encodeURIComponent(userA + '/file.epub')}`,
       { method: 'GET' },
     );
-    runStorageProgramMock.mockResolvedValueOnce('https://signed.test/file');
+    runStorageProgramMock.mockResolvedValueOnce(Either.right('https://signed.test/file'));
     const response = await runRoute(downloadModule.Route as RouteLike, 'GET', { request });
     expect(response.status).toBe(200);
     const body = (await response.json()) as { downloadUrl?: string };

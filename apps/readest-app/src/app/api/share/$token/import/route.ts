@@ -5,8 +5,8 @@ import { files } from '@/db/schema';
 import { rlsMiddleware } from '@/middlewares/rls';
 import { getStoragePlanData, STORAGE_QUOTA_GRACE_BYTES } from '@/libs/server/storage-plan';
 import { rejectionToHttp, resolveActiveShare } from '@/libs/shareServer';
-import { Effect } from 'effect';
-import { ObjectStorage, runStorageProgram, StorageNotFoundError } from '@/storage';
+import { Effect, Either } from 'effect';
+import { ObjectStorage, runStorageProgram } from '@/storage';
 
 const isCoverKey = (fileKey: string): boolean => /\.(png|jpe?g|webp|gif)$/i.test(fileKey);
 
@@ -171,14 +171,13 @@ export const Route = createFileRoute('/api/share/$token/import')({
           return Response.json({ error: 'Could not import book' }, { status: 500 });
         }
 
-        try {
-          await runStorageProgram(
-            Effect.gen(function* () {
-              const storage = yield* ObjectStorage;
-              yield* storage.copyObject(share.bookFileKey, destBookKey);
-            }),
-          );
-        } catch (err) {
+        const copyResult = await runStorageProgram(
+          Effect.gen(function* () {
+            const storage = yield* ObjectStorage;
+            yield* storage.copyObject(share.bookFileKey, destBookKey);
+          }),
+        );
+        if (Either.isLeft(copyResult)) {
           // Soft-delete the orphan row in either error case.
           try {
             await tx
@@ -189,13 +188,13 @@ export const Route = createFileRoute('/api/share/$token/import')({
             console.error('Share import cleanup failed:', cleanupErr);
           }
 
-          if (err instanceof StorageNotFoundError) {
+          if (copyResult.left._tag === 'StorageNotFoundError') {
             return Response.json(
               { error: 'Shared book is no longer available', code: 'source_deleted' },
               { status: 410 },
             );
           }
-          console.error('Share import book copy failed:', err);
+          console.error('Share import book copy failed:', copyResult.left);
           return Response.json({ error: 'Could not import book' }, { status: 500 });
         }
 
@@ -205,22 +204,27 @@ export const Route = createFileRoute('/api/share/$token/import')({
         if (share.coverFileKey) {
           const destCoverKey = remap(share.coverFileKey);
           if (destCoverKey) {
-            try {
-              await runStorageProgram(
-                Effect.gen(function* () {
-                  const storage = yield* ObjectStorage;
-                  yield* storage.copyObject(share.coverFileKey!, destCoverKey);
-                }),
-              );
-              await tx.insert(files).values({
-                userId: user.id,
-                bookHash: share.bookHash,
-                fileKey: destCoverKey,
-                fileSize: 0,
-              });
-            } catch (err) {
+            const coverResult = await runStorageProgram(
+              Effect.gen(function* () {
+                const storage = yield* ObjectStorage;
+                yield* storage.copyObject(share.coverFileKey!, destCoverKey);
+              }),
+            );
+            if (Either.isRight(coverResult)) {
+              try {
+                await tx.insert(files).values({
+                  userId: user.id,
+                  bookHash: share.bookHash,
+                  fileKey: destCoverKey,
+                  fileSize: 0,
+                });
+              } catch (err) {
+                // Cover is best-effort; a DB insert failure is non-fatal.
+                console.error('Share import cover row insert failed (non-fatal):', err);
+              }
+            } else {
               // Cover is best-effort. NotFound or any other error is non-fatal.
-              console.error('Share import cover copy failed (non-fatal):', err);
+              console.error('Share import cover copy failed (non-fatal):', coverResult.left);
             }
           }
         }

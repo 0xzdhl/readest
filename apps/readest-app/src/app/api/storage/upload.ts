@@ -5,7 +5,7 @@ import { env } from '@/env';
 import { getStoragePlanData, STORAGE_QUOTA_GRACE_BYTES } from '@/libs/server/storage-plan';
 import { rlsMiddleware } from '@/middlewares/rls';
 import { READEST_PUBLIC_STORAGE_BASE_URL } from '@/services/constants';
-import { Effect } from 'effect';
+import { Effect, Either } from 'effect';
 import { ObjectStorage, runStorageProgram } from '@/storage';
 
 /**
@@ -39,23 +39,31 @@ export const Route = createFileRoute('/api/storage/upload')({
             const userStr = user.id.slice(0, 8);
             const fileKey = `temp/img/${timeStr}/${userStr}/${fileName}`;
             const bucketName = env.TEMP_STORAGE_PUBLIC_BUCKET_NAME;
-            const uploadUrl = await runStorageProgram(
+            const uploadResult = await runStorageProgram(
               Effect.gen(function* () {
                 const storage = yield* ObjectStorage;
                 return yield* storage.getUploadSignedUrl(fileKey, fileSize ?? 0, 1800, bucketName);
               }),
             );
-            const downloadUrl = await runStorageProgram(
+            if (Either.isLeft(uploadResult)) {
+              console.error('Error creating presigned post for temp file:', uploadResult.left);
+              return Response.json({ error: 'Could not create presigned post' }, { status: 500 });
+            }
+            const downloadResult = await runStorageProgram(
               Effect.gen(function* () {
                 const storage = yield* ObjectStorage;
                 return yield* storage.getDownloadSignedUrl(fileKey, 3 * 86400, bucketName);
               }),
             );
-            const pathname = new URL(downloadUrl).pathname;
+            if (Either.isLeft(downloadResult)) {
+              console.error('Error creating presigned post for temp file:', downloadResult.left);
+              return Response.json({ error: 'Could not create presigned post' }, { status: 500 });
+            }
+            const pathname = new URL(downloadResult.right).pathname;
             const publicBaseUrl = READEST_PUBLIC_STORAGE_BASE_URL;
             const publicDownloadUrl = `${publicBaseUrl}${pathname.replace(`/${bucketName}`, '')}`;
             return Response.json({
-              uploadUrl,
+              uploadUrl: uploadResult.right,
               downloadUrl: publicDownloadUrl,
             });
           } catch (error) {
@@ -101,23 +109,22 @@ export const Route = createFileRoute('/api/storage/upload')({
             });
           }
 
-          try {
-            const uploadUrl = await runStorageProgram(
-              Effect.gen(function* () {
-                const storage = yield* ObjectStorage;
-                return yield* storage.getUploadSignedUrl(fileKey, objSize, 1800);
-              }),
-            );
-            return Response.json({
-              uploadUrl,
-              fileKey,
-              usage: usage + fileSize,
-              quota,
-            });
-          } catch (error) {
-            console.error('Error creating presigned post:', error);
+          const uploadResult = await runStorageProgram(
+            Effect.gen(function* () {
+              const storage = yield* ObjectStorage;
+              return yield* storage.getUploadSignedUrl(fileKey, objSize, 1800);
+            }),
+          );
+          if (Either.isLeft(uploadResult)) {
+            console.error('Error creating presigned post:', uploadResult.left);
             return Response.json({ error: 'Could not create presigned post' }, { status: 500 });
           }
+          return Response.json({
+            uploadUrl: uploadResult.right,
+            fileKey,
+            usage: usage + fileSize,
+            quota,
+          });
         } catch (error) {
           console.error(error);
           return Response.json({ error: 'Something went wrong' }, { status: 500 });
