@@ -8,7 +8,11 @@ const initJieba = async (): Promise<void> => {
   if (!initPromise) {
     initPromise = (async () => {
       try {
-        await init('/vendor/jieba/jieba_rs_wasm_bg.wasm');
+        // No argument: the wasm-bindgen glue resolves the wasm via
+        // `new URL('jieba_rs_wasm_bg.wasm', import.meta.url)`, which Vite
+        // rewrites to the content-hashed asset it already emits. This avoids
+        // shipping a second, un-hashed copy under /vendor/jieba.
+        await init();
         initialized = true;
       } catch (e) {
         initPromise = null;

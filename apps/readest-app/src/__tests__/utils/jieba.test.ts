@@ -5,11 +5,17 @@ import { describe, test, expect, beforeAll } from 'vitest';
 // is selected and matches what `src/utils/jieba.ts` uses.
 import init, { cut, cut_all, cut_for_search, tokenize } from 'jieba-wasm/web';
 import { readFile } from 'fs/promises';
-import { join } from 'path';
+import { createRequire } from 'module';
+import { dirname, join } from 'path';
 
 describe.concurrent('jieba-wasm', () => {
   beforeAll(async () => {
-    const wasmPath = join(process.cwd(), 'public/vendor/jieba/jieba_rs_wasm_bg.wasm');
+    // Load the wasm straight from the package (the same artifact Vite bundles
+    // and hashes for production); src/utils/jieba.ts no longer vendors a copy
+    // under public/vendor/jieba.
+    const require = createRequire(import.meta.url);
+    const gluePath = require.resolve('jieba-wasm/web');
+    const wasmPath = join(dirname(gluePath), 'jieba_rs_wasm_bg.wasm');
     const wasmBuffer = await readFile(wasmPath);
     await init({ module_or_path: wasmBuffer });
   });
