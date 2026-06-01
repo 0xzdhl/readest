@@ -17,7 +17,13 @@ export default defineConfig(({ mode }) => {
     plugins: [
       tanstackStart({
         srcDirectory: './src',
+        prerender: {
+          enabled: true,
+          autoStaticPathsDiscovery: true,
+          crawlLinks: true,
+        },
         router: {
+          autoCodeSplitting: true,
           routesDirectory: 'app',
           routeFileIgnorePattern:
             '(components|utils|hooks|services|context|store|types|helpers|libs)|ShareLanding.tsx|SharePage.tsx|shareRoute.ts|OpenAnnotationPage.tsx|ReaderContent.tsx|ReaderRoutePage.tsx|readerSearch.ts|not-found.tsx|render.tsx',
