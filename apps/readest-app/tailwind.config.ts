@@ -5,18 +5,13 @@ import typography from '@tailwindcss/typography';
 import plugin from 'tailwindcss/plugin';
 
 const config: Config = {
-  content: [
-    './src/pages/**/*.{js,ts,jsx,tsx,mdx}',
-    './src/components/**/*.{js,ts,jsx,tsx,mdx}',
-    './src/app/**/*.{js,ts,jsx,tsx,mdx}',
-  ],
-  safelist: [
-    { pattern: /bg-./ },
-    { pattern: /text-./ },
-    { pattern: /fill-./ },
-    { pattern: /decoration-./ },
-    { pattern: /tooltip-./ },
-  ],
+  // Scan all of src so the JIT engine sees every literally-used class —
+  // including utility classes inside HTML strings injected by non-component
+  // modules (e.g. the dictionary providers in src/services/dictionaries,
+  // which emit `text-lg`, `text-primary`, `text-base-content/60`, ...).
+  // This replaces the previous broad `safelist` wildcards that forced the
+  // entire color × shade × opacity matrix into the bundle.
+  content: ['./src/**/*.{js,ts,jsx,tsx,mdx}'],
   theme: {
     extend: {
       fontFamily: {
