@@ -41,7 +41,9 @@ export const replicas = pgTable(
       .references(() => user.id, { onDelete: 'cascade' }),
     kind: text('kind').notNull(),
     replicaId: text('replica_id').notNull(),
-    fieldsJsonb: jsonb('fields_jsonb').notNull().default(sql`'{}'::jsonb`),
+    fieldsJsonb: jsonb('fields_jsonb')
+      .notNull()
+      .default(sql`'{}'::jsonb`),
     manifestJsonb: jsonb('manifest_jsonb'),
     deletedAtTs: text('deleted_at_ts'),
     reincarnation: text('reincarnation'),
@@ -56,14 +58,8 @@ export const replicas = pgTable(
       'replicas_kind_allowlist',
       sql`${t.kind} IN ('dictionary', 'font', 'texture', 'opds_catalog', 'settings')`,
     ),
-    check(
-      'replicas_fields_size',
-      sql`pg_column_size(${t.fieldsJsonb}) <= 65536`,
-    ),
-    check(
-      'replicas_schema_version',
-      sql`${t.schemaVersion} >= 1 AND ${t.schemaVersion} <= 1000`,
-    ),
+    check('replicas_fields_size', sql`pg_column_size(${t.fieldsJsonb}) <= 65536`),
+    check('replicas_schema_version', sql`${t.schemaVersion} >= 1 AND ${t.schemaVersion} <= 1000`),
     index('idx_replicas_pull_cursor').on(t.userId, t.kind, t.updatedAtTs),
   ],
 );

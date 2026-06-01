@@ -12,7 +12,7 @@ typed error channel Effect provides:
 - `runStorageProgram` calls `Effect.runPromise`, which **rejects** on any typed
   failure. Callers must `try/catch` and lose the static type of the error.
 - `StorageConfigLive` uses `Layer.sync(makeStorageConfig)`, and `makeStorageConfig`
-  *throws* `StorageConfigError`. That makes config failures **defects**, not typed
+  _throws_ `StorageConfigError`. That makes config failures **defects**, not typed
   failures — they are invisible to `Effect.either`. The two public share routes
   (`share/$token/cover`, `share/$token/download`) have no outer `try/catch`, so a
   misconfiguration there is only caught by the storage-specific `try/catch`.

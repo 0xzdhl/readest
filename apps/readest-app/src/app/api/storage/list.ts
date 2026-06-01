@@ -40,10 +40,7 @@ export const Route = createFileRoute('/api/storage/list')({
         try {
           const url = new URL(request.url);
           const page = parseInt(url.searchParams.get('page') || '') || 1;
-          const pageSize = Math.min(
-            parseInt(url.searchParams.get('pageSize') || '') || 50,
-            100,
-          );
+          const pageSize = Math.min(parseInt(url.searchParams.get('pageSize') || '') || 50, 100);
           const sortBy = url.searchParams.get('sortBy') || 'created_at';
           const sortOrder = url.searchParams.get('sortOrder') === 'asc' ? 'asc' : 'desc';
           const bookHash = url.searchParams.get('bookHash') || undefined;
@@ -100,18 +97,10 @@ export const Route = createFileRoute('/api/storage/list')({
           // paginated results so the UI sees complete groups — covers,
           // metadata sidecars, etc. that the search filter wouldn't match.
           const bookHashes = Array.from(
-            new Set(
-              pageRows
-                .map((f) => f.bookHash)
-                .filter((hash): hash is string => !!hash),
-            ),
+            new Set(pageRows.map((f) => f.bookHash).filter((hash): hash is string => !!hash)),
           );
           const replicaIds = Array.from(
-            new Set(
-              pageRows
-                .map((f) => f.replicaId)
-                .filter((id): id is string => !!id),
-            ),
+            new Set(pageRows.map((f) => f.replicaId).filter((id): id is string => !!id)),
           );
 
           const fileMap = new Map<string, (typeof pageRows)[number]>(

@@ -1,9 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 const getSessionMock = vi.hoisted(() => vi.fn());
-const createAuthMock = vi.hoisted(() =>
-  vi.fn(() => ({ api: { getSession: getSessionMock } })),
-);
+const createAuthMock = vi.hoisted(() => vi.fn(() => ({ api: { getSession: getSessionMock } })));
 const setRlsUserIdMock = vi.hoisted(() => vi.fn());
 const setRlsBypassMock = vi.hoisted(() => vi.fn());
 const createDbClientMock = vi.hoisted(() => vi.fn());

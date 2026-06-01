@@ -39,10 +39,9 @@ describe('getAppleIdAuth (better-auth-native bridge)', () => {
 
     const res = await getAppleIdAuth({ scope: ['email', 'fullName'], nonce: 'N1' });
 
-    expect(invokeMock).toHaveBeenCalledWith(
-      'plugin:sign-in-with-apple|get_apple_id_credential',
-      { payload: { scope: ['email', 'fullName'], nonce: 'N1' } },
-    );
+    expect(invokeMock).toHaveBeenCalledWith('plugin:sign-in-with-apple|get_apple_id_credential', {
+      payload: { scope: ['email', 'fullName'], nonce: 'N1' },
+    });
     // Both fields are what the caller forwards into
     // `authClient.signIn.social({ provider: 'apple', idToken: { token, nonce } })`.
     expect(res.identityToken).toBe('ID-TOKEN');

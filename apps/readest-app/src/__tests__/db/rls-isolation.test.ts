@@ -37,9 +37,7 @@ describe.skipIf(!url)('RLS isolation', () => {
     const role = await appClient`SELECT current_user`;
     const currentUser = (role[0] as { current_user?: string } | undefined)?.current_user;
     if (currentUser !== 'readest_app') {
-      throw new Error(
-        `rls-isolation test: connected as ${currentUser}, expected readest_app`,
-      );
+      throw new Error(`rls-isolation test: connected as ${currentUser}, expected readest_app`);
     }
   }, 30_000);
 

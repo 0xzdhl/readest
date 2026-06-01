@@ -107,7 +107,9 @@ describe.skipIf(!url)('/api/storage/* (rlsMiddleware + RLS)', () => {
     runStorageProgramMock.mockReset();
     // Default storage behaviour: presigns succeed with placeholder URL.
     // `runStorageProgram` resolves to an `Either`, never rejects.
-    runStorageProgramMock.mockImplementation(async () => Either.right('https://signed.test/default'));
+    runStorageProgramMock.mockImplementation(async () =>
+      Either.right('https://signed.test/default'),
+    );
     await adminClient`DELETE FROM files WHERE user_id IN (${userA}, ${userB})`;
   });
 

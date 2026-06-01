@@ -26,10 +26,7 @@ export const Route = createFileRoute('/api/apple/iap-verify')({
           validatedInput = iapVerificationSchema.parse(await request.json());
         } catch (error) {
           if (error instanceof z.ZodError) {
-            return Response.json(
-              { error: 'Invalid input data', purchase: null },
-              { status: 400 },
-            );
+            return Response.json({ error: 'Invalid input data', purchase: null }, { status: 400 });
           }
           throw error;
         }

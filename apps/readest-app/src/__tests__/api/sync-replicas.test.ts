@@ -114,7 +114,9 @@ describe.skipIf(!url)('/api/sync/replicas + /api/sync/replica-keys', () => {
     });
     const response = await runRoute(replicasModule.Route as RouteLike, 'GET', { request });
     expect(response.status).toBe(200);
-    const body = (await response.json()) as { rows: Array<{ user_id: string; replica_id: string }> };
+    const body = (await response.json()) as {
+      rows: Array<{ user_id: string; replica_id: string }>;
+    };
     expect(body.rows).toHaveLength(1);
     expect(body.rows[0]?.user_id).toBe(userA);
     expect(body.rows[0]?.replica_id).toBe('r-a');

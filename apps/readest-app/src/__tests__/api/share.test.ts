@@ -125,7 +125,9 @@ describe.skipIf(!url)('/api/share/* (rlsMiddleware + publicMiddleware)', () => {
     getSessionMock.mockReset();
     runStorageProgramMock.mockReset();
     // `runStorageProgram` resolves to an `Either`, never rejects.
-    runStorageProgramMock.mockImplementation(async () => Either.right('https://signed.test/default'));
+    runStorageProgramMock.mockImplementation(async () =>
+      Either.right('https://signed.test/default'),
+    );
     await adminClient`DELETE FROM book_shares WHERE user_id IN (${userA}, ${userB})`;
     await adminClient`DELETE FROM files WHERE user_id IN (${userA}, ${userB})`;
   });

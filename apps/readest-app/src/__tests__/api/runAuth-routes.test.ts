@@ -238,27 +238,31 @@ describe('/api/deepl/translate (protectedMiddleware)', () => {
     expect(body.error).toBe('Not authenticated');
   });
 
-  it('200 with translation when session exists (mocked deepl fetch)', { timeout: 30_000 }, async () => {
-    const fetchSpy = vi.fn().mockResolvedValue({
-      ok: true,
-      json: async () => ({
-        translations: [{ text: 'bonjour', detected_source_language: 'EN' }],
-      }),
-    });
-    vi.stubGlobal('fetch', fetchSpy);
+  it(
+    '200 with translation when session exists (mocked deepl fetch)',
+    { timeout: 30_000 },
+    async () => {
+      const fetchSpy = vi.fn().mockResolvedValue({
+        ok: true,
+        json: async () => ({
+          translations: [{ text: 'bonjour', detected_source_language: 'EN' }],
+        }),
+      });
+      vi.stubGlobal('fetch', fetchSpy);
 
-    getSessionMock.mockResolvedValueOnce(sessionFor());
-    const mod = (await import('@/app/api/deepl/translate')) as RouteModule;
-    const request = new Request('http://localhost/api/deepl/translate', {
-      method: 'POST',
-      body: JSON.stringify({ text: ['hello'], source_lang: 'EN', target_lang: 'FR' }),
-    });
-    const response = await runRoute(mod.Route, 'POST', { request });
-    expect(response.status).toBe(200);
-    const body = (await response.json()) as {
-      translations: Array<{ text: string }>;
-    };
-    expect(body.translations[0]?.text).toBe('bonjour');
-    expect(fetchSpy).toHaveBeenCalled();
-  });
+      getSessionMock.mockResolvedValueOnce(sessionFor());
+      const mod = (await import('@/app/api/deepl/translate')) as RouteModule;
+      const request = new Request('http://localhost/api/deepl/translate', {
+        method: 'POST',
+        body: JSON.stringify({ text: ['hello'], source_lang: 'EN', target_lang: 'FR' }),
+      });
+      const response = await runRoute(mod.Route, 'POST', { request });
+      expect(response.status).toBe(200);
+      const body = (await response.json()) as {
+        translations: Array<{ text: string }>;
+      };
+      expect(body.translations[0]?.text).toBe('bonjour');
+      expect(fetchSpy).toHaveBeenCalled();
+    },
+  );
 });

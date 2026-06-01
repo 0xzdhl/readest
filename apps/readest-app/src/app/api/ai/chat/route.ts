@@ -46,8 +46,7 @@ export const Route = createFileRoute('/api/ai/chat')({
 
           const result = streamText({
             model: languageModel,
-            system:
-              typeof system === 'string' && system ? system : 'You are a helpful assistant.',
+            system: typeof system === 'string' && system ? system : 'You are a helpful assistant.',
             messages,
           });
 

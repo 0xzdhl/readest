@@ -45,10 +45,7 @@ export const Route = createFileRoute('/api/stripe/plans')({
           return Response.json(plans);
         } catch (error) {
           console.error(error);
-          return Response.json(
-            { error: 'Error fetching subscription plans' },
-            { status: 500 },
-          );
+          return Response.json({ error: 'Error fetching subscription plans' }, { status: 500 });
         }
       },
     },

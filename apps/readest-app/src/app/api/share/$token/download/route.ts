@@ -28,7 +28,10 @@ export const Route = createFileRoute('/api/share/$token/download')({
         const signed = await runStorageProgram(
           Effect.gen(function* () {
             const storage = yield* ObjectStorage;
-            return yield* storage.getDownloadSignedUrl(share.bookFileKey, SHARE_PRESIGN_TTL_SECONDS);
+            return yield* storage.getDownloadSignedUrl(
+              share.bookFileKey,
+              SHARE_PRESIGN_TTL_SECONDS,
+            );
           }),
         );
         return Either.match(signed, {

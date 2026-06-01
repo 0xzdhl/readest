@@ -71,11 +71,7 @@ export const Route = createFileRoute('/api/sync/replica-keys')({
             ? (body as { alg: unknown }).alg
             : undefined;
         if (typeof alg !== 'string' || !SUPPORTED_ALGS.has(alg)) {
-          return errorResponse(
-            422,
-            'UNSUPPORTED_ALG',
-            `Unsupported alg: ${String(alg)}`,
-          );
+          return errorResponse(422, 'UNSUPPORTED_ALG', `Unsupported alg: ${String(alg)}`);
         }
         try {
           const saltId = randomUUID();
