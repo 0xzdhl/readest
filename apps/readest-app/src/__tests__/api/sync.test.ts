@@ -28,7 +28,7 @@ let appDb: ReturnType<typeof drizzle<typeof schema>>;
 type SyncRouteModule = typeof import('@/app/api/sync');
 
 let syncModule: SyncRouteModule;
-let setRlsUserId: typeof import('@/db/rls')['setRlsUserId'];
+let setRlsUserId: (typeof import('@/db/rls'))['setRlsUserId'];
 
 const userA = '11111111-1111-1111-1111-111111111111';
 const userB = '22222222-2222-2222-2222-222222222222';
@@ -37,7 +37,10 @@ type RouteLike = Parameters<typeof runRoute>[0];
 
 // Open a tx scoped to `userId` so the route's handler-level reads/writes
 // run against the same RLS context the middleware would set in production.
-const withRlsTx = async <T>(userId: string, fn: (tx: Parameters<Parameters<typeof appDb.transaction>[0]>[0]) => Promise<T>): Promise<T> => {
+const withRlsTx = async <T>(
+  userId: string,
+  fn: (tx: Parameters<Parameters<typeof appDb.transaction>[0]>[0]) => Promise<T>,
+): Promise<T> => {
   return appDb.transaction(async (tx) => {
     await setRlsUserId(tx, userId);
     return fn(tx);
@@ -52,7 +55,9 @@ describe.skipIf(!url)('/api/sync (rlsMiddleware + drizzle)', () => {
 
     const appUrl = url!.replace(/postgres:\/\/[^@]+@/, 'postgres://readest_app:readest_app@');
     if (appUrl === url) {
-      throw new Error('sync.test: failed to substitute readest_app credentials into TEST_DATABASE_URL');
+      throw new Error(
+        'sync.test: failed to substitute readest_app credentials into TEST_DATABASE_URL',
+      );
     }
     appClient = postgres(appUrl, { max: 5, prepare: false });
     appDb = drizzle(appClient, { schema });

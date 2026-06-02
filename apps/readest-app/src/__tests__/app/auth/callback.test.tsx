@@ -17,7 +17,7 @@ vi.mock('@/services/environment', () => ({
   isTauriAppPlatform: () => false,
 }));
 
-import { AuthCallback } from "@/components/AuthCallback";
+import { AuthCallback } from '@/components/AuthCallback';
 
 describe('AuthCallback (better-auth)', () => {
   beforeEach(() => {
@@ -65,9 +65,7 @@ describe('AuthCallback (better-auth)', () => {
     });
     Object.defineProperty(window, 'location', {
       writable: true,
-      value: new URL(
-        'https://app.example.com/auth/callback?next=/reader',
-      ) as unknown as Location,
+      value: new URL('https://app.example.com/auth/callback?next=/reader') as unknown as Location,
     });
     render(<AuthCallback />);
     await waitFor(() => {

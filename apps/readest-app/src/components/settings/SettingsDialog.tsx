@@ -1,6 +1,6 @@
 import clsx from 'clsx';
 import type React from 'react';
-import { useEffect, useRef, useState } from 'react';
+import { lazy, Suspense, useEffect, useRef, useState } from 'react';
 import { FiSearch } from 'react-icons/fi';
 import { IoAccessibilityOutline } from 'react-icons/io5';
 import { LiaHandPointerSolid } from 'react-icons/lia';
@@ -24,16 +24,20 @@ import { useTranslation } from '@/hooks/useTranslation';
 import { getCommandPaletteShortcut } from '@/services/environment';
 import { useSettingsStore } from '@/store/settingsStore';
 import { getDirFromUILanguage } from '@/utils/rtl';
-import AIPanel from './AIPanel';
-import ColorPanel from './ColorPanel';
-import ControlPanel from './ControlPanel';
 import DialogMenu from './DialogMenu';
-import FontPanel from './FontPanel';
-import IntegrationsPanel from './IntegrationsPanel';
-import LangPanel from './LangPanel';
-import LayoutPanel from './LayoutPanel';
-import MiscPanel from './MiscPanel';
-import TTSPanel from './TTSPanel';
+
+// Each settings panel pulls in heavy, panel-specific deps (color pickers, font
+// lists, TTS voices, AI config). Loading them lazily keeps them out of the
+// eager SettingsDialog chunk so only the opened tab's code is fetched.
+const AIPanel = lazy(() => import('./AIPanel'));
+const ColorPanel = lazy(() => import('./ColorPanel'));
+const ControlPanel = lazy(() => import('./ControlPanel'));
+const FontPanel = lazy(() => import('./FontPanel'));
+const IntegrationsPanel = lazy(() => import('./IntegrationsPanel'));
+const LangPanel = lazy(() => import('./LangPanel'));
+const LayoutPanel = lazy(() => import('./LayoutPanel'));
+const MiscPanel = lazy(() => import('./MiscPanel'));
+const TTSPanel = lazy(() => import('./TTSPanel'));
 
 export type SettingsPanelType =
   | 'Font'
@@ -435,47 +439,59 @@ const SettingsDialog: React.FC<{ bookKey: string }> = ({ bookKey }) => {
         role='group'
         aria-label={`${_(currentPanel?.label || '')} - ${_('Settings')}`}
       >
-        {activePanel === 'Font' && (
-          <FontPanel
-            bookKey={bookKey}
-            onRegisterReset={(fn) => registerResetFunction('Font', fn)}
-          />
-        )}
-        {activePanel === 'Layout' && (
-          <LayoutPanel
-            bookKey={bookKey}
-            onRegisterReset={(fn) => registerResetFunction('Layout', fn)}
-          />
-        )}
-        {activePanel === 'Color' && (
-          <ColorPanel
-            bookKey={bookKey}
-            onRegisterReset={(fn) => registerResetFunction('Color', fn)}
-          />
-        )}
-        {activePanel === 'Control' && (
-          <ControlPanel
-            bookKey={bookKey}
-            onRegisterReset={(fn) => registerResetFunction('Control', fn)}
-          />
-        )}
-        {activePanel === 'TTS' && (
-          <TTSPanel bookKey={bookKey} onRegisterReset={(fn) => registerResetFunction('TTS', fn)} />
-        )}
-        {activePanel === 'Language' && (
-          <LangPanel
-            bookKey={bookKey}
-            onRegisterReset={(fn) => registerResetFunction('Language', fn)}
-          />
-        )}
-        {activePanel === 'AI' && <AIPanel />}
-        {activePanel === 'Integrations' && <IntegrationsPanel />}
-        {activePanel === 'Custom' && (
-          <MiscPanel
-            bookKey={bookKey}
-            onRegisterReset={(fn) => registerResetFunction('Custom', fn)}
-          />
-        )}
+        <Suspense
+          fallback={
+            <div className='flex min-h-[40vh] items-center justify-center' role='status'>
+              <span className='loading loading-lg not-eink:loading-dots eink:loading-spinner' />
+              <span className='sr-only'>{_('Loading...')}</span>
+            </div>
+          }
+        >
+          {activePanel === 'Font' && (
+            <FontPanel
+              bookKey={bookKey}
+              onRegisterReset={(fn) => registerResetFunction('Font', fn)}
+            />
+          )}
+          {activePanel === 'Layout' && (
+            <LayoutPanel
+              bookKey={bookKey}
+              onRegisterReset={(fn) => registerResetFunction('Layout', fn)}
+            />
+          )}
+          {activePanel === 'Color' && (
+            <ColorPanel
+              bookKey={bookKey}
+              onRegisterReset={(fn) => registerResetFunction('Color', fn)}
+            />
+          )}
+          {activePanel === 'Control' && (
+            <ControlPanel
+              bookKey={bookKey}
+              onRegisterReset={(fn) => registerResetFunction('Control', fn)}
+            />
+          )}
+          {activePanel === 'TTS' && (
+            <TTSPanel
+              bookKey={bookKey}
+              onRegisterReset={(fn) => registerResetFunction('TTS', fn)}
+            />
+          )}
+          {activePanel === 'Language' && (
+            <LangPanel
+              bookKey={bookKey}
+              onRegisterReset={(fn) => registerResetFunction('Language', fn)}
+            />
+          )}
+          {activePanel === 'AI' && <AIPanel />}
+          {activePanel === 'Integrations' && <IntegrationsPanel />}
+          {activePanel === 'Custom' && (
+            <MiscPanel
+              bookKey={bookKey}
+              onRegisterReset={(fn) => registerResetFunction('Custom', fn)}
+            />
+          )}
+        </Suspense>
       </div>
     </Dialog>
   );

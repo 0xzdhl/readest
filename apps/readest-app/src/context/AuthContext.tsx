@@ -1,8 +1,8 @@
-import posthog from 'posthog-js';
 import type { ReactNode } from 'react';
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef } from 'react';
 import { authClient } from '@/auth';
 import type { Session } from '@/auth/server';
+import { identifyUser, resetUser } from '@/utils/telemetry';
 
 /**
  * better-auth's React client (`authClient.useSession()`) returns:
@@ -41,12 +41,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     const id = data?.user?.id ?? null;
     if (id === lastIdentifiedRef.current) return;
     if (id) {
-      posthog.identify(id);
+      identifyUser(id);
     } else if (lastIdentifiedRef.current) {
       // Transition from signed-in → signed-out. Reset rather than leave
       // the previous user's distinct id associated with subsequent
       // anonymous events.
-      posthog.reset();
+      resetUser();
     }
     lastIdentifiedRef.current = id;
   }, [data?.user?.id]);

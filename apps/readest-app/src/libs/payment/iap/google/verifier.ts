@@ -1,5 +1,7 @@
-import { google } from 'googleapis';
-import type { androidpublisher_v3 } from 'googleapis';
+// Use the scoped @googleapis/androidpublisher package instead of the
+// `googleapis` umbrella: the umbrella bundles every Google API (~24MB) but we
+// only need the Android Publisher API for Google Play purchase verification.
+import { androidpublisher, type androidpublisher_v3 } from '@googleapis/androidpublisher';
 import { GoogleAuth } from 'google-auth-library';
 import type { GoogleAuthOptions } from 'google-auth-library';
 import { env } from '@/env';
@@ -87,7 +89,7 @@ export class GoogleIAPVerifier {
 
     this.auth = new GoogleAuth(authOptions);
 
-    this.androidPublisher = google.androidpublisher({
+    this.androidPublisher = androidpublisher({
       version: 'v3',
       auth: this.auth,
     });

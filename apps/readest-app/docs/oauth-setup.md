@@ -9,11 +9,11 @@ when provisioning a new environment.
 
 For every provider, register **all three** of these redirect URIs:
 
-| Surface     | Redirect URI                                                |
-| ----------- | ----------------------------------------------------------- |
-| Web         | `${BETTER_AUTH_URL}/api/auth/callback/<provider>`           |
-| Tauri (desktop) | `http://localhost:<port>/` (port assigned at runtime by the local listener; see `auth/utils/nativeAuth.ts`) |
-| Mobile (iOS / Android) | `readest://auth-callback`                       |
+| Surface                | Redirect URI                                                                                                |
+| ---------------------- | ----------------------------------------------------------------------------------------------------------- |
+| Web                    | `${BETTER_AUTH_URL}/api/auth/callback/<provider>`                                                           |
+| Tauri (desktop)        | `http://localhost:<port>/` (port assigned at runtime by the local listener; see `auth/utils/nativeAuth.ts`) |
+| Mobile (iOS / Android) | `readest://auth-callback`                                                                                   |
 
 `<provider>` is one of `google`, `github`, `discord`, `apple`.
 

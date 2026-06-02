@@ -26,11 +26,7 @@ type NextFn = (passed?: { context?: Record<string, unknown> }) => Promise<unknow
 
 interface MiddlewareLike {
   options: {
-    server: (args: {
-      request: Request;
-      context: Record<string, unknown>;
-      next: NextFn;
-    }) => unknown;
+    server: (args: { request: Request; context: Record<string, unknown>; next: NextFn }) => unknown;
     middleware?: ReadonlyArray<MiddlewareLike>;
   };
 }

@@ -10,4 +10,3 @@ export const Route = createFileRoute('/auth/update/')({
   validateSearch: authUpdateSearchSchema,
   component: UpdateEmail,
 });
-

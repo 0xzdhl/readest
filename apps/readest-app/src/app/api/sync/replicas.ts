@@ -57,10 +57,7 @@ export const Route = createFileRoute('/api/sync/replicas')({
       GET: async ({ request, context }) => {
         const { tx } = context;
         const { searchParams } = new URL(request.url);
-        const validation = validatePullParams(
-          searchParams.get('kind'),
-          searchParams.get('since'),
-        );
+        const validation = validatePullParams(searchParams.get('kind'), searchParams.get('since'));
         if (!validation.ok) {
           return errorResponse(validation.status, validation.code, validation.message);
         }

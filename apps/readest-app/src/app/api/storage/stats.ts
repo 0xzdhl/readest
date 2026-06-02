@@ -73,10 +73,7 @@ export const Route = createFileRoute('/api/storage/stats')({
           return Response.json(response);
         } catch (error) {
           console.error('Error querying storage stats:', error);
-          return Response.json(
-            { error: 'Failed to retrieve storage statistics' },
-            { status: 500 },
-          );
+          return Response.json({ error: 'Failed to retrieve storage statistics' }, { status: 500 });
         }
       },
     },

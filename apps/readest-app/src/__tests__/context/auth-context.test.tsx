@@ -20,12 +20,8 @@ vi.mock('posthog-js', () => ({
 
 import { AuthProvider, useAuth } from '@/context/AuthContext';
 
-const stableSession = (
-  user: { id: string; email: string } | null,
-) =>
-  user
-    ? { user, session: { id: 'sess-1', token: 'tk', userId: user.id } }
-    : null;
+const stableSession = (user: { id: string; email: string } | null) =>
+  user ? { user, session: { id: 'sess-1', token: 'tk', userId: user.id } } : null;
 
 describe('AuthContext (better-auth)', () => {
   beforeEach(() => {

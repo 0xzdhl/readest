@@ -1,9 +1,9 @@
-import { useRouter } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
-import { authClient } from "@/auth";
-import { useAuth } from "@/context/AuthContext";
-import { useTranslation } from "@/hooks/useTranslation";
-import { useThemeStore } from "@/store/themeStore";
+import { useRouter } from '@tanstack/react-router';
+import { useEffect, useState } from 'react';
+import { authClient } from '@/auth';
+import { useAuth } from '@/context/AuthContext';
+import { useTranslation } from '@/hooks/useTranslation';
+import { useThemeStore } from '@/store/themeStore';
 
 /**
  * Email-change page. Pre-Phase-7 this called `supabase.auth.updateUser({

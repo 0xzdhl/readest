@@ -1,44 +1,25 @@
-import posthog from 'posthog-js';
 import { useEffect } from 'react';
 import type { ReactNode } from 'react';
-import { PostHogProvider } from 'posthog-js/react';
-import { clientEnv } from '@/clientEnv';
-import { TELEMETRY_OPT_OUT_KEY } from '@/utils/telemetry';
-import { getAppVersion } from '@/utils/version';
+import { initTelemetry } from '@/utils/telemetry';
 
-const tryDecodeBase64 = (value: string | undefined) => {
-  if (!value) return undefined;
-  try {
-    return atob(value);
-  } catch {
-    return undefined;
-  }
-};
-
-const shouldDisablePostHog = () => {
-  if (typeof window === 'undefined') return false;
-  return localStorage.getItem(TELEMETRY_OPT_OUT_KEY) === 'true';
-};
-
-const posthogUrl =
-  clientEnv.VITE_POSTHOG_HOST || tryDecodeBase64(clientEnv.VITE_DEFAULT_POSTHOG_URL_BASE64);
-const posthogKey =
-  clientEnv.VITE_POSTHOG_KEY || tryDecodeBase64(clientEnv.VITE_DEFAULT_POSTHOG_KEY_BASE64);
-
-if (typeof window !== 'undefined' && clientEnv.NODE_ENV === 'production' && posthogKey) {
-  if (!shouldDisablePostHog()) {
-    posthog.init(posthogKey, {
-      api_host: posthogUrl,
-      person_profiles: 'always',
-      autocapture: false,
-    });
-  }
-}
+// No components consume the posthog React context (`usePostHog`), so we don't
+// render a PostHogProvider. posthog-js is loaded + initialized lazily inside
+// `@/utils/telemetry`; here we just warm it after first paint, off the
+// critical path, so background session/event capture still starts promptly.
 export const CSPostHogProvider = ({ children }: { children: ReactNode }) => {
   useEffect(() => {
-    posthog.register_for_session({
-      $app_version: getAppVersion(),
-    });
+    const ric =
+      typeof window !== 'undefined' && 'requestIdleCallback' in window
+        ? window.requestIdleCallback
+        : (cb: () => void) => setTimeout(cb, 1000);
+    const handle = ric(() => initTelemetry());
+    return () => {
+      if (typeof window !== 'undefined' && 'cancelIdleCallback' in window) {
+        window.cancelIdleCallback(handle as number);
+      } else {
+        clearTimeout(handle as ReturnType<typeof setTimeout>);
+      }
+    };
   }, []);
-  return <PostHogProvider client={posthog}>{children}</PostHogProvider>;
+  return <>{children}</>;
 };

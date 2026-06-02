@@ -41,10 +41,7 @@ export const Route = createFileRoute('/api/share/list')({
           // Strict less-than on (created_at, id) lexicographic — same
           // semantics as the legacy supabase filter:
           //   created_at < c OR (created_at = c AND id < cId)
-          const tieBreak = and(
-            eq(bookShares.createdAt, cursorDate),
-            lt(bookShares.id, cursorId),
-          );
+          const tieBreak = and(eq(bookShares.createdAt, cursorDate), lt(bookShares.id, cursorId));
           const condition = or(lt(bookShares.createdAt, cursorDate), tieBreak);
           if (condition) where.push(condition);
         }
@@ -65,8 +62,7 @@ export const Route = createFileRoute('/api/share/list')({
         const hasMore = rows.length > PAGE_SIZE;
         const page = hasMore ? rows.slice(0, PAGE_SIZE) : rows;
         const last = page.length > 0 ? page[page.length - 1] : null;
-        const nextCursor =
-          hasMore && last ? `${toIso(last.createdAt)}|${last.id}` : null;
+        const nextCursor = hasMore && last ? `${toIso(last.createdAt)}|${last.id}` : null;
 
         return Response.json({
           shares: page.map((row) => ({
