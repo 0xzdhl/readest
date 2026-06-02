@@ -10,6 +10,14 @@ const stubMinimumEnv = () => {
   vi.stubEnv('VITE_APP_PLATFORM', 'web');
 };
 
+// `.env.test.local` leaks the required server vars into process.env, so clear
+// them explicitly to simulate a CI build/prerender that has no secrets.
+const clearRequiredServerEnv = () => {
+  vi.stubEnv('DATABASE_URL', undefined as unknown as string);
+  vi.stubEnv('BETTER_AUTH_SECRET', undefined as unknown as string);
+  vi.stubEnv('BETTER_AUTH_URL', undefined as unknown as string);
+};
+
 describe('env', () => {
   beforeEach(() => {
     vi.resetModules();
@@ -31,5 +39,24 @@ describe('env', () => {
     expect(env.AI_GATEWAY_EMBEDDING_MODEL).toBe('openai/text-embedding-3-small');
     expect(env.DEEPL_FREE_API).toBe('https://api-free.deepl.com/v2/translate');
     expect(env.DEEPL_PRO_API).toBe('https://api.deepl.com/v2/translate');
+  });
+
+  it('throws when required server env vars are missing', async () => {
+    clearRequiredServerEnv();
+    vi.stubEnv('VITE_APP_PLATFORM', 'web');
+
+    await expect(import('@/env')).rejects.toThrow();
+  });
+
+  it('skips validation when SKIP_ENV_VALIDATION is set (build/prerender)', async () => {
+    // No DATABASE_URL / BETTER_AUTH_SECRET / BETTER_AUTH_URL — as in CI prerender.
+    clearRequiredServerEnv();
+    vi.stubEnv('SKIP_ENV_VALIDATION', 'true');
+    vi.stubEnv('VITE_APP_PLATFORM', 'web');
+
+    const { env } = await import('@/env');
+
+    // Importing must not throw; missing required vars surface as undefined.
+    expect(env.DATABASE_URL).toBeUndefined();
   });
 });
