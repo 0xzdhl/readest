@@ -88,4 +88,10 @@ export const env = createEnv({
     runtimeEnv['VITEST'] === 'true',
   runtimeEnv,
   emptyStringAsUndefined: true,
+  // The web/tauri build prerenders routes, which evaluates the SSR module graph
+  // (and therefore this file) at build time, where server secrets are absent.
+  // Skip validation for that pass; the deployed runtime re-evaluates without the
+  // flag and still validates. See the `build*` scripts and scripts/test-tauri.sh.
+  skipValidation:
+    runtimeEnv['SKIP_ENV_VALIDATION'] === 'true' || runtimeEnv['SKIP_ENV_VALIDATION'] === true,
 });

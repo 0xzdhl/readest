@@ -29,7 +29,7 @@ cleanup() {
 trap cleanup EXIT INT TERM
 
 echo "Starting Vite dev server..."
-dotenv -e .env -v VITE_APP_PLATFORM=tauri -- vite dev &
+dotenv -e .env -v VITE_APP_PLATFORM=tauri -v SKIP_ENV_VALIDATION=true -- vite dev &
 DEV_PID=$!
 
 echo "Waiting for dev server on port $DEV_PORT..."
