@@ -56,7 +56,10 @@ describe('sendEmail', () => {
     sendMailMock.mockClear();
     createTransportMock.mockClear();
     delete process.env['RESEND_API_KEY'];
-    delete process.env['RESEND_FROM_EMAIL'];
+    // RESEND_FROM_EMAIL is now a required env var (no schema default), so a
+    // valid baseline must be present for `@/env` to validate on import. Tests
+    // that assert the `from` address override it explicitly.
+    process.env['RESEND_FROM_EMAIL'] = 'noreply@example.com';
     delete process.env['SMTP_HOST'];
     delete process.env['SMTP_PORT'];
     process.env['DATABASE_URL'] = 'postgres://postgres:postgres@localhost:5432/postgres';
