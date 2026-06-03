@@ -1,6 +1,5 @@
 import { clientEnv } from '@/clientEnv';
 import type { AppService } from '@/types/system';
-import { READEST_NODE_BASE_URL, READEST_WEB_BASE_URL } from './constants';
 
 declare global {
   interface Window {
@@ -12,8 +11,15 @@ export const isTauriAppPlatform = () => clientEnv.VITE_APP_PLATFORM === 'tauri';
 export const isWebAppPlatform = () => clientEnv.VITE_APP_PLATFORM === 'web';
 export const hasCli = () => window.__READEST_CLI_ACCESS === true;
 export const isPWA = () => window.matchMedia('(display-mode: standalone)').matches;
-export const getBaseUrl = () => clientEnv.VITE_API_BASE_URL ?? READEST_WEB_BASE_URL;
-export const getNodeBaseUrl = () => clientEnv.VITE_NODE_BASE_URL ?? READEST_NODE_BASE_URL;
+export const getBaseUrl = () => clientEnv.VITE_API_BASE_URL;
+export const getNodeBaseUrl = () => clientEnv.VITE_NODE_BASE_URL;
+export const getWebsiteUrl = () => clientEnv.VITE_WEBSITE_URL;
+export const getDownloadBaseUrl = () => clientEnv.VITE_DOWNLOAD_BASE_URL;
+export const getSupportEmail = () => clientEnv.VITE_SUPPORT_EMAIL;
+export const getBrandName = () => clientEnv.VITE_BRAND_NAME;
+export const getShareBaseUrl = () => `${getBaseUrl()}/s`;
+export const getUpdaterFileUrl = () => `${getDownloadBaseUrl()}/latest.json`;
+export const getChangelogFileUrl = () => `${getDownloadBaseUrl()}/release-notes.json`;
 
 export const isMacPlatform = () =>
   typeof window !== 'undefined' && /Mac|iPod|iPhone|iPad/.test(navigator.platform);

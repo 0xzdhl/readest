@@ -1,15 +1,17 @@
 import { describe, test, expect, beforeEach, afterEach, vi } from 'vitest';
 
-// ── Mocks for constants ──────────────────────────────────────────
-vi.mock('@/services/constants', () => ({
-  READEST_WEB_BASE_URL: 'https://web.readest.com',
-  READEST_NODE_BASE_URL: 'https://node.readest.com',
-}));
-
 // We need to reset modules between tests to pick up env var changes,
 // so we import dynamically in each test or test group.
 
-const PUBLIC_ENV_KEYS = ['VITE_APP_PLATFORM', 'VITE_API_BASE_URL', 'VITE_NODE_BASE_URL'] as const;
+const PUBLIC_ENV_KEYS = [
+  'VITE_APP_PLATFORM',
+  'VITE_API_BASE_URL',
+  'VITE_NODE_BASE_URL',
+  'VITE_WEBSITE_URL',
+  'VITE_DOWNLOAD_BASE_URL',
+  'VITE_SUPPORT_EMAIL',
+  'VITE_BRAND_NAME',
+] as const;
 
 const setPublicEnv = (key: (typeof PUBLIC_ENV_KEYS)[number], value: string) => {
   vi.stubEnv(key, value);
@@ -21,13 +23,16 @@ beforeEach(() => {
   vi.stubEnv('DATABASE_URL', 'postgres://postgres:postgres@localhost:5432/postgres');
   vi.stubEnv('BETTER_AUTH_SECRET', 'test-secret');
   vi.stubEnv('BETTER_AUTH_URL', 'http://localhost:5173');
-  // Clean baseline for the base-URL vars: a local `.env` sets these to
-  // http://localhost:5173, which would otherwise mask the "env var not set"
-  // fallback tests below. Empty → undefined (emptyStringAsUndefined), so
-  // getBaseUrl/getNodeBaseUrl hit their READEST_*_BASE_URL fallback. Tests that
-  // need a value re-stub it explicitly via setPublicEnv().
-  vi.stubEnv('VITE_API_BASE_URL', '');
-  vi.stubEnv('VITE_NODE_BASE_URL', '');
+  // Provide valid baseline URLs so clientEnv validation passes on re-import.
+  // These are required vars (no fallback); tests that need a specific value
+  // re-stub via setPublicEnv(). Tests that need the var absent stub it to ''
+  // after this baseline and rely on clientEnv throwing at import time.
+  vi.stubEnv('VITE_API_BASE_URL', 'https://web.example.com');
+  vi.stubEnv('VITE_NODE_BASE_URL', 'https://node.example.com');
+  vi.stubEnv('VITE_WEBSITE_URL', 'https://www.example.com');
+  vi.stubEnv('VITE_DOWNLOAD_BASE_URL', 'https://dl.example.com/releases');
+  vi.stubEnv('VITE_SUPPORT_EMAIL', 'support@example.com');
+  vi.stubEnv('VITE_BRAND_NAME', 'ExampleBrand');
   // Clean up any window globals we set
   delete (window as unknown as Record<string, unknown>)['__READEST_CLI_ACCESS'];
 });
@@ -125,9 +130,9 @@ describe('environment', () => {
       expect(getBaseUrl()).toBe('https://custom-api.example.com');
     });
 
-    test('falls back to READEST_WEB_BASE_URL when env var not set', async () => {
-      const { getBaseUrl } = await import('@/services/environment');
-      expect(getBaseUrl()).toBe('https://web.readest.com');
+    test('throws when VITE_API_BASE_URL is unset', async () => {
+      vi.stubEnv('VITE_API_BASE_URL', '');
+      await expect(import('@/services/environment')).rejects.toThrow();
     });
   });
 
@@ -139,9 +144,39 @@ describe('environment', () => {
       expect(getNodeBaseUrl()).toBe('https://custom-node.example.com');
     });
 
-    test('falls back to READEST_NODE_BASE_URL when env var not set', async () => {
-      const { getNodeBaseUrl } = await import('@/services/environment');
-      expect(getNodeBaseUrl()).toBe('https://node.readest.com');
+    test('throws when VITE_NODE_BASE_URL is unset', async () => {
+      vi.stubEnv('VITE_NODE_BASE_URL', '');
+      await expect(import('@/services/environment')).rejects.toThrow();
+    });
+  });
+
+  // ── derived url + brand getters ───────────────────────────────
+  describe('derived url + brand getters', () => {
+    test('getShareBaseUrl appends /s to the api base', async () => {
+      vi.stubEnv('VITE_API_BASE_URL', 'https://web.example.com');
+      const { getShareBaseUrl } = await import('@/services/environment');
+      expect(getShareBaseUrl()).toBe('https://web.example.com/s');
+    });
+
+    test('getWebsiteUrl returns VITE_WEBSITE_URL', async () => {
+      vi.stubEnv('VITE_WEBSITE_URL', 'https://www.example.com');
+      const { getWebsiteUrl } = await import('@/services/environment');
+      expect(getWebsiteUrl()).toBe('https://www.example.com');
+    });
+
+    test('getUpdaterFileUrl and getChangelogFileUrl derive from download base', async () => {
+      vi.stubEnv('VITE_DOWNLOAD_BASE_URL', 'https://dl.example.com/releases');
+      const mod = await import('@/services/environment');
+      expect(mod.getUpdaterFileUrl()).toBe('https://dl.example.com/releases/latest.json');
+      expect(mod.getChangelogFileUrl()).toBe('https://dl.example.com/releases/release-notes.json');
+    });
+
+    test('getSupportEmail and getBrandName return their vars', async () => {
+      vi.stubEnv('VITE_SUPPORT_EMAIL', 'help@example.com');
+      vi.stubEnv('VITE_BRAND_NAME', 'Example Reader');
+      const mod = await import('@/services/environment');
+      expect(mod.getSupportEmail()).toBe('help@example.com');
+      expect(mod.getBrandName()).toBe('Example Reader');
     });
   });
 
@@ -212,14 +247,14 @@ describe('environment', () => {
       vi.stubEnv('NODE_ENV', 'production');
       setPublicEnv('VITE_APP_PLATFORM', 'web');
       const { getAPIBaseUrl } = await import('@/services/environment');
-      expect(getAPIBaseUrl()).toBe('https://web.readest.com/api');
+      expect(getAPIBaseUrl()).toBe('https://web.example.com/api');
     });
 
     test('returns full URL for tauri platform even in development', async () => {
       vi.stubEnv('NODE_ENV', 'development');
       setPublicEnv('VITE_APP_PLATFORM', 'tauri');
       const { getAPIBaseUrl } = await import('@/services/environment');
-      expect(getAPIBaseUrl()).toBe('https://web.readest.com/api');
+      expect(getAPIBaseUrl()).toBe('https://web.example.com/api');
     });
   });
 
@@ -236,14 +271,14 @@ describe('environment', () => {
       vi.stubEnv('NODE_ENV', 'production');
       setPublicEnv('VITE_APP_PLATFORM', 'web');
       const { getNodeAPIBaseUrl } = await import('@/services/environment');
-      expect(getNodeAPIBaseUrl()).toBe('https://node.readest.com/api');
+      expect(getNodeAPIBaseUrl()).toBe('https://node.example.com/api');
     });
 
     test('returns full node URL for tauri platform even in development', async () => {
       vi.stubEnv('NODE_ENV', 'development');
       setPublicEnv('VITE_APP_PLATFORM', 'tauri');
       const { getNodeAPIBaseUrl } = await import('@/services/environment');
-      expect(getNodeAPIBaseUrl()).toBe('https://node.readest.com/api');
+      expect(getNodeAPIBaseUrl()).toBe('https://node.example.com/api');
     });
   });
 
