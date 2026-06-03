@@ -1,7 +1,8 @@
 import { createMiddleware } from '@tanstack/react-start';
+import { getBaseUrl } from '@/services/environment';
 
 const allowedOrigins = [
-  'https://web.readest.com',
+  getBaseUrl(),
   'https://tauri.localhost',
   'http://tauri.localhost',
   'http://localhost:3000',
