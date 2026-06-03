@@ -2,7 +2,7 @@ import { createServerFn } from '@tanstack/react-start';
 import { createDbClient } from '@/db/client';
 import { setRlsBypass } from '@/db/rls';
 import { resolveActiveShare } from '@/libs/shareServer';
-import { READEST_WEB_BASE_URL, SHARE_BASE_URL } from '@/services/constants';
+import { getBaseUrl, getShareBaseUrl } from '@/services/environment';
 
 export interface SharePageData {
   title: string;
@@ -37,8 +37,8 @@ export const loadSharePage = async (token: string): Promise<SharePageData | null
     return null;
   }
   const { share } = result;
-  const shareUrl = `${SHARE_BASE_URL}/${token}`;
-  const ogImage = `${READEST_WEB_BASE_URL}/api/share/${token}/og.png`;
+  const shareUrl = `${getShareBaseUrl()}/${token}`;
+  const ogImage = `${getBaseUrl()}/api/share/${token}/og.png`;
 
   return {
     title: `${share.bookTitle} · Shared via Readest`,

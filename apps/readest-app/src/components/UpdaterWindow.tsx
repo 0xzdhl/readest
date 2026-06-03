@@ -19,7 +19,7 @@ import { join } from '@tauri-apps/api/path';
 import { getLocale } from '@/utils/misc';
 import { setLastShownReleaseNotesVersion } from '@/helpers/updater';
 import { clientEnv } from '@/clientEnv';
-import { READEST_UPDATER_FILE, READEST_CHANGELOG_FILE } from '@/services/constants';
+import { getUpdaterFileUrl, getChangelogFileUrl } from '@/services/environment';
 import { getUpdaterManifest } from '@/types/updater';
 import Dialog from '@/components/Dialog';
 import Link from './Link';
@@ -115,7 +115,7 @@ export const UpdaterContent = ({
     const checkAndroidUpdate = async () => {
       if (!appService) return;
       const fetch = isTauriAppPlatform() ? tauriFetch : window.fetch;
-      const response = await fetch(READEST_UPDATER_FILE);
+      const response = await fetch(getUpdaterFileUrl());
       const data = await getUpdaterManifest(response);
       if (semver.gt(data.version, currentVersion)) {
         const OS_ARCH = osArch();
@@ -213,7 +213,7 @@ export const UpdaterContent = ({
     const checkWindowsPortableUpdate = async () => {
       if (!appService) return;
       const fetch = isTauriAppPlatform() ? tauriFetch : window.fetch;
-      const response = await fetch(READEST_UPDATER_FILE);
+      const response = await fetch(getUpdaterFileUrl());
       const data = await getUpdaterManifest(response);
       if (semver.gt(data.version, currentVersion)) {
         const OS_ARCH = osArch();
@@ -250,7 +250,7 @@ export const UpdaterContent = ({
     const checkAppImageUpdate = async () => {
       if (!appService) return;
       const fetch = isTauriAppPlatform() ? tauriFetch : window.fetch;
-      const response = await fetch(READEST_UPDATER_FILE);
+      const response = await fetch(getUpdaterFileUrl());
       const data = await getUpdaterManifest(response);
       if (semver.gt(data.version, currentVersion)) {
         const OS_ARCH = osArch();
@@ -329,7 +329,7 @@ export const UpdaterContent = ({
     const fetchChangelogs = async (fromVersion: string): Promise<Changelog[]> => {
       try {
         const fetch = isTauriAppPlatform() ? tauriFetch : window.fetch;
-        const res = await fetch(READEST_CHANGELOG_FILE);
+        const res = await fetch(getChangelogFileUrl());
         const data: ReleaseNotes = await res.json();
         const releases = data.releases;
 

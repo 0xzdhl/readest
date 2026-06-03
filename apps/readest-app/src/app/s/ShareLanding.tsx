@@ -6,7 +6,7 @@ import {
   IoLibraryOutline,
   IoOpenOutline,
 } from 'react-icons/io5';
-import { DOWNLOAD_READEST_URL } from '@/services/constants';
+import { getWebsiteUrl } from '@/services/environment';
 import { useTranslation, type TranslationFunc } from '@/hooks/useTranslation';
 import { useAuth } from '@/context/AuthContext';
 import { useEnv } from '@/context/EnvContext';
@@ -138,7 +138,7 @@ const ShareLanding = () => {
             <h1 className='text-base-content text-2xl font-semibold'>{heading}</h1>
             <p className='text-base-content/70 mt-2 text-sm'>{body}</p>
             <a
-              href={DOWNLOAD_READEST_URL}
+              href={getWebsiteUrl()}
               target='_blank'
               rel='noopener'
               className='btn btn-ghost btn-block mt-6'
@@ -296,7 +296,7 @@ const ShareLanding = () => {
                   <p className='text-base-content/60 mt-1 text-center text-xs sm:text-left'>
                     {_("Don't have Readest?")}{' '}
                     <a
-                      href={DOWNLOAD_READEST_URL}
+                      href={getWebsiteUrl()}
                       target='_blank'
                       rel='noopener'
                       className='text-primary font-medium hover:underline'

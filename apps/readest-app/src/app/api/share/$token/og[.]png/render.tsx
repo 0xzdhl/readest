@@ -1,6 +1,7 @@
 import type { DbTx } from '@/db/rls';
 import { rejectionToHttp, resolveActiveShare } from '@/libs/shareServer';
 import { SHARE_PRESIGN_TTL_SECONDS } from '@/services/constants';
+import { getBrandName, getWebsiteUrl } from '@/services/environment';
 import { Effect, Either } from 'effect';
 import { ObjectStorage, runStorageProgram } from '@/storage';
 
@@ -213,8 +214,10 @@ const withCoverCard = (cover: string, title: string, author: string | null) => (
       )}
       <div style={{ flex: 1 }} />
       <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-        <div style={{ fontSize: 22, color: '#0066cc', fontWeight: 500 }}>Shared via Readest</div>
-        <div style={{ fontSize: 18, color: '#a3a3a3' }}>readest.com</div>
+        <div
+          style={{ fontSize: 22, color: '#0066cc', fontWeight: 500 }}
+        >{`Shared via ${getBrandName()}`}</div>
+        <div style={{ fontSize: 18, color: '#a3a3a3' }}>{new URL(getWebsiteUrl()).host}</div>
       </div>
     </div>
   </div>
@@ -252,8 +255,10 @@ const textOnlyCard = (title: string, author: string | null) => (
       )}
     </div>
     <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-      <div style={{ fontSize: 26, color: '#0066cc', fontWeight: 500 }}>Shared via Readest</div>
-      <div style={{ fontSize: 20, color: '#a3a3a3' }}>readest.com</div>
+      <div
+        style={{ fontSize: 26, color: '#0066cc', fontWeight: 500 }}
+      >{`Shared via ${getBrandName()}`}</div>
+      <div style={{ fontSize: 20, color: '#a3a3a3' }}>{new URL(getWebsiteUrl()).host}</div>
     </div>
   </div>
 );
