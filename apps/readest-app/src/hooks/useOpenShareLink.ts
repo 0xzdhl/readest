@@ -30,7 +30,7 @@ let coldStartConsumed = false;
  *
  * Supported URL shapes (see src/utils/share.ts):
  *   readest://share/{token}
- *   https://web.readest.com/s/{token}
+ *   https://<web-host>/s/{token}
  *
  * Auth-gated paths:
  *   - Logged-in: POST /api/share/$token/import (server-side R2 byte-copy),
