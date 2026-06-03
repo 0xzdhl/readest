@@ -171,6 +171,14 @@ describe('environment', () => {
       expect(mod.getChangelogFileUrl()).toBe('https://dl.example.com/releases/release-notes.json');
     });
 
+    test('derived getters strip a trailing slash to avoid double slashes', async () => {
+      vi.stubEnv('VITE_API_BASE_URL', 'https://web.example.com/');
+      vi.stubEnv('VITE_DOWNLOAD_BASE_URL', 'https://dl.example.com/releases/');
+      const mod = await import('@/services/environment');
+      expect(mod.getShareBaseUrl()).toBe('https://web.example.com/s');
+      expect(mod.getUpdaterFileUrl()).toBe('https://dl.example.com/releases/latest.json');
+    });
+
     test('getSupportEmail and getBrandName return their vars', async () => {
       vi.stubEnv('VITE_SUPPORT_EMAIL', 'help@example.com');
       vi.stubEnv('VITE_BRAND_NAME', 'Example Reader');

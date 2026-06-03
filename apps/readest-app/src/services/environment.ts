@@ -17,9 +17,13 @@ export const getWebsiteUrl = () => clientEnv.VITE_WEBSITE_URL;
 export const getDownloadBaseUrl = () => clientEnv.VITE_DOWNLOAD_BASE_URL;
 export const getSupportEmail = () => clientEnv.VITE_SUPPORT_EMAIL;
 export const getBrandName = () => clientEnv.VITE_BRAND_NAME;
-export const getShareBaseUrl = () => `${getBaseUrl()}/s`;
-export const getUpdaterFileUrl = () => `${getDownloadBaseUrl()}/latest.json`;
-export const getChangelogFileUrl = () => `${getDownloadBaseUrl()}/release-notes.json`;
+// Strip a trailing slash so derived paths don't double up (e.g. an operator
+// setting VITE_DOWNLOAD_BASE_URL with a trailing "/").
+const noTrailingSlash = (url: string) => url.replace(/\/+$/, '');
+export const getShareBaseUrl = () => `${noTrailingSlash(getBaseUrl())}/s`;
+export const getUpdaterFileUrl = () => `${noTrailingSlash(getDownloadBaseUrl())}/latest.json`;
+export const getChangelogFileUrl = () =>
+  `${noTrailingSlash(getDownloadBaseUrl())}/release-notes.json`;
 
 export const isMacPlatform = () =>
   typeof window !== 'undefined' && /Mac|iPod|iPhone|iPad/.test(navigator.platform);
