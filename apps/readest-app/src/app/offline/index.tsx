@@ -1,4 +1,5 @@
 ﻿import { createFileRoute } from '@tanstack/react-router';
+import { getBrandName } from '@/services/environment';
 
 export const Route = createFileRoute('/offline/')({
   component: Offline,
@@ -11,7 +12,7 @@ function Offline() {
         <img src='/icon.png' alt='App Icon' width={100} height={100} className='rounded-lg' />
       </div>
 
-      <h1 className='text-2xl font-bold text-gray-800'>Readest</h1>
+      <h1 className='text-2xl font-bold text-gray-800'>{getBrandName()}</h1>
 
       <p className='mt-2 text-gray-600'>
         It seems you&apos;re offline. Please check your internet connection and try again.

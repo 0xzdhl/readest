@@ -1,5 +1,5 @@
 import type React from 'react';
-import { getWebsiteUrl } from '@/services/environment';
+import { getBrandName, getWebsiteUrl } from '@/services/environment';
 
 interface PageFooterProps {
   tagline: string;
@@ -13,7 +13,7 @@ export const PageFooter: React.FC<PageFooterProps> = ({ tagline }) => (
       target='_blank'
       rel='noopener'
     >
-      Readest
+      {getBrandName()}
     </a>
     <span className='mx-1.5'>·</span>
     <span>{tagline}</span>
