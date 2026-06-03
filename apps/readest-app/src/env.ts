@@ -27,7 +27,7 @@ export const env = createEnv({
     BETTER_AUTH_URL: z.url(),
 
     RESEND_API_KEY: optionalString,
-    RESEND_FROM_EMAIL: z.email().default('noreply@readest.app'),
+    RESEND_FROM_EMAIL: z.email(),
     SMTP_HOST: z.string().default('localhost'),
     SMTP_PORT: z.coerce.number().int().positive().default(1025),
 
@@ -50,6 +50,7 @@ export const env = createEnv({
     DEEPL_X_FINGERPRINT: z.string().default(''),
 
     OBJECT_STORAGE_TYPE: z.enum(['r2', 's3']).default('s3'),
+    STORAGE_PUBLIC_BASE_URL: z.url(),
 
     R2_TOKEN_VALUE: optionalString,
     R2_ACCESS_KEY_ID: z.string().default(''),
