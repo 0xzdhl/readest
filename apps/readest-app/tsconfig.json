@@ -32,6 +32,6 @@
       "tauri-plugin-turso": ["./src-tauri/plugins/tauri-plugin-turso/guest-js"]
     }
   },
-  "include": ["src/**/*.ts", "src/**/*.tsx", "raw-loader.d.ts", "scripts/**/*.ts"],
+  "include": ["src/**/*.ts", "src/**/*.tsx", "scripts/**/*.ts"],
   "exclude": ["node_modules", "out"]
 }
