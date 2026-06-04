@@ -1,11 +1,14 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 /**
- * `fetchEnabledOAuthProviders` asks the server which OAuth providers are
- * configured so the login UI can render only those buttons. It is
- * deliberately fail-closed: any network/parse error yields an empty list,
- * so a misconfigured or unreachable server falls back to email-only sign-in
- * rather than showing dead OAuth buttons.
+ * `fetchAuthConfig` asks the server which OAuth providers are configured and
+ * whether registration is open, so the login UI can render only usable OAuth
+ * buttons and hide the sign-up affordance when registration is off.
+ *
+ * It is deliberately fail-closed: any network/parse error yields no providers
+ * (so a misconfigured/unreachable server falls back to email-only sign-in)
+ * and leaves `signupEnabled` at its documented default of `true` (the server
+ * still enforces the real rule, so the UI flag is cosmetic).
  */
 
 const baselineEnv = () => {
@@ -29,18 +32,23 @@ afterEach(() => {
   vi.unstubAllGlobals();
 });
 
-describe('fetchEnabledOAuthProviders', () => {
-  it('returns the providers reported by the server', async () => {
+describe('fetchAuthConfig', () => {
+  it('returns the providers and signup flag reported by the server', async () => {
     vi.stubGlobal(
       'fetch',
-      vi.fn(async () => new Response(JSON.stringify({ providers: ['google', 'apple'] }))),
+      vi.fn(
+        async () => new Response(JSON.stringify({ providers: ['google', 'apple'], signupEnabled: false })),
+      ),
     );
 
-    const { fetchEnabledOAuthProviders } = await import('@/services/authConfig');
-    await expect(fetchEnabledOAuthProviders()).resolves.toEqual(['google', 'apple']);
+    const { fetchAuthConfig } = await import('@/services/authConfig');
+    await expect(fetchAuthConfig()).resolves.toEqual({
+      providers: ['google', 'apple'],
+      signupEnabled: false,
+    });
   });
 
-  it('returns an empty list when the request fails', async () => {
+  it('fails closed on a network error (no providers, signup defaults on)', async () => {
     vi.stubGlobal(
       'fetch',
       vi.fn(async () => {
@@ -48,27 +56,38 @@ describe('fetchEnabledOAuthProviders', () => {
       }),
     );
 
-    const { fetchEnabledOAuthProviders } = await import('@/services/authConfig');
-    await expect(fetchEnabledOAuthProviders()).resolves.toEqual([]);
+    const { fetchAuthConfig } = await import('@/services/authConfig');
+    await expect(fetchAuthConfig()).resolves.toEqual({ providers: [], signupEnabled: true });
   });
 
-  it('returns an empty list on a non-ok response', async () => {
+  it('fails closed on a non-ok response', async () => {
     vi.stubGlobal(
       'fetch',
       vi.fn(async () => new Response('nope', { status: 500 })),
     );
 
-    const { fetchEnabledOAuthProviders } = await import('@/services/authConfig');
-    await expect(fetchEnabledOAuthProviders()).resolves.toEqual([]);
+    const { fetchAuthConfig } = await import('@/services/authConfig');
+    await expect(fetchAuthConfig()).resolves.toEqual({ providers: [], signupEnabled: true });
   });
 
-  it('ignores a malformed providers payload', async () => {
+  it('ignores a malformed providers payload and defaults signup on when absent', async () => {
     vi.stubGlobal(
       'fetch',
       vi.fn(async () => new Response(JSON.stringify({ providers: 'google' }))),
     );
 
-    const { fetchEnabledOAuthProviders } = await import('@/services/authConfig');
-    await expect(fetchEnabledOAuthProviders()).resolves.toEqual([]);
+    const { fetchAuthConfig } = await import('@/services/authConfig');
+    await expect(fetchAuthConfig()).resolves.toEqual({ providers: [], signupEnabled: true });
+  });
+
+  it('treats signupEnabled as disabled only when explicitly false', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => new Response(JSON.stringify({ providers: [], signupEnabled: 'nope' }))),
+    );
+
+    const { fetchAuthConfig } = await import('@/services/authConfig');
+    // Non-boolean → keep the safe default (enabled).
+    await expect(fetchAuthConfig()).resolves.toEqual({ providers: [], signupEnabled: true });
   });
 });

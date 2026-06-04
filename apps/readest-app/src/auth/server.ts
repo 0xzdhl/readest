@@ -13,14 +13,31 @@ import { sendEmail } from './email';
  * entirely makes the route 404 instead, which is the desired fail-closed
  * behavior.
  */
-function socialConfig(clientId: string | undefined, clientSecret: string | undefined) {
+/**
+ * Registration toggle. Sign-up is enabled by default and only disabled when
+ * `DISABLE_SIGNUP=true`. When disabled we set better-auth's `disableSignUp`
+ * on every account-creation vector (email/password, social callback,
+ * magic-link) so no new accounts can be created — existing users still sign
+ * in normally. The login UI reads `signupEnabled` (via /api/auth-config) to
+ * hide the sign-up affordance.
+ */
+export const signupEnabled = env.DISABLE_SIGNUP !== 'true';
+
+type SocialProviderConfig = { clientId: string; clientSecret: string; disableSignUp: boolean };
+
+function socialConfig(
+  clientId: string | undefined,
+  clientSecret: string | undefined,
+): SocialProviderConfig | null {
   if (!clientId || !clientSecret) return null;
-  return { clientId, clientSecret };
+  // `disableSignUp` rejects first-time OAuth users at the callback when
+  // registration is off; existing linked accounts still sign in.
+  return { clientId, clientSecret, disableSignUp: !signupEnabled };
 }
 
 export type SocialProvider = 'google' | 'github' | 'discord' | 'apple';
 
-type SocialEntry = [SocialProvider, { clientId: string; clientSecret: string }];
+type SocialEntry = [SocialProvider, SocialProviderConfig];
 
 const socialProviders: NonNullable<BetterAuthOptions['socialProviders']> = Object.fromEntries(
   (
@@ -29,7 +46,7 @@ const socialProviders: NonNullable<BetterAuthOptions['socialProviders']> = Objec
       ['github', socialConfig(env.GITHUB_CLIENT_ID, env.GITHUB_CLIENT_SECRET)],
       ['discord', socialConfig(env.DISCORD_CLIENT_ID, env.DISCORD_CLIENT_SECRET)],
       ['apple', socialConfig(env.APPLE_CLIENT_ID, env.APPLE_CLIENT_SECRET)],
-    ] satisfies [SocialProvider, { clientId: string; clientSecret: string } | null][]
+    ] satisfies [SocialProvider, SocialProviderConfig | null][]
   ).filter((entry): entry is SocialEntry => entry[1] !== null),
 );
 
@@ -50,6 +67,7 @@ export const createAuth = (db: DbClient) => {
 
     emailAndPassword: {
       enabled: true,
+      disableSignUp: !signupEnabled,
       requireEmailVerification: true,
       sendResetPassword: async ({ user, url }) => {
         await sendEmail({
@@ -74,6 +92,7 @@ export const createAuth = (db: DbClient) => {
 
     plugins: [
       magicLink({
+        disableSignUp: !signupEnabled,
         sendMagicLink: async ({ email, url }) => {
           await sendEmail({
             to: email,

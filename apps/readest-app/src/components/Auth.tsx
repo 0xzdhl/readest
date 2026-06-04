@@ -16,7 +16,7 @@ import {
 } from '@/app/auth/utils/nativeAuth';
 import { authClient } from '@/auth';
 import { clientEnv } from '@/clientEnv';
-import { fetchEnabledOAuthProviders } from '@/services/authConfig';
+import { fetchAuthConfig } from '@/services/authConfig';
 import { useEnv } from '@/context/EnvContext';
 import { useTheme } from '@/hooks/useTheme';
 import { useTranslation } from '@/hooks/useTranslation';
@@ -70,11 +70,20 @@ export function AuthComponent() {
   const { settings, setSettings, saveSettings } = useSettingsStore();
   const [port, setPort] = useState<number | null>(null);
   const [isMounted, setIsMounted] = useState(false);
-  const [mode, setMode] = useState<Mode>('signin');
+  const [modeState, setMode] = useState<Mode>('signin');
   // OAuth providers the server has actually configured. Defaults to none so
   // an unconfigured deployment shows email-only sign-in; populated once the
   // /api/auth-config probe resolves.
   const [enabledProviders, setEnabledProviders] = useState<OAuthProvider[]>([]);
+  // Whether new-account creation is allowed. Defaults to enabled (the
+  // documented default); the /api/auth-config probe may turn it off, which
+  // hides the sign-up affordance. The server still enforces the real rule.
+  const [signupEnabled, setSignupEnabled] = useState(true);
+
+  // When registration is off, collapse the sign-up view back to sign-in so no
+  // registration wording can render — including the brief window where the
+  // config probe is still pending and a user could click into sign-up.
+  const mode: Mode = !signupEnabled && modeState === 'signup' ? 'signin' : modeState;
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -366,8 +375,10 @@ export function AuthComponent() {
 
   useEffect(() => {
     let cancelled = false;
-    fetchEnabledOAuthProviders().then((providers) => {
-      if (!cancelled) setEnabledProviders(providers);
+    fetchAuthConfig().then(({ providers, signupEnabled: allowSignup }) => {
+      if (cancelled) return;
+      setEnabledProviders(providers);
+      setSignupEnabled(allowSignup);
     });
     return () => {
       cancelled = true;
@@ -502,17 +513,19 @@ export function AuthComponent() {
             >
               {_('Forgot your password?')}
             </button>
-            <button
-              type='button'
-              onClick={() => {
-                setMode('signup');
-                setErrorMsg('');
-                setStatusMsg('');
-              }}
-              className='text-base-content/75 hover:underline'
-            >
-              {_("Don't have an account? Sign up")}
-            </button>
+            {signupEnabled && (
+              <button
+                type='button'
+                onClick={() => {
+                  setMode('signup');
+                  setErrorMsg('');
+                  setStatusMsg('');
+                }}
+                className='text-base-content/75 hover:underline'
+              >
+                {_("Don't have an account? Sign up")}
+              </button>
+            )}
           </>
         )}
         {mode === 'signup' && (

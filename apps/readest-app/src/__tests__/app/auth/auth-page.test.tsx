@@ -32,12 +32,15 @@ vi.mock('@/services/environment', () => ({
   getBaseUrl: () => 'https://example.com',
 }));
 
-// The login UI asks the server which OAuth providers are configured and only
-// renders those buttons. Default the mock to "all configured" so the social
-// sign-in paths are exercisable; individual tests override it.
-const fetchProvidersMock = vi.fn(async () => ['google', 'apple', 'github', 'discord']);
+// The login UI asks the server which OAuth providers are configured and
+// whether registration is open. Default the mock to "all configured, signup
+// enabled" so every path is exercisable; individual tests override it.
+const fetchAuthConfigMock = vi.fn(async () => ({
+  providers: ['google', 'apple', 'github', 'discord'],
+  signupEnabled: true,
+}));
 vi.mock('@/services/authConfig', () => ({
-  fetchEnabledOAuthProviders: () => fetchProvidersMock(),
+  fetchAuthConfig: () => fetchAuthConfigMock(),
 }));
 
 vi.mock('@/utils/publicEnv', () => ({
@@ -124,8 +127,11 @@ describe('AuthComponent (better-auth)', () => {
     routerStub.navigate.mockReset();
     routerStub.history.back.mockReset();
     isTauriMock.mockReturnValue(false);
-    fetchProvidersMock.mockReset();
-    fetchProvidersMock.mockResolvedValue(['google', 'apple', 'github', 'discord']);
+    fetchAuthConfigMock.mockReset();
+    fetchAuthConfigMock.mockResolvedValue({
+      providers: ['google', 'apple', 'github', 'discord'],
+      signupEnabled: true,
+    });
   });
   afterEach(() => {
     cleanup();
@@ -180,12 +186,12 @@ describe('AuthComponent (better-auth)', () => {
 
   it('shows only email sign-in (no OAuth buttons) when the server reports no configured providers', async () => {
     isTauriMock.mockReturnValue(false);
-    fetchProvidersMock.mockResolvedValue([]);
+    fetchAuthConfigMock.mockResolvedValue({ providers: [], signupEnabled: true });
     render(<AuthComponent />);
     // Email form is always available.
     expect(screen.getByLabelText(/Email address/i)).not.toBeNull();
     // Wait for the provider probe to resolve, then confirm no OAuth buttons.
-    await waitFor(() => expect(fetchProvidersMock).toHaveBeenCalled());
+    await waitFor(() => expect(fetchAuthConfigMock).toHaveBeenCalled());
     expect(screen.queryByRole('button', { name: /Sign in with Google/i })).toBeNull();
     expect(screen.queryByRole('button', { name: /Sign in with Apple/i })).toBeNull();
     expect(screen.queryByRole('button', { name: /Sign in with GitHub/i })).toBeNull();
@@ -194,10 +200,55 @@ describe('AuthComponent (better-auth)', () => {
 
   it('renders only the OAuth buttons the server reports as configured', async () => {
     isTauriMock.mockReturnValue(false);
-    fetchProvidersMock.mockResolvedValue(['github']);
+    fetchAuthConfigMock.mockResolvedValue({ providers: ['github'], signupEnabled: true });
     render(<AuthComponent />);
     expect(await screen.findByRole('button', { name: /Sign in with GitHub/i })).not.toBeNull();
     expect(screen.queryByRole('button', { name: /Sign in with Google/i })).toBeNull();
     expect(screen.queryByRole('button', { name: /Sign in with Discord/i })).toBeNull();
+  });
+
+  it('shows the sign-up link when registration is enabled', async () => {
+    isTauriMock.mockReturnValue(false);
+    fetchAuthConfigMock.mockResolvedValue({ providers: [], signupEnabled: true });
+    render(<AuthComponent />);
+    expect(await screen.findByRole('button', { name: /Don't have an account\? Sign up/i })).not.toBeNull();
+  });
+
+  it('hides the sign-up link when registration is disabled', async () => {
+    isTauriMock.mockReturnValue(false);
+    fetchAuthConfigMock.mockResolvedValue({ providers: [], signupEnabled: false });
+    render(<AuthComponent />);
+    // Sign-in remains available...
+    expect(screen.getByRole('button', { name: /Sign in$/i })).not.toBeNull();
+    // ...but every registration affordance is gone once the probe resolves.
+    await waitFor(() => expect(fetchAuthConfigMock).toHaveBeenCalled());
+    expect(screen.queryByRole('button', { name: /Sign up/i })).toBeNull();
+    expect(screen.queryByText(/Don't have an account/i)).toBeNull();
+    expect(screen.queryByLabelText(/Create a Password/i)).toBeNull();
+  });
+
+  it('collapses an in-progress sign-up view back to sign-in when registration turns out disabled', async () => {
+    isTauriMock.mockReturnValue(false);
+    // Hold the probe pending so the default (enabled) renders first and we can
+    // enter sign-up mode — the brief window before the server answers.
+    let resolveConfig: (v: { providers: string[]; signupEnabled: boolean }) => void = () => {};
+    fetchAuthConfigMock.mockReturnValue(
+      new Promise((resolve) => {
+        resolveConfig = resolve;
+      }),
+    );
+    render(<AuthComponent />);
+
+    // Enter sign-up mode while the probe is still pending.
+    fireEvent.click(screen.getByRole('button', { name: /Don't have an account\? Sign up/i }));
+    expect(screen.getByLabelText(/Create a Password/i)).not.toBeNull();
+
+    // Server reports registration is off → the view must reset to sign-in and
+    // all sign-up wording must disappear.
+    resolveConfig({ providers: [], signupEnabled: false });
+    await waitFor(() => expect(screen.queryByLabelText(/Create a Password/i)).toBeNull());
+    expect(screen.queryByRole('button', { name: /Sign up/i })).toBeNull();
+    expect(screen.queryByText(/Already have an account/i)).toBeNull();
+    expect(screen.getByRole('button', { name: /Sign in$/i })).not.toBeNull();
   });
 });
