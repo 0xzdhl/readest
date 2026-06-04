@@ -32,6 +32,14 @@ vi.mock('@/services/environment', () => ({
   getBaseUrl: () => 'https://example.com',
 }));
 
+// The login UI asks the server which OAuth providers are configured and only
+// renders those buttons. Default the mock to "all configured" so the social
+// sign-in paths are exercisable; individual tests override it.
+const fetchProvidersMock = vi.fn(async () => ['google', 'apple', 'github', 'discord']);
+vi.mock('@/services/authConfig', () => ({
+  fetchEnabledOAuthProviders: () => fetchProvidersMock(),
+}));
+
 vi.mock('@/utils/publicEnv', () => ({
   readPublicEnv: () => '',
   readPublicFlag: () => false,
@@ -116,6 +124,8 @@ describe('AuthComponent (better-auth)', () => {
     routerStub.navigate.mockReset();
     routerStub.history.back.mockReset();
     isTauriMock.mockReturnValue(false);
+    fetchProvidersMock.mockReset();
+    fetchProvidersMock.mockResolvedValue(['google', 'apple', 'github', 'discord']);
   });
   afterEach(() => {
     cleanup();
@@ -158,11 +168,36 @@ describe('AuthComponent (better-auth)', () => {
     isTauriMock.mockReturnValue(false);
     signInSocialMock.mockResolvedValue({ data: {}, error: null });
     render(<AuthComponent />);
-    fireEvent.click(screen.getByRole('button', { name: /Sign in with Google/i }));
+    // The button only appears once the /api/auth-config probe resolves.
+    const googleButton = await screen.findByRole('button', { name: /Sign in with Google/i });
+    fireEvent.click(googleButton);
     await waitFor(() => {
       expect(signInSocialMock).toHaveBeenCalled();
     });
     const args = signInSocialMock.mock.calls[0]![0] as Record<string, unknown>;
     expect(args['provider']).toBe('google');
+  });
+
+  it('shows only email sign-in (no OAuth buttons) when the server reports no configured providers', async () => {
+    isTauriMock.mockReturnValue(false);
+    fetchProvidersMock.mockResolvedValue([]);
+    render(<AuthComponent />);
+    // Email form is always available.
+    expect(screen.getByLabelText(/Email address/i)).not.toBeNull();
+    // Wait for the provider probe to resolve, then confirm no OAuth buttons.
+    await waitFor(() => expect(fetchProvidersMock).toHaveBeenCalled());
+    expect(screen.queryByRole('button', { name: /Sign in with Google/i })).toBeNull();
+    expect(screen.queryByRole('button', { name: /Sign in with Apple/i })).toBeNull();
+    expect(screen.queryByRole('button', { name: /Sign in with GitHub/i })).toBeNull();
+    expect(screen.queryByRole('button', { name: /Sign in with Discord/i })).toBeNull();
+  });
+
+  it('renders only the OAuth buttons the server reports as configured', async () => {
+    isTauriMock.mockReturnValue(false);
+    fetchProvidersMock.mockResolvedValue(['github']);
+    render(<AuthComponent />);
+    expect(await screen.findByRole('button', { name: /Sign in with GitHub/i })).not.toBeNull();
+    expect(screen.queryByRole('button', { name: /Sign in with Google/i })).toBeNull();
+    expect(screen.queryByRole('button', { name: /Sign in with Discord/i })).toBeNull();
   });
 });

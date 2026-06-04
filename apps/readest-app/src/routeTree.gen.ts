@@ -24,6 +24,7 @@ import { Route as AuthIndexRouteImport } from './app/auth/index'
 import { Route as ReaderIdsRouteImport } from './app/reader/$ids'
 import { Route as ApiSyncRouteImport } from './app/api/sync'
 import { Route as ApiKosyncRouteImport } from './app/api/kosync'
+import { Route as ApiAuthConfigRouteImport } from './app/api/auth-config'
 import { Route as AuthUpdateIndexRouteImport } from './app/auth/update/index'
 import { Route as AuthRecoveryIndexRouteImport } from './app/auth/recovery/index'
 import { Route as AuthErrorIndexRouteImport } from './app/auth/error/index'
@@ -136,6 +137,11 @@ const ApiSyncRoute = ApiSyncRouteImport.update({
 const ApiKosyncRoute = ApiKosyncRouteImport.update({
   id: '/api/kosync',
   path: '/api/kosync',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiAuthConfigRoute = ApiAuthConfigRouteImport.update({
+  id: '/api/auth-config',
+  path: '/api/auth-config',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuthUpdateIndexRoute = AuthUpdateIndexRouteImport.update({
@@ -340,6 +346,7 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/error': typeof ErrorRoute
   '/user': typeof UserRouteWithChildren
+  '/api/auth-config': typeof ApiAuthConfigRoute
   '/api/kosync': typeof ApiKosyncRoute
   '/api/sync': typeof ApiSyncRouteWithChildren
   '/reader/$ids': typeof ReaderIdsRoute
@@ -394,6 +401,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/error': typeof ErrorRoute
+  '/api/auth-config': typeof ApiAuthConfigRoute
   '/api/kosync': typeof ApiKosyncRoute
   '/api/sync': typeof ApiSyncRouteWithChildren
   '/reader/$ids': typeof ReaderIdsRoute
@@ -450,6 +458,7 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/error': typeof ErrorRoute
   '/user': typeof UserRouteWithChildren
+  '/api/auth-config': typeof ApiAuthConfigRoute
   '/api/kosync': typeof ApiKosyncRoute
   '/api/sync': typeof ApiSyncRouteWithChildren
   '/reader/$ids': typeof ReaderIdsRoute
@@ -507,6 +516,7 @@ export interface FileRouteTypes {
     | '/'
     | '/error'
     | '/user'
+    | '/api/auth-config'
     | '/api/kosync'
     | '/api/sync'
     | '/reader/$ids'
@@ -561,6 +571,7 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/error'
+    | '/api/auth-config'
     | '/api/kosync'
     | '/api/sync'
     | '/reader/$ids'
@@ -616,6 +627,7 @@ export interface FileRouteTypes {
     | '/'
     | '/error'
     | '/user'
+    | '/api/auth-config'
     | '/api/kosync'
     | '/api/sync'
     | '/reader/$ids'
@@ -672,6 +684,7 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   ErrorRoute: typeof ErrorRoute
   UserRoute: typeof UserRouteWithChildren
+  ApiAuthConfigRoute: typeof ApiAuthConfigRoute
   ApiKosyncRoute: typeof ApiKosyncRoute
   ApiSyncRoute: typeof ApiSyncRouteWithChildren
   ReaderIdsRoute: typeof ReaderIdsRoute
@@ -819,6 +832,13 @@ declare module '@tanstack/react-router' {
       path: '/api/kosync'
       fullPath: '/api/kosync'
       preLoaderRoute: typeof ApiKosyncRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/auth-config': {
+      id: '/api/auth-config'
+      path: '/api/auth-config'
+      fullPath: '/api/auth-config'
+      preLoaderRoute: typeof ApiAuthConfigRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/auth/update/': {
@@ -1153,6 +1173,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   ErrorRoute: ErrorRoute,
   UserRoute: UserRouteWithChildren,
+  ApiAuthConfigRoute: ApiAuthConfigRoute,
   ApiKosyncRoute: ApiKosyncRoute,
   ApiSyncRoute: ApiSyncRouteWithChildren,
   ReaderIdsRoute: ReaderIdsRoute,
