@@ -16,6 +16,7 @@ import {
 } from '@/app/auth/utils/nativeAuth';
 import { authClient } from '@/auth';
 import { clientEnv } from '@/clientEnv';
+import { fetchAuthConfig } from '@/services/authConfig';
 import { useEnv } from '@/context/EnvContext';
 import { useTheme } from '@/hooks/useTheme';
 import { useTranslation } from '@/hooks/useTranslation';
@@ -69,7 +70,20 @@ export function AuthComponent() {
   const { settings, setSettings, saveSettings } = useSettingsStore();
   const [port, setPort] = useState<number | null>(null);
   const [isMounted, setIsMounted] = useState(false);
-  const [mode, setMode] = useState<Mode>('signin');
+  const [modeState, setMode] = useState<Mode>('signin');
+  // OAuth providers the server has actually configured. Defaults to none so
+  // an unconfigured deployment shows email-only sign-in; populated once the
+  // /api/auth-config probe resolves.
+  const [enabledProviders, setEnabledProviders] = useState<OAuthProvider[]>([]);
+  // Whether new-account creation is allowed. Defaults to enabled (the
+  // documented default); the /api/auth-config probe may turn it off, which
+  // hides the sign-up affordance. The server still enforces the real rule.
+  const [signupEnabled, setSignupEnabled] = useState(true);
+
+  // When registration is off, collapse the sign-up view back to sign-in so no
+  // registration wording can render — including the brief window where the
+  // config probe is still pending and a user could click into sign-up.
+  const mode: Mode = !signupEnabled && modeState === 'signup' ? 'signin' : modeState;
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -359,42 +373,67 @@ export function AuthComponent() {
     setIsMounted(true);
   }, []);
 
+  useEffect(() => {
+    let cancelled = false;
+    fetchAuthConfig().then(({ providers, signupEnabled: allowSignup }) => {
+      if (cancelled) return;
+      setEnabledProviders(providers);
+      setSignupEnabled(allowSignup);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
   if (!isMounted) {
     return null;
   }
 
+  // Only render OAuth buttons for providers the server has configured.
+  // Unconfigured providers 404 server-side (fail-closed), so showing their
+  // buttons would just dead-end the user.
   const renderProviderButtons = (signInWith: (p: OAuthProvider) => void) => (
     <>
-      <ProviderLogin
-        provider='google'
-        handleSignIn={signInWith}
-        Icon={FcGoogle}
-        label={_('Sign in with {{provider}}', { provider: 'Google' })}
-      />
-      <ProviderLogin
-        provider='apple'
-        handleSignIn={
-          isTauriAppPlatform() && (appService?.isIOSApp || USE_APPLE_SIGN_IN)
-            ? tauriSignInApple
-            : signInWith
-        }
-        Icon={FaApple}
-        label={_('Sign in with {{provider}}', { provider: 'Apple' })}
-      />
-      <ProviderLogin
-        provider='github'
-        handleSignIn={signInWith}
-        Icon={FaGithub}
-        label={_('Sign in with {{provider}}', { provider: 'GitHub' })}
-      />
-      <ProviderLogin
-        provider='discord'
-        handleSignIn={signInWith}
-        Icon={FaDiscord}
-        label={_('Sign in with {{provider}}', { provider: 'Discord' })}
-      />
+      {enabledProviders.includes('google') && (
+        <ProviderLogin
+          provider='google'
+          handleSignIn={signInWith}
+          Icon={FcGoogle}
+          label={_('Sign in with {{provider}}', { provider: 'Google' })}
+        />
+      )}
+      {enabledProviders.includes('apple') && (
+        <ProviderLogin
+          provider='apple'
+          handleSignIn={
+            isTauriAppPlatform() && (appService?.isIOSApp || USE_APPLE_SIGN_IN)
+              ? tauriSignInApple
+              : signInWith
+          }
+          Icon={FaApple}
+          label={_('Sign in with {{provider}}', { provider: 'Apple' })}
+        />
+      )}
+      {enabledProviders.includes('github') && (
+        <ProviderLogin
+          provider='github'
+          handleSignIn={signInWith}
+          Icon={FaGithub}
+          label={_('Sign in with {{provider}}', { provider: 'GitHub' })}
+        />
+      )}
+      {enabledProviders.includes('discord') && (
+        <ProviderLogin
+          provider='discord'
+          handleSignIn={signInWith}
+          Icon={FaDiscord}
+          label={_('Sign in with {{provider}}', { provider: 'Discord' })}
+        />
+      )}
     </>
   );
+
+  const hasProviders = enabledProviders.length > 0;
 
   const renderEmailForm = () => (
     <form onSubmit={handleEmailSubmit} className='flex w-64 flex-col gap-2'>
@@ -474,17 +513,19 @@ export function AuthComponent() {
             >
               {_('Forgot your password?')}
             </button>
-            <button
-              type='button'
-              onClick={() => {
-                setMode('signup');
-                setErrorMsg('');
-                setStatusMsg('');
-              }}
-              className='text-base-content/75 hover:underline'
-            >
-              {_("Don't have an account? Sign up")}
-            </button>
+            {signupEnabled && (
+              <button
+                type='button'
+                onClick={() => {
+                  setMode('signup');
+                  setErrorMsg('');
+                  setStatusMsg('');
+                }}
+                className='text-base-content/75 hover:underline'
+              >
+                {_("Don't have an account? Sign up")}
+              </button>
+            )}
           </>
         )}
         {mode === 'signup' && (
@@ -584,7 +625,9 @@ export function AuthComponent() {
           style={{ maxWidth: '420px' }}
         >
           {renderProviderButtons(tauriSignIn)}
-          <hr aria-hidden='true' className='border-base-300 my-3 mt-6 w-64 border-t' />
+          {hasProviders && (
+            <hr aria-hidden='true' className='border-base-300 my-3 mt-6 w-64 border-t' />
+          )}
           {renderEmailForm()}
         </div>
       </div>
@@ -606,7 +649,9 @@ export function AuthComponent() {
       </button>
       <div className='flex flex-col items-center'>
         {renderProviderButtons(webSignInSocial)}
-        <hr aria-hidden='true' className='border-base-300 my-3 mt-6 w-64 border-t' />
+        {hasProviders && (
+          <hr aria-hidden='true' className='border-base-300 my-3 mt-6 w-64 border-t' />
+        )}
         {renderEmailForm()}
       </div>
     </div>

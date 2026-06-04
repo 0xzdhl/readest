@@ -25,19 +25,16 @@ import { getCommandPaletteShortcut } from '@/services/environment';
 import { useSettingsStore } from '@/store/settingsStore';
 import { getDirFromUILanguage } from '@/utils/rtl';
 import DialogMenu from './DialogMenu';
+import AIPanel from './AIPanel';
+import ColorPanel from './ColorPanel';
+import ControlPanel from './ControlPanel';
+import FontPanel from './FontPanel';
+import IntegrationsPanel from './IntegrationsPanel';
+import LangPanel from './LangPanel';
+import LayoutPanel from './LayoutPanel';
+import MiscPanel from './MiscPanel';
+import TTSPanel from './TTSPanel';
 
-// Each settings panel pulls in heavy, panel-specific deps (color pickers, font
-// lists, TTS voices, AI config). Loading them lazily keeps them out of the
-// eager SettingsDialog chunk so only the opened tab's code is fetched.
-const AIPanel = lazy(() => import('./AIPanel'));
-const ColorPanel = lazy(() => import('./ColorPanel'));
-const ControlPanel = lazy(() => import('./ControlPanel'));
-const FontPanel = lazy(() => import('./FontPanel'));
-const IntegrationsPanel = lazy(() => import('./IntegrationsPanel'));
-const LangPanel = lazy(() => import('./LangPanel'));
-const LayoutPanel = lazy(() => import('./LayoutPanel'));
-const MiscPanel = lazy(() => import('./MiscPanel'));
-const TTSPanel = lazy(() => import('./TTSPanel'));
 
 export type SettingsPanelType =
   | 'Font'

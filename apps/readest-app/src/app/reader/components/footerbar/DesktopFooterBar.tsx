@@ -11,6 +11,7 @@ import { formatProgress } from '@/utils/progress';
 import type { FooterBarChildProps } from './types';
 import { getNavigationIcon } from './utils';
 import Button from '@/components/Button';
+import Slider from '@/components/Slider';
 
 const DesktopFooterBar: React.FC<FooterBarChildProps> = ({
   bookKey,
@@ -40,12 +41,13 @@ const DesktopFooterBar: React.FC<FooterBarChildProps> = ({
   const pageInfo = bookData?.isFixedLayout ? section : pageinfo;
   const progressInfo = formatProgress(pageInfo?.current, pageInfo?.total, template, false, 'en', 0);
 
-  const rangeInputRef = useRef<HTMLInputElement>(null);
+  const sliderWrapperRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (hoveredBookKey !== bookKey) {
-      if (rangeInputRef.current && document.activeElement === rangeInputRef.current) {
-        rangeInputRef.current.blur();
+      const activeInput = sliderWrapperRef.current?.querySelector('input');
+      if (activeInput && document.activeElement === activeInput) {
+        activeInput.blur();
       }
     }
   }, [hoveredBookKey, bookKey]);
@@ -118,16 +120,16 @@ const DesktopFooterBar: React.FC<FooterBarChildProps> = ({
           <span aria-hidden='true'>{progressInfo}</span>
         </span>
       )}
-      <input
-        ref={rangeInputRef}
-        type='range'
-        className='text-base-content mx-2 min-w-0 flex-1'
-        min={0}
-        max={100}
-        aria-label={_('Jump to Location')}
-        value={progressValue}
-        onChange={(e) => handleProgressChange(parseInt(e.target.value, 10))}
-      />
+      <div ref={sliderWrapperRef} className='mx-2 flex min-w-0 flex-1 items-center'>
+        <Slider
+          label={_('Jump to Location')}
+          heightPx={24}
+          className='!mx-0'
+          bubbleLabel={`${Math.round(progressValue)}%`}
+          initialValue={progressValue}
+          onChange={handleProgressChange}
+        />
+      </div>
       <Button
         icon={<FaHeadphones className={viewState?.ttsEnabled ? 'text-blue-500' : ''} />}
         onClick={onSpeakText!}

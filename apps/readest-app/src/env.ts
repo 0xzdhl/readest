@@ -26,6 +26,11 @@ export const env = createEnv({
     BETTER_AUTH_SECRET: z.string().min(1),
     BETTER_AUTH_URL: z.url(),
 
+    // Registration toggle. Sign-up is enabled by default; set to 'true' to
+    // block all new-account creation (email/password, social, magic-link).
+    // Existing users can still sign in.
+    DISABLE_SIGNUP: z.enum(['true', 'false']).default('false'),
+
     RESEND_API_KEY: optionalString,
     RESEND_FROM_EMAIL: z.email(),
     SMTP_HOST: z.string().default('localhost'),
