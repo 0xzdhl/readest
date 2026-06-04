@@ -1,5 +1,25 @@
 import React, { useEffect, useRef, useState } from 'react';
 
+/**
+ * The thumb bubble is a fixed `heightPx`-wide circle drawn over a responsive
+ * track of width `W`. To stay flush with the track edges (and aligned with the
+ * pointer) at any width, its centre must travel from `heightPx/2` to
+ * `W - heightPx/2`. Expressed width-relative so it holds for every track size,
+ * unlike a hardcoded percentage scale which only works when `W = 10 * heightPx`.
+ */
+export const getSliderThumbOffset = (fraction: number, heightPx: number): string =>
+  `calc(${heightPx / 2}px + (100% - ${heightPx}px) * ${fraction})`;
+
+// Fill ends at the bubble's right edge: heightPx + fraction * (W - heightPx).
+export const getSliderFillWidth = (fraction: number, heightPx: number): string =>
+  `calc(${heightPx}px + (100% - ${heightPx}px) * ${fraction})`;
+
+// Bubble text scales with the thumb diameter so a 4-char label (e.g. "100%")
+// fits inside the circle with margin at any size, instead of a fixed text-xs
+// that overflowed the compact desktop thumb.
+export const getSliderBubbleFontSize = (heightPx: number): number =>
+  Math.round(heightPx * 0.36 * 10) / 10;
+
 interface SliderProps {
   label: string;
   min?: number;
@@ -84,7 +104,7 @@ const Slider: React.FC<SliderProps> = ({
   }, [initialValue]);
 
   const percentage = valueToPos(value, min, max);
-  const visualPercentage = (percentage / 100) * 95;
+  const fraction = Math.min(Math.max(percentage / 100, 0), 1);
 
   return (
     <div
@@ -100,10 +120,7 @@ const Slider: React.FC<SliderProps> = ({
         <div
           className='bg-base-300 absolute h-full rounded-full'
           style={{
-            width:
-              visualPercentage > 0
-                ? `max(calc(${visualPercentage}% + ${heightPx / 2}px), ${heightPx}px)`
-                : '0px',
+            width: getSliderFillWidth(fraction, heightPx),
             [isRtl ? 'right' : 'left']: 0,
           }}
         ></div>
@@ -116,14 +133,14 @@ const Slider: React.FC<SliderProps> = ({
         <div
           className='pointer-events-none absolute top-0 z-10'
           style={{
-            [isRtl ? 'right' : 'left']: `max(${heightPx / 2}px, calc(${visualPercentage}%))`,
+            [isRtl ? 'right' : 'left']: getSliderThumbOffset(fraction, heightPx),
             transform: isRtl ? 'translateX(calc(50%))' : 'translateX(calc(-50%))',
             height: '100%',
           }}
         >
           <div
-            className={`bg-base-200 flex h-full items-center justify-center rounded-full text-xs shadow-md ${bubbleClassName}`}
-            style={{ width: `${heightPx}px` }}
+            className={`bg-base-200 flex h-full items-center justify-center rounded-full shadow-md ${bubbleClassName}`}
+            style={{ width: `${heightPx}px`, fontSize: `${getSliderBubbleFontSize(heightPx)}px` }}
           >
             {bubbleElement || bubbleLabel}
           </div>
