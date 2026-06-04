@@ -6,13 +6,9 @@ import { WebviewWindow } from '@tauri-apps/api/webviewWindow';
 import type { ScrollBarStyle } from '@tauri-apps/api/window';
 import type { TranslationFunc } from '@/hooks/useTranslation';
 import { setUpdaterWindowVisible } from '@/components/UpdaterWindow';
-import { isTauriAppPlatform } from '@/services/environment';
+import { isTauriAppPlatform, getUpdaterFileUrl, getChangelogFileUrl } from '@/services/environment';
 import { getAppVersion } from '@/utils/version';
-import {
-  CHECK_UPDATE_INTERVAL_SEC,
-  READEST_CHANGELOG_FILE,
-  READEST_UPDATER_FILE,
-} from '@/services/constants';
+import { CHECK_UPDATE_INTERVAL_SEC } from '@/services/constants';
 import { getUpdaterManifest } from '@/types/updater';
 
 const LAST_CHECK_KEY = 'lastAppUpdateCheck';
@@ -59,7 +55,7 @@ export const checkForAppUpdates = async (
     return !!update;
   } else if (OS_TYPE === 'android') {
     try {
-      const response = await fetch(READEST_UPDATER_FILE, { connectTimeout: 5000 });
+      const response = await fetch(getUpdaterFileUrl(), { connectTimeout: 5000 });
       const data = await getUpdaterManifest(response);
       const isNewer = semver.gt(data.version, getAppVersion());
       if (isNewer && ('android-arm64' in data.platforms || 'android-universal' in data.platforms)) {
@@ -91,7 +87,7 @@ export const checkAppReleaseNotes = async (isAutoCheck = true) => {
   if ((lastShownVersion && semver.gt(currentVersion, lastShownVersion)) || !isAutoCheck) {
     try {
       const fetchFunc = isTauriAppPlatform() ? fetch : window.fetch;
-      const res = await fetchFunc(READEST_CHANGELOG_FILE);
+      const res = await fetchFunc(getChangelogFileUrl());
       if (res.ok) {
         setUpdaterWindowVisible(true, currentVersion, lastShownVersion, false);
         return true;

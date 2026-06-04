@@ -7,6 +7,7 @@ import { StatusPage } from '@/components/status/StatusPage';
 import { parseWebViewInfo } from '@/utils/ua';
 import { handleGlobalError } from '@/utils/error';
 import { captureException } from '@/utils/telemetry';
+import { getSupportEmail } from '@/services/environment';
 
 // TanStack Router error component props — compatible with createFileRoute errorComponent
 export interface ErrorComponentProps {
@@ -159,7 +160,7 @@ export function ErrorPageUI({ error, reset, info: _info }: ErrorComponentProps) 
             {_('Need help with a persistent crash? Include the error details when reporting it.')}
           </p>
           <a
-            href='mailto:support@readest.com'
+            href={`mailto:${getSupportEmail()}`}
             className='btn btn-ghost eink-bordered gap-2 self-start'
           >
             <LifeBuoy className='h-4 w-4' strokeWidth={1.8} />

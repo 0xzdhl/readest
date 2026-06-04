@@ -8,8 +8,7 @@ import { MdCloudSync, MdSync, MdSyncProblem } from 'react-icons/md';
 
 import { invoke } from '@tauri-apps/api/core';
 import type { PermissionState } from '@tauri-apps/api/core';
-import { isTauriAppPlatform, isWebAppPlatform } from '@/services/environment';
-import { DOWNLOAD_READEST_URL } from '@/services/constants';
+import { isTauriAppPlatform, isWebAppPlatform, getWebsiteUrl } from '@/services/environment';
 import { setBackupDialogVisible } from '@/app/library/components/backupDialog';
 import { useAuth } from '@/context/AuthContext';
 import { useEnv } from '@/context/EnvContext';
@@ -91,7 +90,7 @@ const SettingsMenu: React.FC<SettingsMenuProps> = ({ onPullLibrary, setIsDropdow
   };
 
   const downloadReadest = () => {
-    window.open(DOWNLOAD_READEST_URL, '_blank');
+    window.open(getWebsiteUrl(), '_blank');
     setIsDropdownOpen?.(false);
   };
 

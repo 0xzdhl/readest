@@ -2,7 +2,7 @@ import { createFileRoute } from '@tanstack/react-router';
 import { and, desc, eq, lt, or, type SQL } from 'drizzle-orm';
 import { bookShares } from '@/db/schema';
 import { rlsMiddleware } from '@/middlewares/rls';
-import { SHARE_BASE_URL } from '@/services/constants';
+import { getShareBaseUrl } from '@/services/environment';
 
 const PAGE_SIZE = 25;
 
@@ -83,7 +83,7 @@ export const Route = createFileRoute('/api/share/list')({
             createdAt: toIso(row.createdAt),
           })),
           nextCursor,
-          shareUrlBase: SHARE_BASE_URL,
+          shareUrlBase: getShareBaseUrl(),
         });
       },
     },

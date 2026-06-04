@@ -6,7 +6,7 @@ import Spinner from '@/components/Spinner';
 import { useAuth } from '@/context/AuthContext';
 import { useTranslation } from '@/hooks/useTranslation';
 import type { VerifiedIAP } from '@/libs/payment/iap/types';
-import { getAPIBaseUrl, getNodeAPIBaseUrl } from '@/services/environment';
+import { getAPIBaseUrl, getNodeAPIBaseUrl, getSupportEmail } from '@/services/environment';
 import type { PlanType } from '@/types/quota';
 import { fetchWithAuth } from '@/utils/fetch';
 
@@ -502,7 +502,9 @@ const SubscriptionSuccessContent = () => {
 
         {/* Additional Info */}
         <div className='mt-8 text-xs text-gray-500'>
-          <p>{_('Need help? Contact our support team at support@readest.com')}</p>
+          <p>
+            {_('Need help? Contact our support team at {{email}}', { email: getSupportEmail() })}
+          </p>
         </div>
       </div>
     </div>

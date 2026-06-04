@@ -40,6 +40,8 @@ vi.mock('@/components/UpdaterWindow', () => ({
 let mockIsTauriAppPlatform = false;
 vi.mock('@/services/environment', () => ({
   isTauriAppPlatform: () => mockIsTauriAppPlatform,
+  getUpdaterFileUrl: () => 'https://example.com/latest.json',
+  getChangelogFileUrl: () => 'https://example.com/release-notes.json',
 }));
 
 let mockAppVersion = '1.0.0';
@@ -49,8 +51,6 @@ vi.mock('@/utils/version', () => ({
 
 vi.mock('@/services/constants', () => ({
   CHECK_UPDATE_INTERVAL_SEC: 86400,
-  READEST_UPDATER_FILE: 'https://example.com/latest.json',
-  READEST_CHANGELOG_FILE: 'https://example.com/release-notes.json',
 }));
 
 import {

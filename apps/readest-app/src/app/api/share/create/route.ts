@@ -4,11 +4,11 @@ import { bookShares, files } from '@/db/schema';
 import { generateShareToken } from '@/libs/shareServer';
 import { rlsMiddleware } from '@/middlewares/rls';
 import {
-  SHARE_BASE_URL,
   SHARE_CFI_MAX_LENGTH,
   SHARE_EXPIRATION_DAYS,
   SHARE_MAX_PER_USER,
 } from '@/services/constants';
+import { getShareBaseUrl } from '@/services/environment';
 import { Effect, Either } from 'effect';
 import { ObjectStorage, runStorageProgram } from '@/storage';
 
@@ -190,7 +190,7 @@ export const Route = createFileRoute('/api/share/create')({
 
         return Response.json({
           token: raw,
-          url: `${SHARE_BASE_URL}/${raw}`,
+          url: `${getShareBaseUrl()}/${raw}`,
           expiresAt: expiresAt.toISOString(),
         });
       },

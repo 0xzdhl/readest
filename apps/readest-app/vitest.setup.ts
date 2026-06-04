@@ -7,6 +7,14 @@
 process.env['DATABASE_URL'] ??= 'postgres://test:test@localhost:5432/test';
 process.env['BETTER_AUTH_SECRET'] ??= 'test-secret-not-used-at-runtime';
 process.env['BETTER_AUTH_URL'] ??= 'http://localhost:5173';
+process.env['VITE_API_BASE_URL'] ??= 'https://api.test.local';
+process.env['VITE_NODE_BASE_URL'] ??= 'https://node.test.local';
+process.env['VITE_WEBSITE_URL'] ??= 'https://www.test.local';
+process.env['VITE_DOWNLOAD_BASE_URL'] ??= 'https://download.test.local/releases';
+process.env['VITE_SUPPORT_EMAIL'] ??= 'support@test.local';
+process.env['VITE_BRAND_NAME'] ??= 'TestBrand';
+process.env['STORAGE_PUBLIC_BASE_URL'] ??= 'https://storage.test.local';
+process.env['RESEND_FROM_EMAIL'] ??= 'noreply@test.local';
 
 // jsdom-on-Windows + vitest 4.x sometimes doesn't auto-initialize
 // `localStorage` / `sessionStorage` on the global. Many tests use the bare

@@ -4,7 +4,6 @@ import { files } from '@/db/schema';
 import { env } from '@/env';
 import { getStoragePlanData, STORAGE_QUOTA_GRACE_BYTES } from '@/libs/server/storage-plan';
 import { rlsMiddleware } from '@/middlewares/rls';
-import { READEST_PUBLIC_STORAGE_BASE_URL } from '@/services/constants';
 import { Effect, Either } from 'effect';
 import { ObjectStorage, runStorageProgram } from '@/storage';
 
@@ -60,7 +59,7 @@ export const Route = createFileRoute('/api/storage/upload')({
               return Response.json({ error: 'Could not create presigned post' }, { status: 500 });
             }
             const pathname = new URL(downloadResult.right).pathname;
-            const publicBaseUrl = READEST_PUBLIC_STORAGE_BASE_URL;
+            const publicBaseUrl = env.STORAGE_PUBLIC_BASE_URL;
             const publicDownloadUrl = `${publicBaseUrl}${pathname.replace(`/${bucketName}`, '')}`;
             return Response.json({
               uploadUrl: uploadResult.right,

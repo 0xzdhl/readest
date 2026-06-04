@@ -1,4 +1,4 @@
-import { READEST_WEB_BASE_URL } from '@/services/constants';
+import { getBaseUrl } from '@/services/environment';
 
 export type AnnotationDeepLink = {
   bookHash: string;
@@ -10,12 +10,12 @@ const ANNOTATION_PATH_PREFIX = '/o/book/';
 
 /**
  * Build the canonical HTTPS URL for an annotation. Used in markdown export
- * and Readwise sync. Mobile App Links (web.readest.com) intercept this URL
- * and open the native app; on desktop browsers it resolves to the smart
+ * and Readwise sync. Mobile App Links (the configured web host) intercept this
+ * URL and open the native app; on desktop browsers it resolves to the smart
  * landing page at /o/book/{hash}/annotation/{id}.
  */
 export const buildAnnotationWebUrl = ({ bookHash, noteId, cfi }: AnnotationDeepLink): string => {
-  const base = `${READEST_WEB_BASE_URL}${ANNOTATION_PATH_PREFIX}${bookHash}/annotation/${noteId}`;
+  const base = `${getBaseUrl()}${ANNOTATION_PATH_PREFIX}${bookHash}/annotation/${noteId}`;
   return cfi ? `${base}?cfi=${encodeURIComponent(cfi)}` : base;
 };
 
@@ -29,7 +29,7 @@ export const buildAnnotationAppUrl = ({ bookHash, noteId, cfi }: AnnotationDeepL
 };
 
 /**
- * Parse an incoming readest:// or https://web.readest.com annotation URL.
+ * Parse an incoming readest:// or https://<configured web host> annotation URL.
  * Accepts the new hierarchical form (book/{hash}/annotation/{id}) and the
  * legacy flat form (annotation/{hash}/{id}) emitted by older Readwise syncs.
  * Returns null if the URL doesn't match.
@@ -45,7 +45,7 @@ export const parseAnnotationDeepLink = (url: string): AnnotationDeepLink | null 
   const isCustomScheme = parsed.protocol === 'readest:';
   const isWebHost =
     (parsed.protocol === 'https:' || parsed.protocol === 'http:') &&
-    parsed.host === 'web.readest.com';
+    parsed.host === new URL(getBaseUrl()).host;
   if (!isCustomScheme && !isWebHost) return null;
 
   // For readest:// URLs the URL parser stores the first path segment in the

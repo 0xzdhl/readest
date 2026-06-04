@@ -22,8 +22,12 @@ export const clientEnv = createEnv({
   clientPrefix: 'VITE_',
   client: {
     VITE_APP_PLATFORM: z.enum(['web', 'tauri']).default('web'),
-    VITE_API_BASE_URL: optionalUrl,
-    VITE_NODE_BASE_URL: optionalUrl,
+    VITE_API_BASE_URL: z.url(),
+    VITE_NODE_BASE_URL: z.url(),
+    VITE_WEBSITE_URL: z.url(),
+    VITE_DOWNLOAD_BASE_URL: z.url(),
+    VITE_SUPPORT_EMAIL: z.email(),
+    VITE_BRAND_NAME: z.string().min(1),
     VITE_BETTER_AUTH_URL: z.url().default('http://localhost:5173'),
     VITE_STORAGE_FIXED_QUOTA: z.coerce.number().int().nonnegative().optional(),
     VITE_TRANSLATION_FIXED_QUOTA: z.coerce.number().int().nonnegative().optional(),
@@ -51,4 +55,9 @@ export const clientEnv = createEnv({
     runtimeEnv['VITEST'] === 'true',
   runtimeEnv,
   emptyStringAsUndefined: true,
+  // Skip validation during the prerender build pass, which evaluates this
+  // module without the build-time VITE_ vars set. See env.ts for the full
+  // rationale; the deployed runtime re-evaluates and still validates.
+  skipValidation:
+    runtimeEnv['SKIP_ENV_VALIDATION'] === 'true' || runtimeEnv['SKIP_ENV_VALIDATION'] === true,
 });

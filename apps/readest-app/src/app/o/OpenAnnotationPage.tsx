@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter, useLocation } from '@tanstack/react-router';
 import { IoAlertCircleOutline, IoBookOutline, IoOpenOutline } from 'react-icons/io5';
-import { DOWNLOAD_READEST_URL, READEST_WEB_BASE_URL } from '@/services/constants';
+import { getWebsiteUrl, getBaseUrl } from '@/services/environment';
 import { useTranslation } from '@/hooks/useTranslation';
 import { buildAnnotationAppUrl } from '@/utils/deeplink';
 import { BrandHeader } from '@/components/landing/BrandHeader';
@@ -63,7 +63,7 @@ export function OpenAnnotationPage() {
     const path = `book/${bookHash}/annotation/${noteId}${cfi ? `?cfi=${encodeURIComponent(cfi)}` : ''}`;
 
     if (platform === 'android-chromium') {
-      const absoluteFallback = `${READEST_WEB_BASE_URL}${webReaderUrl}`;
+      const absoluteFallback = `${getBaseUrl()}${webReaderUrl}`;
       window.location.replace(buildIntentUrl(path, absoluteFallback));
       return;
     }
@@ -116,7 +116,7 @@ export function OpenAnnotationPage() {
                 'The annotation link is missing required information. The original link may have been truncated.',
               )}
             </p>
-            <a href='https://readest.com' className='btn btn-ghost btn-block mt-6' rel='noopener'>
+            <a href={getWebsiteUrl()} className='btn btn-ghost btn-block mt-6' rel='noopener'>
               {_('Go to Readest')}
             </a>
           </div>
@@ -169,7 +169,7 @@ export function OpenAnnotationPage() {
           <p className='text-base-content/60 mt-3 text-center text-xs'>
             {_("Don't have Readest?")}{' '}
             <a
-              href={DOWNLOAD_READEST_URL}
+              href={getWebsiteUrl()}
               target='_blank'
               rel='noopener'
               className='text-primary font-medium hover:underline'

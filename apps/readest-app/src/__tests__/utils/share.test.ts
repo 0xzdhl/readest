@@ -1,10 +1,16 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
+
+vi.mock('@/services/environment', () => ({
+  getBaseUrl: () => 'https://web.example.com',
+  getShareBaseUrl: () => 'https://web.example.com/s',
+}));
+
 import { buildShareUrl, parseShareDeepLink } from '@/utils/share';
 
 describe('buildShareUrl', () => {
   it('builds the canonical https URL for a token', () => {
     expect(buildShareUrl('aBcDeFgHiJkLmNoPqRsTuV')).toBe(
-      'https://web.readest.com/s/aBcDeFgHiJkLmNoPqRsTuV',
+      'https://web.example.com/s/aBcDeFgHiJkLmNoPqRsTuV',
     );
   });
 });
@@ -16,14 +22,14 @@ describe('parseShareDeepLink', () => {
     expect(parseShareDeepLink(`readest://share/${VALID_TOKEN}`)).toEqual({ token: VALID_TOKEN });
   });
 
-  it('parses https://web.readest.com/s/{token}', () => {
-    expect(parseShareDeepLink(`https://web.readest.com/s/${VALID_TOKEN}`)).toEqual({
+  it('parses https://web.example.com/s/{token}', () => {
+    expect(parseShareDeepLink(`https://web.example.com/s/${VALID_TOKEN}`)).toEqual({
       token: VALID_TOKEN,
     });
   });
 
-  it('parses *.readest.com subdomains for preview deploys', () => {
-    expect(parseShareDeepLink(`https://staging.readest.com/s/${VALID_TOKEN}`)).toEqual({
+  it('parses *.example.com subdomains for preview deploys', () => {
+    expect(parseShareDeepLink(`https://staging.example.com/s/${VALID_TOKEN}`)).toEqual({
       token: VALID_TOKEN,
     });
   });
@@ -40,7 +46,7 @@ describe('parseShareDeepLink', () => {
   });
 
   it('rejects URLs from third-party hosts', () => {
-    expect(parseShareDeepLink(`https://evil.example.com/s/${VALID_TOKEN}`)).toBeNull();
+    expect(parseShareDeepLink(`https://evil.org/s/${VALID_TOKEN}`)).toBeNull();
   });
 
   it('rejects readest:// URLs whose host is not "share"', () => {
@@ -49,13 +55,13 @@ describe('parseShareDeepLink', () => {
   });
 
   it('rejects nested or extra path segments', () => {
-    expect(parseShareDeepLink(`https://web.readest.com/s/${VALID_TOKEN}/extra`)).toBeNull();
-    expect(parseShareDeepLink(`https://web.readest.com/extra/s/${VALID_TOKEN}`)).toBeNull();
+    expect(parseShareDeepLink(`https://web.example.com/s/${VALID_TOKEN}/extra`)).toBeNull();
+    expect(parseShareDeepLink(`https://web.example.com/extra/s/${VALID_TOKEN}`)).toBeNull();
   });
 
   it('returns null for malformed input', () => {
     expect(parseShareDeepLink('')).toBeNull();
     expect(parseShareDeepLink('not-a-url')).toBeNull();
-    expect(parseShareDeepLink('ftp://web.readest.com/s/' + VALID_TOKEN)).toBeNull();
+    expect(parseShareDeepLink('ftp://web.example.com/s/' + VALID_TOKEN)).toBeNull();
   });
 });
