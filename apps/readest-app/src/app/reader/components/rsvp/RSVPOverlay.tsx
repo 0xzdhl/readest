@@ -4,7 +4,7 @@ import type { Insets } from '@/domain/misc';
 import { type RsvpState, RSVPController } from '@/services/rsvp';
 import { containsCJK } from '@/services/rsvp/utils';
 import { useThemeStore } from '@/store/themeStore';
-import type { TOCItem } from '@/libs/document';
+import type { TOCItem } from '@/domain/document';
 import {
   IoClose,
   IoPlay,

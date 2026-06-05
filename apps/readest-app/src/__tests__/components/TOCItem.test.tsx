@@ -2,7 +2,7 @@ import { describe, it, expect, vi, afterEach } from 'vitest';
 import { render, screen, cleanup } from '@testing-library/react';
 
 import { StaticListRow } from '@/app/reader/components/sidebar/TOCItem';
-import type { TOCItem } from '@/libs/document';
+import type { TOCItem } from '@/domain/document';
 
 vi.mock('@/utils/misc', () => ({
   getContentMd5: (s: string) => s,

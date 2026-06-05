@@ -6,7 +6,7 @@ import { useBookDataStore } from '@/store/bookDataStore';
 import { useTranslation } from '@/hooks/useTranslation';
 import { KOSyncClient, type KoSyncProgress } from '@/services/sync/KOSyncClient';
 import { type Book, type BookProgress, FIXED_LAYOUT_FORMATS } from '@/domain/book';
-import type { BookDoc } from '@/libs/document';
+import type { BookDoc } from '@/domain/document';
 import { debounce } from '@/utils/debounce';
 import { eventDispatcher } from '@/utils/event';
 import { getCFIFromXPointer, XCFI } from '@/utils/xcfi';

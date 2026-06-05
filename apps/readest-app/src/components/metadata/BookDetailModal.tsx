@@ -2,7 +2,7 @@ import clsx from 'clsx';
 import React, { useEffect, useState } from 'react';
 
 import type { Book } from '@/domain/book';
-import type { BookMetadata } from '@/libs/document';
+import type { BookMetadata } from '@/domain/document';
 import { useEnv } from '@/context/EnvContext';
 import { useThemeStore } from '@/store/themeStore';
 import { useTranslation } from '@/hooks/useTranslation';

@@ -11,7 +11,7 @@ import {
 } from 'react-icons/md';
 
 import type { Book } from '@/domain/book';
-import type { BookMetadata } from '@/libs/document';
+import type { BookMetadata } from '@/domain/document';
 import { useTranslation } from '@/hooks/useTranslation';
 import { useSettingsStore } from '@/store/settingsStore';
 import { useEnv } from '@/context/EnvContext';

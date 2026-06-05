@@ -2,7 +2,7 @@ import { create } from 'zustand';
 import type { SystemSettings } from '@/domain/settings';
 import type { Book, BookConfig, BookNote } from '@/domain/book';
 import type { EnvConfigType } from '@/services/environment';
-import type { BookDoc } from '@/libs/document';
+import type { BookDoc } from '@/domain/document';
 import { useLibraryStore } from './libraryStore';
 
 export interface BookData {

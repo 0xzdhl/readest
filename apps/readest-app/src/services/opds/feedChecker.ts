@@ -10,7 +10,7 @@ import type {
   OPDSStreamLink,
 } from '@/domain/opds';
 import { REL } from '@/domain/opds';
-import { MIMETYPES } from '@/libs/document';
+import { MIMETYPES } from '@/domain/document';
 import { isWebAppPlatform } from '@/services/environment';
 import { fetchWithAuth } from '@/app/opds/utils/opdsReq';
 import { resolveURL, parseMediaType } from '@/app/opds/utils/opdsUtils';

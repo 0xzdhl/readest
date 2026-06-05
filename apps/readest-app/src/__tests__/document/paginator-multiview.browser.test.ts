@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeAll, afterEach } from 'vitest';
 import { DocumentLoader } from '@/libs/document';
-import type { BookDoc } from '@/libs/document';
+import type { BookDoc } from '@/domain/document';
 import type { FoliateView, Renderer } from '@/types/view';
 
 // Vite serves fixture files; fetch the EPUB at runtime in the browser.

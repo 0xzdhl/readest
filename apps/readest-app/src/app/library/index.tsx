@@ -6,7 +6,7 @@ import { createFileRoute, stripSearchParams } from '@tanstack/react-router';
 import { z } from 'zod';
 
 import type { Book } from '@/domain/book';
-import type { BookMetadata } from '@/libs/document';
+import type { BookMetadata } from '@/domain/document';
 import type { AppService, DeleteAction } from '@/domain/system';
 import { buildBookLookupIndex } from '@/services/bookService';
 import { navigateToLibrary, navigateToReader } from '@/utils/nav';

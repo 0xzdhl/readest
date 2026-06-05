@@ -2,7 +2,7 @@ import { describe, it, expect, beforeAll, vi } from 'vitest';
 import { readFileSync } from 'fs';
 import { resolve } from 'path';
 import { DocumentLoader } from '@/libs/document';
-import type { BookDoc, TOCItem, SectionItem } from '@/libs/document';
+import type { BookDoc, TOCItem, SectionItem } from '@/domain/document';
 import {
   computeBookNav,
   hydrateBookNav,

@@ -1,7 +1,7 @@
 import React, { useEffect, useRef } from 'react';
 import { MdOutlineCheck, MdOutlineEdit } from 'react-icons/md';
 
-import type { BookMetadata } from '@/libs/document';
+import type { BookMetadata } from '@/domain/document';
 import { useTranslation } from '@/hooks/useTranslation';
 import { formatAuthors, formatTitle, getPrimaryLanguage } from '@/utils/book';
 import BookCover from '../BookCover';

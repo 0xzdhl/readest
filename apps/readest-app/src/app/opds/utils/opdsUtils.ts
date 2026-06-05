@@ -1,6 +1,6 @@
 import { isOPDSCatalog } from 'foliate-js/opds.js';
 import type { OPDSBaseLink } from '@/domain/opds';
-import { EXTS } from '@/libs/document';
+import { EXTS } from '@/domain/document';
 import { fetchWithAuth } from './opdsReq';
 
 export const groupByArray = <T, K>(arr: T[] | undefined, f: (el: T) => K | K[]): Map<K, T[]> => {

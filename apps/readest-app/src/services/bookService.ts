@@ -25,7 +25,9 @@ import {
 import type { BookNav } from '@/services/nav';
 import { partialMd5, md5 } from '@/utils/md5';
 import { getBaseFilename, getFilename } from '@/utils/path';
-import { type BookDoc, DocumentLoader, EXTS } from '@/libs/document';
+import { DocumentLoader } from '@/libs/document';
+import { EXTS } from '@/domain/document';
+import type { BookDoc } from '@/domain/document';
 import { isPseStreamFileName, openPseStreamBook, parsePseStreamFileName } from './opds/pseStream';
 import { DEFAULT_BOOK_SEARCH_CONFIG, DEFAULT_FIXED_LAYOUT_VIEW_SETTINGS } from './constants';
 import { isContentURI, isValidURL, makeSafeFilename } from '@/utils/misc';

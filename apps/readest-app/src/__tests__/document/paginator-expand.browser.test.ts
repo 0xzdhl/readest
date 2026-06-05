@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeAll, afterEach } from 'vitest';
 import { DocumentLoader } from '@/libs/document';
-import type { BookDoc } from '@/libs/document';
+import type { BookDoc } from '@/domain/document';
 import type { Renderer } from '@/types/view';
 
 // repro-3683: cover page with display:table + position:absolute + width:100% on body

@@ -8,7 +8,7 @@ import {
 } from '@/app/library/utils/libraryUtils';
 import type { Book } from '@/domain/book';
 import { LibrarySortByType } from '@/domain/settings';
-import type { BookMetadata } from '@/libs/document';
+import type { BookMetadata } from '@/domain/document';
 
 /**
  * Tests for functions NOT covered by the existing library-utils.test.ts:

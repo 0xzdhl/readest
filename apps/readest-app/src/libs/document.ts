@@ -2,17 +2,6 @@ import type { BookFormat } from '@/domain/book';
 import { configureZip } from '@/utils/zip';
 import * as epubcfi from 'foliate-js/epubcfi.js';
 
-export type {
-  DocumentFile,
-  Location,
-  TOCItem,
-  SectionFragment,
-  SectionItem,
-  BookMetadata,
-  BookDoc,
-} from '@/domain/document';
-export { EXTS, MIMETYPES } from '@/domain/document';
-
 import type { BookDoc } from '@/domain/document';
 import { EXTS, MIMETYPES } from '@/domain/document';
 

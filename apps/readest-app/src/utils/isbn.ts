@@ -1,4 +1,4 @@
-import type { BookDoc } from '@/libs/document';
+import type { BookDoc } from '@/domain/document';
 import { validateISBN } from '@/utils/validation';
 
 export const extractIsbnCandidates = (value: unknown): string[] => {

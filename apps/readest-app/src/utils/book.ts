@@ -1,4 +1,5 @@
-import { type BookMetadata, EXTS } from '@/libs/document';
+import { EXTS } from '@/domain/document';
+import type { BookMetadata } from '@/domain/document';
 import type { Book, BookConfig, BookProgress, WritingMode } from '@/domain/book';
 import { SUPPORTED_LANGS } from '@/services/constants';
 import { getLocale, getUserLang, makeSafeFilename } from './misc';

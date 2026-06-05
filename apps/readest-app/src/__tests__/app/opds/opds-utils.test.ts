@@ -10,7 +10,7 @@ vi.mock('foliate-js/opds.js', () => ({
   }),
 }));
 
-vi.mock('@/libs/document', () => ({
+vi.mock('@/domain/document', () => ({
   EXTS: {
     EPUB: 'epub',
     PDF: 'pdf',

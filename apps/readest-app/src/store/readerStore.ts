@@ -13,7 +13,8 @@ import type { Insets } from '@/domain/misc';
 import type { EnvConfigType } from '@/services/environment';
 import { clientEnv } from '@/clientEnv';
 import type { FoliateView } from '@/types/view';
-import { DocumentLoader, type TOCItem } from '@/libs/document';
+import { DocumentLoader } from '@/libs/document';
+import type { TOCItem } from '@/domain/document';
 import {
   isPseStreamFileName,
   openPseStreamBook,

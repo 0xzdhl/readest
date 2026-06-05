@@ -1,6 +1,7 @@
 import clsx from 'clsx';
 import React, { useEffect, useRef, useState, useCallback } from 'react';
-import { convertBlobUrlToDataUrl, type BookDoc, getDirection } from '@/libs/document';
+import { convertBlobUrlToDataUrl, getDirection } from '@/libs/document';
+import type { BookDoc } from '@/domain/document';
 import { BOOK_IDS_SEPARATOR } from '@/services/constants';
 import type { BookConfig, PageInfo } from '@/domain/book';
 import { type FoliateView, wrappedFoliateView } from '@/types/view';
