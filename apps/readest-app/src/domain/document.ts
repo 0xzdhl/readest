@@ -1,4 +1,4 @@
-import type { BookFormat } from '@/types/book';
+import type { BookFormat } from '@/domain/book';
 import type { LanguageMap, Contributor, Identifier, Collection } from '@/domain/metadata';
 
 export type DocumentFile = File;
