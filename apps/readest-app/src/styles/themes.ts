@@ -1,43 +1,7 @@
 import tinycolor from 'tinycolor2';
+import type { BaseColor, Palette, Theme, CustomTheme } from '@/domain/themes';
 
-export type BaseColor = {
-  bg: string;
-  fg: string;
-  primary: string;
-};
-
-export type ThemeMode = 'auto' | 'light' | 'dark';
-
-export type Palette = {
-  'base-100': string;
-  'base-200': string;
-  'base-300': string;
-  'base-content': string;
-  neutral: string;
-  'neutral-content': string;
-  primary: string;
-  secondary: string;
-  accent: string;
-};
-
-export type Theme = {
-  name: string;
-  label: string;
-  colors: {
-    light: Palette;
-    dark: Palette;
-  };
-  isCustomizale?: boolean;
-};
-
-export type CustomTheme = {
-  name: string;
-  label: string;
-  colors: {
-    light: BaseColor;
-    dark: BaseColor;
-  };
-};
+export type { BaseColor, ThemeMode, Palette, Theme, CustomTheme } from '@/domain/themes';
 
 function srgbToLinear(v: number): number {
   // Standard formula for gamma decoding of sRGB
