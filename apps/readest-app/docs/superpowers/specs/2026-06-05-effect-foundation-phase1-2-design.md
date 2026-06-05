@@ -168,14 +168,19 @@ The port _interface_ and _error model_ are new; the _I/O behavior_ is the proven
 
 ---
 
-## 8. Type-migration mechanics (cross-cutting, sequenced first)
+## 8. Type-migration mechanics (cross-cutting, sequenced first — its own plan)
 
-1. Move definitions: `types/book.ts → domain/book/`, `types/settings.ts → domain/settings/`, `types/system.ts → domain/shared/` (platform-capability enums/unions like `AppPlatform`/`OsPlatform`/`DistChannel` go to `domain/shared`; the `Platform` **port** lives in `application/ports`).
-2. Rewrite every importer `@/types/{book,settings,system}` → `@/domain/...` across `src/` (mechanical, codemod-style).
-3. Delete old `types/{book,settings,system}.ts` (no shims).
-4. Gate: `pnpm lint` (tsgo typecheck) green — zero unresolved imports — before any new Effect code is layered on top.
+Closure analysis (post-brainstorm) showed the three root files are entangled with `services`/`store`/`styles`/`hooks`/`utils`/`libs`. To keep `domain/` pure, the move is a **full cascade**: every type those files (transitively) pull from a runtime module is also extracted into `domain/`. Scope: ~20 new `domain/` files, ~160 types, 13 mixed modules split (extract types, leave runtime), ~200+ importers rewritten. No cycles. This is large enough to be **its own plan**, executed before the Effect-foundation plans:
 
-This move is its own commit and proves the app still typechecks/tests green (pure refactor) before ports are built on it.
+→ `docs/superpowers/plans/2026-06-05-domain-type-migration.md`
+
+Execution model (decided during planning):
+
+1. **1:1 module mapping** — each source module's types move to `@/domain/<name>` (e.g. `@/types/book → @/domain/book`, `@/services/tts/types → @/domain/tts`).
+2. **Incremental, leaf-first, with temporary barrels** — move/extract one module per task; the old path keeps resolving via a temporary re-export so `pnpm test` + `pnpm lint` stay green after **every** commit.
+3. **Cleanup phase removes all temp barrels** — importers repointed to `@/domain/*` (symbol-aware for split modules), old type files deleted, re-exports removed → **end state has no shims** (honors decision #4).
+4. **Purity guard** — a vitest test fails if any `domain/` file imports from `@/services|store|styles|hooks|components|app|context|utils|libs`.
+5. **Gate (Checkpoint A):** `pnpm test` + `pnpm lint` green, zero unresolved imports, purity test green — before any new Effect code is layered on top.
 
 ---
 
