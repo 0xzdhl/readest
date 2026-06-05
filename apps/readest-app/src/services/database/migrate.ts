@@ -1,8 +1,6 @@
 import type { DatabaseService } from '@/domain/database';
 import type { MigrationEntry, MigrateOptions } from '@/domain/migration';
 
-export type { MigrationEntry, SchemaType, MigrateOptions } from '@/domain/migration';
-
 /**
  * Run pending migrations against a DatabaseService instance.
  *

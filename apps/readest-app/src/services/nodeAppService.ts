@@ -13,7 +13,7 @@ import type {
   FileInfo,
 } from '@/domain/system';
 import type { DatabaseOpts, DatabaseService } from '@/domain/database';
-import type { SchemaType } from '@/services/database/migrate';
+import type { SchemaType } from '@/domain/migration';
 import { BaseAppService } from './appService';
 import {
   DATA_SUBDIR,

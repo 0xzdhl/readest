@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { migrate } from '@/services/database/migrate';
-import type { MigrationEntry } from '@/services/database/migrate';
+import type { MigrationEntry } from '@/domain/migration';
 import type { DatabaseService, DatabaseExecResult, DatabaseRow } from '@/domain/database';
 
 /**

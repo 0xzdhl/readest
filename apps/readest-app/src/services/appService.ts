@@ -12,7 +12,7 @@ import type {
   SelectDirectoryMode,
 } from '@/domain/system';
 import type { DatabaseOpts, DatabaseService } from '@/domain/database';
-import type { SchemaType } from '@/services/database/migrate';
+import type { SchemaType } from '@/domain/migration';
 import type { Book, BookConfig, BookContent, ImportBookOptions, ViewSettings } from '@/domain/book';
 import type { BookNav } from '@/services/nav';
 import { getLibraryFilename, getLibraryBackupFilename } from '@/utils/book';

@@ -1,6 +1,6 @@
 import type { FileSystem, BaseDir, AppPlatform, ResolvedPath, FileItem } from '@/domain/system';
 import type { DatabaseOpts, DatabaseService } from '@/domain/database';
-import type { SchemaType } from '@/services/database/migrate';
+import type { SchemaType } from '@/domain/migration';
 import { getOSPlatform, isValidURL } from '@/utils/misc';
 import { isSafariBrowser } from '@/utils/ua';
 import { RemoteFile } from '@/utils/file';

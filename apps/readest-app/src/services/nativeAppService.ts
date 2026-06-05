@@ -44,7 +44,7 @@ import { clientEnv } from '@/clientEnv';
 
 import { BaseAppService } from './appService';
 import type { DatabaseOpts, DatabaseService } from '@/domain/database';
-import type { SchemaType } from '@/services/database/migrate';
+import type { SchemaType } from '@/domain/migration';
 import {
   DATA_SUBDIR,
   LOCAL_BOOKS_SUBDIR,

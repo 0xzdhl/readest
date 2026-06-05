@@ -1,7 +1,7 @@
 import { it, expect } from 'vitest';
 import type { DatabaseService } from '@/domain/database';
 import { migrate } from '@/services/database/migrate';
-import type { MigrationEntry } from '@/services/database/migrate';
+import type { MigrationEntry } from '@/domain/migration';
 
 /**
  * Shared migration tests exercised against any real DatabaseService.
