@@ -10,7 +10,7 @@
  * multi-file bundles instead of single-file fonts.
  */
 import type { FileSystem } from '@/domain/system';
-import type { SelectedFile } from '@/hooks/useFileSelector';
+import type { SelectedFile } from '@/domain/file-selector';
 import { uniqueId } from '@/utils/misc';
 import { getFilename } from '@/utils/path';
 import type { ImportedDictionary } from '@/domain/dictionaries';

@@ -5,8 +5,6 @@ import { stubTranslation as _ } from '@/utils/misc';
 import { BOOK_ACCEPT_FORMATS, SUPPORTED_BOOK_EXTS } from '@/services/constants';
 import type { SelectedFile } from '@/domain/file-selector';
 
-export type { SelectedFile, FileSelectionResult } from '@/domain/file-selector';
-
 export interface FileSelectorOptions {
   type: SelectionType;
   accept?: string;

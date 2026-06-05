@@ -45,7 +45,7 @@ import { useOpenAnnotationLink } from '@/hooks/useOpenAnnotationLink';
 import { useOpenShareLink } from '@/hooks/useOpenShareLink';
 import { useKeyDownActions } from '@/hooks/useKeyDownActions';
 import { useFileSelector } from '@/hooks/useFileSelector';
-import type { SelectedFile } from '@/hooks/useFileSelector';
+import type { SelectedFile } from '@/domain/file-selector';
 import { lockScreenOrientation, selectDirectory } from '@/utils/bridge';
 import { requestStoragePermission } from '@/utils/permission';
 import { SUPPORTED_BOOK_EXTS } from '@/services/constants';
