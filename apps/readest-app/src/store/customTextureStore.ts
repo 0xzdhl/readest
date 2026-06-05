@@ -1,12 +1,12 @@
 import { create } from 'zustand';
 import type { EnvConfigType } from '@/services/environment';
 import {
-  type CustomTexture,
   PREDEFINED_TEXTURES,
   createCustomTexture,
   mountBackgroundTexture,
   unmountBackgroundTexture,
 } from '@/styles/textures';
+import type { CustomTexture } from '@/domain/textures';
 import { useSettingsStore } from './settingsStore';
 import { getReplicaPersistEnv } from '@/services/sync/replicaPersist';
 import { publishReplicaDelete, publishReplicaUpsert } from '@/services/sync/replicaPublish';

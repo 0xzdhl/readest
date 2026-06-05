@@ -19,7 +19,7 @@ import { getLibraryFilename, getLibraryBackupFilename } from '@/utils/book';
 
 import { getOSPlatform } from '@/utils/misc';
 import type { ProgressHandler } from '@/domain/transfer';
-import type { CustomTextureInfo } from '@/styles/textures';
+import type { CustomTextureInfo } from '@/domain/textures';
 import type { CustomFont, CustomFontInfo } from '@/domain/fonts';
 import type { ImportedDictionary } from '@/domain/dictionaries';
 import type { ImportDictionariesResult } from './dictionaries/dictionaryService';

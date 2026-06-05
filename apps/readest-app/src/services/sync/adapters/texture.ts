@@ -1,5 +1,5 @@
 import { computeTextureContentId } from '@/services/imageService';
-import type { CustomTexture } from '@/styles/textures';
+import type { CustomTexture } from '@/domain/textures';
 import type { ReplicaAdapter } from '@/services/sync/replicaRegistry';
 import type { FieldsObject, ReplicaRow } from '@/types/replica';
 import {

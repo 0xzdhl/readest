@@ -1,7 +1,6 @@
 import { getFilename } from '@/utils/path';
 import { md5Fingerprint } from '@/utils/md5';
 
-export type { BackgroundTexture, CustomTexture, CustomTextureInfo } from '@/domain/textures';
 import type { BackgroundTexture, CustomTexture } from '@/domain/textures';
 
 export const PREDEFINED_TEXTURES: BackgroundTexture[] = [
