@@ -7,8 +7,6 @@ import { code6392to6391, isValidLang, normalizedLangCode } from './lang';
 import { md5 } from '@/utils/md5';
 import type { LanguageMap, Identifier, Contributor } from '@/domain/metadata';
 
-export type { LanguageMap, Identifier, Contributor, Collection } from '@/domain/metadata';
-
 export const getDir = (book: Book) => {
   return `${book.hash}`;
 };
