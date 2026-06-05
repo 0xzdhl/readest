@@ -17,9 +17,6 @@ import { enrichTocFromNavElements } from './enrichment';
 export { findParentPath, findTocItemBS } from './lookup';
 export type { SectionFragment };
 
-export type { BookNavSection, BookNav } from '@/domain/nav';
-export { BOOK_NAV_VERSION } from '@/domain/nav';
-
 const convertTocLabels = (items: TOCItem[], convertChineseVariant: ConvertChineseVariant) => {
   items.forEach((item) => {
     if (item.label) {

@@ -20,7 +20,8 @@ import {
   openPseStreamBook,
   parsePseStreamFileName,
 } from '@/services/opds/pseStream';
-import { BOOK_NAV_VERSION, computeBookNav, hydrateBookNav, updateToc } from '@/services/nav';
+import { computeBookNav, hydrateBookNav, updateToc } from '@/services/nav';
+import { BOOK_NAV_VERSION } from '@/domain/nav';
 import { formatTitle, getMetadataHash, getPrimaryLanguage } from '@/utils/book';
 import { getBaseFilename } from '@/utils/path';
 import { SUPPORTED_LANGNAMES } from '@/services/constants';

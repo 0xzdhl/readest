@@ -14,7 +14,7 @@ import type {
 import type { DatabaseOpts, DatabaseService } from '@/domain/database';
 import type { SchemaType } from '@/domain/migration';
 import type { Book, BookConfig, BookContent, ImportBookOptions, ViewSettings } from '@/domain/book';
-import type { BookNav } from '@/services/nav';
+import type { BookNav } from '@/domain/nav';
 import { getLibraryFilename, getLibraryBackupFilename } from '@/utils/book';
 
 import { getOSPlatform } from '@/utils/misc';

@@ -3,15 +3,10 @@ import { readFileSync } from 'fs';
 import { resolve } from 'path';
 import { DocumentLoader } from '@/libs/document';
 import type { BookDoc, TOCItem, SectionItem } from '@/domain/document';
-import {
-  computeBookNav,
-  hydrateBookNav,
-  updateToc,
-  findTocItemBS,
-  BOOK_NAV_VERSION,
-  type BookNav,
-  type SectionFragment,
-} from '@/services/nav';
+import { computeBookNav, hydrateBookNav, updateToc, findTocItemBS } from '@/services/nav';
+import { BOOK_NAV_VERSION } from '@/domain/nav';
+import type { BookNav } from '@/domain/nav';
+import type { SectionFragment } from '@/domain/document';
 
 // Polyfill CSS.escape for jsdom
 if (typeof globalThis['CSS'] === 'undefined') {
