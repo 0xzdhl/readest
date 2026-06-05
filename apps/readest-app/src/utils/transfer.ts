@@ -1,19 +1,9 @@
 import { invoke, Channel } from '@tauri-apps/api/core';
 
-export type UploadMethod = 'POST' | 'PUT';
-
-export const enum UploadFileError {
-  Unauthorized = 'Unauthorized access',
-  DownloadFailed = 'File download failed',
-}
-
-export interface ProgressPayload {
-  progress: number;
-  total: number;
-  transferSpeed: number;
-}
-
-export type ProgressHandler = (progress: ProgressPayload) => void;
+export { UploadFileError } from '@/domain/transfer';
+export type { UploadMethod, ProgressPayload, ProgressHandler } from '@/domain/transfer';
+import { UploadFileError } from '@/domain/transfer';
+import type { UploadMethod, ProgressPayload, ProgressHandler } from '@/domain/transfer';
 
 export const webUpload = (file: File, uploadUrl: string, onProgress?: ProgressHandler) => {
   return new Promise<void>((resolve, reject) => {
