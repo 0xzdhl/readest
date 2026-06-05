@@ -3,6 +3,9 @@ import { isTauriAppPlatform } from '@/services/environment';
 import { basename } from '@tauri-apps/api/path';
 import { stubTranslation as _ } from '@/utils/misc';
 import { BOOK_ACCEPT_FORMATS, SUPPORTED_BOOK_EXTS } from '@/services/constants';
+import type { SelectedFile } from '@/domain/file-selector';
+
+export type { SelectedFile, FileSelectionResult } from '@/domain/file-selector';
 
 export interface FileSelectorOptions {
   type: SelectionType;
@@ -10,20 +13,6 @@ export interface FileSelectorOptions {
   multiple?: boolean;
   extensions?: string[];
   dialogTitle?: string;
-}
-
-export interface SelectedFile {
-  // For Web file
-  file?: File;
-
-  // For Tauri file
-  path?: string;
-  basePath?: string;
-}
-
-export interface FileSelectionResult {
-  files: SelectedFile[];
-  error?: string;
 }
 
 const selectFileWeb = (options: FileSelectorOptions): Promise<File[]> => {
