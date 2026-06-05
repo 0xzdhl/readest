@@ -1,5 +1,5 @@
 export type { Frame, Rect, Point, PositionDir, Position, TextSelection } from '@/domain/selection';
-import type { Frame, Rect, Point, PositionDir, Position, TextSelection } from '@/domain/selection';
+import type { Frame, Rect, Point, Position, TextSelection } from '@/domain/selection';
 
 const frameRect = (frame: Frame, rect?: Rect, sx = 1, sy = 1) => {
   if (!rect) return { left: 0, right: 0, top: 0, bottom: 0 };
