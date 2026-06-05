@@ -5,9 +5,8 @@ import {
   getContrastHex,
   generateLightPalette,
   generateDarkPalette,
-  type BaseColor,
-  type Palette,
 } from '@/styles/themes';
+import type { BaseColor, Palette } from '@/domain/themes';
 import tinycolor from 'tinycolor2';
 
 describe('hexToOklch', () => {

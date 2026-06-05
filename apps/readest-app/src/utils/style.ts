@@ -7,13 +7,8 @@ import {
   CJK_SERIF_FONTS,
 } from '@/services/constants';
 import type { ViewSettings } from '@/domain/book';
-import {
-  themes,
-  type Palette,
-  type CustomTheme,
-  generateLightPalette,
-  generateDarkPalette,
-} from '@/styles/themes';
+import { themes, generateLightPalette, generateDarkPalette } from '@/styles/themes';
+import type { Palette, CustomTheme } from '@/domain/themes';
 import { getOSPlatform } from './misc';
 
 const getFontStyles = (

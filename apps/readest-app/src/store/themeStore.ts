@@ -3,7 +3,7 @@ import type { AppService } from '@/domain/system';
 import { getThemeCode, type ThemeCode } from '@/utils/style';
 import { getSystemColorScheme } from '@/utils/bridge';
 import { getCurrentWindow } from '@tauri-apps/api/window';
-import type { CustomTheme, Palette, ThemeMode } from '@/styles/themes';
+import type { CustomTheme, Palette, ThemeMode } from '@/domain/themes';
 import { type EnvConfigType, isWebAppPlatform } from '@/services/environment';
 import type { SystemSettings } from '@/domain/settings';
 import type { Insets } from '@/domain/misc';

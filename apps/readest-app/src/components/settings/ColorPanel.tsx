@@ -16,12 +16,11 @@ import { useThemeStore } from '@/store/themeStore';
 import { PREDEFINED_TEXTURES } from '@/styles/textures';
 import {
   applyCustomTheme,
-  type CustomTheme,
   generateDarkPalette,
   generateLightPalette,
-  type Theme,
   themes,
 } from '@/styles/themes';
+import type { CustomTheme, Theme } from '@/domain/themes';
 import type { DefaultHighlightColor, HighlightColor, UserHighlightColor } from '@/domain/book';
 import { manageSyntaxHighlighting } from '@/utils/highlightjs';
 import BackgroundTextureSelector from './color/BackgroundTextureSelector';

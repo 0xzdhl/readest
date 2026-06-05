@@ -1,8 +1,6 @@
 import tinycolor from 'tinycolor2';
 import type { BaseColor, Palette, Theme, CustomTheme } from '@/domain/themes';
 
-export type { BaseColor, ThemeMode, Palette, Theme, CustomTheme } from '@/domain/themes';
-
 function srgbToLinear(v: number): number {
   // Standard formula for gamma decoding of sRGB
   return v <= 0.04045 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4);
