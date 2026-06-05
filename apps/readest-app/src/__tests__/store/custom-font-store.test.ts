@@ -21,7 +21,7 @@ vi.mock('@/utils/misc', async () => {
 
 import { useCustomFontStore, migrateLegacyFonts } from '@/store/customFontStore';
 import { useSettingsStore } from '@/store/settingsStore';
-import type { CustomFont } from '@/styles/fonts';
+import type { CustomFont } from '@/domain/fonts';
 import type { SystemSettings } from '@/domain/settings';
 import type { EnvConfigType } from '@/services/environment';
 import { publishReplicaUpsert } from '@/services/sync/replicaPublish';

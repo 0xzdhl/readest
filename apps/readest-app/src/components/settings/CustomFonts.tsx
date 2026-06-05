@@ -10,7 +10,7 @@ import { useCustomFontStore } from '@/store/customFontStore';
 import { useFileSelector } from '@/hooks/useFileSelector';
 import { saveViewSettings } from '@/helpers/settings';
 import { mountCustomFont } from '@/styles/fonts';
-import type { CustomFont } from '@/styles/fonts';
+import type { CustomFont } from '@/domain/fonts';
 import { queueReplicaBinaryUpload } from '@/services/sync/replicaBinaryUpload';
 import { Tips } from './primitives';
 

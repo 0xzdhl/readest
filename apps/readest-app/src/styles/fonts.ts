@@ -3,8 +3,6 @@ import { isCJKEnv } from '@/utils/misc';
 import { getFilename } from '@/utils/path';
 import type { FontFormat, CustomFont } from '@/domain/fonts';
 
-export type { FontFormat, CustomFont, CustomFontInfo } from '@/domain/fonts';
-
 const basicGoogleFonts = [
   { family: 'Bitter', weights: 'ital,wght@0,100..900;1,100..900' },
   { family: 'Fira Code', weights: 'wght@300..700' },

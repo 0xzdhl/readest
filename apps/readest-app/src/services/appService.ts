@@ -20,7 +20,7 @@ import { getLibraryFilename, getLibraryBackupFilename } from '@/utils/book';
 import { getOSPlatform } from '@/utils/misc';
 import type { ProgressHandler } from '@/domain/transfer';
 import type { CustomTextureInfo } from '@/styles/textures';
-import type { CustomFont, CustomFontInfo } from '@/styles/fonts';
+import type { CustomFont, CustomFontInfo } from '@/domain/fonts';
 import type { ImportedDictionary } from '@/domain/dictionaries';
 import type { ImportDictionariesResult } from './dictionaries/dictionaryService';
 import type { SelectedFile } from '@/hooks/useFileSelector';

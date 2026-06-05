@@ -38,7 +38,7 @@ import {
   useCustomTextureStore,
 } from '@/store/customTextureStore';
 import { useSettingsStore } from '@/store/settingsStore';
-import type { CustomFont } from '@/styles/fonts';
+import type { CustomFont } from '@/domain/fonts';
 import type { CustomTexture } from '@/styles/textures';
 import type { OPDSCatalog } from '@/domain/opds';
 import type { Hlc, ReplicaRow } from '@/types/replica';
