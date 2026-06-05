@@ -2,7 +2,7 @@ import clsx from 'clsx';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 
 import type { BookNote, HighlightColor } from '@/domain/book';
-import type { Point, TextSelection } from '@/utils/sel';
+import type { Point, TextSelection } from '@/domain/selection';
 import { useEnv } from '@/context/EnvContext';
 import { useThemeStore } from '@/store/themeStore';
 import { useReaderStore } from '@/store/readerStore';

@@ -8,7 +8,7 @@ import { useAutoFocus } from '@/hooks/useAutoFocus';
 import { type CreateProofreadRuleOptions, useProofreadStore } from '@/store/proofreadStore';
 import type { ProofreadScope } from '@/domain/book';
 import { eventDispatcher } from '@/utils/event';
-import type { Position, TextSelection } from '@/utils/sel';
+import type { Position, TextSelection } from '@/domain/selection';
 import { isPunctuationOnly, isWholeWord } from '@/utils/word';
 import Select from '@/components/Select';
 import Popup from '@/components/Popup';

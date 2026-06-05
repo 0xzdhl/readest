@@ -5,7 +5,8 @@ import { useReaderStore } from '@/store/readerStore';
 import { useBookDataStore } from '@/store/bookDataStore';
 import { getOSPlatform } from '@/utils/misc';
 import { eventDispatcher } from '@/utils/event';
-import { isPointerInsideSelection, type Point, type TextSelection } from '@/utils/sel';
+import { isPointerInsideSelection } from '@/utils/sel';
+import type { Point, TextSelection } from '@/domain/selection';
 import { useInstantAnnotation } from './useInstantAnnotation';
 
 export const useTextSelector = (

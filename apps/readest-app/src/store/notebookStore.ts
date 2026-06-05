@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import type { BookNote } from '@/domain/book';
-import type { TextSelection } from '@/utils/sel';
+import type { TextSelection } from '@/domain/selection';
 import type { NotebookTab } from '@/domain/notebook';
 
 export type { NotebookTab } from '@/domain/notebook';

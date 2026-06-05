@@ -12,7 +12,7 @@ import { useThemeStore } from '@/store/themeStore';
 import { useEnv } from '@/context/EnvContext';
 import { useSwipeToDismiss } from '@/hooks/useSwipeToDismiss';
 import { usePanelResize } from '@/hooks/usePanelResize';
-import type { TextSelection } from '@/utils/sel';
+import type { TextSelection } from '@/domain/selection';
 import type { BookNote } from '@/domain/book';
 import { uniqueId } from '@/utils/misc';
 import { eventDispatcher } from '@/utils/event';

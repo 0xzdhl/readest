@@ -1,4 +1,3 @@
-export type { Frame, Rect, Point, PositionDir, Position, TextSelection } from '@/domain/selection';
 import type { Frame, Rect, Point, Position, TextSelection } from '@/domain/selection';
 
 const frameRect = (frame: Frame, rect?: Rect, sx = 1, sy = 1) => {

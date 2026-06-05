@@ -22,7 +22,7 @@ import { useNotesSync } from '../../hooks/useNotesSync';
 import { useReadwiseSync } from '../../hooks/useReadwiseSync';
 import { useHardcoverSync } from '../../hooks/useHardcoverSync';
 import { useTextSelector } from '../../hooks/useTextSelector';
-import type { Point, Position, TextSelection } from '@/utils/sel';
+import type { Point, Position, TextSelection } from '@/domain/selection';
 import { getPopupPosition, getPosition, getTextFromRange } from '@/utils/sel';
 import { eventDispatcher } from '@/utils/event';
 import { findTocItemBS } from '@/services/nav';

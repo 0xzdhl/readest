@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import type { Rect, Position } from '@/utils/sel';
+import type { Rect, Position } from '@/domain/selection';
 
 // We need to test the non-exported helpers via the exported functions that use them.
 // frameRect and pointIsInView are non-exported, but exercised through getPosition/getPopupPosition.

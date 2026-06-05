@@ -5,7 +5,7 @@ import {
   removeBookNoteOverlays,
   toParentViewportPoint,
 } from '@/app/reader/utils/annotatorUtil';
-import type { Point } from '@/utils/sel';
+import type { Point } from '@/domain/selection';
 import type { BookNote, UserHighlightColor } from '@/domain/book';
 import type { SystemSettings } from '@/domain/settings';
 import { NOTE_PREFIX } from '@/types/view';
