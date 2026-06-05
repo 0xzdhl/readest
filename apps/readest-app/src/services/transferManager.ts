@@ -6,7 +6,7 @@ import {
   type ReplicaTransferFile,
 } from '@/store/transferStore';
 import type { TranslationFunc } from '@/hooks/useTranslation';
-import type { ProgressHandler, ProgressPayload } from '@/utils/transfer';
+import type { ProgressHandler, ProgressPayload } from '@/domain/transfer';
 import { eventDispatcher } from '@/utils/event';
 import { getTransferMessages } from './transferMessages';
 

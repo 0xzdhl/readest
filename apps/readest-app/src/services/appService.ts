@@ -18,7 +18,7 @@ import type { BookNav } from '@/services/nav';
 import { getLibraryFilename, getLibraryBackupFilename } from '@/utils/book';
 
 import { getOSPlatform } from '@/utils/misc';
-import type { ProgressHandler } from '@/utils/transfer';
+import type { ProgressHandler } from '@/domain/transfer';
 import type { CustomTextureInfo } from '@/styles/textures';
 import type { CustomFont, CustomFontInfo } from '@/styles/fonts';
 import type { ImportedDictionary } from '@/domain/dictionaries';

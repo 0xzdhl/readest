@@ -1,7 +1,5 @@
 import { invoke, Channel } from '@tauri-apps/api/core';
 
-export { UploadFileError } from '@/domain/transfer';
-export type { UploadMethod, ProgressPayload, ProgressHandler } from '@/domain/transfer';
 import { UploadFileError } from '@/domain/transfer';
 import type { UploadMethod, ProgressPayload, ProgressHandler } from '@/domain/transfer';
 

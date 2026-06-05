@@ -15,7 +15,7 @@ import {
   batchGetDownloadUrls,
 } from '@/libs/storage';
 import type { ClosableFile } from '@/utils/file';
-import type { ProgressHandler } from '@/utils/transfer';
+import type { ProgressHandler } from '@/domain/transfer';
 import { CLOUD_BOOKS_SUBDIR, CLOUD_REPLICAS_SUBDIR } from './constants';
 
 export async function deleteBook(
