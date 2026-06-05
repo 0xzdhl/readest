@@ -1,38 +1,5 @@
-export interface Frame {
-  top: number;
-  left: number;
-}
-
-export interface Rect {
-  top: number;
-  right: number;
-  bottom: number;
-  left: number;
-}
-
-export interface Point {
-  x: number;
-  y: number;
-}
-
-export type PositionDir = 'up' | 'down' | 'left' | 'right';
-
-export interface Position {
-  point: Point;
-  dir?: PositionDir;
-}
-
-export interface TextSelection {
-  key: string;
-  text: string;
-  page: number;
-  range: Range;
-  index: number;
-  cfi?: string;
-  href?: string;
-  annotated?: boolean;
-  rect?: Rect;
-}
+export type { Frame, Rect, Point, PositionDir, Position, TextSelection } from '@/domain/selection';
+import type { Frame, Rect, Point, PositionDir, Position, TextSelection } from '@/domain/selection';
 
 const frameRect = (frame: Frame, rect?: Rect, sx = 1, sy = 1) => {
   if (!rect) return { left: 0, right: 0, top: 0, bottom: 0 };
