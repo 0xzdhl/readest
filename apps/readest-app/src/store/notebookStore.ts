@@ -3,8 +3,6 @@ import type { BookNote } from '@/domain/book';
 import type { TextSelection } from '@/domain/selection';
 import type { NotebookTab } from '@/domain/notebook';
 
-export type { NotebookTab } from '@/domain/notebook';
-
 interface NotebookState {
   notebookWidth: string;
   isNotebookVisible: boolean;

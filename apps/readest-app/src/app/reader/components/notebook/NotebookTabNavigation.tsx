@@ -5,7 +5,7 @@ import { PiNotePencil, PiRobot } from 'react-icons/pi';
 import { useEnv } from '@/context/EnvContext';
 import { useTranslation } from '@/hooks/useTranslation';
 import { useSettingsStore } from '@/store/settingsStore';
-import type { NotebookTab } from '@/store/notebookStore';
+import type { NotebookTab } from '@/domain/notebook';
 
 interface NotebookTabNavigationProps {
   activeTab: NotebookTab;
