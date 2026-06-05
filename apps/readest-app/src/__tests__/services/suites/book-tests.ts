@@ -1,6 +1,6 @@
 ﻿import { describe, it, expect, beforeEach } from 'vitest';
-import type { Book, BookNote } from '@/types/book';
-import type { AppService } from '@/types/system';
+import type { Book, BookNote } from '@/domain/book';
+import type { AppService } from '@/domain/system';
 
 function makeFakeBook(overrides: Partial<Book> = {}): Book {
   return {

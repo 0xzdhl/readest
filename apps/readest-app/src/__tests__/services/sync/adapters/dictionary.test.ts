@@ -5,7 +5,7 @@ import {
   enumerateDictionaryFiles,
   primaryDictionaryFile,
 } from '@/services/sync/adapters/dictionary';
-import type { ImportedDictionary } from '@/services/dictionaries/types';
+import type { ImportedDictionary } from '@/domain/dictionaries';
 
 const baseDict = (overrides: Partial<ImportedDictionary> = {}): ImportedDictionary => ({
   id: 'placeholder',

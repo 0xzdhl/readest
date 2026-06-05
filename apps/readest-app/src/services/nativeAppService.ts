@@ -34,7 +34,7 @@ import type {
   ResolvedPath,
   FileItem,
   DistChannel,
-} from '@/types/system';
+} from '@/domain/system';
 import { getOSPlatform, isContentURI, isFileURI, isValidURL } from '@/utils/misc';
 import { getDirPath, getFilename } from '@/utils/path';
 import { NativeFile, RemoteFile } from '@/utils/file';
@@ -43,7 +43,7 @@ import { copyFiles } from '@/utils/files';
 import { clientEnv } from '@/clientEnv';
 
 import { BaseAppService } from './appService';
-import type { DatabaseOpts, DatabaseService } from '@/types/database';
+import type { DatabaseOpts, DatabaseService } from '@/domain/database';
 import type { SchemaType } from '@/services/database/migrate';
 import {
   DATA_SUBDIR,

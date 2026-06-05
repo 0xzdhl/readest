@@ -3,7 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import ProgressBar from '@/app/reader/components/ProgressBar';
 import { DEFAULT_VIEW_CONFIG } from '@/services/constants';
-import type { ViewSettings } from '@/types/book';
+import type { ViewSettings } from '@/domain/book';
 
 const saveViewSettings = vi.fn();
 

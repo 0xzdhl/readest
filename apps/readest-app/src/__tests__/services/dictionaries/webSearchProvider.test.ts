@@ -7,7 +7,7 @@ import {
   isValidUrlTemplate,
   substituteUrlTemplate,
 } from '@/services/dictionaries/webSearchTemplates';
-import type { WebSearchEntry } from '@/services/dictionaries/types';
+import type { WebSearchEntry } from '@/domain/dictionaries';
 
 describe('substituteUrlTemplate', () => {
   it('replaces %WORD% (case-insensitive) with the URL-encoded word', () => {

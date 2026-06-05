@@ -1,5 +1,5 @@
-import type { FileSystem, BaseDir, AppPlatform, ResolvedPath, FileItem } from '@/types/system';
-import type { DatabaseOpts, DatabaseService } from '@/types/database';
+import type { FileSystem, BaseDir, AppPlatform, ResolvedPath, FileItem } from '@/domain/system';
+import type { DatabaseOpts, DatabaseService } from '@/domain/database';
 import type { SchemaType } from '@/services/database/migrate';
 import { getOSPlatform, isValidURL } from '@/utils/misc';
 import { isSafariBrowser } from '@/utils/ua';

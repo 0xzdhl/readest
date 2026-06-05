@@ -5,9 +5,9 @@ import { useState, useRef, useEffect, Suspense, useCallback } from 'react';
 import { createFileRoute, stripSearchParams } from '@tanstack/react-router';
 import { z } from 'zod';
 
-import type { Book } from '@/types/book';
+import type { Book } from '@/domain/book';
 import type { BookMetadata } from '@/libs/document';
-import type { AppService, DeleteAction } from '@/types/system';
+import type { AppService, DeleteAction } from '@/domain/system';
 import { buildBookLookupIndex } from '@/services/bookService';
 import { navigateToLibrary, navigateToReader } from '@/utils/nav';
 import { formatAuthors, formatTitle, getPrimaryLanguage, listFormater } from '@/utils/book';
@@ -56,7 +56,7 @@ import {
   tauriQuitApp,
 } from '@/utils/window';
 
-import { LibraryGroupByType } from '@/types/settings';
+import { LibraryGroupByType } from '@/domain/settings';
 import { AboutWindow } from '@/components/AboutWindow';
 import { KeyboardShortcutsHelp } from '@/components/KeyboardShortcutsHelp';
 import { BookDetailModal } from '@/components/metadata';

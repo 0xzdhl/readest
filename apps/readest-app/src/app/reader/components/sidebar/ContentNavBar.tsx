@@ -3,7 +3,7 @@ import type React from 'react';
 import { IoIosList, IoMdCloseCircle } from 'react-icons/io';
 import { MdChevronLeft, MdChevronRight } from 'react-icons/md';
 
-import type { Insets } from '@/types/misc';
+import type { Insets } from '@/domain/misc';
 import { useEnv } from '@/context/EnvContext';
 import { useTranslation } from '@/hooks/useTranslation';
 import { useResponsiveSize } from '@/hooks/useResponsiveSize';

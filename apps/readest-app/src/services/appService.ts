@@ -1,4 +1,4 @@
-import type { SystemSettings } from '@/types/settings';
+import type { SystemSettings } from '@/domain/settings';
 import type {
   AppPlatform,
   AppService,
@@ -10,10 +10,10 @@ import type {
   OsPlatform,
   ResolvedPath,
   SelectDirectoryMode,
-} from '@/types/system';
-import type { DatabaseOpts, DatabaseService } from '@/types/database';
+} from '@/domain/system';
+import type { DatabaseOpts, DatabaseService } from '@/domain/database';
 import type { SchemaType } from '@/services/database/migrate';
-import type { Book, BookConfig, BookContent, ImportBookOptions, ViewSettings } from '@/types/book';
+import type { Book, BookConfig, BookContent, ImportBookOptions, ViewSettings } from '@/domain/book';
 import type { BookNav } from '@/services/nav';
 import { getLibraryFilename, getLibraryBackupFilename } from '@/utils/book';
 
@@ -21,7 +21,7 @@ import { getOSPlatform } from '@/utils/misc';
 import type { ProgressHandler } from '@/utils/transfer';
 import type { CustomTextureInfo } from '@/styles/textures';
 import type { CustomFont, CustomFontInfo } from '@/styles/fonts';
-import type { ImportedDictionary } from './dictionaries/types';
+import type { ImportedDictionary } from '@/domain/dictionaries';
 import type { ImportDictionariesResult } from './dictionaries/dictionaryService';
 import type { SelectedFile } from '@/hooks/useFileSelector';
 

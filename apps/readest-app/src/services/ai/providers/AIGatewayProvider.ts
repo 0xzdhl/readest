@@ -1,6 +1,6 @@
 import { createGateway } from 'ai';
 import type { LanguageModel, EmbeddingModel } from 'ai';
-import type { AIProvider, AISettings, AIProviderName } from '../types';
+import type { AIProvider, AISettings, AIProviderName } from '@/domain/ai';
 import { aiLogger } from '../logger';
 import { GATEWAY_MODELS } from '../constants';
 import { AI_TIMEOUTS } from '../utils/retry';

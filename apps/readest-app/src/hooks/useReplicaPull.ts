@@ -1,7 +1,7 @@
 import { useEffect } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { useEnv } from '@/context/EnvContext';
-import type { ImportedDictionary } from '@/services/dictionaries/types';
+import type { ImportedDictionary } from '@/domain/dictionaries';
 import type { EnvConfigType } from '@/services/environment';
 import { dictionaryAdapter } from '@/services/sync/adapters/dictionary';
 import { fontAdapter } from '@/services/sync/adapters/font';
@@ -40,10 +40,10 @@ import {
 import { useSettingsStore } from '@/store/settingsStore';
 import type { CustomFont } from '@/styles/fonts';
 import type { CustomTexture } from '@/styles/textures';
-import type { OPDSCatalog } from '@/types/opds';
+import type { OPDSCatalog } from '@/domain/opds';
 import type { Hlc, ReplicaRow } from '@/types/replica';
-import type { SystemSettings } from '@/types/settings';
-import type { AppService, BaseDir } from '@/types/system';
+import type { SystemSettings } from '@/domain/settings';
+import type { AppService, BaseDir } from '@/domain/system';
 import { uniqueId } from '@/utils/misc';
 
 export type ReplicaKind = 'dictionary' | 'font' | 'texture' | 'opds_catalog' | 'settings';

@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { getFeed, getPublication } from 'foliate-js/opds.js';
-import { SYMBOL, type OPDSFeed, type OPDSPublication } from '@/types/opds';
+import { SYMBOL, type OPDSFeed, type OPDSPublication } from '@/domain/opds';
 
 const MIME_XML = 'application/xml';
 
@@ -225,7 +225,7 @@ describe('OPDS feed parsing', () => {
     // Regression test for https://github.com/readest/readest/issues/4156
     // CWA (and other OPDS 1.x servers) place the book description in
     // <entry><summary>. foliate-js attaches it under SYMBOL.CONTENT, so the
-    // SYMBOL exported from @/types/opds must be the same Symbol instance the
+    // SYMBOL exported from @/domain/opds must be the same Symbol instance the
     // parser writes — otherwise PublicationView reads undefined and the
     // description disappears from the book details page.
     it('should expose <summary> via SYMBOL.CONTENT for OPDS 1.x feeds', () => {

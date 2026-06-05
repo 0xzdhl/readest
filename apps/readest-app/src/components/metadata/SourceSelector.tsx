@@ -6,7 +6,7 @@ import { useTranslation } from '@/hooks/useTranslation';
 import { formatAuthors, formatTitle, getPrimaryLanguage } from '@/utils/book';
 import BookCover from '../BookCover';
 import type { Metadata } from '@/services/metadata/types';
-import type { Book } from '@/types/book';
+import type { Book } from '@/domain/book';
 
 export interface MetadataSource {
   sourceName: string;

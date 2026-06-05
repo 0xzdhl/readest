@@ -18,10 +18,10 @@ import type {
   DictionaryLookupOutcome,
   DictionaryProvider,
   ImportedDictionary,
-} from '@/services/dictionaries/types';
-import { BUILTIN_WEB_SEARCH_IDS } from '@/services/dictionaries/types';
+} from '@/domain/dictionaries';
+import { BUILTIN_WEB_SEARCH_IDS } from '@/domain/dictionaries';
 import { useCustomDictionaryStore } from '@/store/customDictionaryStore';
-import type { BaseDir } from '@/types/system';
+import type { BaseDir } from '@/domain/system';
 import {
   DICT_FIXTURE_NAME as DICTD_FIXTURE_NAME,
   INDEX_FIXTURE_NAME,

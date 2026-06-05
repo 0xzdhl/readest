@@ -1,5 +1,5 @@
 import type { ReplicaTransferFile } from '@/store/transferStore';
-import type { AppService } from '@/types/system';
+import type { AppService } from '@/domain/system';
 import { eventDispatcher } from '@/utils/event';
 import type { ClosableFile } from '@/utils/file';
 import { partialMd5 } from '@/utils/md5';

@@ -1,6 +1,6 @@
 ﻿import { describe, test, expect, vi, beforeEach, afterEach } from 'vitest';
-import type { BaseDir, FileSystem, ResolvedPath } from '@/types/system';
-import type { DatabaseOpts, DatabaseService } from '@/types/database';
+import type { BaseDir, FileSystem, ResolvedPath } from '@/domain/system';
+import type { DatabaseOpts, DatabaseService } from '@/domain/database';
 import type { SchemaType } from '@/services/database/migrate';
 
 // Mock all service dependencies

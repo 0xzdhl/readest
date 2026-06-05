@@ -2,7 +2,7 @@ import { describe, test, expect, beforeEach, vi } from 'vitest';
 import { useCustomTextureStore } from '@/store/customTextureStore';
 import { useSettingsStore } from '@/store/settingsStore';
 import type { CustomTexture } from '@/styles/textures';
-import type { SystemSettings } from '@/types/settings';
+import type { SystemSettings } from '@/domain/settings';
 import type { EnvConfigType } from '@/services/environment';
 
 // Mock textures module - we need createCustomTexture, and the mount/unmount functions

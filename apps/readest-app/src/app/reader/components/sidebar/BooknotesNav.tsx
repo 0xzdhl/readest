@@ -1,6 +1,6 @@
 import type React from 'react';
 
-import type { Insets } from '@/types/misc';
+import type { Insets } from '@/domain/misc';
 import type { TOCItem } from '@/libs/document';
 import { useTranslation } from '@/hooks/useTranslation';
 import { useReaderStore } from '@/store/readerStore';

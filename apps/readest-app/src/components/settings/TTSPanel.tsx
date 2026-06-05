@@ -4,7 +4,7 @@ import { useEnv } from '@/context/EnvContext';
 import { saveViewSettings } from '@/helpers/settings';
 import { useResetViewSettings } from '@/hooks/useResetSettings';
 import { useTranslation } from '@/hooks/useTranslation';
-import type { TTSMediaMetadataMode } from '@/services/tts/types';
+import type { TTSMediaMetadataMode } from '@/domain/tts';
 import { useReaderStore } from '@/store/readerStore';
 import { useSettingsStore } from '@/store/settingsStore';
 import TTSHighlightStyleEditor, { type TTSHighlightStyle } from './color/TTSHighlightStyleEditor';

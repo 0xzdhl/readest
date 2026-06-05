@@ -7,8 +7,8 @@ import {
   MdKeyboardArrowDown,
   MdKeyboardArrowUp,
 } from 'react-icons/md';
-import type { ViewSettings } from '@/types/book';
-import type { Insets } from '@/types/misc';
+import type { ViewSettings } from '@/domain/book';
+import type { Insets } from '@/domain/misc';
 import { useEnv } from '@/context/EnvContext';
 import { useReaderStore } from '@/store/readerStore';
 import { useResponsiveSize } from '@/hooks/useResponsiveSize';

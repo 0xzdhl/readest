@@ -1,6 +1,6 @@
 import { transferManager } from '@/services/transferManager';
 import { getReplicaAdapter } from './replicaRegistry';
-import type { AppService, BaseDir } from '@/types/system';
+import type { AppService, BaseDir } from '@/domain/system';
 import type { ReplicaTransferFile } from '@/store/transferStore';
 import type { ClosableFile } from '@/utils/file';
 

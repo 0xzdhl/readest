@@ -23,7 +23,7 @@
  * encrypted path's snapshot is empty / matches "" so the diff doesn't
  * include them.
  */
-import type { SystemSettings } from '@/types/settings';
+import type { SystemSettings } from '@/domain/settings';
 import type { EnvConfigType } from '@/services/environment';
 import { useSettingsStore } from '@/store/settingsStore';
 import { publishReplicaUpsert } from '@/services/sync/replicaPublish';

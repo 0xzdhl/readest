@@ -1,4 +1,4 @@
-import type { ViewSettings } from '@/types/book';
+import type { ViewSettings } from '@/domain/book';
 import hljs from 'highlight.js/lib/common';
 
 export const CODE_LANGUAGES = [

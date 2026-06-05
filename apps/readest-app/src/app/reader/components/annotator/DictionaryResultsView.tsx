@@ -17,7 +17,7 @@ import type {
   DictionaryLookupOutcome,
   DictionaryProvider,
   WebSearchEntry,
-} from '@/services/dictionaries/types';
+} from '@/domain/dictionaries';
 
 const isTauri = isTauriAppPlatform();
 

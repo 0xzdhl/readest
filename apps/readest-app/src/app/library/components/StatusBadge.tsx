@@ -1,5 +1,5 @@
 import clsx from 'clsx';
-import type { ReadingStatus } from '@/types/book';
+import type { ReadingStatus } from '@/domain/book';
 
 interface StatusBadgeProps {
   status?: ReadingStatus;

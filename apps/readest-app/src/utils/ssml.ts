@@ -1,4 +1,4 @@
-import type { TTSMark } from '@/services/tts/types';
+import type { TTSMark } from '@/domain/tts';
 import { code6392to6391, inferLangFromScript, isSameLang, isValidLang } from './lang';
 
 const cleanTextContent = (text: string) =>

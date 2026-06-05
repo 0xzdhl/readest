@@ -1,7 +1,7 @@
 import clsx from 'clsx';
 import React, { useEffect, useState } from 'react';
 import { Trans } from 'react-i18next';
-import type { Insets } from '@/types/misc';
+import type { Insets } from '@/domain/misc';
 import { useEnv } from '@/context/EnvContext';
 import { useReaderStore } from '@/store/readerStore';
 import { useTranslation } from '@/hooks/useTranslation';
@@ -10,7 +10,7 @@ import { formatNumber, formatProgress } from '@/utils/progress';
 import { saveViewSettings } from '@/helpers/settings';
 import { eventDispatcher } from '@/utils/event';
 import { SIZE_PER_LOC, SIZE_PER_TIME_UNIT } from '@/services/constants';
-import type { ProgressBarMode } from '@/types/book.ts';
+import type { ProgressBarMode } from '@/domain/book';
 import StatusInfo from './StatusInfo.tsx';
 
 interface ProgressBarProps {

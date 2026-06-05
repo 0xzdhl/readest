@@ -34,7 +34,7 @@ vi.mock('@/store/settingsStore', () => {
   return { useSettingsStore: fn };
 });
 
-import type { AISettings } from '@/services/ai/types';
+import type { AISettings } from '@/domain/ai';
 import { DEFAULT_AI_SETTINGS, GATEWAY_MODELS } from '@/services/ai/constants';
 
 describe('DEFAULT_AI_SETTINGS', () => {

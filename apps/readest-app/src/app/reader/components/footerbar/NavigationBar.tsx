@@ -10,7 +10,7 @@ import { useReaderStore } from '@/store/readerStore';
 import { useTranslation } from '@/hooks/useTranslation';
 import { useResponsiveSize } from '@/hooks/useResponsiveSize';
 import Button from '@/components/Button';
-import type { Insets } from '@/types/misc';
+import type { Insets } from '@/domain/misc';
 
 interface NavigationBarProps {
   bookKey: string;

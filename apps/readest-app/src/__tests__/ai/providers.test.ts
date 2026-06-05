@@ -27,7 +27,7 @@ vi.mock('ai-sdk-ollama', () => ({
 import { OllamaProvider } from '@/services/ai/providers/OllamaProvider';
 import { AIGatewayProvider } from '@/services/ai/providers/AIGatewayProvider';
 import { getAIProvider } from '@/services/ai/providers';
-import type { AISettings } from '@/services/ai/types';
+import type { AISettings } from '@/domain/ai';
 import { DEFAULT_AI_SETTINGS } from '@/services/ai/constants';
 
 describe('OllamaProvider', () => {

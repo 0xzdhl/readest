@@ -11,8 +11,8 @@ import {
   findGroupById,
   getGroupDisplayName,
 } from '../../app/library/utils/libraryUtils';
-import type { Book, BooksGroup } from '../../types/book';
-import { LibraryGroupByType, LibrarySortByType } from '../../types/settings';
+import type { Book, BooksGroup } from '@/domain/book';
+import { LibraryGroupByType, LibrarySortByType } from '@/domain/settings';
 import type { BookMetadata } from '@/libs/document';
 
 // Helper to create mock books with minimal required fields

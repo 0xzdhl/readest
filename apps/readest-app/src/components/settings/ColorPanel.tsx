@@ -22,7 +22,7 @@ import {
   type Theme,
   themes,
 } from '@/styles/themes';
-import type { DefaultHighlightColor, HighlightColor, UserHighlightColor } from '@/types/book';
+import type { DefaultHighlightColor, HighlightColor, UserHighlightColor } from '@/domain/book';
 import { manageSyntaxHighlighting } from '@/utils/highlightjs';
 import BackgroundTextureSelector from './color/BackgroundTextureSelector';
 import CodeHighlightingSettings from './color/CodeHighlightingSettings';

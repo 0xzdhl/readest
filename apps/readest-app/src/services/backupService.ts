@@ -1,7 +1,7 @@
 import type { Configuration, ZipWriter } from '@zip.js/zip.js';
-import type { AppService } from '@/types/system';
+import type { AppService } from '@/domain/system';
 import { isTauriAppPlatform } from '@/services/environment';
-import type { Book, BookConfig, BookNote } from '@/types/book';
+import type { Book, BookConfig, BookNote } from '@/domain/book';
 import { getLibraryFilename } from '@/utils/book';
 import { configureZip } from '@/utils/zip';
 

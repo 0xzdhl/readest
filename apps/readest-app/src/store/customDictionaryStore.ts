@@ -1,11 +1,7 @@
 import { create } from 'zustand';
 import type { EnvConfigType } from '@/services/environment';
-import type {
-  DictionarySettings,
-  ImportedDictionary,
-  WebSearchEntry,
-} from '@/services/dictionaries/types';
-import { BUILTIN_PROVIDER_IDS, BUILTIN_WEB_SEARCH_IDS } from '@/services/dictionaries/types';
+import type { DictionarySettings, ImportedDictionary, WebSearchEntry } from '@/domain/dictionaries';
+import { BUILTIN_PROVIDER_IDS, BUILTIN_WEB_SEARCH_IDS } from '@/domain/dictionaries';
 import { useSettingsStore } from './settingsStore';
 import { publishReplicaDelete, publishReplicaUpsert } from '@/services/sync/replicaPublish';
 import { DICTIONARY_KIND } from '@/services/sync/adapters/dictionary';

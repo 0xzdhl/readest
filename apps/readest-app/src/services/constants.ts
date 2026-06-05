@@ -15,7 +15,7 @@ import type {
   ViewConfig,
   ViewSettings,
   ViewSettingsConfig,
-} from '@/types/book';
+} from '@/domain/book';
 import {
   type HardcoverSettings,
   type KOSyncSettings,
@@ -24,7 +24,7 @@ import {
   type ReadSettings,
   type ReadwiseSettings,
   type SystemSettings,
-} from '@/types/settings';
+} from '@/domain/settings';
 import type { UserStorageQuota, UserDailyTranslationQuota } from '@/types/quota';
 import { getDefaultMaxBlockSize, getDefaultMaxInlineSize } from '@/utils/config';
 import { stubTranslation as _ } from '@/utils/misc';

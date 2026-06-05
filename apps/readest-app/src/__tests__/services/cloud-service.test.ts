@@ -1,7 +1,7 @@
 ﻿import { describe, test, expect, vi, beforeEach, afterEach } from 'vitest';
 import { deleteBook } from '@/services/cloudService';
-import type { Book, BookFormat } from '@/types/book';
-import type { FileSystem } from '@/types/system';
+import type { Book, BookFormat } from '@/domain/book';
+import type { FileSystem } from '@/domain/system';
 
 // Mock external dependencies
 vi.mock('@/utils/book', () => ({

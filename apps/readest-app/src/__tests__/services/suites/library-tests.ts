@@ -1,6 +1,6 @@
 ﻿import { describe, it, expect } from 'vitest';
-import type { Book } from '@/types/book';
-import type { AppService } from '@/types/system';
+import type { Book } from '@/domain/book';
+import type { AppService } from '@/domain/system';
 
 function makeBook(overrides: Partial<Book> = {}): Book {
   return {

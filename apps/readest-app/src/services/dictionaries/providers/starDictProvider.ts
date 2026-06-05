@@ -19,8 +19,8 @@
  * flagged `unsupported` at import time and filtered out before this
  * provider is instantiated.
  */
-import type { DictionaryProvider, ImportedDictionary } from '../types';
-import type { BaseDir } from '@/types/system';
+import type { DictionaryProvider, ImportedDictionary } from '@/domain/dictionaries';
+import type { BaseDir } from '@/domain/system';
 import { StarDictReader, type StarDictEntry } from '../stardictReader';
 
 /** Subset of the file API the provider needs. Both `AppService` and `FileSystem` satisfy this. */

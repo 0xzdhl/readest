@@ -13,7 +13,7 @@ import {
 } from '@/services/sync/replicaTransferIntegration';
 import { clearReplicaAdapters, registerReplicaAdapter } from '@/services/sync/replicaRegistry';
 import type { ReplicaAdapter } from '@/services/sync/replicaRegistry';
-import type { AppService } from '@/types/system';
+import type { AppService } from '@/domain/system';
 
 const mockPublish = publishReplicaManifest as ReturnType<typeof vi.fn>;
 const downloadHandler = vi.fn();

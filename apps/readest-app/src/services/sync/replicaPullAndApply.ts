@@ -1,7 +1,7 @@
 import { isReplicaRowAlive } from '@/libs/replicaInterpret';
 import type { ReplicaRow } from '@/types/replica';
 import type { ReplicaTransferFile } from '@/store/transferStore';
-import type { BaseDir } from '@/types/system';
+import type { BaseDir } from '@/domain/system';
 import type { ReplicaAdapter } from './replicaRegistry';
 import {
   captureCipherTexts,

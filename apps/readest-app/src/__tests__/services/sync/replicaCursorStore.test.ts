@@ -1,8 +1,8 @@
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
 import { createSettingsCursorStore } from '@/services/sync/replicaCursorStore';
-import type { AppService } from '@/types/system';
+import type { AppService } from '@/domain/system';
 import type { Hlc } from '@/types/replica';
-import type { SystemSettings } from '@/types/settings';
+import type { SystemSettings } from '@/domain/settings';
 
 const makeFakeAppService = (initial: Partial<SystemSettings> = {}) => {
   let settings = { ...initial } as SystemSettings;

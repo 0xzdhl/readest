@@ -4,7 +4,7 @@ import { useTranslation } from '@/hooks/useTranslation';
 import { useResponsiveSize } from '@/hooks/useResponsiveSize';
 import type { TextSelection } from '@/utils/sel';
 import { md5Fingerprint } from '@/utils/md5';
-import type { BookNote } from '@/types/book';
+import type { BookNote } from '@/domain/book';
 import useShortcuts from '@/hooks/useShortcuts';
 import TextEditor, { type TextEditorRef } from '@/components/TextEditor';
 import TextButton from '@/components/TextButton';

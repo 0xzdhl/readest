@@ -11,8 +11,8 @@ import type {
   ResolvedPath,
   FileItem,
   FileInfo,
-} from '@/types/system';
-import type { DatabaseOpts, DatabaseService } from '@/types/database';
+} from '@/domain/system';
+import type { DatabaseOpts, DatabaseService } from '@/domain/database';
 import type { SchemaType } from '@/services/database/migrate';
 import { BaseAppService } from './appService';
 import {

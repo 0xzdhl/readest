@@ -2,8 +2,8 @@ import { describe, it, expect } from 'vitest';
 
 import { createSlobProvider } from '@/services/dictionaries/providers/slobProvider';
 import { SlobReader, cleanTag } from '@/services/dictionaries/slobReader';
-import type { ImportedDictionary } from '@/services/dictionaries/types';
-import type { BaseDir } from '@/types/system';
+import type { ImportedDictionary } from '@/domain/dictionaries';
+import type { BaseDir } from '@/domain/system';
 
 import { SLOB_FIXTURE_NAME, readSlobFile } from './_slobFixtures';
 import { makeReadCounter, withReadCounting } from './_countingFs';

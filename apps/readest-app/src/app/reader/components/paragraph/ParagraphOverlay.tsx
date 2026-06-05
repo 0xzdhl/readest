@@ -1,7 +1,7 @@
 import clsx from 'clsx';
 import React, { useEffect, useState, useCallback, useRef, useMemo } from 'react';
-import type { ViewSettings } from '@/types/book';
-import type { Insets } from '@/types/misc';
+import type { ViewSettings } from '@/domain/book';
+import type { Insets } from '@/domain/misc';
 import { useEnv } from '@/context/EnvContext';
 import { eventDispatcher } from '@/utils/event';
 import {

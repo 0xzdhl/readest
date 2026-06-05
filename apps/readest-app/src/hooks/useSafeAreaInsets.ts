@@ -1,7 +1,7 @@
 import { useCallback, useRef, useEffect } from 'react';
 import { useEnv } from '@/context/EnvContext';
 import { useThemeStore } from '@/store/themeStore';
-import type { Insets } from '@/types/misc';
+import type { Insets } from '@/domain/misc';
 import { getSafeAreaInsets } from '@/utils/bridge';
 import { getOSPlatform } from '@/utils/misc';
 

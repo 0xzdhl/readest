@@ -1,5 +1,5 @@
 import { describe, test, expect, beforeEach, vi } from 'vitest';
-import type { AIConversation, AIMessage } from '@/services/ai/types';
+import type { AIConversation, AIMessage } from '@/domain/ai';
 
 // Mock the aiStore (IndexedDB-backed persistence)
 const mockGetConversations = vi.fn<(bookHash: string) => Promise<AIConversation[]>>();

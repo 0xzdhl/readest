@@ -1,4 +1,4 @@
-import type { BookConfig, BookNote, HighlightColor, HighlightStyle } from '@/types/book';
+import type { BookConfig, BookNote, HighlightColor, HighlightStyle } from '@/domain/book';
 import { mergeBookConfigs } from '@/services/backupService';
 import { md5 } from '@/utils/md5';
 import type { AnnotationImportProvider } from '../types';

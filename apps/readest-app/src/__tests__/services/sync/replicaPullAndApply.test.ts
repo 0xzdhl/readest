@@ -25,10 +25,10 @@ import { dictionaryAdapter } from '@/services/sync/adapters/dictionary';
 import { opdsCatalogAdapter } from '@/services/sync/adapters/opdsCatalog';
 import { hlcPack } from '@/libs/crdt';
 import type { CipherEnvelope, Hlc, Manifest, ReplicaRow } from '@/types/replica';
-import type { ImportedDictionary } from '@/services/dictionaries/types';
-import type { OPDSCatalog } from '@/types/opds';
+import type { ImportedDictionary } from '@/domain/dictionaries';
+import type { OPDSCatalog } from '@/domain/opds';
 import { useSettingsStore } from '@/store/settingsStore';
-import type { SystemSettings } from '@/types/settings';
+import type { SystemSettings } from '@/domain/settings';
 
 const NOW = 1_700_000_000_000;
 const DEV = 'dev-a';

@@ -8,7 +8,7 @@ import {
   type LibraryViewModeType,
   LibraryGroupByType,
   LibrarySortByType,
-} from '@/types/settings';
+} from '@/domain/settings';
 import { saveSysSettings } from '@/helpers/settings';
 import { navigateToLibrary } from '@/utils/nav';
 import NumberInput from '@/components/settings/NumberInput';

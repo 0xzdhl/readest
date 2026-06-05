@@ -2,7 +2,7 @@ import { useCallback } from 'react';
 import { useCustomTextureStore } from '@/store/customTextureStore';
 import { useSettingsStore } from '@/store/settingsStore';
 import type { EnvConfigType } from '@/services/environment';
-import type { ViewSettings } from '@/types/book';
+import type { ViewSettings } from '@/domain/book';
 
 export const useBackgroundTexture = () => {
   const applyBackgroundTexture = useCallback(

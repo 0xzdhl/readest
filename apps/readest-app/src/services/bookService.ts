@@ -1,5 +1,5 @@
-import type { SystemSettings } from '@/types/settings';
-import type { FileSystem, AppPlatform, BaseDir } from '@/types/system';
+import type { SystemSettings } from '@/domain/settings';
+import type { FileSystem, AppPlatform, BaseDir } from '@/domain/system';
 import {
   type Book,
   type BookConfig,
@@ -9,7 +9,7 @@ import {
   type BookNote,
   FIXED_LAYOUT_FORMATS,
   type ImportBookOptions,
-} from '@/types/book';
+} from '@/domain/book';
 import {
   getDir,
   getLocalBookFilename,

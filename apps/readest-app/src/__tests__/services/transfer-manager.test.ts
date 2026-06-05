@@ -15,7 +15,7 @@ vi.mock('@/utils/event', () => ({
 // After the module-level mock declarations, import the SUT
 import { transferManager } from '@/services/transferManager';
 import { eventDispatcher } from '@/utils/event';
-import type { Book } from '@/types/book';
+import type { Book } from '@/domain/book';
 
 // ── Helpers ──────────────────────────────────────────────────────────
 function makeBook(overrides: Partial<Book> = {}): Book {

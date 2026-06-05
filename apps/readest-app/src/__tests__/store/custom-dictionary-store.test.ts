@@ -7,11 +7,11 @@ vi.mock('@/services/sync/replicaPublish', () => ({
 
 import { useCustomDictionaryStore, findDictionaryByContentId } from '@/store/customDictionaryStore';
 import { enableReplicaAutoPersist } from '@/services/sync/replicaPersist';
-import { BUILTIN_WEB_SEARCH_IDS } from '@/services/dictionaries/types';
+import { BUILTIN_WEB_SEARCH_IDS } from '@/domain/dictionaries';
 import { publishReplicaUpsert } from '@/services/sync/replicaPublish';
 import { useSettingsStore } from '@/store/settingsStore';
 import type { EnvConfigType } from '@/services/environment';
-import type { ImportedDictionary } from '@/services/dictionaries/types';
+import type { ImportedDictionary } from '@/domain/dictionaries';
 
 const ZERO = (s: string) => s.startsWith('web:builtin:');
 const mockPublishReplicaUpsert = vi.mocked(publishReplicaUpsert);

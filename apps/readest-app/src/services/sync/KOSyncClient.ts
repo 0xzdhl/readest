@@ -1,5 +1,5 @@
-import type { Book } from '@/types/book';
-import type { KOSyncSettings } from '@/types/settings';
+import type { Book } from '@/domain/book';
+import type { KOSyncSettings } from '@/domain/settings';
 import { fetch as tauriFetch } from '@tauri-apps/plugin-http';
 import type { KoSyncProxyPayload } from '@/types/kosync';
 import { md5 } from '@/utils/md5';

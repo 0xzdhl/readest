@@ -1,6 +1,6 @@
 import { HIGHLIGHT_COLOR_HEX } from '@/services/constants';
-import { type BookNote, DEFAULT_HIGHLIGHT_COLORS, type HighlightColor } from '@/types/book';
-import type { SystemSettings } from '@/types/settings';
+import { type BookNote, DEFAULT_HIGHLIGHT_COLORS, type HighlightColor } from '@/domain/book';
+import type { SystemSettings } from '@/domain/settings';
 import { type FoliateView, NOTE_PREFIX } from '@/types/view';
 import type { Point } from '@/utils/sel';
 

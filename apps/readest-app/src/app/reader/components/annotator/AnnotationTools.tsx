@@ -7,7 +7,7 @@ import { BsTranslate } from 'react-icons/bs';
 import { TbHexagonLetterD } from 'react-icons/tb';
 import { FaHeadphones } from 'react-icons/fa6';
 import { IoIosBuild } from 'react-icons/io';
-import type { AnnotationToolType } from '@/types/annotator';
+import type { AnnotationToolType } from '@/domain/annotator';
 import { stubTranslation as _ } from '@/utils/misc';
 
 type AnnotationToolButton = {

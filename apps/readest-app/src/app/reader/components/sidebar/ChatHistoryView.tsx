@@ -7,7 +7,7 @@ import { useTranslation } from '@/hooks/useTranslation';
 import { useBookDataStore } from '@/store/bookDataStore';
 import { useAIChatStore } from '@/store/aiChatStore';
 import { useNotebookStore } from '@/store/notebookStore';
-import type { AIConversation } from '@/services/ai/types';
+import type { AIConversation } from '@/domain/ai';
 import { useEnv } from '@/context/EnvContext';
 
 interface ChatHistoryViewProps {

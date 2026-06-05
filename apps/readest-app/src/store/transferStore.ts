@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import type { BaseDir } from '@/types/system';
+import type { BaseDir } from '@/domain/system';
 
 export type TransferType = 'upload' | 'download' | 'delete';
 export type TransferStatus = 'pending' | 'in_progress' | 'completed' | 'failed' | 'cancelled';

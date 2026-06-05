@@ -1,10 +1,10 @@
 import { describe, test, expect, vi, beforeEach, afterEach } from 'vitest';
 import { TTSController } from '@/services/tts/TTSController';
 import type { TTSClient, TTSMessageEvent } from '@/services/tts/TTSClient';
-import type { TTSGranularity, TTSVoicesGroup } from '@/services/tts/types';
+import type { TTSGranularity, TTSVoicesGroup } from '@/domain/tts';
 import { TTSUtils } from '@/services/tts/TTSUtils';
 import type { FoliateView } from '@/types/view';
-import type { AppService } from '@/types/system';
+import type { AppService } from '@/domain/system';
 
 // --- Mock all heavy dependencies so we never import real TTS clients ---
 

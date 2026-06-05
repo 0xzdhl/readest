@@ -7,7 +7,7 @@ import {
   isSyncCategoryLocked,
 } from '@/services/sync/syncCategories';
 import { useSettingsStore } from '@/store/settingsStore';
-import type { SyncCategory, SystemSettings } from '@/types/settings';
+import type { SyncCategory, SystemSettings } from '@/domain/settings';
 
 const setSettings = (patch: Partial<SystemSettings>): void => {
   useSettingsStore.setState({

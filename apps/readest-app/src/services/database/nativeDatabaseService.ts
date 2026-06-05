@@ -4,7 +4,7 @@ import type {
   DatabaseOpts,
   DatabaseRow,
   DatabaseService,
-} from '@/types/database';
+} from '@/domain/database';
 
 export class NativeDatabaseService implements DatabaseService {
   private db: Database;

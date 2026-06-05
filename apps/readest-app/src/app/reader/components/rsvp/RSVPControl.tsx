@@ -13,9 +13,9 @@ import {
 import { eventDispatcher } from '@/utils/event';
 import { useEnv } from '@/context/EnvContext';
 import { useTranslation } from '@/hooks/useTranslation';
-import type { BookNote, PageInfo } from '@/types/book';
+import type { BookNote, PageInfo } from '@/domain/book';
 import type { TOCItem } from '@/libs/document';
-import type { Insets } from '@/types/misc';
+import type { Insets } from '@/domain/misc';
 import { initJieba } from '@/utils/jieba';
 import RSVPOverlay from './RSVPOverlay';
 import RSVPStartDialog from './RSVPStartDialog';

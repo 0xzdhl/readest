@@ -27,7 +27,7 @@ import {
   publishSettingsIfChanged,
 } from '@/services/sync/replicaSettingsSync';
 import { useSettingsStore } from '@/store/settingsStore';
-import type { SystemSettings } from '@/types/settings';
+import type { SystemSettings } from '@/domain/settings';
 import type { EnvConfigType } from '@/services/environment';
 
 const baseHighlight = {

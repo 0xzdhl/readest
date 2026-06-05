@@ -1,4 +1,4 @@
-import type { AppService } from '@/types/system';
+import type { AppService } from '@/domain/system';
 import { isTauriAppPlatform } from '@/services/environment';
 import { basename } from '@tauri-apps/api/path';
 import { stubTranslation as _ } from '@/utils/misc';

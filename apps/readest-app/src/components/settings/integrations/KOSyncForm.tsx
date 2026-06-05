@@ -7,7 +7,7 @@ import { useSettingsStore } from '@/store/settingsStore';
 import { eventDispatcher } from '@/utils/event';
 import { md5 } from '@/utils/md5';
 import { KOSyncClient } from '@/services/sync/KOSyncClient';
-import type { KOSyncChecksumMethod, KOSyncStrategy } from '@/types/settings';
+import type { KOSyncChecksumMethod, KOSyncStrategy } from '@/domain/settings';
 import { debounce } from '@/utils/debounce';
 import { getOSPlatform } from '@/utils/misc';
 import SubPageHeader from '../SubPageHeader';

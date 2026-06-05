@@ -1,6 +1,6 @@
 import { create } from 'zustand';
-import type { ProofreadRule, ProofreadScope, ViewSettings } from '@/types/book';
-import type { SystemSettings } from '@/types/settings';
+import type { ProofreadRule, ProofreadScope, ViewSettings } from '@/domain/book';
+import type { SystemSettings } from '@/domain/settings';
 import type { EnvConfigType } from '@/services/environment';
 import { useReaderStore } from '@/store/readerStore';
 import { useSettingsStore } from '@/store/settingsStore';

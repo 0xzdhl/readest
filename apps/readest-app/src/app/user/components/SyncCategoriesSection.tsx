@@ -7,7 +7,7 @@ import {
   isSyncCategoryLocked,
   type SyncCategory,
 } from '@/services/sync/syncCategories';
-import type { SystemSettings } from '@/types/settings';
+import type { SystemSettings } from '@/domain/settings';
 
 interface CategoryCopy {
   title: string;

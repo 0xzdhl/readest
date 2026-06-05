@@ -1,4 +1,4 @@
-import type { ScoredChunk } from './types';
+import type { ScoredChunk } from '@/domain/ai';
 
 export function buildSystemPrompt(
   bookTitle: string,

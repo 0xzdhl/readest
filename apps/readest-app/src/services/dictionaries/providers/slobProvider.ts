@@ -12,7 +12,7 @@
  * the dictionary's own templates). They are not user-visible headwords and
  * are filtered before binary search hits them.
  */
-import type { DictionaryProvider, ImportedDictionary } from '../types';
+import type { DictionaryProvider, ImportedDictionary } from '@/domain/dictionaries';
 import type { DictionaryFileOpener } from './starDictProvider';
 import { SlobReader } from '../slobReader';
 

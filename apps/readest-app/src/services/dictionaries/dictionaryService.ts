@@ -9,11 +9,11 @@
  * Mirrors the structure of `src/services/fontService.ts` but handles
  * multi-file bundles instead of single-file fonts.
  */
-import type { FileSystem } from '@/types/system';
+import type { FileSystem } from '@/domain/system';
 import type { SelectedFile } from '@/hooks/useFileSelector';
 import { uniqueId } from '@/utils/misc';
 import { getFilename } from '@/utils/path';
-import type { ImportedDictionary } from './types';
+import type { ImportedDictionary } from '@/domain/dictionaries';
 import type { ImportDictionariesResult } from '@/domain/dictionaries';
 import { scanEntryOffsets, serializeOffsetsSidecar } from './stardictReader';
 import { computeDictionaryContentId } from './contentId';

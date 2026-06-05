@@ -1,5 +1,5 @@
-import type { Book } from '@/types/book';
-import type { AppService, BaseDir } from '@/types/system';
+import type { Book } from '@/domain/book';
+import type { AppService, BaseDir } from '@/domain/system';
 import {
   useTransferStore,
   type TransferItem,

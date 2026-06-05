@@ -13,7 +13,7 @@ import { useSettingsStore } from '@/store/settingsStore';
 import { useParallelViewStore } from '@/store/parallelViewStore';
 import { isWebAppPlatform, getWebsiteUrl } from '@/services/environment';
 import { eventDispatcher } from '@/utils/event';
-import { FIXED_LAYOUT_FORMATS } from '@/types/book';
+import { FIXED_LAYOUT_FORMATS } from '@/domain/book';
 import { navigateToLogin } from '@/utils/nav';
 import { saveSysSettings, saveViewSettings } from '@/helpers/settings';
 import { setProofreadRulesVisibility } from '@/app/reader/components/ProofreadRules';

@@ -6,7 +6,7 @@ import { useEnv } from '@/context/EnvContext';
 import { useTranslation } from '@/hooks/useTranslation';
 import { DEFAULT_AI_SETTINGS, GATEWAY_MODELS, MODEL_PRICING } from '@/services/ai/constants';
 import { getAIProvider } from '@/services/ai/providers';
-import type { AIProviderName, AISettings } from '@/services/ai/types';
+import type { AIProviderName, AISettings } from '@/domain/ai';
 import { useSettingsStore } from '@/store/settingsStore';
 import { isRecord } from '@/utils/unknown';
 import { BoxedList, SettingLabel, SettingsRow, SettingsSwitchRow } from './primitives';

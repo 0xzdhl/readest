@@ -21,7 +21,7 @@ import {
   getLastSources,
   clearLastSources,
 } from '@/services/ai';
-import type { EmbeddingProgress, AISettings, AIMessage } from '@/services/ai/types';
+import type { EmbeddingProgress, AISettings, AIMessage } from '@/domain/ai';
 import { useEnv } from '@/context/EnvContext';
 
 import { Button } from '@/components/ui/button';

@@ -1,5 +1,5 @@
 import { clientEnv } from '@/clientEnv';
-import type { AppService } from '@/types/system';
+import type { AppService } from '@/domain/system';
 
 declare global {
   interface Window {

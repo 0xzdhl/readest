@@ -10,7 +10,7 @@ import {
   MdExpandLess,
 } from 'react-icons/md';
 
-import type { Book } from '@/types/book';
+import type { Book } from '@/domain/book';
 import type { BookMetadata } from '@/libs/document';
 import { useTranslation } from '@/hooks/useTranslation';
 import { useSettingsStore } from '@/store/settingsStore';

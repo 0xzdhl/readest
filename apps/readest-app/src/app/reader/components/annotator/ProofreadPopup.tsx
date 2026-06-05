@@ -6,7 +6,7 @@ import { useReaderStore } from '@/store/readerStore';
 import { useTranslation } from '@/hooks/useTranslation';
 import { useAutoFocus } from '@/hooks/useAutoFocus';
 import { type CreateProofreadRuleOptions, useProofreadStore } from '@/store/proofreadStore';
-import type { ProofreadScope } from '@/types/book';
+import type { ProofreadScope } from '@/domain/book';
 import { eventDispatcher } from '@/utils/event';
 import type { Position, TextSelection } from '@/utils/sel';
 import { isPunctuationOnly, isWholeWord } from '@/utils/word';

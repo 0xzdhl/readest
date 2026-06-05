@@ -1,6 +1,6 @@
 import { create } from 'zustand';
-import type { SystemSettings } from '@/types/settings';
-import type { Book, BookConfig, BookNote } from '@/types/book';
+import type { SystemSettings } from '@/domain/settings';
+import type { Book, BookConfig, BookNote } from '@/domain/book';
 import type { EnvConfigType } from '@/services/environment';
 import type { BookDoc } from '@/libs/document';
 import { useLibraryStore } from './libraryStore';

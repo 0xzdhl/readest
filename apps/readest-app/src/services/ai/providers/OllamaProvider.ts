@@ -1,6 +1,6 @@
 import { createOllama } from 'ai-sdk-ollama';
 import type { LanguageModel, EmbeddingModel } from 'ai';
-import type { AIProvider, AISettings, AIProviderName } from '../types';
+import type { AIProvider, AISettings, AIProviderName } from '@/domain/ai';
 import { aiLogger } from '../logger';
 import { AI_TIMEOUTS } from '../utils/retry';
 import { isRecord } from '@/utils/unknown';

@@ -1,6 +1,6 @@
-import type { Book } from '@/types/book';
-import type { AppService } from '@/types/system';
-import type { OPDSCatalog } from '@/types/opds';
+import type { Book } from '@/domain/book';
+import type { AppService } from '@/domain/system';
+import type { OPDSCatalog } from '@/domain/opds';
 import { downloadFile } from '@/libs/storage';
 import { getFileExtFromMimeType } from '@/libs/document';
 import { needsProxy, getProxiedURL, probeAuth, probeFilename } from '@/app/opds/utils/opdsReq';

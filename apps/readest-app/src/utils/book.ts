@@ -1,5 +1,5 @@
 import { type BookMetadata, EXTS } from '@/libs/document';
-import type { Book, BookConfig, BookProgress, WritingMode } from '@/types/book';
+import type { Book, BookConfig, BookProgress, WritingMode } from '@/domain/book';
 import { SUPPORTED_LANGS } from '@/services/constants';
 import { getLocale, getUserLang, makeSafeFilename } from './misc';
 import { getDirFromLanguage } from './rtl';

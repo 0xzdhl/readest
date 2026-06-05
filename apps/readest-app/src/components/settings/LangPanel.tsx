@@ -14,7 +14,7 @@ import {
 } from '@/services/translators';
 import { useReaderStore } from '@/store/readerStore';
 import { useSettingsStore } from '@/store/settingsStore';
-import type { ConvertChineseVariant } from '@/types/book';
+import type { ConvertChineseVariant } from '@/domain/book';
 import { isCJKEnv } from '@/utils/misc';
 import { getDirFromLanguage } from '@/utils/rtl';
 import CustomDictionaries from './CustomDictionaries';

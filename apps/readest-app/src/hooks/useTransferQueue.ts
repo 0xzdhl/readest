@@ -4,7 +4,7 @@ import { useTranslation } from './useTranslation';
 import { useLibraryStore } from '@/store/libraryStore';
 import { useTransferStore, type TransferType } from '@/store/transferStore';
 import { transferManager } from '@/services/transferManager';
-import type { Book } from '@/types/book';
+import type { Book } from '@/domain/book';
 
 export function useTransferQueue(libraryLoaded = true, delayInit = 0) {
   const { envConfig, appService } = useEnv();

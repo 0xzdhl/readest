@@ -35,7 +35,7 @@ vi.mock('@/utils/style', () => ({
 import { saveViewSettings } from '@/helpers/settings';
 import { useSettingsStore } from '@/store/settingsStore';
 import type { EnvConfigType } from '@/services/environment';
-import type { SystemSettings } from '@/types/settings';
+import type { SystemSettings } from '@/domain/settings';
 
 const envConfig = {} as EnvConfigType;
 

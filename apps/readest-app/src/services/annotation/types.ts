@@ -1,5 +1,5 @@
-import type { BookConfig } from '@/types/book';
-import type { AppService } from '@/types/system';
+import type { BookConfig } from '@/domain/book';
+import type { AppService } from '@/domain/system';
 
 import type { AnnotationProviderName } from './providers';
 

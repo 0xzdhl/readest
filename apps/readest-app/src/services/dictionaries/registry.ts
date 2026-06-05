@@ -18,8 +18,8 @@ import type {
   DictionarySettings,
   ImportedDictionary,
   WebSearchEntry,
-} from './types';
-import { BUILTIN_PROVIDER_IDS } from './types';
+} from '@/domain/dictionaries';
+import { BUILTIN_PROVIDER_IDS } from '@/domain/dictionaries';
 import { wiktionaryProvider } from './providers/wiktionaryProvider';
 import { wikipediaProvider } from './providers/wikipediaProvider';
 import { createStarDictProvider, type DictionaryFileOpener } from './providers/starDictProvider';

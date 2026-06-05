@@ -6,7 +6,7 @@ import {
   preserveUserCustomName,
   shouldMintReincarnationForLiveReimport,
 } from '@/services/dictionaries/dictionaryDedup';
-import type { ImportedDictionary } from '@/services/dictionaries/types';
+import type { ImportedDictionary } from '@/domain/dictionaries';
 
 const baseDict = (overrides: Partial<ImportedDictionary> = {}): ImportedDictionary => ({
   id: 'bundle-1',

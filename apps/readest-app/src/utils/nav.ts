@@ -5,7 +5,7 @@ import type { ScrollBarStyle } from '@tauri-apps/api/window';
 import { WebviewWindow } from '@tauri-apps/api/webviewWindow';
 import { isTauriAppPlatform } from '@/services/environment';
 import { BOOK_IDS_SEPARATOR } from '@/services/constants';
-import type { AppService } from '@/types/system';
+import type { AppService } from '@/domain/system';
 
 let readerWindowsCount = 0;
 

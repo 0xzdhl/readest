@@ -31,7 +31,7 @@ import {
 } from '@/services/sync/replicaPublish';
 import { clearReplicaAdapters, registerReplicaAdapter } from '@/services/sync/replicaRegistry';
 import { dictionaryAdapter } from '@/services/sync/adapters/dictionary';
-import type { ImportedDictionary } from '@/services/dictionaries/types';
+import type { ImportedDictionary } from '@/domain/dictionaries';
 import { HlcGenerator, hlcPack } from '@/libs/crdt';
 import type { Hlc, ReplicaRow } from '@/types/replica';
 

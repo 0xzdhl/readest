@@ -1,4 +1,4 @@
-import type { AppService } from '@/types/system';
+import type { AppService } from '@/domain/system';
 
 type HardcoverSyncMapRow = {
   book_hash: string;

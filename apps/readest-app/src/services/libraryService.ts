@@ -1,5 +1,5 @@
-import type { FileSystem } from '@/types/system';
-import type { Book } from '@/types/book';
+import type { FileSystem } from '@/domain/system';
+import type { Book } from '@/domain/book';
 import { getLibraryFilename } from '@/utils/book';
 import { safeLoadJSON, safeSaveJSON } from './persistence';
 

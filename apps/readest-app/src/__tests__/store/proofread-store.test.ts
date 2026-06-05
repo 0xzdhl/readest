@@ -1,6 +1,6 @@
 import { describe, test, expect, beforeEach, vi } from 'vitest';
-import type { ViewSettings, ProofreadRule } from '@/types/book';
-import type { SystemSettings } from '@/types/settings';
+import type { ViewSettings, ProofreadRule } from '@/domain/book';
+import type { SystemSettings } from '@/domain/settings';
 
 // ---------------------------------------------------------------------------
 // vi.hoisted — values available inside vi.mock factories

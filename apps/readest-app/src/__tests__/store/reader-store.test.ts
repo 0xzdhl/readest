@@ -1,7 +1,7 @@
 import { describe, test, expect, vi, beforeEach } from 'vitest';
 import type { FoliateView } from '@/types/view';
-import type { Insets } from '@/types/misc';
-import type { ViewSettings } from '@/types/book';
+import type { Insets } from '@/domain/misc';
+import type { ViewSettings } from '@/domain/book';
 
 vi.mock('@/store/bookDataStore', async () => {
   const { create } = await import('zustand');

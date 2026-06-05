@@ -5,7 +5,7 @@ import { MdEdit, MdDelete } from 'react-icons/md';
 
 import { marked } from 'marked';
 import { useEnv } from '@/context/EnvContext';
-import type { BookNote, HighlightColor } from '@/types/book';
+import type { BookNote, HighlightColor } from '@/domain/book';
 import { useSettingsStore } from '@/store/settingsStore';
 import { useReaderStore } from '@/store/readerStore';
 import { useNotebookStore } from '@/store/notebookStore';

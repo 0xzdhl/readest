@@ -1,5 +1,5 @@
 import { getAPIBaseUrl, isWebAppPlatform } from '@/services/environment';
-import type { AppService } from '@/types/system';
+import type { AppService } from '@/domain/system';
 import { getUserID } from '@/utils/access';
 import { fetchWithAuth } from '@/utils/fetch';
 import {

@@ -7,7 +7,7 @@ import { useTranslation } from '@/hooks/useTranslation';
 import { useResponsiveSize } from '@/hooks/useResponsiveSize';
 import { useTTSControl } from '@/app/reader/hooks/useTTSControl';
 import { getPopupPosition, type Position } from '@/utils/sel';
-import type { Insets } from '@/types/misc';
+import type { Insets } from '@/domain/misc';
 import { Overlay } from '@/components/Overlay';
 import Popup from '@/components/Popup';
 import TTSPanel from './TTSPanel';

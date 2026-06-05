@@ -29,9 +29,9 @@ import { useFileSelector } from '@/hooks/useFileSelector';
 import { useCustomDictionaryStore } from '@/store/customDictionaryStore';
 import { eventDispatcher } from '@/utils/event';
 import { evictProvider } from '@/services/dictionaries/registry';
-import { BUILTIN_PROVIDER_IDS } from '@/services/dictionaries/types';
+import { BUILTIN_PROVIDER_IDS } from '@/domain/dictionaries';
 import { queueDictionaryBinaryUpload } from '@/services/sync/replicaBinaryUpload';
-import type { ImportedDictionary, WebSearchEntry } from '@/services/dictionaries/types';
+import type { ImportedDictionary, WebSearchEntry } from '@/domain/dictionaries';
 import {
   getBuiltinWebSearch,
   isValidUrlTemplate,

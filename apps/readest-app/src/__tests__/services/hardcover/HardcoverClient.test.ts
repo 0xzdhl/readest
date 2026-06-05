@@ -1,7 +1,7 @@
 import { describe, test, expect, vi, beforeEach } from 'vitest';
 import { HardcoverClient } from '@/services/hardcover/HardcoverClient';
 import type { HardcoverSyncMapStore } from '@/services/hardcover/HardcoverSyncMapStore';
-import type { Book, BookConfig, BookNote } from '@/types/book';
+import type { Book, BookConfig, BookNote } from '@/domain/book';
 
 type MockFetchResponse = {
   ok: boolean;

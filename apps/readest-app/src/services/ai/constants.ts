@@ -1,4 +1,4 @@
-import type { AISettings } from './types';
+import type { AISettings } from '@/domain/ai';
 
 // cheapest popular models as of 2025
 export const GATEWAY_MODELS = {

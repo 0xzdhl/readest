@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'react';
-import type { BookNote } from '@/types/book';
+import type { BookNote } from '@/domain/book';
 import { useEnv } from '@/context/EnvContext';
 import { useReaderStore } from '@/store/readerStore';
 import { useBookDataStore } from '@/store/bookDataStore';

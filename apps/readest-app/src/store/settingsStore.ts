@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import i18n from '@/i18n/i18n';
 import type { EnvConfigType } from '@/services/environment';
-import type { SystemSettings } from '@/types/settings';
+import type { SystemSettings } from '@/domain/settings';
 import { initDayjs } from '@/utils/time';
 
 export type FontPanelView = 'main-fonts' | 'custom-fonts';

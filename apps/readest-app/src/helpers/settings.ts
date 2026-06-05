@@ -1,5 +1,5 @@
-import type { ViewSettings } from '@/types/book';
-import type { SystemSettings } from '@/types/settings';
+import type { ViewSettings } from '@/domain/book';
+import type { SystemSettings } from '@/domain/settings';
 import type { EnvConfigType } from '@/services/environment';
 import { useBookDataStore } from '@/store/bookDataStore';
 import { useReaderStore } from '@/store/readerStore';

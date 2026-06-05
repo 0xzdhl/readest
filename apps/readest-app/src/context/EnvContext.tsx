@@ -4,7 +4,7 @@ import { createSettingsCursorStore } from '@/services/sync/replicaCursorStore';
 import { enableReplicaAutoPersist } from '@/services/sync/replicaPersist';
 import { initReplicaSync } from '@/services/sync/replicaSync';
 import { startReplicaTransferIntegration } from '@/services/sync/replicaTransferIntegration';
-import type { AppService } from '@/types/system';
+import type { AppService } from '@/domain/system';
 import env, { type EnvConfigType } from '../services/environment';
 
 interface EnvContextType {

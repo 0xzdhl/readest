@@ -1,4 +1,4 @@
-import type { AppService } from '@/types/system';
+import type { AppService } from '@/domain/system';
 import { MAX_KNOWN_ENTRIES, OPDS_SUBSCRIPTIONS_DIR } from './types';
 import type { OPDSSubscriptionState } from './types';
 

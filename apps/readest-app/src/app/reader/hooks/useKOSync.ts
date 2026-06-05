@@ -5,7 +5,7 @@ import { useReaderStore } from '@/store/readerStore';
 import { useBookDataStore } from '@/store/bookDataStore';
 import { useTranslation } from '@/hooks/useTranslation';
 import { KOSyncClient, type KoSyncProgress } from '@/services/sync/KOSyncClient';
-import { type Book, type BookProgress, FIXED_LAYOUT_FORMATS } from '@/types/book';
+import { type Book, type BookProgress, FIXED_LAYOUT_FORMATS } from '@/domain/book';
 import type { BookDoc } from '@/libs/document';
 import { debounce } from '@/utils/debounce';
 import { eventDispatcher } from '@/utils/event';

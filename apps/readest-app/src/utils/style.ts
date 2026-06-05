@@ -6,7 +6,7 @@ import {
   CJK_SANS_SERIF_FONTS,
   CJK_SERIF_FONTS,
 } from '@/services/constants';
-import type { ViewSettings } from '@/types/book';
+import type { ViewSettings } from '@/domain/book';
 import {
   themes,
   type Palette,

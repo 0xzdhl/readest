@@ -10,7 +10,7 @@ import { transformBookConfigFromDB } from '@/utils/transform';
 import { transformBookNoteFromDB } from '@/utils/transform';
 import { transformBookFromDB } from '@/utils/transform';
 import type { DBBook, DBBookConfig, DBBookNote } from '@/types/records';
-import type { Book, BookConfig, BookDataRecord, BookNote } from '@/types/book';
+import type { Book, BookConfig, BookDataRecord, BookNote } from '@/domain/book';
 import { navigateToLogin } from '@/utils/nav';
 import { useReaderStore } from '@/store/readerStore';
 

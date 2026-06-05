@@ -1,6 +1,6 @@
 import type React from 'react';
 import { memo, useMemo } from 'react';
-import type { Book } from '@/types/book';
+import type { Book } from '@/domain/book';
 import { useTranslation } from '@/hooks/useTranslation';
 import { SHOW_UNREAD_STATUS_BADGE } from '@/services/constants';
 import StatusBadge from './StatusBadge';

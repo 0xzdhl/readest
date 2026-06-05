@@ -10,7 +10,7 @@ import {
   type SettingsRemoteRecord,
 } from '@/services/sync/adapters/settings';
 import type { FieldEnvelope, Hlc, ReplicaRow } from '@/types/replica';
-import type { SystemSettings } from '@/types/settings';
+import type { SystemSettings } from '@/domain/settings';
 
 const HLC = '00000000001-00000000-dev' as Hlc;
 const env = <T>(v: T): FieldEnvelope<T> => ({ v, t: HLC, s: 'dev' });

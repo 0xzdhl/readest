@@ -59,7 +59,7 @@ const createMockIDB = () => {
 
 vi.stubGlobal('indexedDB', createMockIDB());
 
-import type { TextChunk } from '@/services/ai/types';
+import type { TextChunk } from '@/domain/ai';
 
 describe('AI Store', () => {
   describe('cosineSimilarity', () => {

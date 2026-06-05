@@ -10,11 +10,11 @@ vi.mock('@/utils/md5', () => ({
 
 import { useBookDataStore } from '@/store/bookDataStore';
 import type { BookData } from '@/store/bookDataStore';
-import type { BookConfig, BookNote, Book } from '@/types/book';
+import type { BookConfig, BookNote, Book } from '@/domain/book';
 import { useLibraryStore } from '@/store/libraryStore';
 import type { EnvConfigType } from '@/services/environment';
-import type { AppService } from '@/types/system';
-import type { SystemSettings } from '@/types/settings';
+import type { AppService } from '@/domain/system';
+import type { SystemSettings } from '@/domain/settings';
 
 function makeEnvConfig(appService: Partial<AppService>): EnvConfigType {
   return {

@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import type { Book } from '@/types/book';
+import type { Book } from '@/domain/book';
 import { getMetadataHash } from '@/utils/book';
 
 const mockOpen = vi.hoisted(() => vi.fn());

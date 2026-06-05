@@ -10,7 +10,7 @@ import { useBookDataStore } from '@/store/bookDataStore';
 import { useReaderStore } from '@/store/readerStore';
 import { useSidebarStore } from '@/store/sidebarStore';
 import { useTranslation } from '@/hooks/useTranslation';
-import type { BookSearchConfig, BookSearchMatch, BookSearchResult } from '@/types/book';
+import type { BookSearchConfig, BookSearchMatch, BookSearchResult } from '@/domain/book';
 import { useResponsiveSize } from '@/hooks/useResponsiveSize';
 import { debounce } from '@/utils/debounce';
 import { isCJKStr } from '@/utils/lang';

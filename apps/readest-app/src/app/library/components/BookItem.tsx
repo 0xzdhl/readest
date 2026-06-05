@@ -6,14 +6,14 @@ import {
   LiaInfoCircleSolid,
 } from 'react-icons/lia';
 
-import type { Book } from '@/types/book';
+import type { Book } from '@/domain/book';
 import { useEnv } from '@/context/EnvContext';
 import { useAuth } from '@/context/AuthContext';
 import { useRouter } from '@tanstack/react-router';
 import { useTranslation } from '@/hooks/useTranslation';
 import { useSettingsStore } from '@/store/settingsStore';
 import { useResponsiveSize } from '@/hooks/useResponsiveSize';
-import type { LibraryCoverFitType, LibraryViewModeType } from '@/types/settings';
+import type { LibraryCoverFitType, LibraryViewModeType } from '@/domain/settings';
 import { navigateToLogin } from '@/utils/nav';
 import { formatAuthors, formatDescription } from '@/utils/book';
 import ReadingProgress from './ReadingProgress';

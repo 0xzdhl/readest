@@ -1,8 +1,8 @@
 import { getUserLocale } from '@/utils/misc';
 import type { TTSClient, TTSMessageEvent } from './TTSClient';
 import { EdgeSpeechTTS, type EdgeTTSPayload, type EDGE_TTS_PROTOCOL } from '@/libs/edgeTTS';
-import type { TTSGranularity, TTSVoice, TTSVoicesGroup } from './types';
-import type { AppService } from '@/types/system';
+import type { TTSGranularity, TTSVoice, TTSVoicesGroup } from '@/domain/tts';
+import type { AppService } from '@/domain/system';
 import { parseSSMLMarks } from '@/utils/ssml';
 import { TTSController } from './TTSController';
 import { TTSUtils } from './TTSUtils';

@@ -13,7 +13,7 @@ import { useTranslation } from '@/hooks/useTranslation';
 import { useSettingsStore } from '@/store/settingsStore';
 import { revealItemInDir } from '@tauri-apps/plugin-opener';
 import { DATA_SUBDIR } from '@/services/constants';
-import type { FileItem } from '@/types/system';
+import type { FileItem } from '@/domain/system';
 import { getDirPath } from '@/utils/path';
 import { formatBytes } from '@/utils/book';
 import { getOSPlatform } from '@/utils/misc';

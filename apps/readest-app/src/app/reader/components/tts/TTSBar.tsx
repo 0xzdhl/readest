@@ -7,7 +7,7 @@ import {
   MdSkipPrevious,
   MdSkipNext,
 } from 'react-icons/md';
-import type { Insets } from '@/types/misc';
+import type { Insets } from '@/domain/misc';
 import { useEnv } from '@/context/EnvContext';
 import { useReaderStore } from '@/store/readerStore';
 import { useResponsiveSize } from '@/hooks/useResponsiveSize';

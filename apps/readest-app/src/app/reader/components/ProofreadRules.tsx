@@ -8,7 +8,7 @@ import { useReaderStore } from '@/store/readerStore';
 import { useSidebarStore } from '@/store/sidebarStore';
 import { useBookDataStore } from '@/store/bookDataStore';
 import { useProofreadStore } from '@/store/proofreadStore';
-import type { ProofreadRule, ProofreadScope } from '@/types/book';
+import type { ProofreadRule, ProofreadScope } from '@/domain/book';
 import { eventDispatcher } from '@/utils/event';
 import Dialog from '@/components/Dialog';
 

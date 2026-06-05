@@ -1,8 +1,8 @@
 import type { FoliateView } from '@/types/view';
-import type { AppService } from '@/types/system';
+import type { AppService } from '@/domain/system';
 import { filterSSMLWithLang, parseSSMLMarks } from '@/utils/ssml';
 import { Overlayer } from 'foliate-js/overlayer.js';
-import type { TTSGranularity, TTSHighlightOptions, TTSMark, TTSVoice } from './types';
+import type { TTSGranularity, TTSHighlightOptions, TTSMark, TTSVoice } from '@/domain/tts';
 import { createRejectFilter } from '@/utils/node';
 import { WebSpeechClient } from './WebSpeechClient';
 import { NativeTTSClient } from './NativeTTSClient';

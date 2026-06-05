@@ -8,8 +8,8 @@ import {
   type ViewSettings,
   type TimeInfo,
   FIXED_LAYOUT_FORMATS,
-} from '@/types/book';
-import type { Insets } from '@/types/misc';
+} from '@/domain/book';
+import type { Insets } from '@/domain/misc';
 import type { EnvConfigType } from '@/services/environment';
 import { clientEnv } from '@/clientEnv';
 import type { FoliateView } from '@/types/view';

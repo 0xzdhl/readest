@@ -1,4 +1,4 @@
-import type { AppService } from '@/types/system';
+import type { AppService } from '@/domain/system';
 import type { Hlc } from '@/types/replica';
 import type { CursorStore } from './replicaSyncManager';
 

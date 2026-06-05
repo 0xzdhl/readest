@@ -1,5 +1,5 @@
-import type { AppService, FileSystem, BaseDir, DeleteAction } from '@/types/system';
-import type { Book } from '@/types/book';
+import type { AppService, FileSystem, BaseDir, DeleteAction } from '@/domain/system';
+import type { Book } from '@/domain/book';
 import {
   getDir,
   getLocalBookFilename,

@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import type { OPDSCatalog } from '@/types/opds';
-import type { AppService } from '@/types/system';
+import type { OPDSCatalog } from '@/domain/opds';
+import type { AppService } from '@/domain/system';
 import type { OPDSSubscriptionState, PendingItem } from '@/services/opds/types';
 
 vi.mock('@/services/environment', () => ({

@@ -6,7 +6,7 @@
  * RFC 2229; HTML is rare and the few HTML-bearing dicts in the wild use
  * `MIME` indicators outside the v1 scope.
  */
-import type { DictionaryProvider, ImportedDictionary } from '../types';
+import type { DictionaryProvider, ImportedDictionary } from '@/domain/dictionaries';
 import type { DictionaryFileOpener } from './starDictProvider';
 import { DictReader } from '../dictReader';
 

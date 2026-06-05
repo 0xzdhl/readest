@@ -11,8 +11,8 @@ import { transferManager } from '@/services/transferManager';
 import { queueDictionaryBinaryUpload } from '@/services/sync/replicaBinaryUpload';
 import { clearReplicaAdapters, registerReplicaAdapter } from '@/services/sync/replicaRegistry';
 import { dictionaryAdapter } from '@/services/sync/adapters/dictionary';
-import type { ImportedDictionary } from '@/services/dictionaries/types';
-import type { AppService } from '@/types/system';
+import type { ImportedDictionary } from '@/domain/dictionaries';
+import type { AppService } from '@/domain/system';
 
 const mockIsReady = transferManager.isReady as ReturnType<typeof vi.fn>;
 const mockQueueReplicaUpload = transferManager.queueReplicaUpload as ReturnType<typeof vi.fn>;

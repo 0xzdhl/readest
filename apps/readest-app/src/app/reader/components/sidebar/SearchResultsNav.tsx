@@ -1,7 +1,7 @@
 import type React from 'react';
 
-import type { Insets } from '@/types/misc';
-import type { BookSearchMatch, BookSearchResult } from '@/types/book';
+import type { Insets } from '@/domain/misc';
+import type { BookSearchMatch, BookSearchResult } from '@/domain/book';
 import { useTranslation } from '@/hooks/useTranslation';
 import { useReaderStore } from '@/store/readerStore';
 import { useSearchNav } from '../../hooks/useSearchNav';

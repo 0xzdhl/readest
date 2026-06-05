@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import type { Book, BookGroupType, BooksGroup, ReadingStatus } from '@/types/book';
+import type { Book, BookGroupType, BooksGroup, ReadingStatus } from '@/domain/book';
 import { type EnvConfigType, isTauriAppPlatform } from '@/services/environment';
 import { BOOK_UNGROUPED_NAME } from '@/services/constants';
 import { md5Fingerprint } from '@/utils/md5';

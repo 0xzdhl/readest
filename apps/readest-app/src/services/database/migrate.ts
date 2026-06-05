@@ -1,4 +1,4 @@
-import type { DatabaseService } from '@/types/database';
+import type { DatabaseService } from '@/domain/database';
 import type { MigrationEntry, MigrateOptions } from '@/domain/migration';
 
 export type { MigrationEntry, SchemaType, MigrateOptions } from '@/domain/migration';
