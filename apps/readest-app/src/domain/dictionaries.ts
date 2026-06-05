@@ -194,3 +194,17 @@ export const BUILTIN_WEB_SEARCH_IDS = {
 
 export type BuiltinWebSearchId =
   (typeof BUILTIN_WEB_SEARCH_IDS)[keyof typeof BUILTIN_WEB_SEARCH_IDS];
+
+export interface ImportDictionariesResult {
+  imported: ImportedDictionary[];
+  /**
+   * Bundles whose name matched one or more existing dictionaries in the
+   * user's library. The duplicate's old bundle dir has been removed from
+   * disk; the caller still needs to update the store — drop `oldIds`,
+   * insert `newDict` in the first old entry's `providerOrder` slot, and
+   * inherit the first old entry's enabled flag.
+   */
+  replacements: { oldIds: string[]; newDict: ImportedDictionary }[];
+  /** Filenames that didn't form a valid bundle. */
+  orphanFiles: string[];
+}
