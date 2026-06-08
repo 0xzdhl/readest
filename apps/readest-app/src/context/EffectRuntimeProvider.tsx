@@ -1,10 +1,13 @@
 import { createContext, useCallback, useContext, useEffect, useRef, type ReactNode } from 'react';
 import type { Effect } from 'effect';
-import { getClientRuntime, getPlatformInfo } from '@/runtime/clientRuntime';
+import { type ClientServices, getClientRuntime, getPlatformInfo } from '@/runtime/clientRuntime';
 import type { PlatformInfo } from '@/application/ports/Platform';
 import { BootApp } from '@/application/usecases/boot/BootApp';
 
-type RunEffect = <A, E>(program: Effect.Effect<A, E, never>) => Promise<A>;
+// The provided runtime is a `ManagedRuntime<ClientServices, never>`, so it can run any effect
+// whose requirements are satisfied by those port/usecase services. Accept that requirement set
+// (not just `never`) so usecases like `LoadSettings` (R = SettingsRepository) typecheck.
+type RunEffect = <A, E>(program: Effect.Effect<A, E, ClientServices>) => Promise<A>;
 
 interface RuntimeContextValue {
   readonly platformInfo: PlatformInfo;

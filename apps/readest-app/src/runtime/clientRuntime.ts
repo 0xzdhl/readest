@@ -14,7 +14,7 @@ import { webClientRuntime } from './client-web';
 // The Tauri and Web client runtimes provide the same set of port tags, but their inferred
 // `ManagedRuntime` types are not structurally identical (distinct Live layers). Pin both to a
 // shared alias built from the union of provided port tags so the singleton + ternary typecheck.
-type ClientServices =
+export type ClientServices =
   | Platform
   | PathState
   | PathResolver

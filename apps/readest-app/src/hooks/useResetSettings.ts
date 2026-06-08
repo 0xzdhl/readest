@@ -1,5 +1,6 @@
 import type { Dispatch, SetStateAction } from 'react';
-import { useEnv } from '@/context/EnvContext';
+import { useRunEffect } from '@/context/EffectRuntimeProvider';
+import { GetDefaultViewSettings } from '@/application/usecases/settings/GetDefaultViewSettings';
 import type { ViewSettings } from '@/domain/book';
 
 type SetterKey = keyof ViewSettings;
@@ -10,17 +11,16 @@ type StateSetters = Partial<{
 }>;
 
 export const useResetViewSettings = () => {
-  const { appService } = useEnv();
+  const runEffect = useRunEffect();
 
   const resetToDefaults = (setters: StateSetters) => {
-    if (!appService) return;
-    const defaultSettings = appService.getDefaultViewSettings();
-
-    Object.entries(setters).forEach(([settingKey, setter]) => {
-      const freshValue = defaultSettings[settingKey as SetterKey];
-      if (freshValue !== undefined) {
-        setter(freshValue as SetterValue);
-      }
+    runEffect(GetDefaultViewSettings).then((defaultSettings) => {
+      Object.entries(setters).forEach(([settingKey, setter]) => {
+        const freshValue = defaultSettings[settingKey as SetterKey];
+        if (freshValue !== undefined) {
+          setter(freshValue as SetterValue);
+        }
+      });
     });
   };
 
