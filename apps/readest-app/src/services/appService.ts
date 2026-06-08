@@ -22,7 +22,7 @@ import type { ProgressHandler } from '@/domain/transfer';
 import type { CustomTextureInfo } from '@/domain/textures';
 import type { CustomFont, CustomFontInfo } from '@/domain/fonts';
 import type { ImportedDictionary } from '@/domain/dictionaries';
-import type { ImportDictionariesResult } from './dictionaries/dictionaryService';
+import type { ImportDictionariesResult } from '@/domain/dictionaries';
 import type { SelectedFile } from '@/domain/file-selector';
 
 import * as BookSvc from './bookService';

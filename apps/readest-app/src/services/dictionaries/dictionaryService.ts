@@ -26,8 +26,6 @@ import {
   shouldMintReincarnationForLiveReimport,
 } from './dictionaryDedup';
 
-export type { ImportDictionariesResult } from '@/domain/dictionaries';
-
 /** GZIP magic bytes — used to detect DictZip-compressed `.dict` files. */
 const GZIP_MAGIC = [0x1f, 0x8b, 0x08];
 
