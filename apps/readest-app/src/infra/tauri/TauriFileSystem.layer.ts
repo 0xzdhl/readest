@@ -25,9 +25,6 @@ import { getDirPath, getFilename } from '@/utils/path';
 import { NativeFile, RemoteFile } from '@/utils/file';
 import { copyURIToPath } from '@/utils/bridge';
 
-// Read at module-init time, same as nativeAppService.ts:65.
-const OS_TYPE = osType();
-
 // Mirrors nativeAppService.ts safeDecodePath (67-73).
 const safeDecodePath = (input: string): string => {
   try {
@@ -51,6 +48,9 @@ export const TauriFileSystemLive = Layer.effect(
   FileSystem,
   Effect.gen(function* () {
     const resolver = yield* PathResolver;
+    // OS_TYPE calls a Tauri API; compute it when the layer builds (Tauri-only),
+    // not at import time, so web/test contexts can import this module safely.
+    const OS_TYPE = osType();
 
     // getURL (nativeAppService.ts:206-208) — pure, used by openFile + getBlobUrl.
     const getUrlSync = (path: string): string => (isValidURL(path) ? path : convertFileSrc(path));

@@ -6,8 +6,10 @@ import type { DistChannel } from '@/domain/system';
 import { Platform } from '@/application/ports/Platform';
 import type { PlatformInfo } from '@/application/ports/Platform';
 
-// Read at module-init time, same as nativeAppService.ts:65 and 421
-const OS_TYPE = osType();
+// DIST_CHANNEL comes from env (safe to read at import). OS_TYPE calls a Tauri API,
+// so it is computed lazily inside computeInfo() — importing this module must be
+// side-effect-free, because the client-runtime singleton statically pulls in this
+// Tauri layer even on web/test where Tauri APIs are absent.
 const DIST_CHANNEL = clientEnv.VITE_DIST_CHANNEL as DistChannel;
 
 /**
@@ -16,6 +18,7 @@ const DIST_CHANNEL = clientEnv.VITE_DIST_CHANNEL as DistChannel;
  * Window globals are guarded for SSR safety.
  */
 function computeInfo(): PlatformInfo {
+  const OS_TYPE = osType();
   const isEink = typeof window !== 'undefined' ? Boolean(window.__READEST_IS_EINK) : false;
   const isAppImage = typeof window !== 'undefined' ? Boolean(window.__READEST_IS_APPIMAGE) : false;
   const updaterDisabled =

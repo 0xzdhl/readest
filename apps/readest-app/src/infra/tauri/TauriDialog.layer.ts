@@ -9,9 +9,6 @@ import type { SaveFileOptions } from '@/application/ports/Dialog';
 import type { SelectDirectoryMode } from '@/domain/system';
 import { PathResolver } from '@/application/ports/PathResolver';
 
-// Read at module-init time, same as nativeAppService.ts:65.
-const OS_TYPE = osType();
-
 const safeDecodePath = (input: string): string => {
   try {
     return decodeURI(input);
@@ -35,6 +32,9 @@ export const TauriDialogLive = Layer.effect(
   Effect.gen(function* () {
     const resolver = yield* PathResolver;
 
+    // OS_TYPE calls a Tauri API; compute it when the layer builds (Tauri-only),
+    // not at import, so web/test contexts can import this module safely.
+    const OS_TYPE = osType();
     const isLinuxApp = OS_TYPE === 'linux';
 
     const dialogAsk = (message: string): Effect.Effect<boolean, PlatformError> =>

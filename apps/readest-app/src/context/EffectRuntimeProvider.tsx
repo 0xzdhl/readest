@@ -38,11 +38,17 @@ export function EffectRuntimeProvider({ children }: { children: ReactNode }) {
   );
 }
 
-function useRuntimeContext(): RuntimeContextValue {
+// These hooks degrade gracefully to the module-level singleton when rendered
+// outside the provider — e.g. a component mounted above the provider, or a unit
+// test that doesn't wrap in <EffectRuntimeProvider>. In the real app the provider
+// supplies the same value (it computes platformInfo from getPlatformInfo() and runs
+// on the same client runtime), so behavior is identical; the fallback just removes a
+// hard context dependency and matches the legacy null-tolerant appService.
+export const useRunEffect = (): RunEffect => {
   const ctx = useContext(RuntimeContext);
-  if (!ctx) throw new Error('must be used within <EffectRuntimeProvider>');
-  return ctx;
-}
-
-export const useRunEffect = (): RunEffect => useRuntimeContext().runEffect;
-export const usePlatformInfo = (): PlatformInfo => useRuntimeContext().platformInfo;
+  return ctx?.runEffect ?? ((program) => getClientRuntime().runPromise(program));
+};
+export const usePlatformInfo = (): PlatformInfo => {
+  const ctx = useContext(RuntimeContext);
+  return ctx?.platformInfo ?? getPlatformInfo();
+};
