@@ -84,8 +84,7 @@ const ReaderContent: React.FC<{ ids: string; cfi?: string; settings: SystemSetti
           eventDispatcher.dispatch('toast', {
             message: _('Unable to open book'),
             callback: async () => {
-              const service = await envConfig.getAppService();
-              await closeReaderWindowOrGoToLibrary(service, router);
+              await closeReaderWindowOrGoToLibrary(router);
             },
             timeout: 2000,
             type: 'error',
@@ -214,7 +213,7 @@ const ReaderContent: React.FC<{ ids: string; cfi?: string; settings: SystemSetti
         navigateBackToLibrary();
       } else {
         if (appService) {
-          await ensureMainLibraryWindow(appService);
+          await ensureMainLibraryWindow();
         }
         currentWindow.close();
       }

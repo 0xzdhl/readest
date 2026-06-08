@@ -163,7 +163,7 @@ const BookshelfItem: React.FC<BookshelfItemProps> = ({
         const available = await makeBookAvailable(book);
         if (!available) return;
         if (appService?.hasWindow && settings.openBookInNewWindow) {
-          showReaderWindow(appService, [book.hash]);
+          showReaderWindow([book.hash]);
         } else {
           setTimeout(() => {
             navigateToReader(router, [book.hash]);

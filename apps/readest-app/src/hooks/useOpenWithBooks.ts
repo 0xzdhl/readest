@@ -49,7 +49,7 @@ export function useOpenWithBooks() {
       const settings = useSettingsStore.getState().settings;
       if (appService?.hasWindow && settings.openBookInNewWindow) {
         if (await isFirstWindow()) {
-          showLibraryWindow(appService, filePaths);
+          showLibraryWindow(filePaths);
         }
       } else {
         window.OPEN_WITH_FILES = filePaths;

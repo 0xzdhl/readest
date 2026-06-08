@@ -28,10 +28,18 @@ vi.mock('@/services/constants', () => ({
   BOOK_IDS_SEPARATOR: '+',
 }));
 
+vi.mock('@/runtime/clientRuntime', () => ({
+  getPlatformInfo: vi
+    .fn()
+    .mockReturnValue({ isMacOSApp: false, osPlatform: 'unknown', hasWindow: false }),
+}));
+
 import { redirect } from '@tanstack/react-router';
 import { getCurrentWindow } from '@tauri-apps/api/window';
 import { WebviewWindow } from '@tauri-apps/api/webviewWindow';
 import { isTauriAppPlatform } from '@/services/environment';
+import { getPlatformInfo } from '@/runtime/clientRuntime';
+import type { PlatformInfo } from '@/application/ports/Platform';
 import {
   navigateToReader,
   navigateToLogin,
@@ -55,8 +63,13 @@ function mockRouter() {
   };
 }
 
-function makeAppService(isMacOS = false) {
-  return { isMacOSApp: isMacOS } as Record<string, unknown>;
+function setPlatformInfo(info: Partial<PlatformInfo>) {
+  vi.mocked(getPlatformInfo).mockReturnValue({
+    isMacOSApp: false,
+    osPlatform: 'unknown',
+    hasWindow: false,
+    ...info,
+  } as PlatformInfo);
 }
 
 beforeEach(() => {
@@ -64,6 +77,7 @@ beforeEach(() => {
 
   // Reset default environment mock returns
   vi.mocked(isTauriAppPlatform).mockReturnValue(false);
+  setPlatformInfo({ isMacOSApp: false, osPlatform: 'unknown', hasWindow: false });
 
   // Reset getCurrentWindow default
   vi.mocked(getCurrentWindow).mockReturnValue({
@@ -296,8 +310,7 @@ describe('navigateToUpdatePassword', () => {
 
 describe('showReaderWindow', () => {
   test('creates a new WebviewWindow with correct URL', () => {
-    const appService = makeAppService();
-    showReaderWindow(appService as never, ['book1', 'book2']);
+    showReaderWindow(['book1', 'book2']);
 
     expect(WebviewWindow).toHaveBeenCalled();
     const constructorCall = vi.mocked(WebviewWindow).mock.calls[0]!;
@@ -306,8 +319,8 @@ describe('showReaderWindow', () => {
   });
 
   test('uses macOS-specific window options', () => {
-    const appService = makeAppService(true);
-    showReaderWindow(appService as never, ['book1']);
+    setPlatformInfo({ isMacOSApp: true });
+    showReaderWindow(['book1']);
 
     const constructorCall = vi.mocked(WebviewWindow).mock.calls[0]!;
     const options = constructorCall[1]!;
@@ -317,8 +330,8 @@ describe('showReaderWindow', () => {
   });
 
   test('uses non-macOS window options', () => {
-    const appService = makeAppService(false);
-    showReaderWindow(appService as never, ['book1']);
+    setPlatformInfo({ isMacOSApp: false });
+    showReaderWindow(['book1']);
 
     const constructorCall = vi.mocked(WebviewWindow).mock.calls[0]!;
     const options = constructorCall[1]!;
@@ -331,8 +344,7 @@ describe('showReaderWindow', () => {
 
 describe('showLibraryWindow', () => {
   test('creates a new WebviewWindow with file params', () => {
-    const appService = makeAppService();
-    showLibraryWindow(appService as never, ['file1.epub', 'file2.epub']);
+    showLibraryWindow(['file1.epub', 'file2.epub']);
 
     expect(WebviewWindow).toHaveBeenCalled();
     const constructorCall = vi.mocked(WebviewWindow).mock.calls[0]!;
@@ -352,7 +364,7 @@ describe('ensureMainLibraryWindow', () => {
     };
     WebviewWindowCtor.getByLabel.mockResolvedValue(main);
 
-    await ensureMainLibraryWindow(makeAppService() as never);
+    await ensureMainLibraryWindow();
 
     expect(WebviewWindowCtor.getByLabel).toHaveBeenCalledWith('main');
     expect(main.show).toHaveBeenCalled();
@@ -364,7 +376,7 @@ describe('ensureMainLibraryWindow', () => {
   test('creates a new main-labelled window pointing at /library when missing', async () => {
     WebviewWindowCtor.getByLabel.mockResolvedValue(null);
 
-    await ensureMainLibraryWindow(makeAppService() as never);
+    await ensureMainLibraryWindow();
 
     expect(WebviewWindow).toHaveBeenCalledTimes(1);
     const [label, options] = vi.mocked(WebviewWindow).mock.calls[0]!;
@@ -374,15 +386,12 @@ describe('ensureMainLibraryWindow', () => {
 });
 
 describe('closeReaderWindowOrGoToLibrary', () => {
-  function makeAppServiceWithWindow(hasWindow = true) {
-    return { isMacOSApp: false, hasWindow } as Record<string, unknown>;
-  }
-
   test('on web platform, navigates current view to /library', async () => {
     vi.mocked(isTauriAppPlatform).mockReturnValue(false);
+    setPlatformInfo({ hasWindow: true });
 
     const router = mockRouter();
-    await closeReaderWindowOrGoToLibrary(makeAppServiceWithWindow() as never, router);
+    await closeReaderWindowOrGoToLibrary(router);
 
     expect(router.navigate).toHaveBeenCalledWith({ to: '/library', replace: true });
     expect(WebviewWindowCtor.getByLabel).not.toHaveBeenCalled();
@@ -390,6 +399,7 @@ describe('closeReaderWindowOrGoToLibrary', () => {
 
   test('in Tauri main window, navigates the same window to /library', async () => {
     vi.mocked(isTauriAppPlatform).mockReturnValue(true);
+    setPlatformInfo({ hasWindow: true });
     const close = vi.fn();
     vi.mocked(getCurrentWindow).mockReturnValue({
       label: 'main',
@@ -397,7 +407,7 @@ describe('closeReaderWindowOrGoToLibrary', () => {
     } as unknown as ReturnType<typeof getCurrentWindow>);
 
     const router = mockRouter();
-    await closeReaderWindowOrGoToLibrary(makeAppServiceWithWindow() as never, router);
+    await closeReaderWindowOrGoToLibrary(router);
 
     expect(close).not.toHaveBeenCalled();
     expect(router.navigate).toHaveBeenCalledWith({ to: '/library', replace: true });
@@ -405,6 +415,7 @@ describe('closeReaderWindowOrGoToLibrary', () => {
 
   test('in dedicated reader window, ensures main library window and closes self', async () => {
     vi.mocked(isTauriAppPlatform).mockReturnValue(true);
+    setPlatformInfo({ hasWindow: true });
     const close = vi.fn().mockResolvedValue(undefined);
     vi.mocked(getCurrentWindow).mockReturnValue({
       label: 'reader-0',
@@ -418,7 +429,7 @@ describe('closeReaderWindowOrGoToLibrary', () => {
     WebviewWindowCtor.getByLabel.mockResolvedValue(main);
 
     const router = mockRouter();
-    await closeReaderWindowOrGoToLibrary(makeAppServiceWithWindow() as never, router);
+    await closeReaderWindowOrGoToLibrary(router);
 
     expect(WebviewWindowCtor.getByLabel).toHaveBeenCalledWith('main');
     expect(main.show).toHaveBeenCalled();
@@ -428,10 +439,11 @@ describe('closeReaderWindowOrGoToLibrary', () => {
 
   test('uses lastLibraryParams from sessionStorage when navigating', async () => {
     vi.mocked(isTauriAppPlatform).mockReturnValue(false);
+    setPlatformInfo({ hasWindow: true });
     sessionStorage.setItem('lastLibraryParams', 'sort=author');
 
     const router = mockRouter();
-    await closeReaderWindowOrGoToLibrary(makeAppServiceWithWindow() as never, router);
+    await closeReaderWindowOrGoToLibrary(router);
 
     expect(router.navigate).toHaveBeenCalledWith({
       to: '/library?sort=author',
@@ -439,11 +451,12 @@ describe('closeReaderWindowOrGoToLibrary', () => {
     });
   });
 
-  test('falls back to navigation when appService is null', async () => {
+  test('falls back to navigation when the platform has no window', async () => {
     vi.mocked(isTauriAppPlatform).mockReturnValue(true);
+    setPlatformInfo({ hasWindow: false });
 
     const router = mockRouter();
-    await closeReaderWindowOrGoToLibrary(null, router);
+    await closeReaderWindowOrGoToLibrary(router);
 
     expect(router.navigate).toHaveBeenCalledWith({ to: '/library', replace: true });
   });
