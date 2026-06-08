@@ -5,6 +5,7 @@ import { Platform } from '@/application/ports/Platform';
 import { FileSystem } from '@/application/ports/FileSystem';
 import { PathResolver } from '@/application/ports/PathResolver';
 import { PathState } from '@/application/ports/PathState';
+import { BootApp } from '@/application/usecases/boot/BootApp';
 
 describe('testRuntime', () => {
   it('provides Platform, PathState, PathResolver, FileSystem together', async () => {
@@ -23,5 +24,16 @@ describe('testRuntime', () => {
       }),
     );
     expect(result).toEqual({ platform: 'web', abs: '/r/Books/book.epub', back: 'data' });
+  });
+
+  it('runs BootApp through the wired SettingsRepository + MigrationService', async () => {
+    const result = await testRuntime.runPromise(
+      Effect.gen(function* () {
+        const { platform, settings } = yield* BootApp;
+        return { appPlatform: platform.appPlatform, hasSettings: !!settings };
+      }),
+    );
+    expect(result.appPlatform).toBe('web');
+    expect(result.hasSettings).toBe(true);
   });
 });
