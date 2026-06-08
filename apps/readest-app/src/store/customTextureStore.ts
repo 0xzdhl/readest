@@ -1,5 +1,8 @@
 import { create } from 'zustand';
+import { Effect } from 'effect';
 import type { EnvConfigType } from '@/services/environment';
+import { getClientRuntime } from '@/runtime/clientRuntime';
+import { FileSystem } from '@/application/ports/FileSystem';
 import {
   PREDEFINED_TEXTURES,
   createCustomTexture,
@@ -235,7 +238,7 @@ export const useCustomTextureStore = create<TextureStoreState>((set, get) => ({
     set({ textures: [] });
   },
 
-  loadTexture: async (envConfig, textureId) => {
+  loadTexture: async (_envConfig, textureId) => {
     const texture = get().getTexture(textureId);
 
     if (!texture) {
@@ -256,8 +259,9 @@ export const useCustomTextureStore = create<TextureStoreState>((set, get) => ({
         error: undefined,
       });
 
-      const appService = await envConfig.getAppService();
-      const textureFile = await appService.openFile(texture.path, 'Images');
+      const textureFile = await getClientRuntime().runPromise(
+        Effect.flatMap(FileSystem, (fs) => fs.openFile(texture.path, 'Images')),
+      );
 
       const ext = texture.path.split('.').pop()?.toLowerCase();
       const mimeTypes: { [key: string]: string } = {

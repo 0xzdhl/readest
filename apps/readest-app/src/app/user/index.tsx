@@ -3,6 +3,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { createFileRoute, useRouter } from '@tanstack/react-router';
 import { z } from 'zod';
 import { useEnv } from '@/context/EnvContext';
+import { usePlatformInfo } from '@/context/EffectRuntimeProvider';
 import { useAuth } from '@/context/AuthContext';
 import { useTheme } from '@/hooks/useTheme';
 import { useThemeStore } from '@/store/themeStore';
@@ -63,6 +64,7 @@ function ProfilePage() {
   const _ = useTranslation();
   const router = useRouter();
   const { appService } = useEnv();
+  const platformInfo = usePlatformInfo();
   const { user, refresh } = useAuth();
   const { safeAreaInsets, isRoundedWindow } = useThemeStore();
 
@@ -101,7 +103,7 @@ function ProfilePage() {
     useUserActions();
 
   const { availablePlans, iapAvailable } = useAvailablePlans({
-    hasIAP: appService?.hasIAP || false,
+    hasIAP: platformInfo.hasIAP,
     onError: useCallback(
       (message: string) => {
         eventDispatcher.dispatch('toast', {
@@ -287,7 +289,7 @@ function ProfilePage() {
     <div
       className={clsx(
         'bg-base-100 full-height inset-0 select-none overflow-hidden',
-        appService?.hasRoundedWindow && isRoundedWindow && 'window-border rounded-window',
+        platformInfo.hasRoundedWindow && isRoundedWindow && 'window-border rounded-window',
       )}
     >
       <div
@@ -348,7 +350,7 @@ function ProfilePage() {
                         availablePlans={availablePlans}
                         userPlan={userProfilePlan}
                         onSubscribe={
-                          appService.hasIAP && iapAvailable
+                          platformInfo.hasIAP && iapAvailable
                             ? handleIAPSubscribe
                             : handleStripeSubscribe
                         }

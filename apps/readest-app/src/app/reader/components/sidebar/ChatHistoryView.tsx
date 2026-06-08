@@ -8,7 +8,9 @@ import { useBookDataStore } from '@/store/bookDataStore';
 import { useAIChatStore } from '@/store/aiChatStore';
 import { useNotebookStore } from '@/store/notebookStore';
 import type { AIConversation } from '@/domain/ai';
-import { useEnv } from '@/context/EnvContext';
+import { Effect } from 'effect';
+import { useRunEffect } from '@/context/EffectRuntimeProvider';
+import { Dialog } from '@/application/ports/Dialog';
 
 interface ChatHistoryViewProps {
   bookKey: string;
@@ -16,7 +18,7 @@ interface ChatHistoryViewProps {
 
 const ChatHistoryView: React.FC<ChatHistoryViewProps> = ({ bookKey }) => {
   const _ = useTranslation();
-  const { appService } = useEnv();
+  const runEffect = useRunEffect();
   const { getBookData } = useBookDataStore();
   const {
     conversations,
@@ -61,12 +63,14 @@ const ChatHistoryView: React.FC<ChatHistoryViewProps> = ({ bookKey }) => {
   const handleDeleteConversation = useCallback(
     async (e: React.MouseEvent, id: string) => {
       e.stopPropagation();
-      if (!appService) return;
-      if (await appService.ask(_('Delete this conversation?'))) {
+      const confirmed = await runEffect(
+        Effect.flatMap(Dialog, (dialog) => dialog.ask(_('Delete this conversation?'))),
+      );
+      if (confirmed) {
         await deleteConversation(id);
       }
     },
-    [deleteConversation, _, appService],
+    [deleteConversation, _, runEffect],
   );
 
   const handleStartRename = useCallback((e: React.MouseEvent, conversation: AIConversation) => {

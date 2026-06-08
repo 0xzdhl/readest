@@ -1,4 +1,8 @@
+import { Effect } from 'effect';
 import type { AppService } from '@/domain/system';
+import type { DatabaseService } from '@/domain/database';
+import { Database } from '@/application/ports/Database';
+import { getClientRuntime } from '@/runtime/clientRuntime';
 
 type HardcoverSyncMapRow = {
   book_hash: string;
@@ -25,20 +29,25 @@ const UPSERT_SQL = `
      synced_at = excluded.synced_at
 `;
 
-type OpenDb = Awaited<ReturnType<AppService['openDatabase']>>;
+type OpenDb = DatabaseService;
 
 export class HardcoverSyncMapStore {
-  private appService: AppService;
   private loadedBookHash: string | null = null;
   private mappings: Map<string, HardcoverSyncMapRow> = new Map();
   private modified: boolean = false;
 
-  constructor(appService: AppService) {
-    this.appService = appService;
-  }
+  // appService is retained in the signature for call-site compatibility; the
+  // database is now opened through the Effect Database port via the client
+  // runtime, so the instance is no longer used directly.
+  // biome-ignore lint/complexity/noUselessConstructor: keep AppService param for call-site signature compatibility
+  constructor(_appService: AppService) {}
 
   private async withDb<T>(fn: (db: OpenDb) => Promise<T>) {
-    const db = await this.appService.openDatabase(DB_SCHEMA, DB_PATH, 'Data');
+    const db = await getClientRuntime().runPromise(
+      Effect.flatMap(Database, (database) =>
+        database.open({ schema: DB_SCHEMA, path: DB_PATH, base: 'Data' }),
+      ),
+    );
     try {
       return await fn(db);
     } finally {

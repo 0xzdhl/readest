@@ -1,5 +1,7 @@
 import { create } from 'zustand';
 import type { AppService } from '@/domain/system';
+import { getClientRuntime } from '@/runtime/clientRuntime';
+import { SaveSettings } from '@/application/usecases/settings/SaveSettings';
 import { getThemeCode, type ThemeCode } from '@/utils/style';
 import { getSystemColorScheme } from '@/utils/bridge';
 import { getCurrentWindow } from '@tauri-apps/api/window';
@@ -112,7 +114,7 @@ export const useThemeStore = create<ThemeState>((set, get) => {
         document.querySelector('meta[name="theme-color"]')?.setAttribute('content', palette[color]);
       }
     },
-    saveCustomTheme: async (envConfig, settings, theme, isDelete) => {
+    saveCustomTheme: async (_envConfig, settings, theme, isDelete) => {
       const customThemes = settings.globalReadSettings.customThemes || [];
       const index = customThemes.findIndex((t) => t.name === theme.name);
       if (isDelete) {
@@ -128,8 +130,7 @@ export const useThemeStore = create<ThemeState>((set, get) => {
       }
       settings.globalReadSettings.customThemes = customThemes;
       localStorage.setItem('customThemes', JSON.stringify(customThemes));
-      const appService = await envConfig.getAppService();
-      await appService.saveSettings(settings);
+      await getClientRuntime().runPromise(SaveSettings(settings));
     },
     handleSystemThemeChange: (systemIsDarkMode) => {
       const mode = get().themeMode;

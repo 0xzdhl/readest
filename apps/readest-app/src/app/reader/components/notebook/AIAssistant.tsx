@@ -22,7 +22,9 @@ import {
   clearLastSources,
 } from '@/services/ai';
 import type { EmbeddingProgress, AISettings, AIMessage } from '@/domain/ai';
-import { useEnv } from '@/context/EnvContext';
+import { Effect } from 'effect';
+import { useRunEffect } from '@/context/EffectRuntimeProvider';
+import { Dialog } from '@/application/ports/Dialog';
 
 import { Button } from '@/components/ui/button';
 import { Loader2Icon, BookOpenIcon } from 'lucide-react';
@@ -232,7 +234,7 @@ const ThreadWrapper = ({
 
 const AIAssistant = ({ bookKey }: AIAssistantProps) => {
   const _ = useTranslation();
-  const { appService } = useEnv();
+  const runEffect = useRunEffect();
   const { settings } = useSettingsStore();
   const { getBookData } = useBookDataStore();
   const { getProgress } = useReaderStore();
@@ -282,11 +284,15 @@ const AIAssistant = ({ bookKey }: AIAssistantProps) => {
   }, [bookData?.bookDoc, bookHash, aiSettings]);
 
   const handleResetIndex = useCallback(async () => {
-    if (!appService) return;
-    if (!(await appService.ask(_('Are you sure you want to re-index this book?')))) return;
+    const confirmed = await runEffect(
+      Effect.flatMap(Dialog, (dialog) =>
+        dialog.ask(_('Are you sure you want to re-index this book?')),
+      ),
+    );
+    if (!confirmed) return;
     await aiStore.clearBook(bookHash);
     setIndexed(false);
-  }, [bookHash, appService, _]);
+  }, [bookHash, runEffect, _]);
 
   if (!aiSettings?.enabled) {
     return (

@@ -1,4 +1,7 @@
 import { create } from 'zustand';
+import { Effect } from 'effect';
+import { getClientRuntime } from '@/runtime/clientRuntime';
+import { FileSystem } from '@/application/ports/FileSystem';
 import type { EnvConfigType } from '@/services/environment';
 import { createCustomFont, getFontFormat, getMimeType, mountCustomFont } from '@/styles/fonts';
 import type { CustomFont } from '@/domain/fonts';
@@ -226,7 +229,7 @@ export const useCustomFontStore = create<FontStoreState>((set, get) => ({
     set({ fonts: [] });
   },
 
-  loadFont: async (envConfig, fontId) => {
+  loadFont: async (_envConfig, fontId) => {
     const font = get().getFont(fontId);
 
     if (!font) {
@@ -247,8 +250,9 @@ export const useCustomFontStore = create<FontStoreState>((set, get) => ({
         error: undefined,
       });
 
-      const appService = await envConfig.getAppService();
-      const fontFile = await appService.openFile(font.path, 'Fonts');
+      const fontFile = await getClientRuntime().runPromise(
+        Effect.flatMap(FileSystem, (fs) => fs.openFile(font.path, 'Fonts')),
+      );
 
       const format = getFontFormat(font.path);
       const mimeType = getMimeType(format);

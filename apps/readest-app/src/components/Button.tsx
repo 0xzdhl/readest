@@ -1,6 +1,6 @@
 import clsx from 'clsx';
 import type React from 'react';
-import { useEnv } from '@/context/EnvContext';
+import { usePlatformInfo } from '@/context/EffectRuntimeProvider';
 
 interface ButtonProps {
   icon: React.ReactNode;
@@ -11,12 +11,12 @@ interface ButtonProps {
 }
 
 const Button: React.FC<ButtonProps> = ({ icon, onClick, disabled = false, label, className }) => {
-  const { appService } = useEnv();
+  const platformInfo = usePlatformInfo();
   return (
     <button
       className={clsx(
         'btn btn-ghost h-8 min-h-8 w-8 p-0',
-        appService?.isMobileApp && 'hover:bg-transparent',
+        platformInfo.isMobileApp && 'hover:bg-transparent',
         disabled && 'cursor-default !bg-transparent opacity-50',
         className,
       )}

@@ -1,5 +1,7 @@
 import { useEffect, useState } from 'react';
-import { useEnv } from '@/context/EnvContext';
+import { Effect } from 'effect';
+import { useRunEffect, usePlatformInfo } from '@/context/EffectRuntimeProvider';
+import { FileSystem } from '@/application/ports/FileSystem';
 import { impactFeedback } from '@tauri-apps/plugin-haptics';
 import { eventDispatcher } from '@/utils/event';
 import type { SelectedFile } from '@/domain/file-selector';
@@ -20,16 +22,26 @@ export const useDragDropImport = () => {
   const searchParams = new URLSearchParams(location.searchStr);
   const group = searchParams?.get('group') || '';
 
-  const { appService } = useEnv();
+  const runEffect = useRunEffect();
+  const platformInfo = usePlatformInfo();
   const [isDragging, setIsDragging] = useState(false);
 
+  const isDirectory = (path: string) =>
+    runEffect(
+      FileSystem.pipe(
+        Effect.flatMap((fs) => fs.stat(path, 'None')),
+        Effect.map((info) => info.isDirectory),
+        Effect.catchAll(() => Effect.succeed(false)),
+      ),
+    );
+
   const handleDroppedFiles = async (droppedItems: File[] | string[]) => {
-    if (droppedItems.length === 0 || !appService) return;
+    if (droppedItems.length === 0) return;
 
     const fileItems: (File | string)[] = [];
     const directoryPaths: string[] = [];
     for (const item of droppedItems) {
-      if (typeof item === 'string' && (await appService.isDirectory(item, 'None'))) {
+      if (typeof item === 'string' && (await isDirectory(item))) {
         directoryPaths.push(item);
       } else {
         fileItems.push(item);
@@ -53,7 +65,7 @@ export const useDragDropImport = () => {
       return;
     }
 
-    if (appService.hasHaptics) {
+    if (platformInfo.hasHaptics) {
       impactFeedback('medium');
     }
 
@@ -93,7 +105,7 @@ export const useDragDropImport = () => {
 
   useEffect(() => {
     const libraryPage = document.querySelector('.library-page');
-    if (!appService?.isMobile) {
+    if (!platformInfo.isMobile) {
       libraryPage?.addEventListener('dragover', handleDragOver as unknown as EventListener);
       libraryPage?.addEventListener('dragleave', handleDragLeave as unknown as EventListener);
       libraryPage?.addEventListener('drop', handleDrop as unknown as EventListener);
@@ -116,7 +128,7 @@ export const useDragDropImport = () => {
     }
 
     return () => {
-      if (!appService?.isMobile) {
+      if (!platformInfo.isMobile) {
         libraryPage?.removeEventListener('dragover', handleDragOver as unknown as EventListener);
         libraryPage?.removeEventListener('dragleave', handleDragLeave as unknown as EventListener);
         libraryPage?.removeEventListener('drop', handleDrop as unknown as EventListener);

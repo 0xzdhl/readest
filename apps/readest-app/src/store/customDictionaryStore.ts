@@ -1,5 +1,8 @@
 import { create } from 'zustand';
+import { Effect } from 'effect';
 import type { EnvConfigType } from '@/services/environment';
+import { getClientRuntime } from '@/runtime/clientRuntime';
+import { FileSystem } from '@/application/ports/FileSystem';
 import type { DictionarySettings, ImportedDictionary, WebSearchEntry } from '@/domain/dictionaries';
 import { BUILTIN_PROVIDER_IDS, BUILTIN_WEB_SEARCH_IDS } from '@/domain/dictionaries';
 import { useSettingsStore } from './settingsStore';
@@ -481,16 +484,18 @@ export const useCustomDictionaryStore = create<DictionaryStoreState>((set, get) 
     }));
   },
 
-  loadCustomDictionaries: async (envConfig) => {
+  loadCustomDictionaries: async (_envConfig) => {
     try {
       const { settings } = useSettingsStore.getState();
       const persisted = settings?.customDictionaries ?? [];
       const persistedSettings = settings?.dictionarySettings ?? DEFAULT_DICTIONARY_SETTINGS;
-      const appService = await envConfig.getAppService();
+      const runtime = getClientRuntime();
       const dictionaries = await Promise.all(
         persisted.map(async (dict) => {
           if (dict.deletedAt) return dict;
-          const exists = await appService.exists(dict.bundleDir, 'Dictionaries');
+          const exists = await runtime.runPromise(
+            Effect.flatMap(FileSystem, (fs) => fs.exists(dict.bundleDir, 'Dictionaries')),
+          );
           return exists ? dict : { ...dict, unavailable: true };
         }),
       );

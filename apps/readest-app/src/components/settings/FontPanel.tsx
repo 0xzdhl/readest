@@ -1,6 +1,7 @@
 import clsx from 'clsx';
 import type React from 'react';
 import { useEffect, useState } from 'react';
+import { usePlatformInfo } from '@/context/EffectRuntimeProvider';
 import { useEnv } from '@/context/EnvContext';
 import { saveViewSettings } from '@/helpers/settings';
 import { useResetViewSettings } from '@/hooks/useResetSettings';
@@ -92,7 +93,8 @@ const FontFace = ({
 
 const FontPanel: React.FC<SettingsPanelPanelProp> = ({ bookKey, onRegisterReset }) => {
   const _ = useTranslation();
-  const { envConfig, appService } = useEnv();
+  const { envConfig } = useEnv();
+  const platformInfo = usePlatformInfo();
   const { getView, getViewSettings } = useReaderStore();
   const { settings, fontPanelView, setFontPanelView } = useSettingsStore();
   const { fonts: allCustomFonts, getFontFamilies } = useCustomFontStore();
@@ -174,7 +176,7 @@ const FontPanel: React.FC<SettingsPanelPanelProp> = ({ bookKey, onRegisterReset 
   useEffect(() => {
     onRegisterReset(handleReset);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [appService]);
+  }, []);
 
   useEffect(() => {
     setCJKFonts((prev) => {
@@ -194,7 +196,7 @@ const FontPanel: React.FC<SettingsPanelPanelProp> = ({ bookKey, onRegisterReset 
   }, [viewSettings.serifFont, viewSettings.sansSerifFont, viewSettings.monospaceFont]);
 
   useEffect(() => {
-    if (isTauriAppPlatform() && appService && !appService.isAndroidApp) {
+    if (isTauriAppPlatform() && !platformInfo.isAndroidApp) {
       getSysFontsList().then((res) => {
         if (res.error || Object.keys(res.fonts).length === 0) {
           console.error('Failed to get system fonts list:', res.error);
@@ -217,7 +219,7 @@ const FontPanel: React.FC<SettingsPanelPanelProp> = ({ bookKey, onRegisterReset 
         setSysFonts([...new Set(processedFonts)].sort((a, b) => a.localeCompare(b)));
       });
     }
-  }, [appService]);
+  }, [platformInfo.isAndroidApp]);
 
   useEffect(() => {
     saveViewSettings(envConfig, bookKey, 'defaultFont', defaultFont);
