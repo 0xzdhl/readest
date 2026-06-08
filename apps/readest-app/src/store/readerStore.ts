@@ -12,7 +12,7 @@ import {
 import type { Insets } from '@/domain/misc';
 import type { EnvConfigType } from '@/services/environment';
 import { clientEnv } from '@/clientEnv';
-import type { FoliateView } from '@/types/view';
+import type { FoliateView } from '@/domain/view';
 import { DocumentLoader } from '@/libs/document';
 import type { TOCItem } from '@/domain/document';
 import {

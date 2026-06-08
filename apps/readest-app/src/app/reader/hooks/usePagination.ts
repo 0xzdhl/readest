@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 import { useEnv } from '@/context/EnvContext';
-import type { FoliateView } from '@/types/view';
+import type { FoliateView } from '@/domain/view';
 import type { ViewSettings } from '@/domain/book';
 import { useReaderStore } from '@/store/readerStore';
 import { useBookDataStore } from '@/store/bookDataStore';

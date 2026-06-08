@@ -15,7 +15,7 @@ import { FootnoteHandler } from 'foliate-js/footnotes.js';
 import { mountAdditionalFonts, mountCustomFont } from '@/styles/fonts';
 import { eventDispatcher } from '@/utils/event';
 import { shouldCheckAsFootnote } from '../utils/footnoteHeuristics';
-import type { FoliateView } from '@/types/view';
+import type { FoliateView } from '@/domain/view';
 import { isCJKLang } from '@/utils/lang';
 import { Overlay } from '@/components/Overlay';
 import Popup from '@/components/Popup';

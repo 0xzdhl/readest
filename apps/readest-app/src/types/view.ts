@@ -1,8 +1,6 @@
 import type { BookNote } from '@/domain/book';
 import type { FoliateView } from '@/domain/view';
 
-export type { Renderer, FoliateView } from '@/domain/view';
-
 export const NOTE_PREFIX = 'foliate-note:';
 
 export const wrappedFoliateView = (originalView: FoliateView): FoliateView => {

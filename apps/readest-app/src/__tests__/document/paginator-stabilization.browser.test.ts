@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeAll, afterAll, afterEach } from 'vitest';
 import { DocumentLoader } from '@/libs/document';
 import type { BookDoc } from '@/domain/document';
-import type { Renderer } from '@/types/view';
+import type { Renderer } from '@/domain/view';
 
 // Vite serves fixture files; fetch the EPUB at runtime in the browser.
 const EPUB_URL = new URL('../fixtures/data/sample-alice.epub', import.meta.url).href;

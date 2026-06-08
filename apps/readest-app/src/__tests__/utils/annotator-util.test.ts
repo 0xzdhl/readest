@@ -9,7 +9,7 @@ import type { Point } from '@/domain/selection';
 import type { BookNote, UserHighlightColor } from '@/domain/book';
 import type { SystemSettings } from '@/domain/settings';
 import { NOTE_PREFIX } from '@/types/view';
-import type { FoliateView } from '@/types/view';
+import type { FoliateView } from '@/domain/view';
 
 describe('getExternalDragHandle', () => {
   const currentStart: Point = { x: 100, y: 200 };
