@@ -5,6 +5,8 @@ import type { PathResolver } from '@/application/ports/PathResolver';
 import type { FileSystem } from '@/application/ports/FileSystem';
 import type { Dialog } from '@/application/ports/Dialog';
 import type { Database } from '@/application/ports/Database';
+import type { SettingsRepository } from '@/application/repositories/SettingsRepository';
+import type { MigrationService } from '@/application/services/MigrationService';
 import { isTauriAppPlatform } from '@/services/environment';
 import { tauriClientRuntime } from './client-tauri';
 import { webClientRuntime } from './client-web';
@@ -12,7 +14,15 @@ import { webClientRuntime } from './client-web';
 // The Tauri and Web client runtimes provide the same set of port tags, but their inferred
 // `ManagedRuntime` types are not structurally identical (distinct Live layers). Pin both to a
 // shared alias built from the union of provided port tags so the singleton + ternary typecheck.
-type ClientServices = Platform | PathState | PathResolver | FileSystem | Dialog | Database;
+type ClientServices =
+  | Platform
+  | PathState
+  | PathResolver
+  | FileSystem
+  | Dialog
+  | Database
+  | SettingsRepository
+  | MigrationService;
 type ClientRuntime = ManagedRuntime.ManagedRuntime<ClientServices, never>;
 
 // `Platform.info` in the original plan referenced the service field on the Tag; `info` lives on

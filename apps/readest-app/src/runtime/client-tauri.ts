@@ -5,6 +5,8 @@ import { TauriPathResolverLive } from '@/infra/tauri/TauriPathResolver.layer';
 import { TauriFileSystemLive } from '@/infra/tauri/TauriFileSystem.layer';
 import { TauriDialogLive } from '@/infra/tauri/TauriDialog.layer';
 import { TauriDatabaseLive } from '@/infra/tauri/TauriDatabase.layer';
+import { SettingsRepositoryLive } from '@/infra/shared/SettingsRepository.layer';
+import { MigrationServiceLive } from '@/infra/shared/MigrationService.layer';
 
 // PathState is shared by PathResolver, FileSystem, Database — build it once and feed
 // it to all three. PathResolver depends on PathState; FileSystem/Database/Dialog depend
@@ -18,6 +20,18 @@ const Consumers = Layer.provide(
   ResolverWithState,
 );
 
-export const TauriClientLayer = Layer.mergeAll(TauriPlatformLive, ResolverWithState, Consumers);
+// SettingsRepository + MigrationService are shared (platform-agnostic) layers built over the
+// ports. BootApp (run observe-only by the bridge) requires them, so expose them from the runtime.
+const SharedRepos = Layer.provide(
+  Layer.mergeAll(SettingsRepositoryLive, MigrationServiceLive),
+  Layer.mergeAll(TauriPlatformLive, ResolverWithState, Consumers),
+);
+
+export const TauriClientLayer = Layer.mergeAll(
+  TauriPlatformLive,
+  ResolverWithState,
+  Consumers,
+  SharedRepos,
+);
 
 export const tauriClientRuntime = ManagedRuntime.make(TauriClientLayer);
