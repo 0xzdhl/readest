@@ -497,10 +497,17 @@ function OPDSBrowserPage() {
 
           const { library, setLibrary } = useLibraryStore.getState();
           try {
-            const { imported, library: nextLibrary } = await runEffect(
-              importBooks(library, [{ file: dstFilePath }]),
-            );
+            const {
+              imported,
+              failed,
+              library: nextLibrary,
+            } = await runEffect(importBooks(library, [{ file: dstFilePath }]));
             const book = imported[0] ?? null;
+            if (!book && failed.length > 0) {
+              // Surface the import failure like the legacy appService.importBook throw,
+              // so the caller's catch shows the "Import failed" toast instead of success.
+              throw failed[0]!.error;
+            }
             if (user && book && !book.uploadedAt && settings.autoUpload) {
               setTimeout(() => {
                 transferManager.queueUpload(book);

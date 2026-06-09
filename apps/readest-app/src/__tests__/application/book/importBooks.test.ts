@@ -101,6 +101,8 @@ describe('importBooks usecase', () => {
     expect(res.imported.map((b) => b.hash)).toEqual(['a']);
     expect(res.failed).toHaveLength(1);
     expect(res.failed[0]!.filename).toBe('fail');
+    expect(res.failed[0]!.error).toBeInstanceOf(Error);
+    expect((res.failed[0]!.error as Error).message).toBe('boom');
   });
 
   it('skips persistence when persist:false', async () => {
