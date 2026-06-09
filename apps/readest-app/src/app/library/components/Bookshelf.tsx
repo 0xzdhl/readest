@@ -52,6 +52,8 @@ import ShareBookDialog from './ShareBookDialog';
 import { useAuth } from '@/context/AuthContext';
 import GroupingModal from './GroupingModal';
 import SetStatusAlert from './SetStatusAlert';
+import { useRunEffect } from '@/context/EffectRuntimeProvider';
+import { importBooks } from '@/application/usecases/book';
 
 interface BookshelfProps {
   libraryBooks: Book[];
@@ -168,6 +170,7 @@ const Bookshelf: React.FC<BookshelfProps> = ({
   const [showGroupingModal, setShowGroupingModal] = useState(false);
   const [importBookUrl] = useState(searchParams?.get('url') || '');
 
+  const runEffect = useRunEffect();
   const abortDeletionRef = useRef(false);
   const isImportingBook = useRef(false);
   const iconSize15 = useResponsiveSize(15);
@@ -315,20 +318,22 @@ const Bookshelf: React.FC<BookshelfProps> = ({
     if (isImportingBook.current) return;
     isImportingBook.current = true;
 
-    if (importBookUrl && appService) {
+    if (importBookUrl) {
       const importBook = async () => {
         console.log('Importing book from URL:', importBookUrl);
-        const book = await appService.importBook(importBookUrl, libraryBooks);
+        const { imported, library } = await runEffect(
+          importBooks(libraryBooks, [{ file: importBookUrl }]),
+        );
+        const book = imported[0];
         if (book) {
-          setLibrary(libraryBooks);
-          appService.saveLibraryBooks(libraryBooks);
+          setLibrary(library);
           navigateToReader(router, [book.hash]);
         }
       };
       importBook();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [importBookUrl, appService]);
+  }, [importBookUrl]);
 
   useEffect(() => {
     setCurrentBookshelf(currentBookshelfItems);
