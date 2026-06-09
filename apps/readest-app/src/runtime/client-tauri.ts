@@ -7,6 +7,9 @@ import { TauriDialogLive } from '@/infra/tauri/TauriDialog.layer';
 import { TauriDatabaseLive } from '@/infra/tauri/TauriDatabase.layer';
 import { SettingsRepositoryLive } from '@/infra/shared/SettingsRepository.layer';
 import { MigrationServiceLive } from '@/infra/shared/MigrationService.layer';
+import { CoverServiceLive } from '@/infra/shared/CoverService.layer';
+import { BookRepositoryLive } from '@/infra/shared/BookRepository.layer';
+import { LibraryRepositoryLive } from '@/infra/shared/LibraryRepository.layer';
 
 // PathState is shared by PathResolver, FileSystem, Database — build it once and feed
 // it to all three. PathResolver depends on PathState; FileSystem/Database/Dialog depend
@@ -20,11 +23,25 @@ const Consumers = Layer.provide(
   ResolverWithState,
 );
 
-// SettingsRepository + MigrationService are shared (platform-agnostic) layers built over the
-// ports. BootApp (run observe-only by the bridge) requires them, so expose them from the runtime.
-const SharedRepos = Layer.provide(
-  Layer.mergeAll(SettingsRepositoryLive, MigrationServiceLive),
-  Layer.mergeAll(TauriPlatformLive, ResolverWithState, Consumers),
+// Base over which the shared (platform-agnostic) repos/services are built: Platform plus the
+// resolved PathResolver/PathState and the FileSystem/Database/Dialog consumers.
+const SharedBase = Layer.mergeAll(TauriPlatformLive, ResolverWithState, Consumers);
+
+// SettingsRepository + MigrationService + CoverService + BookRepository depend only on the base
+// (FileSystem/PathResolver/Platform). LibraryRepository additionally depends on CoverService, so
+// build CoverService once (provideMerge keeps it in the output) and layer the rest — including
+// LibraryRepository — over the base extended with that CoverService. BootApp (run observe-only by
+// the bridge) requires them, so expose them from the runtime.
+const SharedBaseWithCover = Layer.provideMerge(CoverServiceLive, SharedBase);
+
+const SharedRepos = Layer.provideMerge(
+  Layer.mergeAll(
+    SettingsRepositoryLive,
+    MigrationServiceLive,
+    BookRepositoryLive,
+    LibraryRepositoryLive,
+  ),
+  SharedBaseWithCover,
 );
 
 export const TauriClientLayer = Layer.mergeAll(
