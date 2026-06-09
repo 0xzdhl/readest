@@ -640,7 +640,7 @@ export class NativeAppService extends BaseAppService {
     const newDir = await this.fs.getPrefix('Images');
     const oldDir = await join(rootPath, 'Images', 'Readest', 'Images');
 
-    await copyFiles(this, oldDir, newDir);
+    await copyFiles(oldDir, newDir);
 
     const dirToDelete = await join(rootPath, 'Images', 'Readest');
     await this.deleteDir(dirToDelete, 'None', true);
