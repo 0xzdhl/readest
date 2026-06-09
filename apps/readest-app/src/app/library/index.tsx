@@ -8,8 +8,10 @@ import { z } from 'zod';
 import type { Book } from '@/domain/book';
 import type { BookMetadata } from '@/domain/document';
 import type { AppService, DeleteAction } from '@/domain/system';
-import { buildBookLookupIndex } from '@/services/bookService';
+import { Effect } from 'effect';
 import { navigateToLibrary, navigateToReader } from '@/utils/nav';
+import { LibraryRepository } from '@/application/repositories/LibraryRepository';
+import { importBooks as importBooksUsecase } from '@/application/usecases/book';
 import { formatAuthors, formatTitle, getPrimaryLanguage, listFormater } from '@/utils/book';
 import { getImportErrorMessage } from '@/services/errors';
 import { eventDispatcher } from '@/utils/event';
@@ -25,6 +27,7 @@ import { getCurrentWebview } from '@tauri-apps/api/webview';
 
 import { useEnv } from '@/context/EnvContext';
 import { useAuth } from '@/context/AuthContext';
+import { useRunEffect } from '@/context/EffectRuntimeProvider';
 import { useThemeStore } from '@/store/themeStore';
 import { useTranslation } from '@/hooks/useTranslation';
 import { useLibraryStore } from '@/store/libraryStore';
@@ -131,6 +134,7 @@ const LibraryPageContent = () => {
     setCheckLastOpenBooks,
   } = useLibraryStore();
   const _ = useTranslation();
+  const runEffect = useRunEffect();
   const { selectFiles } = useFileSelector(appService, _);
   const { safeAreaInsets: insets, isRoundedWindow } = useThemeStore();
   const { clearBookData } = useBookDataStore();
@@ -380,27 +384,27 @@ const LibraryPageContent = () => {
     async (appService: AppService, openWithFiles: string[], libraryBooks: Book[]) => {
       const settings = await appService.loadSettings();
       const bookIds: string[] = [];
-      for (const file of openWithFiles) {
-        console.log('Open with book:', file);
-        try {
-          const temp = appService.isMobile ? false : !settings.autoImportBooksOnOpen;
-          const book = await appService.importBook(file, libraryBooks, { transient: temp });
-          if (book) {
-            bookIds.push(book.hash);
-          }
-          if (user && book && !temp && !book.uploadedAt && settings.autoUpload) {
-            setTimeout(() => {
-              console.log('Queueing upload for book:', book.title);
-              transferManager.queueUpload(book);
-              // wait for the initialization of the transfer manager and opening of the book
-            }, 3000);
-          }
-        } catch (error) {
-          console.log('Failed to import book:', file, error);
-        }
-      }
-      setLibrary(libraryBooks);
-      appService.saveLibraryBooks(libraryBooks);
+      const temp = appService.isMobile ? false : !settings.autoImportBooksOnOpen;
+      const { library: nextLibrary } = await runEffect(
+        importBooksUsecase(
+          libraryBooks,
+          openWithFiles.map((file) => ({ file })),
+          {
+            transient: temp,
+            onImported: (book) => {
+              bookIds.push(book.hash);
+              if (user && !temp && !book.uploadedAt && settings.autoUpload) {
+                setTimeout(() => {
+                  console.log('Queueing upload for book:', book.title);
+                  transferManager.queueUpload(book);
+                  // wait for the initialization of the transfer manager and opening of the book
+                }, 3000);
+              }
+            },
+          },
+        ),
+      );
+      setLibrary(nextLibrary);
 
       console.log('Opening books:', bookIds);
       if (bookIds.length > 0) {
@@ -573,7 +577,7 @@ const LibraryPageContent = () => {
         }
       }
       setLibrary(newLibrary);
-      appService?.saveLibraryBooks(newLibrary);
+      void runEffect(Effect.flatMap(LibraryRepository, (r) => r.save(newLibrary)));
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [demoBooks, libraryLoaded]);
@@ -581,63 +585,53 @@ const LibraryPageContent = () => {
   const importBooks = async (files: SelectedFile[], groupId?: string) => {
     setLoading(true);
     const { library } = useLibraryStore.getState();
-    // Build the lookup index ONCE per import batch so each book lookup is
-    // O(1) instead of O(n) over the existing library. importBook also keeps
-    // the index updated as new books are appended, so subsequent files in
-    // the same batch see the additions.
-    const lookupIndex = buildBookLookupIndex(library);
     const failedImports: Array<{ filename: string; errorMessage: string }> = [];
     const successfulImports: string[] = [];
 
-    const processFile = async (selectedFile: SelectedFile): Promise<Book | null> => {
+    const inputs: Array<{ file: string | File; path?: string; basePath?: string }> = [];
+    for (const selectedFile of files) {
       const file = selectedFile.file || selectedFile.path;
-      if (!file) return null;
-      try {
-        const book = await appService?.importBook(file, library, { lookupIndex });
-        if (!book) return null;
-        const { path, basePath } = selectedFile;
-        if (groupId) {
-          book.groupId = groupId;
-          book.groupName = getGroupName(groupId);
-        } else if (path && basePath) {
-          const rootPath = getDirPath(basePath);
-          const groupName = getDirPath(path).replace(rootPath, '').replace(/^\//, '');
-          book.groupName = groupName;
-          book.groupId = getGroupId(groupName);
-        }
+      if (!file) continue;
+      inputs.push({ file, path: selectedFile.path, basePath: selectedFile.basePath });
+    }
 
-        if (user && !book.uploadedAt && settings.autoUpload) {
-          console.log('Queueing upload for book:', book.title);
-          transferManager.queueUpload(book);
-        }
-        successfulImports.push(book.title);
-        return book;
-      } catch (error) {
-        const filename = typeof file === 'string' ? file : file.name;
-        const baseFilename = getFilename(filename);
-        const errorMessage = error instanceof Error ? _(getImportErrorMessage(error.message)) : '';
-        failedImports.push({ filename: baseFilename, errorMessage });
-        console.error('Failed to import book:', filename, error);
-        return null;
-      }
-    };
+    const { failed } = await runEffect(
+      importBooksUsecase(library, inputs, {
+        persist: false,
+        onImported: (book, input) => {
+          if (groupId) {
+            book.groupId = groupId;
+            book.groupName = getGroupName(groupId);
+          } else if (input.path && input.basePath) {
+            const rootPath = getDirPath(input.basePath);
+            const groupName = getDirPath(input.path).replace(rootPath, '').replace(/^\//, '');
+            book.groupName = groupName;
+            book.groupId = getGroupId(groupName);
+          }
+          if (user && !book.uploadedAt && settings.autoUpload) {
+            console.log('Queueing upload for book:', book.title);
+            transferManager.queueUpload(book);
+          }
+          successfulImports.push(book.title);
+        },
+        onBatch: (batch) => {
+          void updateBooks(envConfig, batch, { skipSave: true });
+        },
+      }),
+    );
 
-    const concurrency = 4;
-    for (let i = 0; i < files.length; i += concurrency) {
-      const batch = files.slice(i, i + concurrency);
-      const importedBooks = (await Promise.all(batch.map(processFile))).filter((book) => !!book);
-      // Update store state per batch (so the UI can render imported books
-      // incrementally) but defer disk persistence until the entire batch is
-      // done — saving library.json once per batch of 4 books was the dominant
-      // cost for large imports.
-      await updateBooks(envConfig, importedBooks, { skipSave: true });
+    for (const f of failed) {
+      const baseFilename = getFilename(f.filename);
+      const errorMessage =
+        f.error instanceof Error ? _(getImportErrorMessage(f.error.message)) : '';
+      failedImports.push({ filename: baseFilename, errorMessage });
+      console.error('Failed to import book:', f.filename, f.error);
     }
 
     // Persist the full library once after every file in the batch is done.
     if (successfulImports.length > 0) {
       const finalLibrary = useLibraryStore.getState().library;
-      const finalAppService = await envConfig.getAppService();
-      await finalAppService.saveLibraryBooks(finalLibrary);
+      await runEffect(Effect.flatMap(LibraryRepository, (r) => r.save(finalLibrary)));
     }
 
     pushLibrary();
