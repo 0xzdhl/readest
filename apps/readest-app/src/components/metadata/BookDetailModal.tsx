@@ -7,6 +7,7 @@ import type { BookMetadata } from '@/domain/document';
 import { useEnv } from '@/context/EnvContext';
 import { useRunEffect } from '@/context/EffectRuntimeProvider';
 import { BookRepository } from '@/application/repositories/BookRepository';
+import { exportBook } from '@/application/usecases/book';
 import { useThemeStore } from '@/store/themeStore';
 import { useTranslation } from '@/hooks/useTranslation';
 import { useMetadataEdit } from './useMetadataEdit';
@@ -50,7 +51,7 @@ const BookDetailModal: React.FC<BookDetailModalProps> = ({
   handleBookMetadataUpdate,
 }) => {
   const _ = useTranslation();
-  const { envConfig, appService } = useEnv();
+  const { envConfig } = useEnv();
   const runEffect = useRunEffect();
   const { safeAreaInsets } = useThemeStore();
   const [activeDeleteAction, setActiveDeleteAction] = useState<DeleteAction | null>(null);
@@ -178,7 +179,7 @@ const BookDetailModal: React.FC<BookDetailModalProps> = ({
   const handleBookExport = async () => {
     setIsLoading(true);
     setTimeout(async () => {
-      const success = await appService?.exportBook(book);
+      const success = await runEffect(exportBook(book));
       setIsLoading(false);
       if (!isWebAppPlatform()) {
         eventDispatcher.dispatch('toast', {
