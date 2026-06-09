@@ -19,6 +19,7 @@ export interface BookRepositoryShape {
   readonly saveNav: (book: Book, nav: BookNav) => Effect.Effect<void, BookError>;
   readonly getFileSize: (book: Book) => Effect.Effect<number | null, BookError>;
   readonly isAvailable: (book: Book) => Effect.Effect<boolean, BookError>;
+  readonly refreshMetadata: (book: Book) => Effect.Effect<boolean, BookError>;
 }
 
 export class BookRepository extends Context.Tag('app/BookRepository')<
