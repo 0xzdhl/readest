@@ -260,7 +260,7 @@ const ColorPanel: React.FC<SettingsPanelPanelProp> = ({ bookKey, onRegisterReset
         });
         if (customTexture && !customTexture.error) {
           await loadTexture(envConfig, customTexture.id);
-          if (appService) void queueReplicaBinaryUpload('texture', customTexture, appService);
+          if (appService) void queueReplicaBinaryUpload('texture', customTexture);
         }
       }
       saveCustomTextures(envConfig);

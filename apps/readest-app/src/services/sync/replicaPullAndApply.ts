@@ -83,7 +83,7 @@ export interface PullAndApplyDeps<T extends ReplicaLocalRecord> {
    * invokes this when applyRow finds an alive row with empty
    * `manifest_jsonb` AND a matching local record. Implementation
    * should fan out to the binary-upload pipeline (typically
-   * `queueReplicaBinaryUpload(kind, record, appService)`), which in
+   * `queueReplicaBinaryUpload(kind, record)`), which in
    * turn fires `replica-transfer-complete` and commits the manifest.
    * Without this, transient upload failures or "TM not ready at
    * import time" leave the server row stuck with manifest_jsonb=null

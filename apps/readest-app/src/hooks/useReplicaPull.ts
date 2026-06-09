@@ -185,7 +185,7 @@ const buildReplicaPullDeps = <T extends ReplicaLocalRecord>(
     return true;
   },
   queueLocalBinaryUpload: async (record) => {
-    await queueReplicaBinaryUpload(config.kind, record, service);
+    await queueReplicaBinaryUpload(config.kind, record);
   },
   // The pull skips when this resolves false. We piggyback the
   // user-facing category gate here so disabling a kind in

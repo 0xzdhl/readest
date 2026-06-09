@@ -1,6 +1,9 @@
+import { Effect } from 'effect';
 import { transferManager } from '@/services/transferManager';
+import { FileSystem } from '@/application/ports/FileSystem';
+import { getClientRuntime } from '@/runtime/clientRuntime';
 import { getReplicaAdapter } from './replicaRegistry';
-import type { AppService, BaseDir } from '@/domain/system';
+import type { BaseDir } from '@/domain/system';
 import type { ReplicaTransferFile } from '@/store/transferStore';
 import type { ClosableFile } from '@/utils/file';
 
@@ -10,12 +13,10 @@ import type { ClosableFile } from '@/utils/file';
  * enumerateFiles doesn't carry a byteSize — e.g. the dictionary
  * adapter, which doesn't track per-file sizes on its records.
  */
-const resolveByteSize = async (
-  appService: AppService,
-  lfp: string,
-  base: BaseDir,
-): Promise<number> => {
-  const file = await appService.openFile(lfp, base);
+const resolveByteSize = async (lfp: string, base: BaseDir): Promise<number> => {
+  const file = await getClientRuntime().runPromise(
+    Effect.flatMap(FileSystem, (fs) => fs.openFile(lfp, base)),
+  );
   const size = file.size;
   const closable = file as ClosableFile;
   if (closable && closable.close) {
@@ -52,7 +53,6 @@ interface ReplicaBinaryRecord {
 export const queueReplicaBinaryUpload = async <T extends ReplicaBinaryRecord>(
   kind: string,
   record: T,
-  appService: AppService,
 ): Promise<string | null> => {
   if (!record.contentId) return null;
   if (!transferManager.isReady()) return null;
@@ -68,7 +68,7 @@ export const queueReplicaBinaryUpload = async <T extends ReplicaBinaryRecord>(
     enumerated.map(async (f) => ({
       logical: f.logical,
       lfp: f.lfp,
-      byteSize: f.byteSize > 0 ? f.byteSize : await resolveByteSize(appService, f.lfp, base),
+      byteSize: f.byteSize > 0 ? f.byteSize : await resolveByteSize(f.lfp, base),
     })),
   );
 
@@ -83,5 +83,4 @@ export const queueReplicaBinaryUpload = async <T extends ReplicaBinaryRecord>(
  */
 export const queueDictionaryBinaryUpload = <T extends ReplicaBinaryRecord>(
   dict: T,
-  appService: AppService,
-): Promise<string | null> => queueReplicaBinaryUpload('dictionary', dict, appService);
+): Promise<string | null> => queueReplicaBinaryUpload('dictionary', dict);

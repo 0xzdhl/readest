@@ -1,4 +1,38 @@
 import { describe, test, expect, beforeEach, vi } from 'vitest';
+import { Effect, Layer } from 'effect';
+import { FileSystem, type FileSystemShape } from '@/application/ports/FileSystem';
+
+// migrateLegacyFonts now resolves on-disk ops through the FileSystem port via
+// the client runtime bridge (no injected AppService). The shared `fsSpies`
+// back a stub FileSystem layer; `runPromise` runs the real effect over it so
+// the migration's exists/openFile/createDir/copyFile/removeFile assertions
+// observe these spies.
+const fsSpies = vi.hoisted(() => ({
+  exists: null as null | ((path: string, base: string) => Promise<boolean>),
+  openFile: null as null | ((path: string, base: string) => Promise<File>),
+  createDir: null as null | ((path: string, base: string, r?: boolean) => Promise<void>),
+  copyFile: null as null | ((s: string, sb: string, d: string, db: string) => Promise<void>),
+  removeFile: null as null | ((path: string, base: string) => Promise<void>),
+}));
+
+vi.mock('@/runtime/clientRuntime', () => ({
+  getClientRuntime: () => ({
+    runPromise: <A, E>(effect: Effect.Effect<A, E, FileSystem>) => {
+      const stub: Pick<
+        FileSystemShape,
+        'exists' | 'openFile' | 'createDir' | 'copyFile' | 'removeFile'
+      > = {
+        exists: (p, b) => Effect.promise(() => fsSpies.exists!(p, b)),
+        openFile: (p, b) => Effect.promise(() => fsSpies.openFile!(p, b)),
+        createDir: (p, b, r) => Effect.promise(() => fsSpies.createDir!(p, b, r)),
+        copyFile: (s, sb, d, db) => Effect.promise(() => fsSpies.copyFile!(s, sb, d, db)),
+        removeFile: (p, b) => Effect.promise(() => fsSpies.removeFile!(p, b)),
+      };
+      const StubFs = Layer.succeed(FileSystem, stub as unknown as FileSystemShape);
+      return Effect.runPromise(Effect.provide(effect, StubFs));
+    },
+  }),
+}));
 
 vi.mock('@/services/sync/replicaPublish', () => ({
   publishReplicaDelete: vi.fn(),
@@ -418,8 +452,22 @@ describe('customFontStore', () => {
       copyFile: ReturnType<typeof vi.fn>;
       deleteFile: ReturnType<typeof vi.fn>;
     }
-    const buildEnv = (svc: FakeAppService): EnvConfigType =>
-      ({ getAppService: vi.fn(async () => svc) }) as unknown as EnvConfigType;
+    // envConfig is still passed (migrateLegacyReplicas uses it for saveStore);
+    // the FS ops now flow through the bridge, so we register `svc`'s spies into
+    // the hoisted `fsSpies` consumed by the mocked client runtime.
+    const buildEnv = (svc: FakeAppService): EnvConfigType => {
+      fsSpies.exists = svc.exists as FakeAppService['exists'] &
+        ((p: string, b: string) => Promise<boolean>);
+      fsSpies.openFile = svc.openFile as FakeAppService['openFile'] &
+        ((p: string, b: string) => Promise<File>);
+      fsSpies.createDir = svc.createDir as FakeAppService['createDir'] &
+        ((p: string, b: string, r?: boolean) => Promise<void>);
+      fsSpies.copyFile = svc.copyFile as FakeAppService['copyFile'] &
+        ((s: string, sb: string, d: string, db: string) => Promise<void>);
+      fsSpies.removeFile = svc.deleteFile as FakeAppService['deleteFile'] &
+        ((p: string, b: string) => Promise<void>);
+      return {} as unknown as EnvConfigType;
+    };
 
     const fakeService = (): FakeAppService => ({
       exists: vi.fn(async () => true),

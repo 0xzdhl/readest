@@ -429,13 +429,13 @@ const CustomDictionaries: React.FC<CustomDictionariesProps> = ({ onBack }) => {
       let added = 0;
       for (const dict of importResult.imported) {
         addDictionary(dict);
-        if (appService) void queueDictionaryBinaryUpload(dict, appService);
+        if (appService) void queueDictionaryBinaryUpload(dict);
         added += 1;
       }
       let replaced = 0;
       for (const { oldIds, newDict } of importResult.replacements) {
         replaceDictionaries(oldIds, newDict);
-        if (appService) void queueDictionaryBinaryUpload(newDict, appService);
+        if (appService) void queueDictionaryBinaryUpload(newDict);
         // Invalidate any cached provider instances for the replaced ids so
         // their next lookup picks up the new bundle's files.
         for (const oldId of oldIds) evictProvider(oldId);

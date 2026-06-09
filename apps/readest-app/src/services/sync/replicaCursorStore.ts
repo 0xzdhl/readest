@@ -1,4 +1,6 @@
-import type { AppService } from '@/domain/system';
+import { LoadSettings } from '@/application/usecases/settings/LoadSettings';
+import { SaveSettings } from '@/application/usecases/settings/SaveSettings';
+import { getClientRuntime } from '@/runtime/clientRuntime';
 import type { Hlc } from '@/types/replica';
 import type { CursorStore } from './replicaSyncManager';
 
@@ -12,7 +14,8 @@ export interface SettingsCursorStoreOpts {
 }
 
 /**
- * Production CursorStore backed by appService.loadSettings + saveSettings.
+ * Production CursorStore backed by the LoadSettings + SaveSettings
+ * usecases (via the client runtime bridge).
  *
  * Cursors are cached in memory so get() is sync. set() debounces a save
  * that does a fresh load-merge-save round-trip — this keeps us from
@@ -22,10 +25,7 @@ export interface SettingsCursorStoreOpts {
  * Cursor advance is best-effort: a lost save just means the next pull
  * re-fetches a few rows. We never block the sync flow on disk IO.
  */
-export const createSettingsCursorStore = (
-  appService: AppService,
-  opts: SettingsCursorStoreOpts = {},
-): CursorStore => {
+export const createSettingsCursorStore = (opts: SettingsCursorStoreOpts = {}): CursorStore => {
   const cache = new Map<string, Hlc>();
   const setTimeoutFn = opts.setTimeoutFn ?? setTimeout;
   const clearTimeoutFn = opts.clearTimeoutFn ?? clearTimeout;
@@ -34,7 +34,7 @@ export const createSettingsCursorStore = (
 
   void (async () => {
     try {
-      const settings = await appService.loadSettings();
+      const settings = await getClientRuntime().runPromise(LoadSettings);
       for (const [k, v] of Object.entries(settings.lastSyncedAtReplicas ?? {})) {
         cache.set(k, v as Hlc);
       }
@@ -45,9 +45,9 @@ export const createSettingsCursorStore = (
 
   const flush = async () => {
     try {
-      const settings = await appService.loadSettings();
+      const settings = await getClientRuntime().runPromise(LoadSettings);
       settings.lastSyncedAtReplicas = Object.fromEntries(cache);
-      await appService.saveSettings(settings);
+      await getClientRuntime().runPromise(SaveSettings(settings));
     } catch (err) {
       console.warn('replica cursor save failed', err);
     }

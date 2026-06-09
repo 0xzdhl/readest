@@ -28,7 +28,7 @@ export const EnvProvider = ({ children }: { children: ReactNode }) => {
         if (settings.replicaDeviceId) {
           const ctx = initReplicaSync({
             deviceId: settings.replicaDeviceId,
-            cursorStore: createSettingsCursorStore(service),
+            cursorStore: createSettingsCursorStore(),
           });
           ctx.manager.startAutoSync();
           startReplicaTransferIntegration(service);
