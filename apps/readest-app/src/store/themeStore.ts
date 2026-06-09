@@ -1,6 +1,5 @@
 import { create } from 'zustand';
-import type { AppService } from '@/domain/system';
-import { getClientRuntime } from '@/runtime/clientRuntime';
+import { getClientRuntime, getPlatformInfo } from '@/runtime/clientRuntime';
 import { SaveSettings } from '@/application/usecases/settings/SaveSettings';
 import { getThemeCode, type ThemeCode } from '@/utils/style';
 import { getSystemColorScheme } from '@/utils/bridge';
@@ -163,13 +162,14 @@ export const loadDataTheme = () => {
   }
 };
 
-export const initSystemThemeListener = (appService: AppService) => {
-  if (typeof window === 'undefined' || !appService) return;
+export const initSystemThemeListener = () => {
+  if (typeof window === 'undefined') return;
 
+  const platformInfo = getPlatformInfo();
   const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
   const updateColorTheme = async () => {
     let systemIsDarkMode;
-    if (appService.isIOSApp) {
+    if (platformInfo.isIOSApp) {
       const res = await getSystemColorScheme();
       systemIsDarkMode = res.colorScheme === 'dark';
     } else {
@@ -182,7 +182,7 @@ export const initSystemThemeListener = (appService: AppService) => {
   };
 
   const updateWindowTheme = async () => {
-    if (!appService.hasWindow || !appService.isLinuxApp) return;
+    if (!platformInfo.hasWindow || !platformInfo.isLinuxApp) return;
     const currentWindow = getCurrentWindow();
     const isFullscreen = await currentWindow.isFullscreen();
     const isMaximized = await currentWindow.isMaximized();

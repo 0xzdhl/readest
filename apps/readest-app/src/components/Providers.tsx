@@ -62,7 +62,7 @@ const Providers = ({ children }: { children: React.ReactNode }) => {
   useEffect(() => {
     loadDataTheme();
     if (appService) {
-      initSystemThemeListener(appService);
+      initSystemThemeListener();
       appService.loadSettings().then((settings) => {
         const globalViewSettings = settings.globalViewSettings;
         applyUILanguage(globalViewSettings.uiLanguage);
