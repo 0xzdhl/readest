@@ -11,6 +11,8 @@ import * as BookSvc from '@/services/bookService';
 
 export interface ImportBookInput {
   file: string | File;
+  // path/basePath are not read by the usecase; they're forwarded verbatim to
+  // onImported(book, input) so the consumer can derive groups from the dir path.
   path?: string;
   basePath?: string;
 }
@@ -88,13 +90,17 @@ export const importBooks = (
         Effect.map((result) => ({ input, result })),
       );
 
+    // Slice into batches so onBatch fires once per group (≤ concurrency). Each
+    // importOne already boxes failures via Effect.either, so the batch never aborts.
     for (let i = 0; i < inputs.length; i += concurrency) {
       const batch = inputs.slice(i, i + concurrency);
       const results = yield* Effect.all(batch.map(importOne), { concurrency });
       const importedThisBatch: Book[] = [];
       for (const { input, result } of results) {
         if (Either.isLeft(result)) {
-          failed.push({ filename: filenameOf(input.file), error: result.left });
+          // Record the original thrown error (BookError.cause), not the wrapper, so
+          // consumers can localize from the underlying message (faithful to legacy).
+          failed.push({ filename: filenameOf(input.file), error: result.left.cause });
         } else if (result.right) {
           imported.push(result.right);
           importedThisBatch.push(result.right);
