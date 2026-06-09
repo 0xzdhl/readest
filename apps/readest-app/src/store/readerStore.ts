@@ -193,12 +193,8 @@ export const useReaderStore = create<ReaderStore>((set, get) => ({
       if (bookDoc.metadata.identifier) {
         const { getAnnotationProviders } = await import('@/services/annotation');
         for (const provider of getAnnotationProviders()) {
-          if (provider.isAvailable(appService)) {
-            const merged = await provider.importAnnotations(
-              appService,
-              bookDoc.metadata.identifier,
-              config,
-            );
+          if (provider.isAvailable()) {
+            const merged = await provider.importAnnotations(bookDoc.metadata.identifier, config);
             if (merged !== config) {
               Object.assign(config, merged);
               await appService.saveBookConfig(book, config, settings);
