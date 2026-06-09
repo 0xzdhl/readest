@@ -1,5 +1,6 @@
 import { Effect, Option } from 'effect';
 import type { Book } from '@/domain/book';
+import type { BaseDir } from '@/domain/system';
 import { BookError } from '@/application/errors/AppError';
 import { FileSystem } from '@/application/ports/FileSystem';
 import { PathResolver } from '@/application/ports/PathResolver';
@@ -21,15 +22,11 @@ export const exportBook = (
     const dialog = yield* Dialog;
     const fs = makeLegacyFsAdapter(fsPort, resolver);
 
-    const resolveFilePath = (path: string, base: Parameters<typeof resolver.absolute>[1]) =>
+    const resolveFilePath = (path: string, base: BaseDir) =>
       Effect.runPromise(resolver.absolute(path, base));
 
-    const copyFile = (
-      srcPath: string,
-      srcBase: Parameters<typeof fsPort.copyFile>[1],
-      dstPath: string,
-      dstBase: Parameters<typeof fsPort.copyFile>[3],
-    ) => Effect.runPromise(fsPort.copyFile(srcPath, srcBase, dstPath, dstBase));
+    const copyFile = (srcPath: string, srcBase: BaseDir, dstPath: string, dstBase: BaseDir) =>
+      Effect.runPromise(fsPort.copyFile(srcPath, srcBase, dstPath, dstBase));
 
     const saveFile = (filename: string, content: ArrayBuffer, options?: SaveFileOptions) =>
       Effect.runPromise(
