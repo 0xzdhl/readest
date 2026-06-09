@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef } from 'react';
 import { useEnv } from '@/context/EnvContext';
+import { usePlatformInfo } from '@/context/EffectRuntimeProvider';
 import { useThemeStore } from '@/store/themeStore';
 import { useSettingsStore } from '@/store/settingsStore';
 import { useSafeAreaInsets } from './useSafeAreaInsets';
@@ -19,6 +20,7 @@ export const useTheme = ({
   appThemeColor = 'base-100',
 }: UseThemeProps = {}) => {
   const { appService } = useEnv();
+  const platformInfo = usePlatformInfo();
   const { settings } = useSettingsStore();
   const isEink = settings?.globalViewSettings?.isEink;
   const isColorEink = settings?.globalViewSettings?.isColorEink;
@@ -108,7 +110,7 @@ export const useTheme = ({
 
   useEffect(() => {
     if (!appService?.isAndroidApp) return;
-    const webViewVersion = parseWebViewVersion(appService);
+    const webViewVersion = parseWebViewVersion(platformInfo);
     // OKLCH color model is supported in Chromium 111+
     useFallbackColors.current = webViewVersion < 111;
   }, [appService]);

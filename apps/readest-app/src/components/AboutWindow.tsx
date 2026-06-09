@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useEnv } from '@/context/EnvContext';
+import { usePlatformInfo } from '@/context/EffectRuntimeProvider';
 import { useTranslation } from '@/hooks/useTranslation';
 import { checkForAppUpdates, checkAppReleaseNotes } from '@/helpers/updater';
 import { parseWebViewInfo } from '@/utils/ua';
@@ -25,12 +26,13 @@ type UpdateStatus = 'checking' | 'updating' | 'updated' | 'error';
 export const AboutWindow = () => {
   const _ = useTranslation();
   const { appService } = useEnv();
+  const platformInfo = usePlatformInfo();
   const [updateStatus, setUpdateStatus] = useState<UpdateStatus | null>(null);
   const [browserInfo, setBrowserInfo] = useState('');
   const [isOpen, setIsOpen] = useState(false);
 
   useEffect(() => {
-    setBrowserInfo(parseWebViewInfo(appService));
+    setBrowserInfo(parseWebViewInfo(platformInfo));
 
     const handleCustomEvent = (event: CustomEvent) => {
       setIsOpen(event.detail.visible);
