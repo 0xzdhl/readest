@@ -597,6 +597,14 @@ const LibraryPageContent = () => {
 
     const { failed } = await runEffect(
       importBooksUsecase(library, inputs, {
+        // persist:false + a manual final save below: updateBooks REPLACES
+        // store.library with a new merged array (Map dedup), so the store's
+        // view diverges from the array the usecase mutates. We persist the
+        // store's library after all batches so the saved copy matches the UI.
+        // Safe to read getState() right after the loop: updateBooks with
+        // skipSave runs its store set() synchronously (no await), and the
+        // usecase fires onBatch synchronously, so all batches are applied
+        // before runEffect resolves.
         persist: false,
         onImported: (book, input) => {
           if (groupId) {
