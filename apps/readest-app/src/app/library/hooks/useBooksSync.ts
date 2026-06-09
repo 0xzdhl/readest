@@ -1,8 +1,11 @@
 import { useCallback, useEffect, useRef } from 'react';
+import { Effect } from 'effect';
 import type { Book } from '@/domain/book';
 import { useSync } from '@/hooks/useSync';
 import { useEnv } from '@/context/EnvContext';
 import { useAuth } from '@/context/AuthContext';
+import { useRunEffect } from '@/context/EffectRuntimeProvider';
+import { LibraryRepository } from '@/application/repositories/LibraryRepository';
 import { useLibraryStore } from '@/store/libraryStore';
 import { useTranslation } from '@/hooks/useTranslation';
 import { SYNC_BOOKS_INTERVAL_SEC } from '@/services/constants';
@@ -14,6 +17,7 @@ export const useBooksSync = () => {
   const _ = useTranslation();
   const { user } = useAuth();
   const { appService } = useEnv();
+  const runEffect = useRunEffect();
   const { library, isSyncing, libraryLoaded } = useLibraryStore();
   const { setLibrary, setIsSyncing, setSyncProgress } = useLibraryStore();
   const { useSyncInited, syncedBooks, syncBooks, lastSyncedAtBooks } = useSync();
@@ -130,7 +134,7 @@ export const useBooksSync = () => {
 
     const updatedLibrary = await Promise.all(liveLibrary.map(processOldBook));
     setLibrary(updatedLibrary);
-    appService?.saveLibraryBooks(updatedLibrary);
+    void runEffect(Effect.flatMap(LibraryRepository, (r) => r.save(updatedLibrary)));
 
     const bookHashesInLibrary = new Set(updatedLibrary.map((book) => book.hash));
     const newBooks = syncedBooks.filter(
@@ -156,7 +160,7 @@ export const useBooksSync = () => {
         const progress = Math.min((i + batchSize) / newBooks.length, 1);
         setSyncProgress(progress);
         setLibrary([...updatedLibrary]);
-        appService?.saveLibraryBooks(updatedLibrary);
+        void runEffect(Effect.flatMap(LibraryRepository, (r) => r.save(updatedLibrary)));
       }
     } catch (err) {
       console.error('Error updating new books:', err);

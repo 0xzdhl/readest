@@ -1,12 +1,14 @@
 import clsx from 'clsx';
 import React, { useEffect, useRef, useState } from 'react';
+import { Effect } from 'effect';
 import { MdCheck, MdChevronRight, MdEdit } from 'react-icons/md';
 import { HiOutlineFolder, HiOutlineFolderAdd, HiOutlineFolderRemove } from 'react-icons/hi';
 import { IoMdArrowBack } from 'react-icons/io';
 
 import type { Book, BookGroupType } from '@/domain/book';
 import { isMd5 } from '@/utils/md5';
-import { useEnv } from '@/context/EnvContext';
+import { useRunEffect } from '@/context/EffectRuntimeProvider';
+import { LibraryRepository } from '@/application/repositories/LibraryRepository';
 import { useTranslation } from '@/hooks/useTranslation';
 import { useLibraryStore } from '@/store/libraryStore';
 import { useResponsiveSize } from '@/hooks/useResponsiveSize';
@@ -30,7 +32,7 @@ const GroupingModal: React.FC<GroupingModalProps> = ({
   onConfirm,
 }) => {
   const _ = useTranslation();
-  const { appService } = useEnv();
+  const runEffect = useRunEffect();
   const {
     setLibrary,
     addGroup,
@@ -131,7 +133,7 @@ const GroupingModal: React.FC<GroupingModalProps> = ({
       }
     });
     setLibrary([...libraryBooks]);
-    appService?.saveLibraryBooks(libraryBooks);
+    void runEffect(Effect.flatMap(LibraryRepository, (r) => r.save(libraryBooks)));
     onConfirm();
   };
 
@@ -156,7 +158,7 @@ const GroupingModal: React.FC<GroupingModalProps> = ({
         });
 
         setLibrary([...libraryBooks]);
-        appService?.saveLibraryBooks(libraryBooks);
+        void runEffect(Effect.flatMap(LibraryRepository, (r) => r.save(libraryBooks)));
 
         refreshGroups();
         setShowInput(false);
@@ -208,7 +210,7 @@ const GroupingModal: React.FC<GroupingModalProps> = ({
       }
     });
     setLibrary([...libraryBooks]);
-    appService?.saveLibraryBooks(libraryBooks);
+    void runEffect(Effect.flatMap(LibraryRepository, (r) => r.save(libraryBooks)));
     onConfirm();
   };
 
