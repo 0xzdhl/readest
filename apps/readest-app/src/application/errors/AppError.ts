@@ -22,6 +22,12 @@ export class SettingsError extends Data.TaggedError('SettingsError')<{
   readonly cause: unknown;
 }> {}
 
+export class BookError extends Data.TaggedError('BookError')<{
+  readonly operation: string;
+  readonly bookId?: string;
+  readonly cause: unknown;
+}> {}
+
 export class MigrationError extends Data.TaggedError('MigrationError')<{
   readonly operation: string;
   readonly fromVersion?: number;
@@ -37,5 +43,6 @@ export type AppError =
   | PlatformError
   | DatabaseError
   | SettingsError
+  | BookError
   | MigrationError
   | UserCancelled;

@@ -7,8 +7,8 @@ import type { PathResolverShape } from '@/application/ports/PathResolver';
  * Adapts the new Effect-based FileSystem + PathResolver ports to the legacy
  * Promise-based `FileSystem` interface that settingsService/persistence/migration
  * still consume. `fsPort`/`resolver` are RESOLVED shapes (no remaining R), so
- * `Effect.runPromise` on their methods is valid. Sync legacy methods
- * (resolvePath, getURL) are never called by those consumers — they throw.
+ * `Effect.runPromise` on their methods is valid. `getURL` runs the (sync)
+ * `getUrl` port via `Effect.runSync`; `resolvePath` stays unused — it throws.
  */
 export const makeLegacyFsAdapter = (
   fsPort: FileSystemShape,
@@ -32,7 +32,5 @@ export const makeLegacyFsAdapter = (
       'resolvePath is not supported by the port adapter (unused by settings/migration)',
     );
   },
-  getURL: (_path: string): string => {
-    throw new Error('getURL is not supported by the port adapter (unused by settings/migration)');
-  },
+  getURL: (path: string): string => Effect.runSync(fsPort.getUrl(path)),
 });
