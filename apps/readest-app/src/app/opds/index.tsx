@@ -39,6 +39,8 @@ import {
 import { ImportError } from '@/services/errors';
 import { READEST_OPDS_USER_AGENT } from '@/services/constants';
 import { buildPseStreamFileName } from '@/services/opds/pseStream';
+import { useRunEffect } from '@/context/EffectRuntimeProvider';
+import { importBooks } from '@/application/usecases/book';
 import { FeedView } from './components/FeedView';
 import { PublicationView } from './components/PublicationView';
 import { SearchView } from './components/SearchView';
@@ -108,6 +110,8 @@ function OPDSBrowserPage() {
   const historyIndexRef = useRef(-1);
   const isNavigatingHistoryRef = useRef(false);
   const searchTermRef = useRef('');
+
+  const runEffect = useRunEffect();
 
   useTheme({ systemUIVisible: false });
   useTransferQueue(libraryLoaded);
@@ -493,14 +497,16 @@ function OPDSBrowserPage() {
 
           const { library, setLibrary } = useLibraryStore.getState();
           try {
-            const book = await appService.importBook(dstFilePath, library);
+            const { imported, library: nextLibrary } = await runEffect(
+              importBooks(library, [{ file: dstFilePath }]),
+            );
+            const book = imported[0] ?? null;
             if (user && book && !book.uploadedAt && settings.autoUpload) {
               setTimeout(() => {
                 transferManager.queueUpload(book);
               }, 3000);
             }
-            setLibrary(library);
-            appService.saveLibraryBooks(library);
+            setLibrary(nextLibrary);
             return book;
           } catch (importError) {
             console.error('Import error:', importError);
@@ -523,9 +529,12 @@ function OPDSBrowserPage() {
         const url = resolveURL(href, state.baseURL);
         const psePath = buildPseStreamFileName({ url, catalogId, count, title, author });
         const { library, setLibrary } = useLibraryStore.getState();
-        const book = await appService.importBook(psePath, library, { transient: true });
+        const { imported, library: nextLibrary } = await runEffect(
+          importBooks(library, [{ file: psePath }], { transient: true, persist: false }),
+        );
+        const book = imported[0];
         if (book) {
-          setLibrary(library);
+          setLibrary(nextLibrary);
           navigateToReader(router, [book.hash]);
         }
       } catch (e) {
