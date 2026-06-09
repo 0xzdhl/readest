@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { Effect } from 'effect';
 import {
   RiCheckboxCircleFill,
   RiErrorWarningFill,
@@ -7,10 +8,13 @@ import {
   RiDownloadCloud2Line,
 } from 'react-icons/ri';
 import { useEnv } from '@/context/EnvContext';
+import { useRunEffect } from '@/context/EffectRuntimeProvider';
 import { useTranslation } from '@/hooks/useTranslation';
 import { useFileSelector } from '@/hooks/useFileSelector';
 import { restoreFromBackupZip, saveBackupFile } from '@/services/backupService';
 import { useLibraryStore } from '@/store/libraryStore';
+import { LibraryRepository } from '@/application/repositories/LibraryRepository';
+import { FileSystem } from '@/application/ports/FileSystem';
 import Dialog from '@/components/Dialog';
 import { BACKUP_DIALOG_EVENT } from './backupDialog';
 
@@ -39,6 +43,7 @@ export const BackupWindow: React.FC<BackupWindowProps> = ({
 }) => {
   const _ = useTranslation();
   const { appService } = useEnv();
+  const runEffect = useRunEffect();
   const { setLibrary } = useLibraryStore();
   const { selectFiles } = useFileSelector(appService, _);
   const [isOpen, setIsOpen] = useState(initialVisible);
@@ -113,7 +118,9 @@ export const BackupWindow: React.FC<BackupWindowProps> = ({
 
       const zipFile = result.files[0]?.file
         ? result.files[0].file
-        : await appService.openFile(result.files[0]!.path!, 'None');
+        : await runEffect(
+            Effect.flatMap(FileSystem, (fs) => fs.openFile(result.files[0]!.path!, 'None')),
+          );
 
       const { booksAdded, booksUpdated } = await restoreFromBackupZip(
         appService,
@@ -123,7 +130,7 @@ export const BackupWindow: React.FC<BackupWindowProps> = ({
         },
       );
 
-      const newLibrary = await appService.loadLibraryBooks();
+      const newLibrary = await runEffect(Effect.flatMap(LibraryRepository, (r) => r.load));
       const booksCount = newLibrary.reduce((sum, book) => sum + (book.deletedAt ? 0 : 1), 0);
       setLibrary(newLibrary);
       setResult({

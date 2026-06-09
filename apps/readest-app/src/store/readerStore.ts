@@ -1,7 +1,7 @@
+import { Effect } from 'effect';
 import { create } from 'zustand';
 
 import {
-  type BookContent,
   type BookConfig,
   type PageInfo,
   type BookProgress,
@@ -29,6 +29,8 @@ import { useSettingsStore } from './settingsStore';
 import { type BookData, useBookDataStore } from './bookDataStore';
 import { useLibraryStore } from './libraryStore';
 import { uniqueId } from '@/utils/misc';
+import { getClientRuntime } from '@/runtime/clientRuntime';
+import { BookRepository } from '@/application/repositories/BookRepository';
 
 interface ViewState {
   /* Unique key for each book view */
@@ -131,7 +133,7 @@ export const useReaderStore = create<ReaderStore>((set, get) => ({
   },
   getViewState: (key: string) => get().viewStates[key] || null,
   initViewState: async (
-    envConfig: EnvConfigType,
+    _envConfig: EnvConfigType,
     id: string,
     key: string,
     isPrimary = true,
@@ -161,7 +163,7 @@ export const useReaderStore = create<ReaderStore>((set, get) => ({
       },
     }));
     try {
-      const appService = await envConfig.getAppService();
+      const runtime = getClientRuntime();
       const { settings } = useSettingsStore.getState();
       const { getBookByHash, library } = useLibraryStore.getState();
       const book = getBookByHash(id);
@@ -182,13 +184,17 @@ export const useReaderStore = create<ReaderStore>((set, get) => ({
           bookDoc = doc.book;
           file = null;
         } else {
-          const content = (await appService.loadBookContent(book)) as BookContent;
+          const content = await runtime.runPromise(
+            Effect.flatMap(BookRepository, (r) => r.loadContent(book)),
+          );
           file = content.file;
           const doc = await new DocumentLoader(file).open();
           bookDoc = doc.book;
         }
       }
-      const config = await appService.loadBookConfig(book, settings);
+      const config = await runtime.runPromise(
+        Effect.flatMap(BookRepository, (r) => r.loadConfig(book, settings)),
+      );
       // Import annotations from third-party readers on first open
       if (bookDoc.metadata.identifier) {
         const { getAnnotationProviders } = await import('@/services/annotation');
@@ -197,7 +203,9 @@ export const useReaderStore = create<ReaderStore>((set, get) => ({
             const merged = await provider.importAnnotations(bookDoc.metadata.identifier, config);
             if (merged !== config) {
               Object.assign(config, merged);
-              await appService.saveBookConfig(book, config, settings);
+              await runtime.runPromise(
+                Effect.flatMap(BookRepository, (r) => r.saveConfig(book, config, settings)),
+              );
             }
           }
         }
@@ -206,14 +214,18 @@ export const useReaderStore = create<ReaderStore>((set, get) => ({
       config.booknotes = config.booknotes?.filter((booknote) => booknote.cfi) ?? [];
       // Load cached book navigation (TOC + section fragments) or compute and persist.
       if (book.format === 'EPUB' && bookDoc.rendition?.layout !== 'pre-paginated') {
-        const cachedNav = await appService.loadBookNav(book);
+        const cachedNav = await runtime.runPromise(
+          Effect.flatMap(BookRepository, (r) => r.loadNav(book)),
+        );
         if (cachedNav?.version === BOOK_NAV_VERSION && clientEnv.NODE_ENV === 'production') {
           hydrateBookNav(bookDoc, cachedNav);
         } else {
           const freshNav = await computeBookNav(bookDoc);
           hydrateBookNav(bookDoc, freshNav);
           try {
-            await appService.saveBookNav(book, freshNav);
+            await runtime.runPromise(
+              Effect.flatMap(BookRepository, (r) => r.saveNav(book, freshNav)),
+            );
           } catch (e) {
             console.warn('Failed to persist book nav cache:', e);
           }

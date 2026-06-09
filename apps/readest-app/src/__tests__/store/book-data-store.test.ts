@@ -8,6 +8,42 @@ vi.mock('@/utils/md5', () => ({
   md5Fingerprint: (value: string) => `md5_${value}`,
 }));
 
+// E2a bridge: saveConfig now persists via getClientRuntime().runPromise over the
+// BookRepository/LibraryRepository ports instead of an injected appService. Mock
+// the client runtime to run effects against fake repos whose write methods are
+// spies, preserving the original call/skip assertions (and cutting the real
+// runtime import graph that would otherwise pull in bookService at collection).
+const { librarySaveSpy, bookSaveConfigSpy } = vi.hoisted(() => ({
+  librarySaveSpy: vi.fn(async (_books: unknown) => {}),
+  bookSaveConfigSpy: vi.fn(async (..._args: unknown[]) => {}),
+}));
+
+vi.mock('@/runtime/clientRuntime', async () => {
+  const { Effect, Layer } = await import('effect');
+  const { LibraryRepository } = await import('@/application/repositories/LibraryRepository');
+  const { BookRepository } = await import('@/application/repositories/BookRepository');
+  const FakeRepos = Layer.mergeAll(
+    Layer.succeed(LibraryRepository, {
+      load: Effect.sync(() => []),
+      save: (books: readonly unknown[]) => Effect.promise(() => librarySaveSpy(books)),
+    } as never),
+    Layer.succeed(BookRepository, {
+      saveConfig: (book: unknown, config: unknown, settings?: unknown) =>
+        Effect.promise(() => bookSaveConfigSpy(book, config, settings)),
+    } as never),
+  );
+  return {
+    getClientRuntime: () => ({
+      runPromise: (effect: never) =>
+        Effect.runPromise(
+          Effect.provide(effect, FakeRepos) as unknown as Parameters<typeof Effect.runPromise>[0],
+        ),
+    }),
+    getPlatformInfo: () => ({ appPlatform: 'web' }),
+    setClientRuntime: vi.fn(),
+  };
+});
+
 import { useBookDataStore } from '@/store/bookDataStore';
 import type { BookData } from '@/store/bookDataStore';
 import type { BookConfig, BookNote, Book } from '@/domain/book';
@@ -52,6 +88,8 @@ function makeBookNote(overrides: Partial<BookNote> = {}): BookNote {
 
 describe('bookDataStore', () => {
   beforeEach(() => {
+    librarySaveSpy.mockClear();
+    bookSaveConfigSpy.mockClear();
     useBookDataStore.setState({ booksData: {} });
   });
 
@@ -300,9 +338,9 @@ describe('bookDataStore', () => {
     }
 
     test('creates a new library array reference (Zustand change-detection)', async () => {
-      const saveBookConfig = vi.fn().mockResolvedValue(undefined);
-      const saveLibraryBooks = vi.fn().mockResolvedValue(undefined);
-      const envConfig = makeEnvConfig({ saveBookConfig, saveLibraryBooks });
+      // saveConfig now persists through the mocked client runtime (see top of
+      // file); the appService fake is irrelevant, so pass an empty one.
+      const envConfig = makeEnvConfig({});
 
       const book = makeLibraryBook({ hash: 'h1' });
       useLibraryStore.getState().setLibrary([book]);
@@ -318,9 +356,9 @@ describe('bookDataStore', () => {
     });
 
     test('moves the saved book to the front of the library', async () => {
-      const saveBookConfig = vi.fn().mockResolvedValue(undefined);
-      const saveLibraryBooks = vi.fn().mockResolvedValue(undefined);
-      const envConfig = makeEnvConfig({ saveBookConfig, saveLibraryBooks });
+      // saveConfig now persists through the mocked client runtime (see top of
+      // file); the appService fake is irrelevant, so pass an empty one.
+      const envConfig = makeEnvConfig({});
 
       useLibraryStore
         .getState()
@@ -344,9 +382,9 @@ describe('bookDataStore', () => {
     });
 
     test('updates visibleLibrary to match the new library order', async () => {
-      const saveBookConfig = vi.fn().mockResolvedValue(undefined);
-      const saveLibraryBooks = vi.fn().mockResolvedValue(undefined);
-      const envConfig = makeEnvConfig({ saveBookConfig, saveLibraryBooks });
+      // saveConfig now persists through the mocked client runtime (see top of
+      // file); the appService fake is irrelevant, so pass an empty one.
+      const envConfig = makeEnvConfig({});
 
       useLibraryStore
         .getState()
@@ -366,9 +404,9 @@ describe('bookDataStore', () => {
     });
 
     test('persists progress and writes the library', async () => {
-      const saveBookConfig = vi.fn().mockResolvedValue(undefined);
-      const saveLibraryBooks = vi.fn().mockResolvedValue(undefined);
-      const envConfig = makeEnvConfig({ saveBookConfig, saveLibraryBooks });
+      // saveConfig now persists through the mocked client runtime (see top of
+      // file); the appService fake is irrelevant, so pass an empty one.
+      const envConfig = makeEnvConfig({});
 
       useLibraryStore.getState().setLibrary([makeLibraryBook({ hash: 'h1' })]);
 
@@ -379,14 +417,14 @@ describe('bookDataStore', () => {
 
       const stored = useLibraryStore.getState().getBookByHash('h1');
       expect(stored?.progress).toEqual([42, 100]);
-      expect(saveBookConfig).toHaveBeenCalledOnce();
-      expect(saveLibraryBooks).toHaveBeenCalledOnce();
+      expect(bookSaveConfigSpy).toHaveBeenCalledOnce();
+      expect(librarySaveSpy).toHaveBeenCalledOnce();
     });
 
     test('does nothing for unknown book hash', async () => {
-      const saveBookConfig = vi.fn().mockResolvedValue(undefined);
-      const saveLibraryBooks = vi.fn().mockResolvedValue(undefined);
-      const envConfig = makeEnvConfig({ saveBookConfig, saveLibraryBooks });
+      // saveConfig now persists through the mocked client runtime (see top of
+      // file); the appService fake is irrelevant, so pass an empty one.
+      const envConfig = makeEnvConfig({});
 
       useLibraryStore.getState().setLibrary([makeLibraryBook({ hash: 'h1' })]);
 
@@ -397,8 +435,8 @@ describe('bookDataStore', () => {
         .getState()
         .saveConfig(envConfig, 'nonexistent', data.config!, FAKE_SETTINGS);
 
-      expect(saveBookConfig).not.toHaveBeenCalled();
-      expect(saveLibraryBooks).not.toHaveBeenCalled();
+      expect(bookSaveConfigSpy).not.toHaveBeenCalled();
+      expect(librarySaveSpy).not.toHaveBeenCalled();
     });
   });
 });

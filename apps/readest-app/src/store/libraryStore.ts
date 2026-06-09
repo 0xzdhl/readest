@@ -1,8 +1,11 @@
+import { Effect } from 'effect';
 import { create } from 'zustand';
 import type { Book, BookGroupType, BooksGroup, ReadingStatus } from '@/domain/book';
 import { type EnvConfigType, isTauriAppPlatform } from '@/services/environment';
 import { BOOK_UNGROUPED_NAME } from '@/services/constants';
 import { md5Fingerprint } from '@/utils/md5';
+import { LibraryRepository } from '@/application/repositories/LibraryRepository';
+import { getClientRuntime } from '@/runtime/clientRuntime';
 
 interface LibraryState {
   library: Book[]; // might contain deleted books
@@ -125,8 +128,7 @@ export const useLibraryStore = create<LibraryState>((set, get) => ({
     set({ hashIndex: buildHashIndex(get().library) });
   },
 
-  updateBook: async (envConfig: EnvConfigType, book: Book) => {
-    const appService = await envConfig.getAppService();
+  updateBook: async (_envConfig: EnvConfigType, book: Book) => {
     const { library, hashIndex } = get();
     const idx = hashIndex.get(book.hash);
     // Build the new library immutably — never mutate the previous-state array.
@@ -139,10 +141,12 @@ export const useLibraryStore = create<LibraryState>((set, get) => ({
       hashIndex: buildHashIndex(newLibrary),
       visibleLibrary: newLibrary.filter((b) => !b.deletedAt),
     });
-    await appService.saveLibraryBooks(newLibrary);
+    await getClientRuntime().runPromise(
+      Effect.flatMap(LibraryRepository, (r) => r.save(newLibrary)),
+    );
   },
   updateBooks: async (
-    envConfig: EnvConfigType,
+    _envConfig: EnvConfigType,
     books: Book[],
     options?: { skipSave?: boolean },
   ) => {
@@ -159,8 +163,9 @@ export const useLibraryStore = create<LibraryState>((set, get) => ({
     refreshGroups();
 
     if (!options?.skipSave) {
-      const appService = await envConfig.getAppService();
-      await appService.saveLibraryBooks(newLibrary);
+      await getClientRuntime().runPromise(
+        Effect.flatMap(LibraryRepository, (r) => r.save(newLibrary)),
+      );
     }
   },
 

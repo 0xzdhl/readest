@@ -1,6 +1,8 @@
 import clsx from 'clsx';
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import { useEnv } from '@/context/EnvContext';
+import { Effect } from 'effect';
+import { useRunEffect } from '@/context/EffectRuntimeProvider';
+import { LibraryRepository } from '@/application/repositories/LibraryRepository';
 import { useThemeStore } from '@/store/themeStore';
 import { useLibraryStore } from '@/store/libraryStore';
 import { useTranslation } from '@/hooks/useTranslation';
@@ -20,7 +22,7 @@ import Alert from '@/components/Alert';
 
 const StorageManager = () => {
   const _ = useTranslation();
-  const { appService } = useEnv();
+  const runEffect = useRunEffect();
   const { libraryLoaded } = useLibrary();
   const { safeAreaInsets } = useThemeStore();
   const [loading, setLoading] = useState(false);
@@ -189,7 +191,7 @@ const StorageManager = () => {
 
   const handleDeleteSelected = async () => {
     if (selectedFiles.size === 0) return;
-    if (!libraryLoaded || !appService) return;
+    if (!libraryLoaded) return;
 
     setLoading(true);
     try {
@@ -209,7 +211,8 @@ const StorageManager = () => {
           book.updatedAt = Date.now();
         });
       setLibrary(library);
-      appService.saveLibraryBooks(library);
+      // Fire-and-forget to mirror the original un-awaited appService.saveLibraryBooks.
+      void runEffect(Effect.flatMap(LibraryRepository, (r) => r.save(library)));
 
       if (result.deletedCount > 0) {
         await loadFiles();

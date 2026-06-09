@@ -1,9 +1,12 @@
 import { useCallback, useEffect, useRef } from 'react';
+import { Effect } from 'effect';
 import { useAuth } from '@/context/AuthContext';
 import { useEnv } from '@/context/EnvContext';
+import { useRunEffect } from '@/context/EffectRuntimeProvider';
 import { useLibraryStore } from '@/store/libraryStore';
 import { useSettingsStore } from '@/store/settingsStore';
 import { useTranslation } from '@/hooks/useTranslation';
+import { LibraryRepository } from '@/application/repositories/LibraryRepository';
 import { syncSubscribedCatalogs } from '@/services/opds';
 import { AUTO_CHECK_INTERVAL_MS } from '@/services/opds/types';
 import { transferManager } from '@/services/transferManager';
@@ -12,6 +15,7 @@ import { eventDispatcher } from '@/utils/event';
 export function useOPDSSubscriptions() {
   const _ = useTranslation();
   const { appService } = useEnv();
+  const runEffect = useRunEffect();
   const { user } = useAuth();
   const { libraryLoaded } = useLibraryStore();
   const isSyncingRef = useRef(false);
@@ -43,7 +47,10 @@ export function useOPDSSubscriptions() {
           if (uniqueNewBooks.length > 0) {
             const merged = [...uniqueNewBooks, ...currentLibrary];
             useLibraryStore.getState().setLibrary(merged);
-            appService.saveLibraryBooks(merged);
+            // Fire-and-forget to mirror the original appService.saveLibraryBooks
+            // call: a save failure must not skip the cloud-upload scheduling or
+            // the success toast below.
+            void runEffect(Effect.flatMap(LibraryRepository, (r) => r.save(merged)));
           }
 
           // Mirror the manual OPDS download path: queue cloud upload for each

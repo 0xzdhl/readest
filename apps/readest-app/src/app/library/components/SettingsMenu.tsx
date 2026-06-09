@@ -6,12 +6,16 @@ import { PiSun, PiMoon } from 'react-icons/pi';
 import { TbSunMoon } from 'react-icons/tb';
 import { MdCloudSync, MdSync, MdSyncProblem } from 'react-icons/md';
 
+import { Effect } from 'effect';
 import { invoke } from '@tauri-apps/api/core';
 import type { PermissionState } from '@tauri-apps/api/core';
 import { isTauriAppPlatform, isWebAppPlatform, getWebsiteUrl } from '@/services/environment';
 import { setBackupDialogVisible } from '@/app/library/components/backupDialog';
 import { useAuth } from '@/context/AuthContext';
 import { useEnv } from '@/context/EnvContext';
+import { useRunEffect } from '@/context/EffectRuntimeProvider';
+import { LibraryRepository } from '@/application/repositories/LibraryRepository';
+import { BookRepository } from '@/application/repositories/BookRepository';
 import { useThemeStore } from '@/store/themeStore';
 import { useQuotaStats } from '@/hooks/useQuotaStats';
 import { useLibraryStore } from '@/store/libraryStore';
@@ -48,6 +52,7 @@ const SettingsMenu: React.FC<SettingsMenuProps> = ({ onPullLibrary, setIsDropdow
   const _ = useTranslation();
   const router = useRouter();
   const { envConfig, appService } = useEnv();
+  const runEffect = useRunEffect();
   const { user } = useAuth();
   const { userProfilePlan, quotas } = useQuotaStats(true);
   const { themeMode, setThemeMode } = useThemeStore();
@@ -197,13 +202,17 @@ const SettingsMenu: React.FC<SettingsMenuProps> = ({ onPullLibrary, setIsDropdow
     setIsRefreshingMetadata(true);
     setRefreshMetadataProgress(_('Loading library...'));
     try {
-      const books = await appService.loadLibraryBooks();
+      const books = await runEffect(Effect.flatMap(LibraryRepository, (r) => r.load));
       const activeBooks = books.filter((b) => !b.deletedAt);
       let refreshed = 0;
       for (let i = 0; i < activeBooks.length; i++) {
         setRefreshMetadataProgress(`${i + 1} / ${activeBooks.length}`);
         try {
-          if (await appService.refreshBookMetadata(activeBooks[i]!)) {
+          if (
+            await runEffect(
+              Effect.flatMap(BookRepository, (r) => r.refreshMetadata(activeBooks[i]!)),
+            )
+          ) {
             refreshed++;
           }
         } catch {
@@ -211,7 +220,7 @@ const SettingsMenu: React.FC<SettingsMenuProps> = ({ onPullLibrary, setIsDropdow
         }
       }
       setLibrary(books);
-      await appService.saveLibraryBooks(books);
+      await runEffect(Effect.flatMap(LibraryRepository, (r) => r.save(books)));
       setRefreshMetadataProgress(_('{{count}} books refreshed', { count: refreshed }));
       onPullLibrary(true);
       setTimeout(() => {

@@ -1,8 +1,12 @@
+import { Effect } from 'effect';
 import { create } from 'zustand';
 import type { SystemSettings } from '@/domain/settings';
 import type { Book, BookConfig, BookNote } from '@/domain/book';
 import type { EnvConfigType } from '@/services/environment';
 import type { BookDoc } from '@/domain/document';
+import { BookRepository } from '@/application/repositories/BookRepository';
+import { LibraryRepository } from '@/application/repositories/LibraryRepository';
+import { getClientRuntime } from '@/runtime/clientRuntime';
 import { useLibraryStore } from './libraryStore';
 
 export interface BookData {
@@ -71,12 +75,11 @@ export const useBookDataStore = create<BookDataState>((set, get) => ({
     });
   },
   saveConfig: async (
-    envConfig: EnvConfigType,
+    _envConfig: EnvConfigType,
     bookKey: string,
     config: BookConfig,
     settings: SystemSettings,
   ) => {
-    const appService = await envConfig.getAppService();
     const { library, hashIndex, setLibrary } = useLibraryStore.getState();
     const hash = bookKey.split('-')[0]!;
     const idx = hashIndex.get(hash);
@@ -97,8 +100,13 @@ export const useBookDataStore = create<BookDataState>((set, get) => ({
     setLibrary(newLibrary);
 
     config.updatedAt = Date.now();
-    await appService.saveBookConfig(updatedBook, config, settings);
-    await appService.saveLibraryBooks(useLibraryStore.getState().library);
+    const runtime = getClientRuntime();
+    await runtime.runPromise(
+      Effect.flatMap(BookRepository, (r) => r.saveConfig(updatedBook, config, settings)),
+    );
+    await runtime.runPromise(
+      Effect.flatMap(LibraryRepository, (r) => r.save(useLibraryStore.getState().library)),
+    );
   },
   updateBooknotes: (key: string, booknotes: BookNote[]) => {
     let updatedConfig: BookConfig | undefined;

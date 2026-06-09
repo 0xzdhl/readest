@@ -8,6 +8,33 @@ vi.mock('@/utils/md5', () => ({
   md5Fingerprint: (value: string) => `md5_${value.replace(/[^a-zA-Z0-9]/g, '_')}`,
 }));
 
+// E2a bridge: the store now persists via getClientRuntime().runPromise over the
+// LibraryRepository port instead of an injected appService. Mock the client
+// runtime to run effects against a fake repo whose `save` is a spy, preserving
+// the original call/skip assertions (and cutting the real runtime import graph).
+const { librarySaveSpy } = vi.hoisted(() => ({
+  librarySaveSpy: vi.fn(async (_books: unknown) => {}),
+}));
+
+vi.mock('@/runtime/clientRuntime', async () => {
+  const { Effect, Layer } = await import('effect');
+  const { LibraryRepository } = await import('@/application/repositories/LibraryRepository');
+  const FakeRepos = Layer.succeed(LibraryRepository, {
+    load: Effect.sync(() => []),
+    save: (books: readonly unknown[]) => Effect.promise(() => librarySaveSpy(books)),
+  } as never);
+  return {
+    getClientRuntime: () => ({
+      runPromise: (effect: never) =>
+        Effect.runPromise(
+          Effect.provide(effect, FakeRepos) as unknown as Parameters<typeof Effect.runPromise>[0],
+        ),
+    }),
+    getPlatformInfo: () => ({ appPlatform: 'web' }),
+    setClientRuntime: vi.fn(),
+  };
+});
+
 import { useLibraryStore } from '@/store/libraryStore';
 import type { Book, BooksGroup } from '@/domain/book';
 import type { EnvConfigType } from '@/services/environment';
@@ -33,6 +60,7 @@ function makeBook(overrides: Partial<Book> = {}): Book {
 
 describe('libraryStore', () => {
   beforeEach(() => {
+    librarySaveSpy.mockClear();
     useLibraryStore.setState({
       library: [],
       libraryLoaded: false,
@@ -172,7 +200,7 @@ describe('libraryStore', () => {
 
       await useLibraryStore.getState().updateBooks(envConfig, [makeBook({ hash: 'a' })]);
 
-      expect(saveLibraryBooks).toHaveBeenCalledTimes(1);
+      expect(librarySaveSpy).toHaveBeenCalledTimes(1);
     });
 
     test('skips persistence when skipSave: true', async () => {
@@ -183,7 +211,7 @@ describe('libraryStore', () => {
         .getState()
         .updateBooks(envConfig, [makeBook({ hash: 'a' })], { skipSave: true });
 
-      expect(saveLibraryBooks).not.toHaveBeenCalled();
+      expect(librarySaveSpy).not.toHaveBeenCalled();
     });
 
     test('still updates store state when skipSave: true', async () => {

@@ -1,9 +1,12 @@
 import clsx from 'clsx';
 import React, { useEffect, useState } from 'react';
+import { Effect } from 'effect';
 
 import type { Book } from '@/domain/book';
 import type { BookMetadata } from '@/domain/document';
 import { useEnv } from '@/context/EnvContext';
+import { useRunEffect } from '@/context/EffectRuntimeProvider';
+import { BookRepository } from '@/application/repositories/BookRepository';
 import { useThemeStore } from '@/store/themeStore';
 import { useTranslation } from '@/hooks/useTranslation';
 import { useMetadataEdit } from './useMetadataEdit';
@@ -48,6 +51,7 @@ const BookDetailModal: React.FC<BookDetailModalProps> = ({
 }) => {
   const _ = useTranslation();
   const { envConfig, appService } = useEnv();
+  const runEffect = useRunEffect();
   const { safeAreaInsets } = useThemeStore();
   const [activeDeleteAction, setActiveDeleteAction] = useState<DeleteAction | null>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -101,7 +105,7 @@ const BookDetailModal: React.FC<BookDetailModalProps> = ({
           details = await appService.fetchBookDetails(book);
         }
         setBookMeta(details);
-        const size = await appService.getBookFileSize(book);
+        const size = await runEffect(Effect.flatMap(BookRepository, (r) => r.getFileSize(book)));
         setFileSize(size);
       } finally {
       }

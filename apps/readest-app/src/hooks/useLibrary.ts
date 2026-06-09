@@ -1,10 +1,14 @@
 import { useEffect, useRef, useState } from 'react';
+import { Effect } from 'effect';
 import { useEnv } from '@/context/EnvContext';
+import { useRunEffect } from '@/context/EffectRuntimeProvider';
+import { LibraryRepository } from '@/application/repositories/LibraryRepository';
 import { useLibraryStore } from '@/store/libraryStore';
 import { useSettingsStore } from '@/store/settingsStore';
 
 export const useLibrary = () => {
   const { envConfig } = useEnv();
+  const runEffect = useRunEffect();
   const { setLibrary, libraryLoaded: storeLibraryLoaded } = useLibraryStore();
   const { setSettings } = useSettingsStore();
   // Skip the disk reload when another mount has already populated the store —
@@ -25,7 +29,7 @@ export const useLibrary = () => {
       const appService = await envConfig.getAppService();
       const settings = await appService.loadSettings();
       setSettings(settings);
-      setLibrary(await appService.loadLibraryBooks());
+      setLibrary(await runEffect(Effect.flatMap(LibraryRepository, (r) => r.load)));
       setLibraryLoaded(true);
     };
 

@@ -3,6 +3,19 @@ import type { FoliateView } from '@/domain/view';
 import type { Insets } from '@/domain/misc';
 import type { ViewSettings } from '@/domain/book';
 
+// E2a bridge: readerStore now reaches book load/save through
+// getClientRuntime().runPromise. Stub the client runtime so importing the store
+// doesn't pull the real runtime graph (client-tauri → bookService) at collection.
+// These tests don't exercise the migrated book-loading path, so a no-op runtime suffices.
+vi.mock('@/runtime/clientRuntime', () => ({
+  getClientRuntime: () => ({
+    runPromise: vi.fn(async () => undefined),
+    runSync: vi.fn(),
+  }),
+  getPlatformInfo: () => ({ appPlatform: 'web' }),
+  setClientRuntime: vi.fn(),
+}));
+
 vi.mock('@/store/bookDataStore', async () => {
   const { create } = await import('zustand');
   return {
