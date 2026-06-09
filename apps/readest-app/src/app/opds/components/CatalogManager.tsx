@@ -138,7 +138,7 @@ export function CatalogManager({ inSubPage = false }: CatalogManagerProps = {}) 
     if (!appService) return;
     const eligible = catalogs.filter((c) => c.autoDownload);
     const entries = await Promise.all(
-      eligible.map(async (c) => [c.id, await loadSubscriptionState(appService, c.id)] as const),
+      eligible.map(async (c) => [c.id, await loadSubscriptionState(c.id)] as const),
     );
     setSubscriptionStates(Object.fromEntries(entries));
   }, [appService, catalogs]);
@@ -318,7 +318,7 @@ export function CatalogManager({ inSubPage = false }: CatalogManagerProps = {}) 
     if (appService) {
       // Don't await — leftover state files are harmless and we don't want to
       // block UI removal if the filesystem call fails.
-      void deleteSubscriptionState(appService, id);
+      void deleteSubscriptionState(id);
     }
   };
 

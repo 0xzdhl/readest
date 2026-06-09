@@ -1,4 +1,37 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { Effect, Layer, ManagedRuntime } from 'effect';
+import { FileSystem, type FileSystemShape } from '@/application/ports/FileSystem';
+import type { BaseDir } from '@/domain/system';
+
+// Stub FileSystem ops backed by vi.fn() so tests can assert calls + control returns.
+const fsMocks = {
+  exists: vi.fn(async (_path: string, _base: BaseDir) => false),
+  readFile: vi.fn(
+    async (_path: string, _base: BaseDir, _mode: 'text' | 'binary'): Promise<string> => {
+      throw new Error('File not found');
+    },
+  ),
+  writeFile: vi.fn(async (_path: string, _base: BaseDir, _content: string) => {}),
+  createDir: vi.fn(async (_path: string, _base: BaseDir, _recursive?: boolean) => {}),
+  removeFile: vi.fn(async (_path: string, _base: BaseDir) => {}),
+};
+
+const fsShape: Partial<FileSystemShape> = {
+  exists: (path, base) => Effect.promise(() => fsMocks.exists(path, base)),
+  readFile: (path, base, mode) => Effect.promise(() => fsMocks.readFile(path, base, mode)),
+  writeFile: (path, base, content) =>
+    Effect.promise(() => fsMocks.writeFile(path, base, content as string)),
+  createDir: (path, base, recursive) =>
+    Effect.promise(() => fsMocks.createDir(path, base, recursive)),
+  removeFile: (path, base) => Effect.promise(() => fsMocks.removeFile(path, base)),
+};
+
+const testRuntime = ManagedRuntime.make(Layer.succeed(FileSystem, fsShape as FileSystemShape));
+
+vi.mock('@/runtime/clientRuntime', () => ({
+  getClientRuntime: () => testRuntime,
+}));
+
 import {
   loadSubscriptionState,
   saveSubscriptionState,
@@ -8,25 +41,15 @@ import {
 } from '@/services/opds/subscriptionState';
 import { MAX_KNOWN_ENTRIES, OPDS_SUBSCRIPTIONS_DIR } from '@/services/opds/types';
 import type { OPDSSubscriptionState } from '@/services/opds/types';
-import type { AppService } from '@/domain/system';
-
-const createMockAppService = () =>
-  ({
-    exists: vi.fn(async () => false),
-    readFile: vi.fn(async () => {
-      throw new Error('File not found');
-    }),
-    writeFile: vi.fn(async () => {}),
-    createDir: vi.fn(async () => {}),
-    deleteFile: vi.fn(async () => {}),
-    resolveFilePath: vi.fn(async (path: string) => path),
-  }) as unknown as AppService;
 
 describe('OPDS subscription state', () => {
-  let appService: AppService;
-
   beforeEach(() => {
-    appService = createMockAppService();
+    vi.clearAllMocks();
+    fsMocks.exists.mockResolvedValue(false);
+    fsMocks.readFile.mockRejectedValue(new Error('File not found'));
+    fsMocks.writeFile.mockResolvedValue(undefined);
+    fsMocks.createDir.mockResolvedValue(undefined);
+    fsMocks.removeFile.mockResolvedValue(undefined);
   });
 
   describe('emptyState', () => {
@@ -43,8 +66,8 @@ describe('OPDS subscription state', () => {
 
   describe('loadSubscriptionState', () => {
     it('returns empty state when file does not exist', async () => {
-      (appService.exists as ReturnType<typeof vi.fn>).mockResolvedValue(false);
-      const state = await loadSubscriptionState(appService, 'cat-1');
+      fsMocks.exists.mockResolvedValue(false);
+      const state = await loadSubscriptionState('cat-1');
       expect(state).toEqual(emptyState('cat-1'));
     });
 
@@ -55,17 +78,17 @@ describe('OPDS subscription state', () => {
         knownEntryIds: ['urn:a', 'urn:b'],
         failedEntries: [],
       };
-      (appService.exists as ReturnType<typeof vi.fn>).mockResolvedValue(true);
-      (appService.readFile as ReturnType<typeof vi.fn>).mockResolvedValue(JSON.stringify(saved));
-      const state = await loadSubscriptionState(appService, 'cat-1');
+      fsMocks.exists.mockResolvedValue(true);
+      fsMocks.readFile.mockResolvedValue(JSON.stringify(saved));
+      const state = await loadSubscriptionState('cat-1');
       expect(state.knownEntryIds).toEqual(['urn:a', 'urn:b']);
       expect(state.lastCheckedAt).toBe(1000);
     });
 
     it('returns empty state on corrupted file', async () => {
-      (appService.exists as ReturnType<typeof vi.fn>).mockResolvedValue(true);
-      (appService.readFile as ReturnType<typeof vi.fn>).mockResolvedValue('not json');
-      const state = await loadSubscriptionState(appService, 'cat-1');
+      fsMocks.exists.mockResolvedValue(true);
+      fsMocks.readFile.mockResolvedValue('not json');
+      const state = await loadSubscriptionState('cat-1');
       expect(state).toEqual(emptyState('cat-1'));
     });
   });
@@ -78,9 +101,9 @@ describe('OPDS subscription state', () => {
         knownEntryIds: ['urn:a'],
         failedEntries: [],
       };
-      await saveSubscriptionState(appService, state);
-      expect(appService.createDir).toHaveBeenCalledWith(OPDS_SUBSCRIPTIONS_DIR, 'Data', true);
-      expect(appService.writeFile).toHaveBeenCalledWith(
+      await saveSubscriptionState(state);
+      expect(fsMocks.createDir).toHaveBeenCalledWith(OPDS_SUBSCRIPTIONS_DIR, 'Data', true);
+      expect(fsMocks.writeFile).toHaveBeenCalledWith(
         `${OPDS_SUBSCRIPTIONS_DIR}/cat-1.json`,
         'Data',
         JSON.stringify(state, null, 2),
@@ -90,16 +113,16 @@ describe('OPDS subscription state', () => {
 
   describe('deleteSubscriptionState', () => {
     it('deletes the state file', async () => {
-      await deleteSubscriptionState(appService, 'cat-1');
-      expect(appService.deleteFile).toHaveBeenCalledWith(
+      await deleteSubscriptionState('cat-1');
+      expect(fsMocks.removeFile).toHaveBeenCalledWith(
         `${OPDS_SUBSCRIPTIONS_DIR}/cat-1.json`,
         'Data',
       );
     });
 
     it('does not throw if file does not exist', async () => {
-      (appService.deleteFile as ReturnType<typeof vi.fn>).mockRejectedValue(new Error('not found'));
-      await expect(deleteSubscriptionState(appService, 'cat-1')).resolves.toBeUndefined();
+      fsMocks.removeFile.mockRejectedValue(new Error('not found'));
+      await expect(deleteSubscriptionState('cat-1')).resolves.toBeUndefined();
     });
   });
 

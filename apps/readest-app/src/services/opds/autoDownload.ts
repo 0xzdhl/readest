@@ -127,7 +127,7 @@ async function syncCatalog(
   appService: AppService,
   books: Book[],
 ): Promise<{ newBooks: Book[]; state: OPDSSubscriptionState }> {
-  const state = await loadSubscriptionState(appService, catalog.id);
+  const state = await loadSubscriptionState(catalog.id);
 
   // Discovery: find new items from feeds
   const pendingItems = await checkFeedForNewItems(catalog, state);
@@ -164,7 +164,7 @@ async function syncCatalog(
   }
   if (allItems.length === 0) {
     state.lastCheckedAt = Date.now();
-    await saveSubscriptionState(appService, state);
+    await saveSubscriptionState(state);
     return { newBooks: [], state };
   }
 
@@ -210,7 +210,7 @@ async function syncCatalog(
   state.knownEntryIds = pruneKnownEntryIds([...state.knownEntryIds, ...newKnownIds]);
   state.failedEntries = updatedFailedEntries;
   state.lastCheckedAt = Date.now();
-  await saveSubscriptionState(appService, state);
+  await saveSubscriptionState(state);
 
   return { newBooks, state };
 }
@@ -249,9 +249,9 @@ export async function syncSubscribedCatalogs(
         error: reason instanceof Error ? reason.message : String(reason),
       });
       try {
-        const state = await loadSubscriptionState(appService, catalog.id);
+        const state = await loadSubscriptionState(catalog.id);
         state.lastCheckedAt = Date.now();
-        await saveSubscriptionState(appService, state);
+        await saveSubscriptionState(state);
       } catch {
         // Best effort
       }

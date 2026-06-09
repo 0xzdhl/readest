@@ -24,7 +24,7 @@ export function FailedDownloadsDialog({ catalogId, catalogName, onClose }: Props
     if (!appService) return;
     let cancelled = false;
     const refresh = async () => {
-      const next = await loadSubscriptionState(appService, catalogId);
+      const next = await loadSubscriptionState(catalogId);
       if (!cancelled) setState(next);
     };
     refresh();
@@ -42,7 +42,7 @@ export function FailedDownloadsDialog({ catalogId, catalogName, onClose }: Props
 
   const persist = async (next: OPDSSubscriptionState) => {
     setState(next);
-    await saveSubscriptionState(appService, next);
+    await saveSubscriptionState(next);
   };
 
   const retryEntry = async (entry: FailedEntry) => {

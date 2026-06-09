@@ -1,4 +1,6 @@
-import type { AppService } from '@/domain/system';
+import { Effect } from 'effect';
+import { FileSystem } from '@/application/ports/FileSystem';
+import { getClientRuntime } from '@/runtime/clientRuntime';
 import { MAX_KNOWN_ENTRIES, OPDS_SUBSCRIPTIONS_DIR } from './types';
 import type { OPDSSubscriptionState } from './types';
 
@@ -35,16 +37,17 @@ function dedupeFailedEntries(entries: OPDSSubscriptionState['failedEntries']) {
   return Array.from(byId.values());
 }
 
-export async function loadSubscriptionState(
-  appService: AppService,
-  catalogId: string,
-): Promise<OPDSSubscriptionState> {
+export async function loadSubscriptionState(catalogId: string): Promise<OPDSSubscriptionState> {
   const path = statePath(catalogId);
   try {
-    const fileExists = await appService.exists(path, 'Data');
+    const fileExists = await getClientRuntime().runPromise(
+      Effect.flatMap(FileSystem, (fs) => fs.exists(path, 'Data')),
+    );
     if (!fileExists) return emptyState(catalogId);
 
-    const content = await appService.readFile(path, 'Data', 'text');
+    const content = await getClientRuntime().runPromise(
+      Effect.flatMap(FileSystem, (fs) => fs.readFile(path, 'Data', 'text')),
+    );
     const parsed = JSON.parse(content as string) as OPDSSubscriptionState;
     return {
       ...parsed,
@@ -56,22 +59,22 @@ export async function loadSubscriptionState(
   }
 }
 
-export async function saveSubscriptionState(
-  appService: AppService,
-  state: OPDSSubscriptionState,
-): Promise<void> {
-  await appService.createDir(OPDS_SUBSCRIPTIONS_DIR, 'Data', true);
+export async function saveSubscriptionState(state: OPDSSubscriptionState): Promise<void> {
+  await getClientRuntime().runPromise(
+    Effect.flatMap(FileSystem, (fs) => fs.createDir(OPDS_SUBSCRIPTIONS_DIR, 'Data', true)),
+  );
   const path = statePath(state.catalogId);
   const content = JSON.stringify(state, null, 2);
-  await appService.writeFile(path, 'Data', content);
+  await getClientRuntime().runPromise(
+    Effect.flatMap(FileSystem, (fs) => fs.writeFile(path, 'Data', content)),
+  );
 }
 
-export async function deleteSubscriptionState(
-  appService: AppService,
-  catalogId: string,
-): Promise<void> {
+export async function deleteSubscriptionState(catalogId: string): Promise<void> {
   try {
-    await appService.deleteFile(statePath(catalogId), 'Data');
+    await getClientRuntime().runPromise(
+      Effect.flatMap(FileSystem, (fs) => fs.removeFile(statePath(catalogId), 'Data')),
+    );
   } catch {
     // File may not exist — that's fine
   }

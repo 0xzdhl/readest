@@ -123,7 +123,7 @@ describe('OPDS auto-download orchestrator', () => {
     expect(result.newBooks).toHaveLength(1);
     expect(saveSubscriptionState).toHaveBeenCalled();
 
-    const savedState = vi.mocked(saveSubscriptionState).mock.calls[0]![1] as OPDSSubscriptionState;
+    const savedState = vi.mocked(saveSubscriptionState).mock.calls[0]![0] as OPDSSubscriptionState;
     expect(savedState.knownEntryIds).toContain('urn:shelf:1');
     expect(savedState.lastCheckedAt).toBeGreaterThan(0);
   });
@@ -149,7 +149,7 @@ describe('OPDS auto-download orchestrator', () => {
     const result = await syncSubscribedCatalogs(catalogs, appService, []);
     expect(result.totalNewBooks).toBe(0);
 
-    const savedState = vi.mocked(saveSubscriptionState).mock.calls[0]![1] as OPDSSubscriptionState;
+    const savedState = vi.mocked(saveSubscriptionState).mock.calls[0]![0] as OPDSSubscriptionState;
     expect(savedState.failedEntries).toHaveLength(1);
     expect(savedState.failedEntries[0]!.entryId).toBe('urn:fail:1');
     expect(savedState.failedEntries[0]!.attempts).toBe(1);
@@ -204,7 +204,7 @@ describe('OPDS auto-download orchestrator', () => {
     // same entryId.
     const savedState = vi
       .mocked(saveSubscriptionState)
-      .mock.calls.at(-1)![1] as OPDSSubscriptionState;
+      .mock.calls.at(-1)![0] as OPDSSubscriptionState;
     const ids = savedState.failedEntries.map((fe) => fe.entryId);
     expect(ids).toEqual(Array.from(new Set(ids)));
     expect(savedState.failedEntries.filter((fe) => fe.entryId === 'urn:backoff:1')).toHaveLength(1);
