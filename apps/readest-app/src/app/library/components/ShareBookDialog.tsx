@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
+import { Effect } from 'effect';
 import {
   IoCheckmarkCircle,
   IoCopyOutline,
@@ -8,6 +9,8 @@ import {
 import Dialog from '@/components/Dialog';
 import SegmentedControl from '@/components/SegmentedControl';
 import { useEnv } from '@/context/EnvContext';
+import { useRunEffect } from '@/context/EffectRuntimeProvider';
+import { CloudService } from '@/application/services/CloudService';
 import { useTranslation } from '@/hooks/useTranslation';
 import { eventDispatcher } from '@/utils/event';
 import type { Book } from '@/domain/book';
@@ -34,6 +37,7 @@ interface CreatedShare {
 const ShareBookDialog: React.FC<ShareBookDialogProps> = ({ isOpen, book, cfi, onClose }) => {
   const _ = useTranslation();
   const { appService } = useEnv();
+  const runEffect = useRunEffect();
 
   const [expirationDays, setExpirationDays] = useState<number>(SHARE_DEFAULT_EXPIRATION_DAYS);
   // Off by default — sharing the current page reveals where the user is in
@@ -95,11 +99,15 @@ const ShareBookDialog: React.FC<ShareBookDialogProps> = ({ isOpen, book, cfi, on
     setErrorMessage(null);
     try {
       // Upload first if the book lives only locally.
-      if (!book.uploadedAt && appService) {
+      if (!book.uploadedAt) {
         try {
-          await appService.uploadBook(book, (progress) => {
-            setUploadProgress((progress.progress / progress.total) * 100);
-          });
+          await runEffect(
+            Effect.flatMap(CloudService, (c) =>
+              c.uploadBook(book, (progress) => {
+                setUploadProgress((progress.progress / progress.total) * 100);
+              }),
+            ),
+          );
         } finally {
           setUploadProgress(null);
         }
