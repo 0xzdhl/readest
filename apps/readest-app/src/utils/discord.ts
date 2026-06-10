@@ -1,14 +1,12 @@
 import { invoke } from '@tauri-apps/api/core';
 import { Effect } from 'effect';
 import type { Book } from '@/domain/book';
-import { getClientRuntime } from '@/runtime/clientRuntime';
+import { getClientRuntime, getPlatformInfo } from '@/runtime/clientRuntime';
 import { FileSystem } from '@/application/ports/FileSystem';
 import { PathResolver } from '@/application/ports/PathResolver';
 import { CloudService } from '@/application/services/CloudService';
-import { isTauriAppPlatform } from '@/services/environment';
 import { getCoverFilename } from './book';
 import { processDiscordCover } from './image';
-import { getOSPlatform } from './misc';
 
 type CacheEntry = {
   url: string | null;
@@ -18,8 +16,9 @@ type CacheEntry = {
 const coverUrlCache = new Map<string, CacheEntry>();
 const CACHE_DURATION = 60 * 60 * 1000; // 1 hour in milliseconds
 
-const isDesktopApp = () =>
-  isTauriAppPlatform() && ['macos', 'windows', 'linux'].includes(getOSPlatform());
+// Mirrors the legacy `appService.isDesktopApp` (false on web; native is
+// macos/windows/linux) via the SSR-safe Platform-port snapshot.
+const isDesktopApp = () => getPlatformInfo().isDesktopApp;
 
 type BookPresence = {
   bookHash: string;
