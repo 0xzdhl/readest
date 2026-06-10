@@ -3,6 +3,9 @@ import React, { useState } from 'react';
 import { MdAdd, MdDelete } from 'react-icons/md';
 import { IoMdCloseCircleOutline } from 'react-icons/io';
 import { useEnv } from '@/context/EnvContext';
+import { Effect } from 'effect';
+import { useRunEffect } from '@/context/EffectRuntimeProvider';
+import { FontService } from '@/application/services/FontService';
 import { useReaderStore } from '@/store/readerStore';
 import { useTranslation } from '@/hooks/useTranslation';
 import { useSettingsStore } from '@/store/settingsStore';
@@ -27,6 +30,7 @@ type FontFamily = {
 const CustomFonts: React.FC<CustomFontsProps> = ({ bookKey, onBack }) => {
   const _ = useTranslation();
   const { appService, envConfig } = useEnv();
+  const runEffect = useRunEffect();
   const { settings } = useSettingsStore();
   const {
     fonts: customFonts,
@@ -52,7 +56,9 @@ const CustomFonts: React.FC<CustomFontsProps> = ({ bookKey, onBack }) => {
     selectFiles({ type: 'fonts', multiple: true }).then(async (result) => {
       if (result.error || result.files.length === 0) return;
       for (const selectedFile of result.files) {
-        const fontInfo = await appService?.importFont(selectedFile.path || selectedFile.file);
+        const fontInfo = await runEffect(
+          Effect.flatMap(FontService, (s) => s.importFont(selectedFile.path || selectedFile.file)),
+        );
         if (!fontInfo) continue;
 
         const customFont = addFont(fontInfo.path, {
@@ -80,7 +86,7 @@ const CustomFonts: React.FC<CustomFontsProps> = ({ bookKey, onBack }) => {
     for (const font of family.fonts) {
       if (font) {
         if (removeFont(font.id)) {
-          appService?.deleteFont(font);
+          void runEffect(Effect.flatMap(FontService, (s) => s.deleteFont(font)));
           saveCustomFonts(envConfig);
           if (getAvailableFonts().length === 0) {
             setIsDeleteMode(false);
