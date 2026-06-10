@@ -176,7 +176,7 @@ const ReaderContent: React.FC<{ ids: string; cfi?: string; settings: SystemSetti
 
     const viewState = getViewState(bookKey);
     if (viewState?.isPrimary && appService?.isDesktopApp) {
-      await clearDiscordPresence(appService);
+      await clearDiscordPresence();
     }
 
     try {

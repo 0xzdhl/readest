@@ -30,7 +30,7 @@ export const useDiscordPresence = (book: Book | null, isPrimary: boolean, enable
 
     if (!enabled) {
       stopUpdates();
-      clearDiscordPresence(appService);
+      clearDiscordPresence();
       currentBookHashRef.current = null;
       return;
     }
@@ -45,7 +45,7 @@ export const useDiscordPresence = (book: Book | null, isPrimary: boolean, enable
 
       isUpdatingRef.current = true;
       try {
-        await updateDiscordPresence(book, sessionStartRef.current, appService);
+        await updateDiscordPresence(book, sessionStartRef.current);
       } catch (err) {
         console.error('Discord presence update failed:', err);
       } finally {
@@ -61,7 +61,7 @@ export const useDiscordPresence = (book: Book | null, isPrimary: boolean, enable
 
     return () => {
       stopUpdates();
-      clearDiscordPresence(appService);
+      clearDiscordPresence();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [book?.hash, isPrimary, enabled, appService]);

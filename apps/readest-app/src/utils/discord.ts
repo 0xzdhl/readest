@@ -1,8 +1,14 @@
 import { invoke } from '@tauri-apps/api/core';
+import { Effect } from 'effect';
 import type { Book } from '@/domain/book';
-import type { AppService } from '@/domain/system';
+import { getClientRuntime } from '@/runtime/clientRuntime';
+import { FileSystem } from '@/application/ports/FileSystem';
+import { PathResolver } from '@/application/ports/PathResolver';
+import { CloudService } from '@/application/services/CloudService';
+import { isTauriAppPlatform } from '@/services/environment';
 import { getCoverFilename } from './book';
 import { processDiscordCover } from './image';
+import { getOSPlatform } from './misc';
 
 type CacheEntry = {
   url: string | null;
@@ -11,6 +17,9 @@ type CacheEntry = {
 
 const coverUrlCache = new Map<string, CacheEntry>();
 const CACHE_DURATION = 60 * 60 * 1000; // 1 hour in milliseconds
+
+const isDesktopApp = () =>
+  isTauriAppPlatform() && ['macos', 'windows', 'linux'].includes(getOSPlatform());
 
 type BookPresence = {
   bookHash: string;
@@ -26,10 +35,7 @@ type BookPresence = {
  * - Caches failures (undefined) for 1 hour to avoid retries
  * - Processes cover with Readest icon overlay
  */
-const getCoverUrlForDiscord = async (
-  book: Book,
-  appService: AppService,
-): Promise<string | undefined> => {
+const getCoverUrlForDiscord = async (book: Book): Promise<string | undefined> => {
   const cached = coverUrlCache.get(book.hash);
   if (cached) {
     const isExpired = Date.now() - cached.timestamp > CACHE_DURATION;
@@ -42,9 +48,10 @@ const getCoverUrlForDiscord = async (
   }
 
   try {
+    const rt = getClientRuntime();
     const fp = getCoverFilename(book);
 
-    const exists = await appService.exists(fp, 'Books');
+    const exists = await rt.runPromise(Effect.flatMap(FileSystem, (fs) => fs.exists(fp, 'Books')));
     if (!exists) {
       coverUrlCache.set(book.hash, { url: null, timestamp: Date.now() });
       return undefined;
@@ -52,15 +59,14 @@ const getCoverUrlForDiscord = async (
 
     const cacheKey = `drp_${book.hash}.jpg`;
     // Check if processed image exists in cache
-    const cachedExists = await appService.exists(cacheKey, 'Cache');
+    const cachedExists = await rt.runPromise(
+      Effect.flatMap(FileSystem, (fs) => fs.exists(cacheKey, 'Cache')),
+    );
     if (cachedExists) {
-      const downloadUrl = await appService.uploadFileToCloud(
-        cacheKey,
-        cacheKey,
-        'Cache',
-        () => {},
-        book.hash,
-        true,
+      const downloadUrl = await rt.runPromise(
+        Effect.flatMap(CloudService, (c) =>
+          c.uploadFileToCloud(cacheKey, cacheKey, 'Cache', () => {}, book.hash, true),
+        ),
       );
 
       if (downloadUrl) {
@@ -69,21 +75,22 @@ const getCoverUrlForDiscord = async (
       }
     }
 
-    const fullPath = await appService.resolveFilePath(fp, 'Books');
-    const coverUrl = await appService.getImageURL(fullPath);
+    const fullPath = await rt.runPromise(
+      Effect.flatMap(PathResolver, (r) => r.absolute(fp, 'Books')),
+    );
+    const coverUrl = rt.runSync(Effect.flatMap(FileSystem, (fs) => fs.getUrl(fullPath)));
     const iconUrl = '/icon-tiny.png';
 
     const processedBlob = await processDiscordCover(coverUrl, iconUrl);
     console.log('Processed Discord cover for book:', book.title);
     const arrayBuffer = await processedBlob.arrayBuffer();
-    await appService.writeFile(cacheKey, 'Cache', arrayBuffer);
-    const downloadUrl = await appService.uploadFileToCloud(
-      cacheKey,
-      cacheKey,
-      'Cache',
-      () => {},
-      book.hash,
-      true,
+    await rt.runPromise(
+      Effect.flatMap(FileSystem, (fs) => fs.writeFile(cacheKey, 'Cache', arrayBuffer)),
+    );
+    const downloadUrl = await rt.runPromise(
+      Effect.flatMap(CloudService, (c) =>
+        c.uploadFileToCloud(cacheKey, cacheKey, 'Cache', () => {}, book.hash, true),
+      ),
     );
 
     if (downloadUrl) {
@@ -102,15 +109,11 @@ const getCoverUrlForDiscord = async (
 /**
  * Update Discord Rich Presence with current book information
  */
-export const updateDiscordPresence = async (
-  book: Book,
-  sessionStart: number,
-  appService: AppService,
-): Promise<void> => {
-  if (!appService?.isDesktopApp) return;
+export const updateDiscordPresence = async (book: Book, sessionStart: number): Promise<void> => {
+  if (!isDesktopApp()) return;
 
   try {
-    const coverUrl = await getCoverUrlForDiscord(book, appService);
+    const coverUrl = await getCoverUrlForDiscord(book);
     const bookPresence: BookPresence = {
       bookHash: book.hash,
       title: book.title,
@@ -128,8 +131,8 @@ export const updateDiscordPresence = async (
 /**
  * Clear Discord Rich Presence
  */
-export const clearDiscordPresence = async (appService: AppService): Promise<void> => {
-  if (!appService?.isDesktopApp) return;
+export const clearDiscordPresence = async (): Promise<void> => {
+  if (!isDesktopApp()) return;
 
   try {
     await invoke('clear_book_presence');
