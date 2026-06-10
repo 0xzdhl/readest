@@ -1,84 +1,74 @@
 # E5a — Final consumer migration off appService (additive)
 
 **Branch:** `effect/domain-type-migration`
-**Status:** design approved 2026-06-10
-**Predecessors:** E1/E1b (portable + DI-pattern consumers), E2a/E2b (book/library data + import/export), E3 (asset services), E4 (Sync/Cloud + singletons) — all done.
+**Status:** design approved 2026-06-10 (revised after full scope discovery)
+**Predecessors:** E1/E1b, E2a/E2b, E3, E4 — all done.
 **Successor:** E5b (boot-flip + god-object deletion) — the single destructive slice, gets its own spec after E5a lands green.
 
 ## Goal
 
-Migrate the remaining live `appService` consumers onto the **existing** Effect ports/usecases so that **no business logic depends on `appService` anymore**. Strictly additive: `EnvContext.appService`, `environment.getAppService()`, and the four god-object classes (`appService`/`native`/`web`/`nodeAppService`) stay alive but feed only the boot path + the render-readiness gates — which E5b removes. After E5a the tree is fully green with the god-objects unreferenced by any consumer behavior.
+Remove **all business-logic dependence on `useEnv().appService`** by migrating every consumer onto the existing Effect bridge — `usePlatformInfo()`/`getPlatformInfo()` for platform flags, and the ports/usecases for IO/data. Strictly additive: `EnvContext.appService`, `environment.getAppService()`, and the four god-object classes stay alive but feed only the boot path + the render-readiness gates (which E5b removes). After E5a the tree is green with `appService` referenced only by the readiness gates, `EnvContext`, and the still-typed legacy param surfaces (`cloudService.ts`/`storage.ts`/`fsPortAdapter`).
 
-This slice was split from the original "E5" because the grep-gate was **not** empty: ~13 live consumers remained (7 calling `getAppService()`, ~6 receiving the `appService` instance via `useEnv().appService`). E5a clears them; E5b does the destructive boot-flip + deletion.
+## Scope discovery (why this is bigger than first thought)
 
-In scope (consumer migration only — NO new ports/usecases/services):
+The initial spec assumed ~13 consumers. A correct grep (`appService(?\.|\.)`) found **~86 non-test files** reading `appService` members. The original exploration keyed on the `AppService` _type_ and `getAppService()`, so it missed the dominant case: ~74 files that just destructure `appService` from `useEnv()` and read **platform flags** (no type import). The real surface splits into two components:
 
-- The 4 `getAppService()` data-load sites (`library/index` ×3, `useLibrary`).
-- The platform-flag instance consumers (`TTSController`, `EdgeTTSClient`, `trafficLightStore`, `openWith`, `library/index` flags) → `getPlatformInfo()`/`usePlatformInfo()`.
-- `useFileSelector` (platform flags + `selectFiles` → `Dialog` port).
-- `HardcoverSyncMapStore` (drop the already-unused `_appService` ctor param) + its 2 call sites (`useHardcoverSync`, `HardcoverForm`).
-- `useReplicaPull` (drop the unused `AppService`-typed param threading).
+- **Component A — platform-flag sweep (~74 files, ~220 reads):** `isMobile`/`isAndroidApp`/`isMobileApp`/`isIOSApp`/`hasWindow`/`hasRoundedWindow`/`hasSafeAreaInset`/`hasWindowBar`/`hasTrafficLight`/`hasUpdater`/`hasContextMenu`/`hasHaptics`/`isLinuxApp`/`isDesktopApp`/`isMacOSApp`/`isOnlineCatalogsAccessible`/`appPlatform`/`distChannel`/etc. **`PlatformInfo` is a faithful superset of every flag read** (verified against `src/application/ports/Platform.ts`). Pure mechanical swap.
+- **Component B — IO/data consumers (~12 files):** real method calls → ports/usecases. `library/index`, `opds/index`, `StorageManager`, `Annotator`, `SearchBar`, `BookshelfItem`, `ShareBookDialog`, `useFileSelector`, `useLibrary`, `useOPDSSubscriptions`, plus residual sites in already-touched files. Plus the non-React flag readers (`TTSController`/`EdgeTTSClient`/`openWith`/`trafficLightStore`) and trivial param-drops (`HardcoverSyncMapStore`, `useReplicaPull`).
+
+In scope:
+
+- **A.** Replace `const { appService } = useEnv()` → `const platformInfo = usePlatformInfo()` (React) / `getPlatformInfo()` (non-React) and every `appService?.<flag>` → `platformInfo.<flag>`, across all ~74 flag-only files. Drop now-unused `useEnv`/`appService` and stale `[appService]` dep-array entries (swap to `[]` or the real deps).
+- **B.** Migrate IO/data calls to ports/usecases: `loadSettings`→`SettingsRepository.load`, `loadLibraryBooks`→`LibraryRepository.load`, `saveLibraryBooks`→`LibraryRepository.save`, `isBookAvailable`/`getBookFileSize`→`BookRepository`, `deleteBook`→`CloudService.deleteBook`, `downloadReplicaFile`→`CloudService`, `importBook`→`importBooks` usecase, `selectFiles`/`selectDirectory`/`saveFile`→`Dialog`, `readFile`/`readDirectory`/`writeFile`/`exists`/`createDir`/`copyFile`/`deleteDir`/`getImageURL`→`FileSystem`, `resolveFilePath`/`resolvePath`→`PathResolver`.
+- **C.** Non-React flag readers + trivial cleanups: `TTSController`/`EdgeTTSClient` (ctor drops `appService`; `isAndroidApp`/`isLinuxApp`→`getPlatformInfo()`) + `useTTSControl` construction/flags; `trafficLightStore.initializeTrafficLightStore` (drop param; `hasTrafficLight`→`getPlatformInfo()`) + `useTrafficLight` caller; `openWith` (drop param; `isIOSApp`→`getPlatformInfo()`) + caller; `HardcoverSyncMapStore` (delete the unused ctor) + `useHardcoverSync`/`HardcoverForm` callers; `useReplicaPull` (drop unused `AppService` param threading).
 
 Out of scope → **E5b** (destructive slice):
 
-- `EnvContext` boot-flip: making `EffectRuntimeProvider`/`BootApp` authoritative, publishing settings to the store, moving the replica-sync boot into the Effect path, gating the shell, stripping `EnvContext`.
-- Deleting `environment.getAppService` + `getNativeAppService`/`getWebAppService` + the 4 class files.
-- Deleting the `AppService` interface from `domain/system.ts` (the `FileSystem` interface STAYS — it is the return type of `makeLegacyFsAdapter`, load-bearing for every shared layer).
-- Retyping the `appService: AppService` params in `libs/storage.ts` + `services/cloudService.ts` download fns to a minimal `{ writeFile }` shape.
-- Full `EnvConfigType`/`envConfig` removal (~85 vestigial params across ~17 files).
-- The render-readiness gates `if (!appService) return …` (`Providers.tsx:127`, `library/index.tsx:915`).
+- `EnvContext` boot-flip (make `EffectRuntimeProvider`/`BootApp` authoritative, publish settings, move replica-sync boot, gate the shell, strip `EnvContext`).
+- Deleting `environment.getAppService` + the 4 class files; deleting the `AppService` interface from `domain/system.ts` (the `FileSystem` interface STAYS — `makeLegacyFsAdapter` return type).
+- Retyping `cloudService.ts`/`storage.ts` download params to `{ writeFile }`.
+- Full `EnvConfigType`/`envConfig` removal.
+- The render-readiness gates `if (!appService) return …` (`Providers.tsx:127`, `library/index.tsx:915`) and the residual `appService` they read for that purpose.
 
 ## Why this shape (decision log)
 
-- **No new infrastructure.** Every target maps to a port/usecase that already exists: platform flags → `getPlatformInfo()`/`usePlatformInfo()` (E1 bridge); `loadSettings` → `SettingsRepository.load`; `loadLibraryBooks` → `LibraryRepository.load`; `selectFiles` → `Dialog.selectFiles` (already on the port, signature matches `appService.selectFiles(name, extensions)`). This is the E1/E1b pattern applied to the last holdouts.
-- **Additive, not destructive.** E5a leaves the god-objects constructible so the app keeps booting through the legacy path; it only removes _consumers_. This isolates the destructive boot-flip+deletion behind a green checkpoint (E5b), matching the user's "boot-flip vs god-object deletion" decomposition.
-- **`HardcoverSyncMapStore` is a no-op drop.** Its ctor is already `constructor(_appService: AppService) {}` with a comment that the db logic doesn't use it — so the migration is purely a signature + call-site cleanup (removes the 2 `getAppService()` calls in its callers).
-- **`EdgeTTSClient`/`TTSController` use only platform flags** (`isLinuxApp`/`isAndroidApp`) — no fs/network via appService — so they need only `getPlatformInfo()`, not a port. The TTS subsystem is otherwise untouched.
-- **Retypes deferred to E5b.** `cloudService.ts`/`storage.ts` keep their `appService: AppService` param types in E5a (additive); E5b retypes them as part of dismantling the `AppService` interface. Keeping them here avoids touching the pure-fn signatures twice.
+- **`usePlatformInfo()` is the faithful flag replacement (E1-established).** `PlatformInfo` mirrors the legacy AppService capability surface field-for-field (see `Platform.ts` header comment). `getPlatformInfo()` is **synchronous + SSR-safe**, so flag reads resolve immediately from `clientEnv.VITE_APP_PLATFORM` — strictly faithful-or-better than `appService?.<flag>` (which was `undefined` until async boot). E1 already migrated several consumers this exact way.
+- **One revised spec, decomposed in the plan.** Component A is one trivial pattern × ~74 files; Component B is ~12 careful per-file migrations; Component C is ~8 small files. The plan groups A by directory subtree (executed by parallel subagents) and B/C per-file.
+- **No new infrastructure.** Every target maps to an existing port/usecase (`Dialog.selectFiles` already matches `appService.selectFiles(name, extensions)`; `FileSystem`/`PathResolver`/`SettingsRepository`/`LibraryRepository`/`BookRepository`/`CloudService`/`importBooks` all exist from E1–E4).
+- **Additive.** Leaves the god-objects constructible (legacy boot still runs) so the tree stays green/bootable until E5b flips it.
+- **Name mismatch to handle:** `appService.supportsCanvasContext` (legacy) vs `PlatformInfo.supportsCanvasContext2DFilter` — the plan maps it explicitly. Verify any other legacy flag whose `PlatformInfo` name differs before sweeping.
 
-## Components
+## Components & decomposition
 
-Pattern: React components → `usePlatformInfo()` / `useRunEffect(Effect.flatMap(<Port>, …))`; non-React modules/classes → `getPlatformInfo()` / `getClientRuntime().runPromise(…)`. All from `@/runtime/clientRuntime` / `@/context/EffectRuntimeProvider`.
+Pattern: React → `const platformInfo = usePlatformInfo()` + `platformInfo.<flag>`, `useRunEffect(Effect.flatMap(<Port>, …))`; non-React → `getPlatformInfo()` + `getClientRuntime().runPromise(…)`. Imports from `@/context/EffectRuntimeProvider` (`usePlatformInfo`/`useRunEffect`) and `@/runtime/clientRuntime` (`getPlatformInfo`/`getClientRuntime`).
 
-### 1. `getAppService()` data loads
+### A — Platform-flag sweep (~74 files), grouped by directory for parallel subagents
 
-- `src/app/library/index.tsx:340` (close-reader-window effect): `loadSettings()` → `SettingsRepository.load`; `loadLibraryBooks()` → `LibraryRepository.load`. Remove the `const appService = await envConfig.getAppService()`.
-- `src/app/library/index.tsx:469` (`initLogin`): `loadSettings()` → `SettingsRepository.load`.
-- `src/app/library/index.tsx:487` (`initLibrary`): `loadSettings()` + `loadLibraryBooks()` → repos.
-- `src/hooks/useLibrary.ts:29` (`initLibrary`): `loadSettings()` → `SettingsRepository.load`.
+- `src/app/reader/**` (largest group: components, sidebar, footerbar, annotator, paragraph, tts, notebook, hooks)
+- `src/app/library/**` (components incl. BookshelfItem/LibraryHeader/Bookshelf/etc.)
+- `src/app/opds/**`, `src/app/user/**`
+- `src/components/**` (Auth, Dialog, WindowButtons, settings/_, command-palette/_, AppLockScreen, AboutWindow, LegalLinks, Providers-flag-parts)
+- `src/hooks/**` (useTheme, useKeyDownActions, useSwipeToDismiss, useOpenWithBooks, useAppUrlIngress, useWindowActiveChanged, usePagination, useDiscordPresence-flag, etc.)
 
-(These are async non-render code paths; use `getClientRuntime().runPromise(...)` or the component's `runEffect`, matching how the file already runs effects.)
+Each subagent: swap `useEnv().appService` flag reads → `usePlatformInfo()`; if a file _also_ makes IO calls (the Component-B overlap files), leave the IO calls for the B tasks and migrate only its flags (or skip the file entirely and let B own it — the plan assigns overlap files to B). Run `tsgo` over the subtree; commit per subtree.
 
-### 2. Platform-flag instance consumers → `getPlatformInfo()`/`usePlatformInfo()`
+### B — IO/data consumers (~12 files), per-file
 
-- `src/services/tts/TTSController.ts`: ctor drops `appService: AppService | null`; `appService?.isAndroidApp` (line ~63) → `getPlatformInfo().isAndroidApp`; stop passing `appService` to `new EdgeTTSClient(this)`; drop the `this.appService` field. Update construction at `src/app/reader/hooks/useTTSControl.ts:510`.
-- `src/services/tts/EdgeTTSClient.ts`: ctor drops `appService`; `this.appService?.isLinuxApp` (lines ~209/215) → `getPlatformInfo().isLinuxApp`.
-- `src/store/trafficLightStore.ts`: `appService.hasTrafficLight` (lines ~31/32) → `getPlatformInfo().hasTrafficLight`; drop the `appService` param from the store method; update callers.
-- `src/helpers/openWith.ts`: `appService?.isIOSApp` (line ~46) → `getPlatformInfo().isIOSApp`; drop the `appService` param from `parseIntentOpenWithFiles`/`parseOpenWithFiles`; update caller (`library/index` `processOpenWithFiles`).
-- `src/app/library/index.tsx`: `appService?.isAndroidApp` (~307), `appService?.hasUpdater` (~312), `appService?.isMobileApp` (~326), `appService?.hasWindow` (~332) → `usePlatformInfo()` reads.
+`library/index` (the heaviest: `loadSettings`/`loadLibraryBooks`/`isBookAvailable`/`deleteBook`/`selectDirectory`/`readDirectory`/`importBook` via helpers + all its flags), `opds/index`, `StorageManager`, `Annotator`, `SearchBar`, `BookshelfItem`, `ShareBookDialog`, `useFileSelector` (Dialog.selectFiles + flags; note `Dialog.selectFiles` returns `readonly string[]` — spread when handing to `processTauriFiles(string[])`), `useLibrary` (loadSettings), `useOPDSSubscriptions`, plus residual sites. Each file gets its method calls mapped to ports per the table above; verify against the file's current behavior.
 
-### 3. `useFileSelector`
+### C — Non-React flag readers + trivial drops
 
-- `src/hooks/useFileSelector.ts`: `appService?.isIOSApp`/`isAndroidApp` → `usePlatformInfo()`; `appService?.selectFiles(_(title), exts)` → `runEffect(Effect.flatMap(Dialog, (d) => d.selectFiles(_(title), exts)))` (returns `readonly string[]`). Drop the `appService` param. Update caller `src/app/library/index.tsx:140` (`useFileSelector(appService, _)` → `useFileSelector(_)`).
-
-### 4. `HardcoverSyncMapStore`
-
-- `src/services/hardcover/HardcoverSyncMapStore.ts`: drop `_appService` from the ctor (already unused). Update callers `src/app/reader/hooks/useHardcoverSync.ts:33` and `src/components/settings/integrations/HardcoverForm.tsx:28` to remove the `const appService = await envConfig.getAppService()` + the arg.
-
-### 5. `useReplicaPull`
-
-- `src/hooks/useReplicaPull.ts`: the `AppService`-typed params (no method calls — pass-through only) are removed; update any internal threading + callers. (If a param is genuinely needed for nothing, delete it and its call-site args.)
+`TTSController` (+ `EdgeTTSClient`, `useTTSControl`), `trafficLightStore` (+ `useTrafficLight`), `openWith` (+ caller), `HardcoverSyncMapStore` (+ `useHardcoverSync`/`HardcoverForm`), `useReplicaPull`. Details in the plan.
 
 ## Testing
 
-- Re-run each migrated file's existing tests; rebridge any that mocked `appService.*` (platform flags) by mocking `@/runtime/clientRuntime`'s `getPlatformInfo()` (the E1/E3 pattern — these stores already mock the runtime) or `@/context/EffectRuntimeProvider`. The TTS tests (`EdgeTTSClient`/`useTTSControl`) and `HardcoverSyncMapStore` tests are the most likely to need a ctor-signature update; preserve assertion intent.
-- `useFileSelector`'s `selectFiles` test (if any) asserts on `Dialog.selectFiles` via the runtime mock.
-- No new test files required (no new units) — only consumer-test updates.
+- Re-run each migrated file's tests; rebridge any mocking `appService.*` by mocking `@/context/EffectRuntimeProvider` (`usePlatformInfo`) or `@/runtime/clientRuntime` (`getPlatformInfo`) — the E1/E3 pattern; many store/component tests already do this. Preserve assertion intent. TTS (`EdgeTTSClient`/`useTTSControl`) and `HardcoverSyncMapStore` tests need ctor-signature updates.
+- No new test files (no new units) — only consumer-test updates.
 
 ## Verification (done-conditions)
 
-- `grep -rn 'getAppService' src --glob '!**/__tests__/**'` → only `src/context/EnvContext.tsx` + `src/services/environment.ts` (the infra; E5b's to remove).
-- `grep -rn 'appService\.' src --glob '!**/__tests__/**'` → only: the render-readiness guards (`if (!appService)` in `Providers.tsx`/`library/index.tsx`), `EnvContext`, and the still-typed `cloudService.ts`/`storage.ts`/`fsPortAdapter` param surfaces (E5b retypes). NO behavioral method calls in consumers.
-- `pnpm lint` (tsgo + biome): only the 2 pre-existing baseline errors (`scripts/upload-cjk-fonts-r2.ts`, `SettingsDialog.tsx` unused `lazy`).
-- `pnpm test`: green except the known env-flaky set (opds-req/hardcover/edgeTTS/turso-node + the `getAPIBaseUrl` import-time collection failures in theme-store/useBookShortcuts).
+- `grep -rnE 'appService(\?\.|\.)' src --glob '!**/__tests__/**'` → only: the render-readiness guards (`Providers.tsx`/`library/index.tsx` `if (!appService)`), `EnvContext`, the `EffectRuntimeProvider` comment, and the still-typed `cloudService.ts`/`storage.ts`/`fsPortAdapter` legacy param surfaces. **No platform-flag or IO method reads in any consumer.**
+- `grep -rn 'getAppService' src --glob '!**/__tests__/**'` → only `EnvContext.tsx` + `environment.ts`.
+- `pnpm lint` (tsgo + biome): only the 2 pre-existing baseline errors.
+- `pnpm test`: green except the known env-flaky set (opds-req/hardcover/edgeTTS/turso-node + the `getAPIBaseUrl` collection failures).
 - No Rust/Lua touched.
