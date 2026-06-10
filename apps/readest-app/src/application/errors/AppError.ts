@@ -33,6 +33,11 @@ export class AssetError extends Data.TaggedError('AssetError')<{
   readonly cause: unknown;
 }> {}
 
+export class CloudError extends Data.TaggedError('CloudError')<{
+  readonly operation: string;
+  readonly cause: unknown;
+}> {}
+
 export class MigrationError extends Data.TaggedError('MigrationError')<{
   readonly operation: string;
   readonly fromVersion?: number;
@@ -50,5 +55,6 @@ export type AppError =
   | SettingsError
   | BookError
   | AssetError
+  | CloudError
   | MigrationError
   | UserCancelled;
