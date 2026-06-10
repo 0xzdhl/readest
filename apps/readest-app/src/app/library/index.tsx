@@ -12,6 +12,7 @@ import { Effect } from 'effect';
 import { navigateToLibrary, navigateToReader } from '@/utils/nav';
 import { LibraryRepository } from '@/application/repositories/LibraryRepository';
 import { CoverService } from '@/application/services/CoverService';
+import { CloudService } from '@/application/services/CloudService';
 import { importBooks as importBooksUsecase } from '@/application/usecases/book';
 import { formatAuthors, formatTitle, getPrimaryLanguage, listFormater } from '@/utils/book';
 import { getImportErrorMessage } from '@/services/errors';
@@ -704,9 +705,13 @@ const LibraryPageContent = () => {
       const { redownload = false, queued = false } = downloadOptions;
       if (redownload || !queued) {
         try {
-          await appService?.downloadBook(book, false, redownload, (progress) => {
-            updateBookTransferProgress(book.hash, progress);
-          });
+          await runEffect(
+            Effect.flatMap(CloudService, (c) =>
+              c.downloadBook(book, false, redownload, (progress) => {
+                updateBookTransferProgress(book.hash, progress);
+              }),
+            ),
+          );
           await updateBook(envConfig, book);
           eventDispatcher.dispatch('toast', {
             type: 'info',

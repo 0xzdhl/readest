@@ -2,11 +2,11 @@ import { useCallback, useEffect, useRef } from 'react';
 import { Effect } from 'effect';
 import type { Book } from '@/domain/book';
 import { useSync } from '@/hooks/useSync';
-import { useEnv } from '@/context/EnvContext';
 import { useAuth } from '@/context/AuthContext';
 import { useRunEffect } from '@/context/EffectRuntimeProvider';
 import { LibraryRepository } from '@/application/repositories/LibraryRepository';
 import { CoverService } from '@/application/services/CoverService';
+import { CloudService } from '@/application/services/CloudService';
 import { useLibraryStore } from '@/store/libraryStore';
 import { useTranslation } from '@/hooks/useTranslation';
 import { SYNC_BOOKS_INTERVAL_SEC } from '@/services/constants';
@@ -17,7 +17,6 @@ import { eventDispatcher } from '@/utils/event';
 export const useBooksSync = () => {
   const _ = useTranslation();
   const { user } = useAuth();
-  const { appService } = useEnv();
   const runEffect = useRunEffect();
   const { library, isSyncing, libraryLoaded } = useLibraryStore();
   const { setLibrary, setIsSyncing, setSyncProgress } = useLibraryStore();
@@ -132,7 +131,7 @@ export const useBooksSync = () => {
     const oldBooksBatchSize = 100;
     for (let i = 0; i < oldBooksNeedsDownload.length; i += oldBooksBatchSize) {
       const batch = oldBooksNeedsDownload.slice(i, i + oldBooksBatchSize);
-      await appService?.downloadBookCovers(batch);
+      await runEffect(Effect.flatMap(CloudService, (c) => c.downloadBookCovers(batch)));
     }
 
     const updatedLibrary = await Promise.all(liveLibrary.map(processOldBook));
@@ -160,7 +159,7 @@ export const useBooksSync = () => {
       const batchSize = 10;
       for (let i = 0; i < newBooks.length; i += batchSize) {
         const batch = newBooks.slice(i, i + batchSize);
-        await appService?.downloadBookCovers(batch);
+        await runEffect(Effect.flatMap(CloudService, (c) => c.downloadBookCovers(batch)));
         await Promise.all(batch.map(processNewBook));
         const progress = Math.min((i + batchSize) / newBooks.length, 1);
         setSyncProgress(progress);
