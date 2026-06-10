@@ -31,7 +31,7 @@ export const EnvProvider = ({ children }: { children: ReactNode }) => {
             cursorStore: createSettingsCursorStore(),
           });
           ctx.manager.startAutoSync();
-          startReplicaTransferIntegration(service);
+          startReplicaTransferIntegration();
         }
       } catch (err) {
         console.warn('replica sync init failed', err);

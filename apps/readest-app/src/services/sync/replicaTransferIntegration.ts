@@ -1,5 +1,7 @@
+import { Effect } from 'effect';
 import type { ReplicaTransferFile } from '@/store/transferStore';
-import type { AppService } from '@/domain/system';
+import { getClientRuntime } from '@/runtime/clientRuntime';
+import { FileSystem } from '@/application/ports/FileSystem';
 import { eventDispatcher } from '@/utils/event';
 import type { ClosableFile } from '@/utils/file';
 import { partialMd5 } from '@/utils/md5';
@@ -36,12 +38,10 @@ export const registerReplicaDownloadHandler = (kind: string, handler: DownloadHa
 };
 
 let started = false;
-let appServiceRef: AppService | null = null;
 let listener: ((event: CustomEvent) => Promise<void>) | null = null;
 
 const handleReplicaUpload = async (detail: ReplicaTransferCompleteDetail): Promise<void> => {
   if (!detail.files || detail.files.length === 0) return;
-  if (!appServiceRef) return;
   const adapter = getReplicaAdapter(detail.kind);
   if (!adapter?.binary) return;
   const base = adapter.binary.localBaseDir;
@@ -49,7 +49,9 @@ const handleReplicaUpload = async (detail: ReplicaTransferCompleteDetail): Promi
   try {
     const manifestFiles = await Promise.all(
       detail.files.map(async (f) => {
-        const file = await appServiceRef!.openFile(f.lfp, base);
+        const file = await getClientRuntime().runPromise(
+          Effect.flatMap(FileSystem, (fs) => fs.openFile(f.lfp, base)),
+        );
         const partialMD5Value = await partialMd5(file);
         const closable = file as ClosableFile;
         if (closable?.close) await closable.close();
@@ -97,14 +99,13 @@ const handleReplicaTransferComplete = async (event: CustomEvent): Promise<void> 
  * Wires the long-lived `replica-transfer-complete` listener that turns
  * a finished binary upload into a manifest commit (per the upload state
  * machine: binaries first, manifest LAST). Called once from EnvContext
- * after appService boots; idempotent.
+ * during boot; idempotent.
  *
  * Callers that subsequently sign in / out shouldn't re-call this — the
  * listener doesn't need to know auth state, and publishReplicaManifest
  * already gates on the user being authenticated.
  */
-export const startReplicaTransferIntegration = (appService: AppService): void => {
-  appServiceRef = appService;
+export const startReplicaTransferIntegration = (): void => {
   if (started) return;
   started = true;
   listener = handleReplicaTransferComplete;
@@ -117,6 +118,5 @@ export const __resetReplicaTransferIntegrationForTests = (): void => {
     listener = null;
   }
   started = false;
-  appServiceRef = null;
   downloadHandlers.clear();
 };
