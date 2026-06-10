@@ -84,7 +84,7 @@ export const BackupWindow: React.FC<BackupWindowProps> = ({
     try {
       const timestamp = new Date().toISOString().slice(0, 10);
       const filename = `readest-backup-${timestamp}.zip`;
-      const saved = await saveBackupFile(appService, filename, (current, total, currentFile) => {
+      const saved = await saveBackupFile(filename, (current, total, currentFile) => {
         setProgress({ current, total, currentFile });
       });
       if (saved) {
@@ -123,7 +123,6 @@ export const BackupWindow: React.FC<BackupWindowProps> = ({
           );
 
       const { booksAdded, booksUpdated } = await restoreFromBackupZip(
-        appService,
         zipFile,
         (current, total, currentFile) => {
           setProgress({ current, total, currentFile });
