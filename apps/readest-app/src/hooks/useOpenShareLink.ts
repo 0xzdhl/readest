@@ -66,7 +66,7 @@ export function useOpenShareLink() {
         // Book entry and the bytes on disk before navigating, otherwise
         // `getBookByHash` returns undefined and the reader throws "Book not
         // found". See src/libs/shareImport.ts for the three branches.
-        await ensureSharedBookLocal({ token, importResult: result, appService });
+        await ensureSharedBookLocal({ token, importResult: result });
         // Best-effort analytics ping; doesn't affect UX.
         confirmDownload(token);
 

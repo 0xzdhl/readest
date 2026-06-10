@@ -93,7 +93,6 @@ const ShareLanding = () => {
       await ensureSharedBookLocal({
         token,
         importResult: result,
-        appService,
         meta: meta ?? undefined,
         onProgress: setImportProgress,
       });
