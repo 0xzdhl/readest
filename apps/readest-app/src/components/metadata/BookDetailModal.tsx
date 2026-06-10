@@ -4,9 +4,9 @@ import { Effect } from 'effect';
 
 import type { Book } from '@/domain/book';
 import type { BookMetadata } from '@/domain/document';
-import { useEnv } from '@/context/EnvContext';
 import { useRunEffect } from '@/context/EffectRuntimeProvider';
 import { BookRepository } from '@/application/repositories/BookRepository';
+import { CloudService } from '@/application/services/CloudService';
 import { exportBook } from '@/application/usecases/book';
 import { useThemeStore } from '@/store/themeStore';
 import { useTranslation } from '@/hooks/useTranslation';
@@ -51,7 +51,6 @@ const BookDetailModal: React.FC<BookDetailModalProps> = ({
   handleBookMetadataUpdate,
 }) => {
   const _ = useTranslation();
-  const { envConfig } = useEnv();
   const runEffect = useRunEffect();
   const { safeAreaInsets } = useThemeStore();
   const [activeDeleteAction, setActiveDeleteAction] = useState<DeleteAction | null>(null);
@@ -99,11 +98,10 @@ const BookDetailModal: React.FC<BookDetailModalProps> = ({
 
   useEffect(() => {
     const fetchBookDetails = async () => {
-      const appService = await envConfig.getAppService();
       try {
         let details = book.metadata || null;
         if (!details && book.downloadedAt) {
-          details = await appService.fetchBookDetails(book);
+          details = await runEffect(Effect.flatMap(CloudService, (c) => c.fetchBookDetails(book)));
         }
         setBookMeta(details);
         const size = await runEffect(Effect.flatMap(BookRepository, (r) => r.getFileSize(book)));
