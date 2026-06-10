@@ -2,6 +2,9 @@ import clsx from 'clsx';
 import type React from 'react';
 import { useEffect, useState } from 'react';
 import { useEnv } from '@/context/EnvContext';
+import { Effect } from 'effect';
+import { useRunEffect } from '@/context/EffectRuntimeProvider';
+import { ImageService } from '@/application/services/ImageService';
 import { saveViewSettings } from '@/helpers/settings';
 import { useFileSelector } from '@/hooks/useFileSelector';
 import { useResetViewSettings } from '@/hooks/useResetSettings';
@@ -38,6 +41,7 @@ const ColorPanel: React.FC<SettingsPanelPanelProp> = ({ bookKey, onRegisterReset
   const { themeMode, themeColor, isDarkMode, setThemeMode, setThemeColor, saveCustomTheme } =
     useThemeStore();
   const { envConfig, appService } = useEnv();
+  const runEffect = useRunEffect();
   const { settings, setSettings, saveSettings } = useSettingsStore();
   const { getView, getViewSettings } = useReaderStore();
   const viewSettings = getViewSettings(bookKey) || settings.globalViewSettings;
@@ -249,7 +253,11 @@ const ColorPanel: React.FC<SettingsPanelPanelProp> = ({ bookKey, onRegisterReset
     selectFiles({ type: 'images', multiple: true }).then(async (result) => {
       if (result.error || result.files.length === 0) return;
       for (const selectedFile of result.files) {
-        const textureInfo = await appService?.importImage(selectedFile.path || selectedFile.file);
+        const textureInfo = await runEffect(
+          Effect.flatMap(ImageService, (s) =>
+            s.importImage(selectedFile.path || selectedFile.file),
+          ),
+        );
         if (!textureInfo) continue;
 
         const customTexture = addTexture(textureInfo.path, {
