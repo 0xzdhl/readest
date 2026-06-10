@@ -36,7 +36,6 @@ export function useOPDSSubscriptions() {
         const librarySnapshot = [...useLibraryStore.getState().library];
         const { newBooks, totalNewBooks, errors } = await syncSubscribedCatalogs(
           catalogs,
-          appService,
           librarySnapshot,
         );
 

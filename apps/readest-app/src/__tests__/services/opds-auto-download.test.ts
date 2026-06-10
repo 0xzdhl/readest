@@ -1,7 +1,46 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import type { OPDSCatalog } from '@/domain/opds';
-import type { AppService } from '@/domain/system';
+import type { Book } from '@/domain/book';
 import type { OPDSSubscriptionState, PendingItem } from '@/services/opds/types';
+
+// E4 bridge: autoDownload no longer takes an appService. It resolves the
+// FileSystem/PathResolver ports via getClientRuntime() and imports through the
+// importBooks usecase. Mock the import usecase with a spy so the existing
+// success/failure assertions hold, and back the runtime with no-op ports
+// (resolveFilePath/copyFile/removeFile/writeFile) so the orchestration runs.
+const { importBooksSpy } = vi.hoisted(() => ({
+  importBooksSpy: vi.fn(),
+}));
+
+vi.mock('@/application/usecases/book', () => ({
+  importBooks: (...args: unknown[]) => importBooksSpy(...args),
+}));
+
+vi.mock('@/runtime/clientRuntime', async () => {
+  const { Effect, Layer } = await import('effect');
+  const { FileSystem } = await import('@/application/ports/FileSystem');
+  const { PathResolver } = await import('@/application/ports/PathResolver');
+  const FakePorts = Layer.mergeAll(
+    Layer.succeed(FileSystem, {
+      copyFile: () => Effect.void,
+      removeFile: () => Effect.void,
+      writeFile: () => Effect.void,
+    } as never),
+    Layer.succeed(PathResolver, {
+      absolute: (path: string) => Effect.succeed(`/cache/${path}`),
+    } as never),
+  );
+  return {
+    getClientRuntime: () => ({
+      runPromise: (effect: never) =>
+        Effect.runPromise(
+          Effect.provide(effect, FakePorts) as unknown as Parameters<typeof Effect.runPromise>[0],
+        ),
+    }),
+    getPlatformInfo: () => ({ appPlatform: 'web' }),
+    setClientRuntime: vi.fn(),
+  };
+});
 
 vi.mock('@/services/environment', () => ({
   isWebAppPlatform: vi.fn(() => false),
@@ -52,38 +91,30 @@ import { checkFeedForNewItems } from '@/services/opds/feedChecker';
 import { saveSubscriptionState, loadSubscriptionState } from '@/services/opds/subscriptionState';
 import { downloadFile } from '@/libs/storage';
 
-const createMockAppService = () =>
-  ({
-    resolveFilePath: vi.fn(async (path: string) => `/cache/${path}`),
-    importBook: vi.fn(async () => ({
-      hash: 'abc123',
-      format: 'EPUB',
-      title: 'Test Book',
-      author: 'Author',
-      createdAt: Date.now(),
-      updatedAt: Date.now(),
-    })),
-    copyFile: vi.fn(async () => {}),
-    deleteFile: vi.fn(async () => {}),
-    exists: vi.fn(async () => false),
-    readFile: vi.fn(async () => '{}'),
-    writeFile: vi.fn(async () => {}),
-    createDir: vi.fn(async () => {}),
-  }) as unknown as AppService;
+const makeImportedBook = (): Book => ({
+  hash: 'abc123',
+  format: 'EPUB',
+  title: 'Test Book',
+  author: 'Author',
+  createdAt: Date.now(),
+  updatedAt: Date.now(),
+});
 
 describe('OPDS auto-download orchestrator', () => {
-  let appService: AppService;
-
-  beforeEach(() => {
+  beforeEach(async () => {
     vi.clearAllMocks();
-    appService = createMockAppService();
+    const { Effect } = await import('effect');
+    // importBooks returns an Effect; the caller runs it via runPromise.
+    importBooksSpy.mockReturnValue(
+      Effect.succeed({ library: [], imported: [makeImportedBook()], failed: [] }),
+    );
   });
 
   it('skips catalogs without autoDownload enabled', async () => {
     const catalogs: OPDSCatalog[] = [
       { id: 'cat-1', name: 'Test', url: 'https://example.com/opds' },
     ];
-    const result = await syncSubscribedCatalogs(catalogs, appService, []);
+    const result = await syncSubscribedCatalogs(catalogs, []);
     expect(result.totalNewBooks).toBe(0);
     expect(checkFeedForNewItems).not.toHaveBeenCalled();
   });
@@ -98,7 +129,7 @@ describe('OPDS auto-download orchestrator', () => {
         disabled: true,
       },
     ];
-    const result = await syncSubscribedCatalogs(catalogs, appService, []);
+    const result = await syncSubscribedCatalogs(catalogs, []);
     expect(result.totalNewBooks).toBe(0);
   });
 
@@ -118,7 +149,7 @@ describe('OPDS auto-download orchestrator', () => {
     ];
     vi.mocked(checkFeedForNewItems).mockResolvedValue(pendingItems);
 
-    const result = await syncSubscribedCatalogs(catalogs, appService, []);
+    const result = await syncSubscribedCatalogs(catalogs, []);
     expect(result.totalNewBooks).toBe(1);
     expect(result.newBooks).toHaveLength(1);
     expect(saveSubscriptionState).toHaveBeenCalled();
@@ -142,11 +173,16 @@ describe('OPDS auto-download orchestrator', () => {
         baseURL: 'https://example.com',
       },
     ]);
-    (appService.importBook as ReturnType<typeof vi.fn>).mockRejectedValue(
-      new Error('corrupt file'),
+    const { Effect } = await import('effect');
+    importBooksSpy.mockReturnValueOnce(
+      Effect.succeed({
+        library: [],
+        imported: [],
+        failed: [{ filename: 'bad.epub', error: new Error('corrupt file') }],
+      }),
     );
 
-    const result = await syncSubscribedCatalogs(catalogs, appService, []);
+    const result = await syncSubscribedCatalogs(catalogs, []);
     expect(result.totalNewBooks).toBe(0);
 
     const savedState = vi.mocked(saveSubscriptionState).mock.calls[0]![0] as OPDSSubscriptionState;
@@ -157,7 +193,7 @@ describe('OPDS auto-download orchestrator', () => {
   });
 
   it('returns empty result when no catalogs have autoDownload', async () => {
-    const result = await syncSubscribedCatalogs([], appService, []);
+    const result = await syncSubscribedCatalogs([], []);
     expect(result).toEqual({ newBooks: [], totalNewBooks: 0, errors: [] });
   });
 
@@ -195,7 +231,7 @@ describe('OPDS auto-download orchestrator', () => {
       },
     ]);
 
-    await syncSubscribedCatalogs(catalogs, appService, []);
+    await syncSubscribedCatalogs(catalogs, []);
 
     // No download should have been attempted while in backoff.
     expect(downloadFile).not.toHaveBeenCalled();
@@ -240,7 +276,7 @@ describe('OPDS auto-download orchestrator', () => {
       },
     ]);
 
-    await syncSubscribedCatalogs(catalogs, appService, []);
+    await syncSubscribedCatalogs(catalogs, []);
 
     expect(downloadFile).toHaveBeenCalledTimes(1);
   });
