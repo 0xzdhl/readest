@@ -22,7 +22,7 @@ export function useTransferQueue(libraryLoaded = true, delayInit = 0) {
           await useLibraryStore.getState().updateBook(envConfig, book);
         };
         const translationFn = _;
-        await transferManager.initialize(appService, getLibrary, updateBookFn, translationFn);
+        await transferManager.initialize(getLibrary, updateBookFn, translationFn);
       }
     };
 

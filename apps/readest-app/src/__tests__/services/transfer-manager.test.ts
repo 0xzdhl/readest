@@ -12,6 +12,44 @@ vi.mock('@/utils/event', () => ({
   },
 }));
 
+// E4 bridge: transferManager no longer takes an appService. Its 6 cloud ops
+// now resolve the CloudService port via getClientRuntime().runPromise(...).
+// We expose spies (hoisted) and back the runtime with a Layer.succeed(CloudService)
+// fake so the orchestration runs and the original "called X" assertions hold.
+const cloud = vi.hoisted(() => ({
+  uploadBook: vi.fn(),
+  downloadBook: vi.fn(),
+  deleteBook: vi.fn(),
+  uploadReplicaFile: vi.fn(),
+  downloadReplicaFile: vi.fn(),
+  deleteReplicaBundle: vi.fn(),
+}));
+
+vi.mock('@/runtime/clientRuntime', async () => {
+  const { Effect, Layer } = await import('effect');
+  const { CloudService } = await import('@/application/services/CloudService');
+  const FakeCloud = Layer.succeed(CloudService, {
+    uploadBook: (...args: unknown[]) => Effect.promise(() => cloud.uploadBook(...args)),
+    downloadBook: (...args: unknown[]) => Effect.promise(() => cloud.downloadBook(...args)),
+    deleteBook: (...args: unknown[]) => Effect.promise(() => cloud.deleteBook(...args)),
+    uploadReplicaFile: (...args: unknown[]) =>
+      Effect.promise(() => cloud.uploadReplicaFile(...args)),
+    downloadReplicaFile: (...args: unknown[]) =>
+      Effect.promise(() => cloud.downloadReplicaFile(...args)),
+    deleteReplicaBundle: (...args: unknown[]) =>
+      Effect.promise(() => cloud.deleteReplicaBundle(...args)),
+  } as never);
+  return {
+    getClientRuntime: () => ({
+      runPromise: (effect: never) =>
+        Effect.runPromise(
+          Effect.provide(effect, FakeCloud) as unknown as Parameters<typeof Effect.runPromise>[0],
+        ),
+    }),
+    setClientRuntime: vi.fn(),
+  };
+});
+
 // After the module-level mock declarations, import the SUT
 import { transferManager } from '@/services/transferManager';
 import { eventDispatcher } from '@/utils/event';
@@ -60,7 +98,6 @@ const resetTransferManager = () => {
   const mgr = transferManager as unknown as Record<string, unknown>;
   mgr['isInitialized'] = false;
   mgr['isProcessing'] = false;
-  mgr['appService'] = null;
   mgr['getLibrary'] = null;
   mgr['updateBook'] = null;
   mgr['_'] = null;
@@ -83,16 +120,6 @@ const resetTransferStore = () => {
   });
 };
 
-// Minimal AppService mock
-function makeAppService() {
-  return {
-    uploadBook: vi.fn().mockResolvedValue(undefined),
-    downloadBook: vi.fn().mockResolvedValue(undefined),
-    deleteBook: vi.fn().mockResolvedValue(undefined),
-    isMacOSApp: false,
-  } as Record<string, unknown>;
-}
-
 const translationFn = (key: string, params?: Record<string, string | number>) => {
   if (params) {
     return Object.entries(params).reduce((acc, [k, v]) => acc.replace(`{{${k}}}`, String(v)), key);
@@ -105,6 +132,12 @@ beforeEach(() => {
   resetTransferStore();
   resetTransferManager();
   vi.clearAllMocks();
+  cloud.uploadBook.mockResolvedValue(undefined);
+  cloud.downloadBook.mockResolvedValue(undefined);
+  cloud.deleteBook.mockResolvedValue(undefined);
+  cloud.uploadReplicaFile.mockResolvedValue(undefined);
+  cloud.downloadReplicaFile.mockResolvedValue(undefined);
+  cloud.deleteReplicaBundle.mockResolvedValue(undefined);
   localStorage.clear();
   vi.spyOn(console, 'warn').mockImplementation(() => {});
   vi.spyOn(console, 'error').mockImplementation(() => {});
@@ -132,8 +165,7 @@ describe('TransferManager', () => {
     });
 
     test('returns true after initialization', async () => {
-      const appService = makeAppService();
-      await transferManager.initialize(appService as never, () => [], vi.fn(), translationFn);
+      await transferManager.initialize(() => [], vi.fn(), translationFn);
       expect(transferManager.isReady()).toBe(true);
     });
   });
@@ -156,15 +188,13 @@ describe('TransferManager', () => {
       void transferManager.waitUntilReady().then(() => {
         resolved = true;
       });
-      const appService = makeAppService();
-      await transferManager.initialize(appService as never, () => [], vi.fn(), translationFn);
+      await transferManager.initialize(() => [], vi.fn(), translationFn);
       await Promise.resolve();
       expect(resolved).toBe(true);
     });
 
     test('returns an already-resolved promise after initialize', async () => {
-      const appService = makeAppService();
-      await transferManager.initialize(appService as never, () => [], vi.fn(), translationFn);
+      await transferManager.initialize(() => [], vi.fn(), translationFn);
       // After init this should resolve in the next microtask, not block.
       let resolved = false;
       void transferManager.waitUntilReady().then(() => {
@@ -185,8 +215,7 @@ describe('TransferManager', () => {
       };
       localStorage.setItem('readest_transfer_queue', JSON.stringify(data));
 
-      const appService = makeAppService();
-      await transferManager.initialize(appService as never, () => [], vi.fn(), translationFn);
+      await transferManager.initialize(() => [], vi.fn(), translationFn);
 
       const store = useTransferStore.getState();
       expect(store.transfers['persisted-1']).toBeDefined();
@@ -194,17 +223,16 @@ describe('TransferManager', () => {
     });
 
     test('is idempotent — second call is a no-op', async () => {
-      const appService = makeAppService();
       const getLibrary = () => [] as Book[];
-      await transferManager.initialize(appService as never, getLibrary, vi.fn(), translationFn);
+      await transferManager.initialize(getLibrary, vi.fn(), translationFn);
 
-      // Change appService ref to detect if it gets overwritten
-      const appService2 = makeAppService();
-      await transferManager.initialize(appService2 as never, getLibrary, vi.fn(), translationFn);
+      // A second initialize with different deps must be ignored — the first
+      // getLibrary ref should still be in use.
+      const getLibrary2 = () => [] as Book[];
+      await transferManager.initialize(getLibrary2, vi.fn(), translationFn);
 
-      // The first appService should still be in use
       const mgr = transferManager as unknown as Record<string, unknown>;
-      expect(mgr['appService']).toBe(appService);
+      expect(mgr['getLibrary']).toBe(getLibrary);
     });
   });
 
@@ -216,13 +244,7 @@ describe('TransferManager', () => {
     });
 
     test('queues an upload and returns a transfer id', async () => {
-      const appService = makeAppService();
-      await transferManager.initialize(
-        appService as never,
-        () => [makeBook()],
-        vi.fn(),
-        translationFn,
-      );
+      await transferManager.initialize(() => [makeBook()], vi.fn(), translationFn);
 
       const id = transferManager.queueUpload(makeBook());
       expect(id).toBeTruthy();
@@ -235,13 +257,7 @@ describe('TransferManager', () => {
     });
 
     test('returns existing id if already queued', async () => {
-      const appService = makeAppService();
-      await transferManager.initialize(
-        appService as never,
-        () => [makeBook()],
-        vi.fn(),
-        translationFn,
-      );
+      await transferManager.initialize(() => [makeBook()], vi.fn(), translationFn);
 
       const id1 = transferManager.queueUpload(makeBook());
       const id2 = transferManager.queueUpload(makeBook());
@@ -249,13 +265,7 @@ describe('TransferManager', () => {
     });
 
     test('respects custom priority', async () => {
-      const appService = makeAppService();
-      await transferManager.initialize(
-        appService as never,
-        () => [makeBook()],
-        vi.fn(),
-        translationFn,
-      );
+      await transferManager.initialize(() => [makeBook()], vi.fn(), translationFn);
 
       const id = transferManager.queueUpload(makeBook(), 1);
       const transfer = useTransferStore.getState().transfers[id!];
@@ -271,13 +281,7 @@ describe('TransferManager', () => {
     });
 
     test('queues a download and returns a transfer id', async () => {
-      const appService = makeAppService();
-      await transferManager.initialize(
-        appService as never,
-        () => [makeBook()],
-        vi.fn(),
-        translationFn,
-      );
+      await transferManager.initialize(() => [makeBook()], vi.fn(), translationFn);
 
       const id = transferManager.queueDownload(makeBook());
       expect(id).toBeTruthy();
@@ -286,13 +290,7 @@ describe('TransferManager', () => {
     });
 
     test('returns existing id if already queued', async () => {
-      const appService = makeAppService();
-      await transferManager.initialize(
-        appService as never,
-        () => [makeBook()],
-        vi.fn(),
-        translationFn,
-      );
+      await transferManager.initialize(() => [makeBook()], vi.fn(), translationFn);
 
       const id1 = transferManager.queueDownload(makeBook());
       const id2 = transferManager.queueDownload(makeBook());
@@ -308,13 +306,7 @@ describe('TransferManager', () => {
     });
 
     test('queues a delete and returns a transfer id', async () => {
-      const appService = makeAppService();
-      await transferManager.initialize(
-        appService as never,
-        () => [makeBook()],
-        vi.fn(),
-        translationFn,
-      );
+      await transferManager.initialize(() => [makeBook()], vi.fn(), translationFn);
 
       const id = transferManager.queueDelete(makeBook());
       expect(id).toBeTruthy();
@@ -323,13 +315,7 @@ describe('TransferManager', () => {
     });
 
     test('supports isBackground flag', async () => {
-      const appService = makeAppService();
-      await transferManager.initialize(
-        appService as never,
-        () => [makeBook()],
-        vi.fn(),
-        translationFn,
-      );
+      await transferManager.initialize(() => [makeBook()], vi.fn(), translationFn);
 
       const id = transferManager.queueDelete(makeBook(), 10, true);
       const transfer = useTransferStore.getState().transfers[id!];
@@ -347,13 +333,7 @@ describe('TransferManager', () => {
     test('queues multiple uploads', async () => {
       const book1 = makeBook({ hash: 'h1', title: 'B1' });
       const book2 = makeBook({ hash: 'h2', title: 'B2' });
-      const appService = makeAppService();
-      await transferManager.initialize(
-        appService as never,
-        () => [book1, book2],
-        vi.fn(),
-        translationFn,
-      );
+      await transferManager.initialize(() => [book1, book2], vi.fn(), translationFn);
 
       const ids = transferManager.queueBatchUploads([book1, book2]);
       expect(ids).toHaveLength(2);
@@ -366,13 +346,7 @@ describe('TransferManager', () => {
   // ── cancelTransfer ───────────────────────────────────────────────
   describe('cancelTransfer', () => {
     test('sets status to cancelled', async () => {
-      const appService = makeAppService();
-      await transferManager.initialize(
-        appService as never,
-        () => [makeBook()],
-        vi.fn(),
-        translationFn,
-      );
+      await transferManager.initialize(() => [makeBook()], vi.fn(), translationFn);
 
       const id = transferManager.queueUpload(makeBook())!;
       transferManager.cancelTransfer(id);
@@ -382,13 +356,7 @@ describe('TransferManager', () => {
     });
 
     test('aborts an active abort controller', async () => {
-      const appService = makeAppService();
-      await transferManager.initialize(
-        appService as never,
-        () => [makeBook()],
-        vi.fn(),
-        translationFn,
-      );
+      await transferManager.initialize(() => [makeBook()], vi.fn(), translationFn);
 
       const id = transferManager.queueUpload(makeBook())!;
 
@@ -404,13 +372,7 @@ describe('TransferManager', () => {
     });
 
     test('persists queue after cancel', async () => {
-      const appService = makeAppService();
-      await transferManager.initialize(
-        appService as never,
-        () => [makeBook()],
-        vi.fn(),
-        translationFn,
-      );
+      await transferManager.initialize(() => [makeBook()], vi.fn(), translationFn);
 
       const id = transferManager.queueUpload(makeBook())!;
       transferManager.cancelTransfer(id);
@@ -425,13 +387,7 @@ describe('TransferManager', () => {
   // ── retryTransfer ────────────────────────────────────────────────
   describe('retryTransfer', () => {
     test('resets a failed transfer to pending', async () => {
-      const appService = makeAppService();
-      await transferManager.initialize(
-        appService as never,
-        () => [makeBook()],
-        vi.fn(),
-        translationFn,
-      );
+      await transferManager.initialize(() => [makeBook()], vi.fn(), translationFn);
 
       const id = transferManager.queueUpload(makeBook())!;
       useTransferStore.getState().setTransferStatus(id, 'failed', 'Network error');
@@ -449,13 +405,7 @@ describe('TransferManager', () => {
     test('retries all failed transfers', async () => {
       const book1 = makeBook({ hash: 'h1', title: 'B1' });
       const book2 = makeBook({ hash: 'h2', title: 'B2' });
-      const appService = makeAppService();
-      await transferManager.initialize(
-        appService as never,
-        () => [book1, book2],
-        vi.fn(),
-        translationFn,
-      );
+      await transferManager.initialize(() => [book1, book2], vi.fn(), translationFn);
 
       const id1 = transferManager.queueUpload(book1)!;
       const id2 = transferManager.queueDownload(book2)!;
@@ -472,16 +422,14 @@ describe('TransferManager', () => {
   // ── pauseQueue / resumeQueue ─────────────────────────────────────
   describe('pauseQueue / resumeQueue', () => {
     test('pauseQueue pauses the store queue', async () => {
-      const appService = makeAppService();
-      await transferManager.initialize(appService as never, () => [], vi.fn(), translationFn);
+      await transferManager.initialize(() => [], vi.fn(), translationFn);
 
       transferManager.pauseQueue();
       expect(useTransferStore.getState().isQueuePaused).toBe(true);
     });
 
     test('resumeQueue resumes the store queue', async () => {
-      const appService = makeAppService();
-      await transferManager.initialize(appService as never, () => [], vi.fn(), translationFn);
+      await transferManager.initialize(() => [], vi.fn(), translationFn);
 
       transferManager.pauseQueue();
       transferManager.resumeQueue();
@@ -489,8 +437,7 @@ describe('TransferManager', () => {
     });
 
     test('pauseQueue persists state', async () => {
-      const appService = makeAppService();
-      await transferManager.initialize(appService as never, () => [], vi.fn(), translationFn);
+      await transferManager.initialize(() => [], vi.fn(), translationFn);
 
       transferManager.pauseQueue();
       const stored = JSON.parse(localStorage.getItem('readest_transfer_queue')!);
@@ -500,70 +447,52 @@ describe('TransferManager', () => {
 
   // ── Queue processing (integration-style) ─────────────────────────
   describe('queue processing', () => {
-    test('successful upload calls appService.uploadBook and updates book', async () => {
+    test('successful upload calls CloudService.uploadBook and updates book', async () => {
       const book = makeBook({ hash: 'h1', title: 'Test Upload' });
-      const appService = makeAppService();
       const updateBook = vi.fn().mockResolvedValue(undefined);
 
-      await transferManager.initialize(
-        appService as never,
-        () => [book],
-        updateBook,
-        translationFn,
-      );
+      await transferManager.initialize(() => [book], updateBook, translationFn);
 
       const id = transferManager.queueUpload(book)!;
 
       // Let the async queue processing run
       await vi.advanceTimersByTimeAsync(500);
 
-      expect(appService['uploadBook']).toHaveBeenCalled();
+      expect(cloud.uploadBook).toHaveBeenCalled();
       expect(updateBook).toHaveBeenCalled();
 
       const transfer = useTransferStore.getState().transfers[id];
       expect(transfer!.status).toBe('completed');
     });
 
-    test('successful download calls appService.downloadBook and updates book', async () => {
+    test('successful download calls CloudService.downloadBook and updates book', async () => {
       const book = makeBook({ hash: 'h1', title: 'Test Download' });
-      const appService = makeAppService();
       const updateBook = vi.fn().mockResolvedValue(undefined);
 
-      await transferManager.initialize(
-        appService as never,
-        () => [book],
-        updateBook,
-        translationFn,
-      );
+      await transferManager.initialize(() => [book], updateBook, translationFn);
 
       const id = transferManager.queueDownload(book)!;
 
       await vi.advanceTimersByTimeAsync(500);
 
-      expect(appService['downloadBook']).toHaveBeenCalled();
+      expect(cloud.downloadBook).toHaveBeenCalled();
       expect(updateBook).toHaveBeenCalled();
 
       const transfer = useTransferStore.getState().transfers[id];
       expect(transfer!.status).toBe('completed');
     });
 
-    test('successful delete calls appService.deleteBook', async () => {
+    test('successful delete calls CloudService.deleteBook', async () => {
       const book = makeBook({ hash: 'h1', title: 'Test Delete' });
-      const appService = makeAppService();
       const updateBook = vi.fn().mockResolvedValue(undefined);
 
-      await transferManager.initialize(
-        appService as never,
-        () => [book],
-        updateBook,
-        translationFn,
-      );
+      await transferManager.initialize(() => [book], updateBook, translationFn);
 
       const id = transferManager.queueDelete(book)!;
 
       await vi.advanceTimersByTimeAsync(500);
 
-      expect(appService['deleteBook']).toHaveBeenCalled();
+      expect(cloud.deleteBook).toHaveBeenCalled();
 
       const transfer = useTransferStore.getState().transfers[id];
       expect(transfer!.status).toBe('completed');
@@ -571,10 +500,8 @@ describe('TransferManager', () => {
 
     test('dispatches toast on success for non-background transfers', async () => {
       const book = makeBook({ hash: 'h1', title: 'Toast Book' });
-      const appService = makeAppService();
 
       await transferManager.initialize(
-        appService as never,
         () => [book],
         vi.fn().mockResolvedValue(undefined),
         translationFn,
@@ -591,10 +518,8 @@ describe('TransferManager', () => {
 
     test('does not dispatch toast for background transfers', async () => {
       const book = makeBook({ hash: 'h1', title: 'BG Book' });
-      const appService = makeAppService();
 
       await transferManager.initialize(
-        appService as never,
         () => [book],
         vi.fn().mockResolvedValue(undefined),
         translationFn,
@@ -613,11 +538,9 @@ describe('TransferManager', () => {
 
     test('failed transfer with retries schedules retry', async () => {
       const book = makeBook({ hash: 'h1', title: 'Retry Book' });
-      const appService = makeAppService();
-      (appService['uploadBook'] as Mock).mockRejectedValue(new Error('Network fail'));
+      cloud.uploadBook.mockRejectedValue(new Error('Network fail'));
 
       await transferManager.initialize(
-        appService as never,
         () => [book],
         vi.fn().mockResolvedValue(undefined),
         translationFn,
@@ -633,10 +556,8 @@ describe('TransferManager', () => {
 
     test('paused queue does not process transfers', async () => {
       const book = makeBook({ hash: 'h1', title: 'Paused Book' });
-      const appService = makeAppService();
 
       await transferManager.initialize(
-        appService as never,
         () => [book],
         vi.fn().mockResolvedValue(undefined),
         translationFn,
@@ -648,15 +569,13 @@ describe('TransferManager', () => {
       await vi.advanceTimersByTimeAsync(500);
 
       // The upload should not have been called because queue is paused
-      expect(appService['uploadBook']).not.toHaveBeenCalled();
+      expect(cloud.uploadBook).not.toHaveBeenCalled();
     });
 
     test('book not found in library dispatches error', async () => {
       const book = makeBook({ hash: 'not-in-lib', title: 'Missing' });
-      const appService = makeAppService();
 
       await transferManager.initialize(
-        appService as never,
         () => [], // empty library
         vi.fn().mockResolvedValue(undefined),
         translationFn,
@@ -676,13 +595,7 @@ describe('TransferManager', () => {
   // ── persistQueue / loadPersistedQueue ────────────────────────────
   describe('persistence', () => {
     test('persistQueue stores transfers to localStorage', async () => {
-      const appService = makeAppService();
-      await transferManager.initialize(
-        appService as never,
-        () => [makeBook()],
-        vi.fn(),
-        translationFn,
-      );
+      await transferManager.initialize(() => [makeBook()], vi.fn(), translationFn);
 
       transferManager.queueUpload(makeBook());
 
@@ -697,10 +610,9 @@ describe('TransferManager', () => {
       const originalGetItem = localStorage.getItem;
       localStorage.getItem = () => null;
 
-      const appService = makeAppService();
       // Should not throw
       await expect(
-        transferManager.initialize(appService as never, () => [], vi.fn(), translationFn),
+        transferManager.initialize(() => [], vi.fn(), translationFn),
       ).resolves.not.toThrow();
 
       localStorage.getItem = originalGetItem;
@@ -709,10 +621,9 @@ describe('TransferManager', () => {
     test('handles corrupted localStorage data gracefully', async () => {
       localStorage.setItem('readest_transfer_queue', 'invalid-json{{{');
 
-      const appService = makeAppService();
       // Should not throw
       await expect(
-        transferManager.initialize(appService as never, () => [], vi.fn(), translationFn),
+        transferManager.initialize(() => [], vi.fn(), translationFn),
       ).resolves.not.toThrow();
     });
   });
@@ -736,9 +647,7 @@ describe('TransferManager', () => {
     });
 
     test('queueReplicaUpload creates a kind="replica" transfer with files + base', async () => {
-      const appService = makeAppService();
-      appService['uploadReplicaFile'] = vi.fn().mockResolvedValue(undefined);
-      await transferManager.initialize(appService as never, () => [], vi.fn(), translationFn);
+      await transferManager.initialize(() => [], vi.fn(), translationFn);
 
       const id = transferManager.queueReplicaUpload(
         'dictionary',
@@ -760,9 +669,7 @@ describe('TransferManager', () => {
     });
 
     test('queueReplicaUpload returns existing id if same (kind, id) is already queued', async () => {
-      const appService = makeAppService();
-      appService['uploadReplicaFile'] = vi.fn().mockResolvedValue(undefined);
-      await transferManager.initialize(appService as never, () => [], vi.fn(), translationFn);
+      await transferManager.initialize(() => [], vi.fn(), translationFn);
 
       const id1 = transferManager.queueReplicaUpload(
         'dictionary',
@@ -782,9 +689,7 @@ describe('TransferManager', () => {
     });
 
     test('different replicaKinds with same id are distinct queue entries', async () => {
-      const appService = makeAppService();
-      appService['uploadReplicaFile'] = vi.fn().mockResolvedValue(undefined);
-      await transferManager.initialize(appService as never, () => [], vi.fn(), translationFn);
+      await transferManager.initialize(() => [], vi.fn(), translationFn);
 
       const dictId = transferManager.queueReplicaUpload(
         'dictionary',
@@ -804,9 +709,7 @@ describe('TransferManager', () => {
     });
 
     test('queueReplicaDownload creates a download-typed transfer', async () => {
-      const appService = makeAppService();
-      appService['downloadReplicaFile'] = vi.fn().mockResolvedValue(undefined);
-      await transferManager.initialize(appService as never, () => [], vi.fn(), translationFn);
+      await transferManager.initialize(() => [], vi.fn(), translationFn);
 
       const id = transferManager.queueReplicaDownload(
         'dictionary',
@@ -821,10 +724,7 @@ describe('TransferManager', () => {
     });
 
     test('executing a replica download passes the transfer base to downloadReplicaFile', async () => {
-      const appService = makeAppService();
-      const downloadSpy = vi.fn().mockResolvedValue(undefined);
-      appService['downloadReplicaFile'] = downloadSpy;
-      await transferManager.initialize(appService as never, () => [], vi.fn(), translationFn);
+      await transferManager.initialize(() => [], vi.fn(), translationFn);
 
       transferManager.queueReplicaDownload(
         'dictionary',
@@ -839,20 +739,18 @@ describe('TransferManager', () => {
       await Promise.resolve();
       await Promise.resolve();
 
-      expect(downloadSpy).toHaveBeenCalledOnce();
-      // Args: (kind, replicaId, filename, lfp, base, onProgress)
-      const call = downloadSpy.mock.calls[0]!;
-      expect(call[0]).toBe('dictionary');
-      expect(call[1]).toBe('content-hash-abc');
-      expect(call[2]).toBe('webster.mdx');
-      expect(call[3]).toBe('bundle-1/webster.mdx');
-      expect(call[4]).toBe('Dictionaries');
+      expect(cloud.downloadReplicaFile).toHaveBeenCalledOnce();
+      // The replica calls now take a single opts object.
+      const opts = cloud.downloadReplicaFile.mock.calls[0]![0] as Record<string, unknown>;
+      expect(opts['kind']).toBe('dictionary');
+      expect(opts['replicaId']).toBe('content-hash-abc');
+      expect(opts['filename']).toBe('webster.mdx');
+      expect(opts['lfp']).toBe('bundle-1/webster.mdx');
+      expect(opts['base']).toBe('Dictionaries');
     });
 
     test('queueReplicaDelete creates a delete-typed transfer with filename list', async () => {
-      const appService = makeAppService();
-      appService['deleteReplicaBundle'] = vi.fn().mockResolvedValue(undefined);
-      await transferManager.initialize(appService as never, () => [], vi.fn(), translationFn);
+      await transferManager.initialize(() => [], vi.fn(), translationFn);
 
       const id = transferManager.queueReplicaDelete('dictionary', 'd1', 'Webster', [
         'webster.mdx',
