@@ -13,6 +13,7 @@ import type { CoverService } from '@/application/services/CoverService';
 import type { FontService } from '@/application/services/FontService';
 import type { ImageService } from '@/application/services/ImageService';
 import type { DictionaryService } from '@/application/services/DictionaryService';
+import type { CloudService } from '@/application/services/CloudService';
 import { isTauriAppPlatform } from '@/services/environment';
 import { tauriClientRuntime } from './client-tauri';
 import { webClientRuntime } from './client-web';
@@ -34,7 +35,8 @@ export type ClientServices =
   | CoverService
   | FontService
   | ImageService
-  | DictionaryService;
+  | DictionaryService
+  | CloudService;
 type ClientRuntime = ManagedRuntime.ManagedRuntime<ClientServices, never>;
 
 // `Platform.info` in the original plan referenced the service field on the Tag; `info` lives on

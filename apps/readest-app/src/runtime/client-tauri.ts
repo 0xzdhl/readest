@@ -13,6 +13,7 @@ import { LibraryRepositoryLive } from '@/infra/shared/LibraryRepository.layer';
 import { FontServiceLive } from '@/infra/shared/FontService.layer';
 import { ImageServiceLive } from '@/infra/shared/ImageService.layer';
 import { DictionaryServiceLive } from '@/infra/shared/DictionaryService.layer';
+import { CloudServiceLive } from '@/infra/shared/CloudService.layer';
 
 // PathState is shared by PathResolver, FileSystem, Database — build it once and feed
 // it to all three. PathResolver depends on PathState; FileSystem/Database/Dialog depend
@@ -46,6 +47,7 @@ const SharedRepos = Layer.provideMerge(
     FontServiceLive,
     ImageServiceLive,
     DictionaryServiceLive,
+    CloudServiceLive,
   ),
   SharedBaseWithCover,
 );
