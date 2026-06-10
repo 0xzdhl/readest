@@ -5,13 +5,13 @@ import { FontServiceLive } from '@/infra/shared/FontService.layer';
 import { FileSystem, type FileSystemShape } from '@/application/ports/FileSystem';
 import { PathStateLive } from '@/application/ports/PathState';
 import { TestPathResolverLive } from '@/__tests__/support/TestPathResolver.layer';
-import { AssetError } from '@/application/errors/AppError';
+import { AssetError, FsError } from '@/application/errors/AppError';
 import type { CustomFont } from '@/domain/fonts';
 
 const baseResolver = Layer.provideMerge(TestPathResolverLive, PathStateLive);
 
 // Minimal in-memory FileSystem stub supporting only the ops importFont/deleteFont touch.
-const makeFs = (over: Record<string, unknown> = {}): Layer.Layer<FileSystem> =>
+const makeFs = (over: Partial<FileSystemShape> = {}): Layer.Layer<FileSystem> =>
   Layer.succeed(FileSystem, {
     createDir: () => Effect.void,
     writeFile: () => Effect.void,
@@ -52,6 +52,7 @@ describe('FontService (live over stub FileSystem)', () => {
 
   it('deleteFont removes the file', async () => {
     const removeFile = vi.fn(() => Effect.void);
+    const removeDir = vi.fn(() => Effect.void);
     const font = {
       id: '1',
       name: 'Roboto',
@@ -60,16 +61,32 @@ describe('FontService (live over stub FileSystem)', () => {
     } as CustomFont;
     await run(
       Effect.flatMap(FontService, (s) => s.deleteFont(font)),
-      makeFs({ removeFile }),
+      makeFs({ removeFile, removeDir }),
     );
     expect(removeFile).toHaveBeenCalledWith('abc/Roboto.ttf', 'Fonts');
+    expect(removeDir).toHaveBeenCalledWith('abc', 'Fonts', true);
+  });
+
+  it('deleteFont skips removeDir for legacy fonts without bundleDir', async () => {
+    const removeDir = vi.fn(() => Effect.void);
+    const font = { id: '1', name: 'Roboto', path: 'Roboto.ttf' } as CustomFont;
+    await run(
+      Effect.flatMap(FontService, (s) => s.deleteFont(font)),
+      makeFs({ removeDir }),
+    );
+    expect(removeDir).not.toHaveBeenCalled();
   });
 
   it('maps a failure to AssetError', async () => {
     const font = { id: '1', name: 'Roboto', path: 'abc/Roboto.ttf' } as CustomFont;
     const err = (await run(
       Effect.flatMap(FontService, (s) => s.deleteFont(font)).pipe(Effect.flip),
-      makeFs({ removeFile: () => Effect.fail(new Error('boom')) }),
+      makeFs({
+        removeFile: () =>
+          Effect.fail(
+            new FsError({ operation: 'removeFile', path: 'abc/Roboto.ttf', cause: 'boom' }),
+          ),
+      }),
     )) as AssetError;
     expect(err).toBeInstanceOf(AssetError);
     expect(err.operation).toBe('deleteFont');
