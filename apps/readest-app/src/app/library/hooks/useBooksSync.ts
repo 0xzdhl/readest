@@ -6,6 +6,7 @@ import { useEnv } from '@/context/EnvContext';
 import { useAuth } from '@/context/AuthContext';
 import { useRunEffect } from '@/context/EffectRuntimeProvider';
 import { LibraryRepository } from '@/application/repositories/LibraryRepository';
+import { CoverService } from '@/application/services/CoverService';
 import { useLibraryStore } from '@/store/libraryStore';
 import { useTranslation } from '@/hooks/useTranslation';
 import { SYNC_BOOKS_INTERVAL_SEC } from '@/services/constants';
@@ -115,7 +116,9 @@ export const useBooksSync = () => {
       const matchingBook = syncedBooks.find((newBook) => newBook.hash === oldBook.hash);
       if (matchingBook) {
         if (!matchingBook.deletedAt && matchingBook.uploadedAt && !oldBook.coverDownloadedAt) {
-          oldBook.coverImageUrl = await appService?.generateCoverImageUrl(oldBook);
+          oldBook.coverImageUrl = await runEffect(
+            Effect.flatMap(CoverService, (c) => c.generateCoverImageUrl(oldBook)),
+          );
         }
         const mergedBook =
           matchingBook.updatedAt >= oldBook.updatedAt
@@ -143,7 +146,9 @@ export const useBooksSync = () => {
     );
 
     const processNewBook = async (newBook: Book) => {
-      newBook.coverImageUrl = await appService?.generateCoverImageUrl(newBook);
+      newBook.coverImageUrl = await runEffect(
+        Effect.flatMap(CoverService, (c) => c.generateCoverImageUrl(newBook)),
+      );
       newBook.syncedAt = Date.now();
       updatedLibrary.push(newBook);
     };

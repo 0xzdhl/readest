@@ -11,6 +11,7 @@ import type { AppService, DeleteAction } from '@/domain/system';
 import { Effect } from 'effect';
 import { navigateToLibrary, navigateToReader } from '@/utils/nav';
 import { LibraryRepository } from '@/application/repositories/LibraryRepository';
+import { CoverService } from '@/application/services/CoverService';
 import { importBooks as importBooksUsecase } from '@/application/usecases/book';
 import { formatAuthors, formatTitle, getPrimaryLanguage, listFormater } from '@/utils/book';
 import { getImportErrorMessage } from '@/services/errors';
@@ -804,10 +805,14 @@ const LibraryPageContent = () => {
     if (metadata.coverImageBlobUrl || metadata.coverImageUrl || metadata.coverImageFile) {
       book.coverImageUrl = metadata.coverImageBlobUrl || metadata.coverImageUrl;
       try {
-        await appService?.updateCoverImage(
-          book,
-          metadata.coverImageBlobUrl || metadata.coverImageUrl,
-          metadata.coverImageFile,
+        await runEffect(
+          Effect.flatMap(CoverService, (c) =>
+            c.updateCoverImage(
+              book,
+              metadata.coverImageBlobUrl || metadata.coverImageUrl,
+              metadata.coverImageFile,
+            ),
+          ),
         );
       } catch (error) {
         console.warn('Failed to update cover image:', error);
