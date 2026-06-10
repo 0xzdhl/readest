@@ -12,6 +12,7 @@ import { BookRepositoryLive } from '@/infra/shared/BookRepository.layer';
 import { LibraryRepositoryLive } from '@/infra/shared/LibraryRepository.layer';
 import { FontServiceLive } from '@/infra/shared/FontService.layer';
 import { ImageServiceLive } from '@/infra/shared/ImageService.layer';
+import { DictionaryServiceLive } from '@/infra/shared/DictionaryService.layer';
 
 // Analogous to client-tauri. The Web PathResolver/Dialog have no PathState dependency,
 // but composing the same way is harmless and keeps PathState available to consumers that
@@ -42,6 +43,7 @@ const SharedRepos = Layer.provideMerge(
     LibraryRepositoryLive,
     FontServiceLive,
     ImageServiceLive,
+    DictionaryServiceLive,
   ),
   SharedBaseWithCover,
 );
