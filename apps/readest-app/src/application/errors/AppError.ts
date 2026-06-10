@@ -28,6 +28,11 @@ export class BookError extends Data.TaggedError('BookError')<{
   readonly cause: unknown;
 }> {}
 
+export class AssetError extends Data.TaggedError('AssetError')<{
+  readonly operation: string;
+  readonly cause: unknown;
+}> {}
+
 export class MigrationError extends Data.TaggedError('MigrationError')<{
   readonly operation: string;
   readonly fromVersion?: number;
@@ -44,5 +49,6 @@ export type AppError =
   | DatabaseError
   | SettingsError
   | BookError
+  | AssetError
   | MigrationError
   | UserCancelled;
