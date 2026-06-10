@@ -39,7 +39,9 @@ import {
 import { ImportError } from '@/services/errors';
 import { READEST_OPDS_USER_AGENT } from '@/services/constants';
 import { buildPseStreamFileName } from '@/services/opds/pseStream';
+import { Effect } from 'effect';
 import { useRunEffect } from '@/context/EffectRuntimeProvider';
+import { FileSystem } from '@/application/ports/FileSystem';
 import { importBooks } from '@/application/usecases/book';
 import { FeedView } from './components/FeedView';
 import { PublicationView } from './components/PublicationView';
@@ -490,7 +492,7 @@ function OPDSBrowserPage() {
           if (probedFilename) {
             const newFilePath = await appService?.resolveFilePath(probedFilename, 'Cache');
             await appService?.copyFile(dstFilePath, 'None', newFilePath, 'None');
-            await appService?.deleteFile(dstFilePath, 'None');
+            await runEffect(Effect.flatMap(FileSystem, (fs) => fs.removeFile(dstFilePath, 'None')));
             console.log('Renamed downloaded file to:', newFilePath);
             dstFilePath = newFilePath;
           }
