@@ -10,6 +10,7 @@ import type { MigrationService } from '@/application/services/MigrationService';
 import type { BookRepository } from '@/application/repositories/BookRepository';
 import type { LibraryRepository } from '@/application/repositories/LibraryRepository';
 import type { CoverService } from '@/application/services/CoverService';
+import type { FontService } from '@/application/services/FontService';
 import { isTauriAppPlatform } from '@/services/environment';
 import { tauriClientRuntime } from './client-tauri';
 import { webClientRuntime } from './client-web';
@@ -28,7 +29,8 @@ export type ClientServices =
   | MigrationService
   | BookRepository
   | LibraryRepository
-  | CoverService;
+  | CoverService
+  | FontService;
 type ClientRuntime = ManagedRuntime.ManagedRuntime<ClientServices, never>;
 
 // `Platform.info` in the original plan referenced the service field on the Tag; `info` lives on
