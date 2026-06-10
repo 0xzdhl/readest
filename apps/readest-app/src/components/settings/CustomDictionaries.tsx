@@ -24,6 +24,9 @@ import {
 import { CSS } from '@dnd-kit/utilities';
 
 import { useEnv } from '@/context/EnvContext';
+import { Effect } from 'effect';
+import { useRunEffect } from '@/context/EffectRuntimeProvider';
+import { DictionaryService } from '@/application/services/DictionaryService';
 import { useTranslation } from '@/hooks/useTranslation';
 import { useFileSelector } from '@/hooks/useFileSelector';
 import { useCustomDictionaryStore } from '@/store/customDictionaryStore';
@@ -228,6 +231,7 @@ const SortableRow: React.FC<SortableRowProps> = ({
 const CustomDictionaries: React.FC<CustomDictionariesProps> = ({ onBack }) => {
   const _ = useTranslation();
   const { appService, envConfig } = useEnv();
+  const runEffect = useRunEffect();
   const {
     dictionaries,
     settings,
@@ -424,8 +428,9 @@ const CustomDictionaries: React.FC<CustomDictionariesProps> = ({ onBack }) => {
     try {
       const result = await selectFiles({ type: 'dictionaries', multiple: true });
       if (result.error || result.files.length === 0) return;
-      const importResult = await appService?.importDictionaries(result.files, dictionaries);
-      if (!importResult) return;
+      const importResult = await runEffect(
+        Effect.flatMap(DictionaryService, (s) => s.importDictionaries(result.files, dictionaries)),
+      );
       let added = 0;
       for (const dict of importResult.imported) {
         addDictionary(dict);
@@ -484,7 +489,7 @@ const CustomDictionaries: React.FC<CustomDictionariesProps> = ({ onBack }) => {
     if (row.imported) {
       const dict = row.imported;
       try {
-        await appService?.deleteDictionary(dict);
+        await runEffect(Effect.flatMap(DictionaryService, (s) => s.deleteDictionary(dict)));
       } catch (err) {
         console.warn('Failed to delete dictionary files:', err);
       }
