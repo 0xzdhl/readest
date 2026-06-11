@@ -37,12 +37,6 @@ vi.mock('@/runtime/clientRuntime', async () => {
 
 import { useLibraryStore } from '@/store/libraryStore';
 import type { Book, BooksGroup } from '@/domain/book';
-import type { EnvConfigType } from '@/services/environment';
-
-// EnvConfigType is now empty (god-objects deleted); stores ignore envConfig.
-function makeEnvConfig(_appService?: unknown): EnvConfigType {
-  return {};
-}
 
 function makeBook(overrides: Partial<Book> = {}): Book {
   return {
@@ -193,27 +187,18 @@ describe('libraryStore', () => {
 
   describe('updateBooks', () => {
     test('persists by default', async () => {
-      const saveLibraryBooks = vi.fn().mockResolvedValue(undefined);
-      const envConfig = makeEnvConfig({ saveLibraryBooks });
-
       await useLibraryStore.getState().updateBooks([makeBook({ hash: 'a' })]);
 
       expect(librarySaveSpy).toHaveBeenCalledTimes(1);
     });
 
     test('skips persistence when skipSave: true', async () => {
-      const saveLibraryBooks = vi.fn().mockResolvedValue(undefined);
-      const envConfig = makeEnvConfig({ saveLibraryBooks });
-
       await useLibraryStore.getState().updateBooks([makeBook({ hash: 'a' })], { skipSave: true });
 
       expect(librarySaveSpy).not.toHaveBeenCalled();
     });
 
     test('still updates store state when skipSave: true', async () => {
-      const saveLibraryBooks = vi.fn().mockResolvedValue(undefined);
-      const envConfig = makeEnvConfig({ saveLibraryBooks });
-
       await useLibraryStore.getState().updateBooks([makeBook({ hash: 'a' })], { skipSave: true });
 
       expect(useLibraryStore.getState().library).toHaveLength(1);

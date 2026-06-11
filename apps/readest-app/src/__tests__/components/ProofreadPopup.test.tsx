@@ -1,16 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, fireEvent, waitFor, cleanup } from '@testing-library/react';
-import { EnvProvider } from '@/context/EnvContext';
 import ProofreadPopup from '@/app/reader/components/annotator/ProofreadPopup';
-
-vi.mock('@/services/environment', async () => {
-  const actual = await vi.importActual('@/services/environment');
-
-  return {
-    ...actual,
-    default: {},
-  };
-});
 
 global.ResizeObserver = class ResizeObserver {
   observe() {}
@@ -19,7 +9,7 @@ global.ResizeObserver = class ResizeObserver {
 };
 
 function renderWithProviders(ui: React.ReactNode) {
-  return render(<EnvProvider>{ui}</EnvProvider>);
+  return render(<>{ui}</>);
 }
 
 describe('ProofreadPopup Component', () => {

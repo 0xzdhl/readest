@@ -1,7 +1,6 @@
 import { createRootRoute, HeadContent, Outlet, Scripts } from '@tanstack/react-router';
 import Providers from '@/components/Providers';
 import { EffectRuntimeProvider } from '@/context/EffectRuntimeProvider';
-import { EnvProvider } from '@/context/EnvContext';
 import { isTauriAppPlatform } from '@/services/environment';
 import { NotFoundPage } from '@/app/not-found';
 import appCss from '@/styles/globals.css?url';
@@ -34,14 +33,12 @@ function RootLayout() {
         <HeadContent />
       </head>
       <body>
-        <EnvProvider>
-          <EffectRuntimeProvider>
-            <Providers>
-              <Outlet />
-              <Scripts />
-            </Providers>
-          </EffectRuntimeProvider>
-        </EnvProvider>
+        <EffectRuntimeProvider>
+          <Providers>
+            <Outlet />
+            <Scripts />
+          </Providers>
+        </EffectRuntimeProvider>
       </body>
     </html>
   );

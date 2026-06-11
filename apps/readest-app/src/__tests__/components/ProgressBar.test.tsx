@@ -13,10 +13,6 @@ vi.mock('@/hooks/useTranslation', () => ({
   useTranslation: () => (s: string) => s,
 }));
 
-vi.mock('@/context/EnvContext', () => ({
-  useEnv: () => ({ envConfig: {}, appService: { isMobile: false, hasSafeAreaInset: false } }),
-}));
-
 vi.mock('@/store/readerStore', () => ({
   useReaderStore: () => ({
     getProgress: () => null,

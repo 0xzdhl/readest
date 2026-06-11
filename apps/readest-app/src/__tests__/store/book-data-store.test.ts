@@ -48,13 +48,7 @@ import { useBookDataStore } from '@/store/bookDataStore';
 import type { BookData } from '@/store/bookDataStore';
 import type { BookConfig, BookNote, Book } from '@/domain/book';
 import { useLibraryStore } from '@/store/libraryStore';
-import type { EnvConfigType } from '@/services/environment';
 import type { SystemSettings } from '@/domain/settings';
-
-// EnvConfigType is now empty (god-objects deleted); stores ignore envConfig.
-function makeEnvConfig(_appService?: unknown): EnvConfigType {
-  return {};
-}
 
 const FAKE_SETTINGS = {} as unknown as SystemSettings;
 
@@ -336,10 +330,6 @@ describe('bookDataStore', () => {
     }
 
     test('creates a new library array reference (Zustand change-detection)', async () => {
-      // saveConfig now persists through the mocked client runtime (see top of
-      // file); the appService fake is irrelevant, so pass an empty one.
-      const envConfig = makeEnvConfig({});
-
       const book = makeLibraryBook({ hash: 'h1' });
       useLibraryStore.getState().setLibrary([book]);
       const before = useLibraryStore.getState().library;
@@ -354,10 +344,6 @@ describe('bookDataStore', () => {
     });
 
     test('moves the saved book to the front of the library', async () => {
-      // saveConfig now persists through the mocked client runtime (see top of
-      // file); the appService fake is irrelevant, so pass an empty one.
-      const envConfig = makeEnvConfig({});
-
       useLibraryStore
         .getState()
         .setLibrary([
@@ -380,10 +366,6 @@ describe('bookDataStore', () => {
     });
 
     test('updates visibleLibrary to match the new library order', async () => {
-      // saveConfig now persists through the mocked client runtime (see top of
-      // file); the appService fake is irrelevant, so pass an empty one.
-      const envConfig = makeEnvConfig({});
-
       useLibraryStore
         .getState()
         .setLibrary([
@@ -402,10 +384,6 @@ describe('bookDataStore', () => {
     });
 
     test('persists progress and writes the library', async () => {
-      // saveConfig now persists through the mocked client runtime (see top of
-      // file); the appService fake is irrelevant, so pass an empty one.
-      const envConfig = makeEnvConfig({});
-
       useLibraryStore.getState().setLibrary([makeLibraryBook({ hash: 'h1' })]);
 
       const data = makeBookData('h1', { progress: [42, 100] });
@@ -420,10 +398,6 @@ describe('bookDataStore', () => {
     });
 
     test('does nothing for unknown book hash', async () => {
-      // saveConfig now persists through the mocked client runtime (see top of
-      // file); the appService fake is irrelevant, so pass an empty one.
-      const envConfig = makeEnvConfig({});
-
       useLibraryStore.getState().setLibrary([makeLibraryBook({ hash: 'h1' })]);
 
       const data = makeBookData('nonexistent', { progress: [1, 100] });

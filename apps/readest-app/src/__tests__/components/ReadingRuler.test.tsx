@@ -6,10 +6,6 @@ import { eventDispatcher } from '@/utils/event';
 
 const saveViewSettings = vi.fn();
 
-vi.mock('@/context/EnvContext', () => ({
-  useEnv: () => ({ envConfig: {} }),
-}));
-
 vi.mock('@/store/readerStore', () => ({
   useReaderStore: () => ({
     getProgress: () => null,

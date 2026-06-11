@@ -23,10 +23,6 @@ let mockUserColors: UserHighlightColor[] = [];
 
 // ── Mocks (must be before component imports) ────────────────────────────
 
-vi.mock('@/context/EnvContext', () => ({
-  useEnv: () => ({ envConfig: {}, appService: null }),
-}));
-
 vi.mock('@/store/themeStore', () => ({
   useThemeStore: () => ({ isDarkMode: false }),
 }));

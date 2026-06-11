@@ -23,10 +23,6 @@ const mockGetViewSettings = vi.fn(() => currentViewSettings);
 const mockSetViewSettings = vi.fn();
 const mockGetProgress = vi.fn(() => null);
 
-vi.mock('@/context/EnvContext', () => ({
-  useEnv: () => ({ envConfig: {}, appService: { hasSafeAreaInset: false } }),
-}));
-
 vi.mock('@/helpers/settings', () => ({
   saveViewSettings: vi.fn(),
 }));

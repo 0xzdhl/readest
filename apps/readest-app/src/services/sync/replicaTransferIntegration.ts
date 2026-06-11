@@ -98,8 +98,8 @@ const handleReplicaTransferComplete = async (event: CustomEvent): Promise<void> 
 /**
  * Wires the long-lived `replica-transfer-complete` listener that turns
  * a finished binary upload into a manifest commit (per the upload state
- * machine: binaries first, manifest LAST). Called once from EnvContext
- * during boot; idempotent.
+ * machine: binaries first, manifest LAST). Called once during boot;
+ * idempotent.
  *
  * Callers that subsequently sign in / out shouldn't re-call this — the
  * listener doesn't need to know auth state, and publishReplicaManifest

@@ -38,12 +38,3 @@ export const getAPIBaseUrl = () => (isWebDevMode() ? '/api' : `${getBaseUrl()}/a
 
 // For Node.js API that currently not supported in some edge runtimes
 export const getNodeAPIBaseUrl = () => (isWebDevMode() ? '/api' : `${getNodeBaseUrl()}/api`);
-
-// EnvConfigType is now empty — the legacy app-service accessor is gone (E5b-2,
-// god-objects deleted). The ~513 vestigial `envConfig` threading sites still
-// compile against this empty shape; their removal is the optional E5b-3 cleanup.
-export type EnvConfigType = Record<string, never>;
-
-const environmentConfig: EnvConfigType = {};
-
-export default environmentConfig;

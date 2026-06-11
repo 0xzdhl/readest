@@ -31,10 +31,6 @@ vi.mock('@/hooks/useTranslation', () => ({
   useTranslation: () => (s: string) => s,
 }));
 
-vi.mock('@/context/EnvContext', () => ({
-  useEnv: () => ({ envConfig: {} }),
-}));
-
 vi.mock('@/store/readerStore', () => ({
   useReaderStore: () => ({
     getView: () => mockView,

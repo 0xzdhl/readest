@@ -35,40 +35,11 @@ vi.mock('@/services/translators/cache', () => ({
   pruneCache: vi.fn(),
 }));
 
-// ------------------------------
-// ENV PROVIDER WRAPPER
-// ------------------------------
-// mock environment module so EnvProvider uses fake values
-vi.mock('@/services/environment', async (importOriginal) => {
-  const actual = await importOriginal();
-
-  return {
-    ...(typeof actual === 'object' && actual !== null ? actual : {}), // keep all real exports (e.g., isTauriAppPlatform)
-
-    default: {
-      ...(typeof actual === 'object' &&
-      actual !== null &&
-      'default' in actual &&
-      typeof actual.default === 'object' &&
-      actual.default !== null
-        ? actual.default
-        : {}), // keep all real default fields
-      API_BASE: 'http://localhost',
-      ENABLE_TRANSLATOR: false,
-    },
-  };
-});
-
-import { EnvProvider } from '@/context/EnvContext';
 import { AuthProvider } from '@/context/AuthContext';
 import { DEFAULT_SYSTEM_SETTINGS } from '@/services/constants';
 
 function renderWithProviders(ui: React.ReactNode) {
-  return render(
-    <EnvProvider>
-      <AuthProvider>{ui}</AuthProvider>
-    </EnvProvider>,
-  );
+  return render(<AuthProvider>{ui}</AuthProvider>);
 }
 
 describe('ProofreadRulesManager', () => {

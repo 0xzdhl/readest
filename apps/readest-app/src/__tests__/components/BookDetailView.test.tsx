@@ -19,10 +19,6 @@ vi.mock('@/store/settingsStore', () => ({
   }),
 }));
 
-vi.mock('@/context/EnvContext', () => ({
-  useEnv: () => ({ envConfig: {}, appService: null }),
-}));
-
 vi.mock('@/helpers/settings', () => ({
   saveSysSettings: vi.fn(),
 }));

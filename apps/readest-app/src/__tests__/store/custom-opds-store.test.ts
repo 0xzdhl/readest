@@ -4,7 +4,6 @@ import { useSettingsStore } from '@/store/settingsStore';
 import { computeOpdsCatalogContentId } from '@/services/sync/adapters/opdsCatalog';
 import type { OPDSCatalog } from '@/domain/opds';
 import type { SystemSettings } from '@/domain/settings';
-import type { EnvConfigType } from '@/services/environment';
 
 // Replica-publish helpers fan out to the network — stub them so tests
 // stay hermetic. We assert they fire for upserts/deletes via spies.
@@ -14,8 +13,6 @@ vi.mock('@/services/sync/replicaPublish', () => ({
 }));
 
 import { publishReplicaUpsert, publishReplicaDelete } from '@/services/sync/replicaPublish';
-
-const _makeEnvConfig = (): EnvConfigType => ({}) as EnvConfigType;
 
 const makeSettings = (overrides: Partial<SystemSettings> = {}): SystemSettings =>
   ({

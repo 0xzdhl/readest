@@ -18,10 +18,6 @@ const fireReplicaSyncReady = () => {
   for (const l of [...readyListeners]) l();
   readyListeners.clear();
 };
-let envValue: { envConfig: unknown } = {
-  envConfig: { name: 'env' },
-};
-
 let bootedValue = false;
 
 let authValue: { user: { id: string } | null } = { user: { id: 'test-user' } };
@@ -37,10 +33,6 @@ vi.mock('@/services/sync/adapters/dictionary', () => ({
 vi.mock('@/services/sync/replicaSync', () => ({
   getReplicaSync: () => getReplicaSyncSpy(),
   subscribeReplicaSyncReady: (listener: () => void) => subscribeReplicaSyncReadySpy(listener),
-}));
-
-vi.mock('@/context/EnvContext', () => ({
-  useEnv: () => envValue,
 }));
 
 vi.mock('@/context/EffectRuntimeProvider', () => ({
@@ -146,7 +138,6 @@ beforeEach(() => {
   subscribeReplicaSyncReadySpy.mockClear();
   readyListeners.clear();
   __resetReplicaPullForTests();
-  envValue = { envConfig: { name: 'env' } };
   bootedValue = true;
   authValue = { user: { id: 'test-user' } };
 });

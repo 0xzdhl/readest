@@ -594,7 +594,7 @@ export const useReplicaPull = ({
       schedule();
     } else {
       // Hard-refresh race: boot resolved before
-      // EnvContext.initReplicaSync finished (loadSettings is async,
+      // replica-sync init finished (loadSettings is async,
       // the booted flag flips first). Wait for the ready signal so the
       // pull still fires once the singleton lands.
       unsubscribe = subscribeReplicaSyncReady(schedule);

@@ -93,12 +93,6 @@ vi.mock('@/services/dictionaries/registry', () => ({
   evictProvider: vi.fn(),
 }));
 
-// EnvContext is now thin ({ envConfig }); the dictionary registry is mocked
-// above so the FileSystem-backed opener (useRunEffect) isn't exercised here.
-vi.mock('@/context/EnvContext', () => ({
-  useEnv: () => ({ envConfig: {} }),
-}));
-
 // ---------------------------------------------------------------------------
 // Fixture-backed real providers
 // ---------------------------------------------------------------------------

@@ -62,21 +62,6 @@ vi.mock('@/hooks/useTranslation', () => ({
     !opts ? key : key.replace(/{{(\w+)}}/g, (_, k) => String(opts[k] ?? '')),
 }));
 vi.mock('@/hooks/useTheme', () => ({ useTheme: () => undefined }));
-
-vi.mock('@/context/EnvContext', () => ({
-  useEnv: () => ({
-    envConfig: {},
-    appService: {
-      isMobileApp: false,
-      isIOSApp: false,
-      isAndroidApp: false,
-      isMacOSApp: false,
-      hasRoundedWindow: false,
-      hasTrafficLight: false,
-      hasWindowBar: false,
-    },
-  }),
-}));
 vi.mock('@/store/themeStore', () => ({
   useThemeStore: () => ({ isDarkMode: false, safeAreaInsets: undefined, isRoundedWindow: false }),
 }));
@@ -211,7 +196,9 @@ describe('AuthComponent (better-auth)', () => {
     isTauriMock.mockReturnValue(false);
     fetchAuthConfigMock.mockResolvedValue({ providers: [], signupEnabled: true });
     render(<AuthComponent />);
-    expect(await screen.findByRole('button', { name: /Don't have an account\? Sign up/i })).not.toBeNull();
+    expect(
+      await screen.findByRole('button', { name: /Don't have an account\? Sign up/i }),
+    ).not.toBeNull();
   });
 
   it('hides the sign-up link when registration is disabled', async () => {

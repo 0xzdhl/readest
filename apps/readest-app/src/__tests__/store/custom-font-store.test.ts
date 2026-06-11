@@ -57,7 +57,6 @@ import { useCustomFontStore, migrateLegacyFonts } from '@/store/customFontStore'
 import { useSettingsStore } from '@/store/settingsStore';
 import type { CustomFont } from '@/domain/fonts';
 import type { SystemSettings } from '@/domain/settings';
-import type { EnvConfigType } from '@/services/environment';
 import { publishReplicaUpsert } from '@/services/sync/replicaPublish';
 
 const mockPublishReplicaUpsert = vi.mocked(publishReplicaUpsert);
@@ -67,10 +66,6 @@ function makeFont(overrides: Partial<CustomFont> & { id: string; name: string })
     path: `/fonts/${overrides.name}.ttf`,
     ...overrides,
   };
-}
-
-function createMockEnvConfig(): EnvConfigType {
-  return {} as EnvConfigType;
 }
 
 beforeEach(() => {
@@ -443,10 +438,9 @@ describe('customFontStore', () => {
       copyFile: ReturnType<typeof vi.fn>;
       deleteFile: ReturnType<typeof vi.fn>;
     }
-    // envConfig is still passed (migrateLegacyReplicas uses it for saveStore);
-    // the FS ops now flow through the bridge, so we register `svc`'s spies into
-    // the hoisted `fsSpies` consumed by the mocked client runtime.
-    const buildEnv = (svc: FakeAppService): EnvConfigType => {
+    // Register `svc`'s spies into the hoisted `fsSpies` consumed by the mocked
+    // client runtime; the FS ops now flow through the bridge.
+    const buildEnv = (svc: FakeAppService): void => {
       fsSpies.exists = svc.exists as FakeAppService['exists'] &
         ((p: string, b: string) => Promise<boolean>);
       fsSpies.openFile = svc.openFile as FakeAppService['openFile'] &
@@ -457,7 +451,6 @@ describe('customFontStore', () => {
         ((s: string, sb: string, d: string, db: string) => Promise<void>);
       fsSpies.removeFile = svc.deleteFile as FakeAppService['deleteFile'] &
         ((p: string, b: string) => Promise<void>);
-      return {} as unknown as EnvConfigType;
     };
 
     const fakeService = (): FakeAppService => ({

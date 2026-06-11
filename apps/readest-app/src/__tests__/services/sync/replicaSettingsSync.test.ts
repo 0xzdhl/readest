@@ -28,7 +28,6 @@ import {
 } from '@/services/sync/replicaSettingsSync';
 import { useSettingsStore } from '@/store/settingsStore';
 import type { SystemSettings } from '@/domain/settings';
-import type { EnvConfigType } from '@/services/environment';
 
 const baseHighlight = {
   customThemes: [],
@@ -46,8 +45,6 @@ const makeSettings = (overrides: Partial<SystemSettings> = {}): SystemSettings =
     hardcover: { accessToken: '' },
     ...overrides,
   }) as unknown as SystemSettings;
-
-const makeEnvConfig = (): EnvConfigType => ({}) as EnvConfigType;
 
 /**
  * Opt the current test into credential sync. Most tests in this file

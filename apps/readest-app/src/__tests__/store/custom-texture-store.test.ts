@@ -3,7 +3,6 @@ import { useCustomTextureStore } from '@/store/customTextureStore';
 import { useSettingsStore } from '@/store/settingsStore';
 import type { CustomTexture } from '@/domain/textures';
 import type { SystemSettings } from '@/domain/settings';
-import type { EnvConfigType } from '@/services/environment';
 
 // Mock textures module - we need createCustomTexture, and the mount/unmount functions
 vi.mock('@/styles/textures', async (importOriginal) => {
@@ -22,10 +21,6 @@ function makeTexture(
     path: `/textures/${overrides.name}.png`,
     ...overrides,
   };
-}
-
-function createMockEnvConfig(): EnvConfigType {
-  return {} as EnvConfigType;
 }
 
 beforeEach(() => {
