@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react';
 import type { Book } from '@/domain/book';
-import { useEnv } from '@/context/EnvContext';
+import { usePlatformInfo } from '@/context/EffectRuntimeProvider';
 import { updateDiscordPresence, clearDiscordPresence } from '@/utils/discord';
 
 /**
@@ -9,7 +9,7 @@ import { updateDiscordPresence, clearDiscordPresence } from '@/utils/discord';
  * @param isPrimary - Whether this is the primary book (for multi-book scenarios)
  */
 export const useDiscordPresence = (book: Book | null, isPrimary: boolean, enabled: boolean) => {
-  const { appService } = useEnv();
+  const platformInfo = usePlatformInfo();
 
   const sessionStartRef = useRef<number>(Date.now());
   const updateIntervalRef = useRef<NodeJS.Timeout | null>(null);
@@ -18,7 +18,7 @@ export const useDiscordPresence = (book: Book | null, isPrimary: boolean, enable
 
   useEffect(() => {
     if (!isPrimary || !book) return;
-    if (!appService?.isDesktopApp) return;
+    if (!platformInfo.isDesktopApp) return;
 
     const stopUpdates = () => {
       if (updateIntervalRef.current) {
@@ -64,5 +64,5 @@ export const useDiscordPresence = (book: Book | null, isPrimary: boolean, enable
       clearDiscordPresence();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [book?.hash, isPrimary, enabled, appService]);
+  }, [book?.hash, isPrimary, enabled]);
 };
