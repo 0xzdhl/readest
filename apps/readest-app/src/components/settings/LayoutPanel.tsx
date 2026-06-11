@@ -9,6 +9,7 @@ import {
 } from 'react-icons/md';
 import { TbTextDirectionRtl } from 'react-icons/tb';
 import { useEnv } from '@/context/EnvContext';
+import { usePlatformInfo } from '@/context/EffectRuntimeProvider';
 import { saveViewSettings } from '@/helpers/settings';
 import { useResetViewSettings } from '@/hooks/useResetSettings';
 import { useTranslation } from '@/hooks/useTranslation';
@@ -33,7 +34,8 @@ import type { SettingsPanelPanelProp } from './SettingsDialog';
 
 const LayoutPanel: React.FC<SettingsPanelPanelProp> = ({ bookKey, onRegisterReset }) => {
   const _ = useTranslation();
-  const { envConfig, appService } = useEnv();
+  const { envConfig } = useEnv();
+  const platformInfo = usePlatformInfo();
   const { settings } = useSettingsStore();
   const { getView, getViewSettings, getGridInsets } = useReaderStore();
   const { setViewSettings, recreateViewer } = useReaderStore();
@@ -427,7 +429,7 @@ const LayoutPanel: React.FC<SettingsPanelPanelProp> = ({ bookKey, onRegisterRese
 
   useEffect(() => {
     saveViewSettings(envConfig, bookKey, 'screenOrientation', screenOrientation, false, false);
-    if (appService?.isMobileApp) {
+    if (platformInfo.isMobileApp) {
       lockScreenOrientation({ orientation: screenOrientation });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -760,7 +762,7 @@ const LayoutPanel: React.FC<SettingsPanelPanelProp> = ({ bookKey, onRegisterRese
         />
       </BoxedList>
 
-      {appService?.hasOrientationLock && (
+      {platformInfo.hasOrientationLock && (
         <BoxedList title={_('Screen')}>
           <SettingsRow label={_('Orientation')}>
             <div className='flex gap-4'>

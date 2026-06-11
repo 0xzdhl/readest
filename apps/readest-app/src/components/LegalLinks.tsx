@@ -1,14 +1,14 @@
-import { useEnv } from '@/context/EnvContext';
+import { usePlatformInfo } from '@/context/EffectRuntimeProvider';
 import { useTranslation } from '@/hooks/useTranslation';
 import { getWebsiteUrl } from '@/services/environment';
 import Link from './Link';
 
 const LegalLinks = () => {
   const _ = useTranslation();
-  const { appService } = useEnv();
+  const platformInfo = usePlatformInfo();
 
   const termsUrl =
-    appService?.isIOSApp || appService?.isMacOSApp
+    platformInfo.isIOSApp || platformInfo.isMacOSApp
       ? 'https://www.apple.com/legal/internet-services/itunes/dev/stdeula/'
       : `${getWebsiteUrl()}/terms-of-service`;
 

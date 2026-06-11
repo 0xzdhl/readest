@@ -3,6 +3,7 @@ import { useTranslation } from '@/hooks/useTranslation';
 import { useSettingsStore } from '@/store/settingsStore';
 import { useThemeStore } from '@/store/themeStore';
 import { useEnv } from '@/context/EnvContext';
+import { usePlatformInfo } from '@/context/EffectRuntimeProvider';
 import { isTauriAppPlatform } from '@/services/environment';
 import { tauriHandleSetAlwaysOnTop, tauriHandleToggleFullScreen } from '@/utils/window';
 import { setAboutDialogVisible } from '@/components/AboutWindow';
@@ -49,14 +50,15 @@ interface CommandPaletteProviderProps {
 
 export const CommandPaletteProvider: React.FC<CommandPaletteProviderProps> = ({ children }) => {
   const _ = useTranslation();
-  const { envConfig, appService } = useEnv();
+  const { envConfig } = useEnv();
+  const platformInfo = usePlatformInfo();
   const { themeMode, setThemeMode } = useThemeStore();
   const { settings, setSettingsDialogOpen, setActiveSettingsItemId } = useSettingsStore();
 
   const [isOpen, setIsOpen] = useState(false);
   const [query, setQuery] = useState('');
 
-  const isDesktop = isTauriAppPlatform() && !appService?.isMobile;
+  const isDesktop = isTauriAppPlatform() && !platformInfo.isMobile;
 
   // action handlers
   const toggleTheme = useCallback(() => {

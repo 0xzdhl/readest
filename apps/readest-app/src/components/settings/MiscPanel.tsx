@@ -2,6 +2,7 @@ import clsx from 'clsx';
 import type React from 'react';
 import { useEffect, useRef, useState } from 'react';
 import { useEnv } from '@/context/EnvContext';
+import { usePlatformInfo } from '@/context/EffectRuntimeProvider';
 import { saveViewSettings } from '@/helpers/settings';
 import { useResetViewSettings } from '@/hooks/useResetSettings';
 import { useTranslation } from '@/hooks/useTranslation';
@@ -16,7 +17,8 @@ type CSSType = 'book' | 'reader';
 
 const MiscPanel: React.FC<SettingsPanelPanelProp> = ({ bookKey, onRegisterReset }) => {
   const _ = useTranslation();
-  const { appService, envConfig } = useEnv();
+  const { envConfig } = useEnv();
+  const platformInfo = usePlatformInfo();
   const { settings } = useSettingsStore();
   const { getView, getViewSettings, setViewSettings } = useReaderStore();
   const viewSettings = getViewSettings(bookKey) || settings.globalViewSettings;
@@ -115,7 +117,7 @@ const MiscPanel: React.FC<SettingsPanelPanelProp> = ({ bookKey, onRegisterReset 
   };
 
   const handleInputFocus = (textareaRef: React.RefObject<HTMLTextAreaElement | null>) => {
-    if (appService?.isAndroidApp) {
+    if (platformInfo.isAndroidApp) {
       setInputFocusInAndroid(true);
     }
     setTimeout(() => {
@@ -127,7 +129,7 @@ const MiscPanel: React.FC<SettingsPanelPanelProp> = ({ bookKey, onRegisterReset 
   };
 
   const handleInputBlur = () => {
-    if (appService?.isAndroidApp) {
+    if (platformInfo.isAndroidApp) {
       setTimeout(() => {
         setInputFocusInAndroid(false);
       }, 100);

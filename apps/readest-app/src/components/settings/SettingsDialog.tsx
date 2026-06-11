@@ -18,7 +18,7 @@ import { useCommandPalette } from '@/components/command-palette';
 import Dialog from '@/components/Dialog';
 import Dropdown from '@/components/Dropdown';
 import { clientEnv } from '@/clientEnv';
-import { useEnv } from '@/context/EnvContext';
+import { usePlatformInfo } from '@/context/EffectRuntimeProvider';
 import { useResponsiveSize } from '@/hooks/useResponsiveSize';
 import { useTranslation } from '@/hooks/useTranslation';
 import { getCommandPaletteShortcut } from '@/services/environment';
@@ -34,7 +34,6 @@ import LangPanel from './LangPanel';
 import LayoutPanel from './LayoutPanel';
 import MiscPanel from './MiscPanel';
 import TTSPanel from './TTSPanel';
-
 
 export type SettingsPanelType =
   | 'Font'
@@ -60,7 +59,7 @@ type TabConfig = {
 
 const SettingsDialog: React.FC<{ bookKey: string }> = ({ bookKey }) => {
   const _ = useTranslation();
-  const { appService } = useEnv();
+  const platformInfo = usePlatformInfo();
   const closeIconSize = useResponsiveSize(16);
   const [isRtl] = useState(() => getDirFromUILanguage() === 'rtl');
   const tabsRef = useRef<HTMLDivElement | null>(null);
@@ -353,9 +352,9 @@ const SettingsDialog: React.FC<{ bookKey: string }> = ({ bookKey }) => {
       bgClassName={bookKey ? 'sm:!bg-black/20' : 'sm:!bg-black/50'}
       boxClassName={clsx(
         'sm:min-w-[520px] overflow-hidden not-eink:bg-base-200',
-        appService?.isMobile && 'sm:max-w-[90%] sm:w-3/4',
+        platformInfo.isMobile && 'sm:max-w-[90%] sm:w-3/4',
       )}
-      snapHeight={appService?.isMobile ? 0.7 : undefined}
+      snapHeight={platformInfo.isMobile ? 0.7 : undefined}
       // Settings panels can be tall (Layout / Color especially); native
       // scrollbars vanish on Android/iOS webviews, so use OverlayScrollbars
       // to keep a visible, theme-aware track on every platform.

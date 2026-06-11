@@ -2,6 +2,7 @@ import clsx from 'clsx';
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { type as osType } from '@tauri-apps/plugin-os';
 import { useEnv } from '@/context/EnvContext';
+import { usePlatformInfo } from '@/context/EffectRuntimeProvider';
 import { useTranslation } from '@/hooks/useTranslation';
 import { useSettingsStore } from '@/store/settingsStore';
 import { eventDispatcher } from '@/utils/event';
@@ -20,7 +21,8 @@ interface KOSyncFormProps {
 const KOSyncForm: React.FC<KOSyncFormProps> = ({ onBack }) => {
   const _ = useTranslation();
   const { settings, setSettings, saveSettings } = useSettingsStore();
-  const { envConfig, appService } = useEnv();
+  const { envConfig } = useEnv();
+  const platformInfo = usePlatformInfo();
 
   const [url, setUrl] = useState(settings.kosync.serverUrl || '');
   const [username, setUsername] = useState(settings.kosync.username || '');
@@ -39,7 +41,7 @@ const KOSyncForm: React.FC<KOSyncFormProps> = ({ onBack }) => {
 
     const getOsName = async () => {
       let name = '';
-      if (appService?.appPlatform === 'tauri') {
+      if (platformInfo.appPlatform === 'tauri') {
         name = await osType();
       } else {
         const platform = getOSPlatform();
@@ -50,7 +52,8 @@ const KOSyncForm: React.FC<KOSyncFormProps> = ({ onBack }) => {
       setOsName(formatOsName(name));
     };
     getOsName();
-  }, [appService]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   useEffect(() => {
     const defaultName = osName ? `Readest (${osName})` : 'Readest';

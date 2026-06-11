@@ -18,6 +18,7 @@ import { authClient } from '@/auth';
 import { clientEnv } from '@/clientEnv';
 import { fetchAuthConfig } from '@/services/authConfig';
 import { useEnv } from '@/context/EnvContext';
+import { usePlatformInfo } from '@/context/EffectRuntimeProvider';
 import { useTheme } from '@/hooks/useTheme';
 import { useTranslation } from '@/hooks/useTranslation';
 import { getBaseUrl, isTauriAppPlatform } from '@/services/environment';
@@ -64,7 +65,8 @@ type Mode = 'signin' | 'signup' | 'forgot';
 export function AuthComponent() {
   const _ = useTranslation();
   const router = useRouter();
-  const { envConfig, appService } = useEnv();
+  const { envConfig } = useEnv();
+  const platformInfo = usePlatformInfo();
   const { safeAreaInsets, isRoundedWindow } = useThemeStore();
   const { isTrafficLightVisible } = useTrafficLightStore();
   const { settings, setSettings, saveSettings } = useSettingsStore();
@@ -106,9 +108,9 @@ export function AuthComponent() {
   const getTauriRedirectTo = (isOAuth: boolean) => {
     if (
       !useCustomeOAuth.current &&
-      (clientEnv.NODE_ENV === 'production' || appService?.isMobileApp || USE_APPLE_SIGN_IN)
+      (clientEnv.NODE_ENV === 'production' || platformInfo.isMobileApp || USE_APPLE_SIGN_IN)
     ) {
-      if (appService?.isMobileApp) {
+      if (platformInfo.isMobileApp) {
         return isOAuth ? DEEPLINK_CALLBACK : WEB_AUTH_CALLBACK;
       }
       return DEEPLINK_CALLBACK;
@@ -128,7 +130,7 @@ export function AuthComponent() {
   };
 
   const tauriSignInApple = async () => {
-    if (appService?.isIOSApp || USE_APPLE_SIGN_IN) {
+    if (platformInfo.isIOSApp || USE_APPLE_SIGN_IN) {
       // Generate a nonce for the Apple ID token request. Apple echoes
       // the nonce back on the JWT's `nonce` claim; better-auth's
       // id-token verifier checks the match to defend against replay.
@@ -183,12 +185,12 @@ export function AuthComponent() {
         return;
       }
 
-      if (appService?.isIOSApp || appService?.isMacOSApp) {
+      if (platformInfo.isIOSApp || platformInfo.isMacOSApp) {
         const res = await authWithSafari({ authUrl });
         if (res) {
           handleOAuthUrl(res.redirectUrl);
         }
-      } else if (appService?.isAndroidApp) {
+      } else if (platformInfo.isAndroidApp) {
         const res = await authWithCustomTab({ authUrl });
         if (res) {
           handleOAuthUrl(res.redirectUrl);
@@ -279,7 +281,7 @@ export function AuthComponent() {
     try {
       if (
         !useCustomeOAuth.current &&
-        (clientEnv.NODE_ENV === 'production' || appService?.isMobileApp || USE_APPLE_SIGN_IN)
+        (clientEnv.NODE_ENV === 'production' || platformInfo.isMobileApp || USE_APPLE_SIGN_IN)
       ) {
         const { getCurrentWindow } = await import('@tauri-apps/api/window');
         const currentWindow = getCurrentWindow();
@@ -406,7 +408,7 @@ export function AuthComponent() {
         <ProviderLogin
           provider='apple'
           handleSignIn={
-            isTauriAppPlatform() && (appService?.isIOSApp || USE_APPLE_SIGN_IN)
+            isTauriAppPlatform() && (platformInfo.isIOSApp || USE_APPLE_SIGN_IN)
               ? tauriSignInApple
               : signInWith
           }
@@ -582,7 +584,7 @@ export function AuthComponent() {
     <div
       className={clsx(
         'bg-base-100 full-height inset-0 flex select-none flex-col items-center overflow-hidden',
-        appService?.hasRoundedWindow && isRoundedWindow && 'window-border rounded-window',
+        platformInfo.hasRoundedWindow && isRoundedWindow && 'window-border rounded-window',
       )}
     >
       <div
@@ -595,7 +597,7 @@ export function AuthComponent() {
           ref={headerRef}
           className={clsx(
             'fixed z-10 flex w-full items-center justify-between py-2 pe-6 ps-4',
-            appService?.hasTrafficLight && 'pt-11',
+            platformInfo.hasTrafficLight && 'pt-11',
           )}
         >
           <button
@@ -607,7 +609,7 @@ export function AuthComponent() {
             <IoArrowBack className='text-base-content' />
           </button>
 
-          {appService?.hasWindowBar && (
+          {platformInfo.hasWindowBar && (
             <WindowButtons
               headerRef={headerRef}
               showMinimize={!isTrafficLightVisible}
@@ -620,7 +622,7 @@ export function AuthComponent() {
         <div
           className={clsx(
             'z-20 flex flex-col items-center pb-8',
-            appService?.hasTrafficLight ? 'mt-24' : 'mt-12',
+            platformInfo.hasTrafficLight ? 'mt-24' : 'mt-12',
           )}
           style={{ maxWidth: '420px' }}
         >

@@ -2,6 +2,7 @@ import type React from 'react';
 import { useEffect, useState } from 'react';
 import { annotationToolQuickActions } from '@/app/reader/components/annotator/AnnotationTools';
 import { useEnv } from '@/context/EnvContext';
+import { usePlatformInfo } from '@/context/EffectRuntimeProvider';
 import { saveSysSettings, saveViewSettings } from '@/helpers/settings';
 import { useEinkMode } from '@/hooks/useEinkMode';
 import { useResetViewSettings } from '@/hooks/useResetSettings';
@@ -18,7 +19,8 @@ import type { SettingsPanelPanelProp } from './SettingsDialog';
 
 const ControlPanel: React.FC<SettingsPanelPanelProp> = ({ bookKey, onRegisterReset }) => {
   const _ = useTranslation();
-  const { envConfig, appService } = useEnv();
+  const { envConfig } = useEnv();
+  const platformInfo = usePlatformInfo();
   const { getView, getViewSettings, recreateViewer } = useReaderStore();
   const { getBookData } = useBookDataStore();
   const { settings } = useSettingsStore();
@@ -116,7 +118,7 @@ const ControlPanel: React.FC<SettingsPanelPanelProp> = ({ bookKey, onRegisterRes
 
   useEffect(() => {
     saveViewSettings(envConfig, bookKey, 'volumeKeysToFlip', volumeKeysToFlip, false, false);
-    if (appService?.isMobileApp) {
+    if (platformInfo.isMobileApp) {
       if (volumeKeysToFlip) {
         acquireVolumeKeyInterception();
       } else {
@@ -277,31 +279,31 @@ const ControlPanel: React.FC<SettingsPanelPanelProp> = ({ bookKey, onRegisterRes
 
       <BoxedList title={_('Pagination')} data-setting-id='settings.control.clickToPaginate'>
         <SettingsSwitchRow
-          label={appService?.isMobileApp ? _('Tap to Paginate') : _('Click to Paginate')}
+          label={platformInfo.isMobileApp ? _('Tap to Paginate') : _('Click to Paginate')}
           checked={!isDisableClick}
           onChange={() => setIsDisableClick(!isDisableClick)}
         />
         <SettingsSwitchRow
-          label={appService?.isMobileApp ? _('Tap Both Sides') : _('Click Both Sides')}
+          label={platformInfo.isMobileApp ? _('Tap Both Sides') : _('Click Both Sides')}
           checked={fullscreenClickArea}
           disabled={isDisableClick}
           onChange={() => setFullscreenClickArea(!fullscreenClickArea)}
           data-setting-id='settings.control.clickBothSides'
         />
         <SettingsSwitchRow
-          label={appService?.isMobileApp ? _('Swap Tap Sides') : _('Swap Click Sides')}
+          label={platformInfo.isMobileApp ? _('Swap Tap Sides') : _('Swap Click Sides')}
           checked={swapClickArea}
           disabled={isDisableClick || fullscreenClickArea}
           onChange={() => setSwapClickArea(!swapClickArea)}
           data-setting-id='settings.control.swapClickSides'
         />
         <SettingsSwitchRow
-          label={appService?.isMobileApp ? _('Disable Double Tap') : _('Disable Double Click')}
+          label={platformInfo.isMobileApp ? _('Disable Double Tap') : _('Disable Double Click')}
           checked={isDisableDoubleClick}
           onChange={() => setIsDisableDoubleClick(!isDisableDoubleClick)}
           data-setting-id='settings.control.disableDoubleClick'
         />
-        {appService?.isMobileApp && (
+        {platformInfo.isMobileApp && (
           <SettingsSwitchRow
             label={_('Volume Keys for Page Flip')}
             checked={volumeKeysToFlip}
@@ -351,7 +353,7 @@ const ControlPanel: React.FC<SettingsPanelPanelProp> = ({ bookKey, onRegisterRes
       </BoxedList>
 
       <BoxedList title={_('Device')} data-setting-id='settings.control.device'>
-        {(appService?.isAndroidApp || appService?.appPlatform === 'web') && (
+        {(platformInfo.isAndroidApp || platformInfo.appPlatform === 'web') && (
           <SettingsSwitchRow
             label={_('E-Ink Mode')}
             checked={isEink}
@@ -359,7 +361,7 @@ const ControlPanel: React.FC<SettingsPanelPanelProp> = ({ bookKey, onRegisterRes
             data-setting-id='settings.control.einkMode'
           />
         )}
-        {(appService?.isAndroidApp || appService?.appPlatform === 'web') && (
+        {(platformInfo.isAndroidApp || platformInfo.appPlatform === 'web') && (
           <SettingsSwitchRow
             label={_('Color E-Ink Mode')}
             checked={isColorEink}
@@ -368,7 +370,7 @@ const ControlPanel: React.FC<SettingsPanelPanelProp> = ({ bookKey, onRegisterRes
             data-setting-id='settings.control.colorEinkMode'
           />
         )}
-        {appService?.isMobileApp && (
+        {platformInfo.isMobileApp && (
           <SettingsSwitchRow
             label={_('System Screen Brightness')}
             checked={autoScreenBrightness}

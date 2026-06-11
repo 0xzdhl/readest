@@ -1,5 +1,4 @@
 import { useEffect, useState } from 'react';
-import { useEnv } from '@/context/EnvContext';
 import { usePlatformInfo } from '@/context/EffectRuntimeProvider';
 import { useTranslation } from '@/hooks/useTranslation';
 import { checkForAppUpdates, checkAppReleaseNotes } from '@/helpers/updater';
@@ -25,7 +24,6 @@ type UpdateStatus = 'checking' | 'updating' | 'updated' | 'error';
 
 export const AboutWindow = () => {
   const _ = useTranslation();
-  const { appService } = useEnv();
   const platformInfo = usePlatformInfo();
   const [updateStatus, setUpdateStatus] = useState<UpdateStatus | null>(null);
   const [browserInfo, setBrowserInfo] = useState('');
@@ -111,7 +109,7 @@ export const AboutWindow = () => {
               {!updateStatus && (
                 <button
                   className='btn btn-sm btn-primary cursor-pointer p-1 text-xs'
-                  onClick={appService?.hasUpdater ? handleCheckUpdate : handleShowRecentUpdates}
+                  onClick={platformInfo.hasUpdater ? handleCheckUpdate : handleShowRecentUpdates}
                 >
                   {_('Check Update')}
                 </button>
