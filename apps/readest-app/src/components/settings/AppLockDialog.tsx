@@ -3,7 +3,6 @@ import { useEffect, useRef, useState } from 'react';
 
 import ModalPortal from '@/components/ModalPortal';
 import PinInput, { type PinInputHandle } from '@/components/PinInput';
-import { useEnv } from '@/context/EnvContext';
 import { useTranslation } from '@/hooks/useTranslation';
 import { saveSysSettings } from '@/helpers/settings';
 import { PIN_LENGTH, generatePinSalt, hashPin, isValidPin, verifyPin } from '@/libs/crypto/applock';
@@ -21,7 +20,6 @@ const fieldLabelClass = 'text-base-content/70 text-xs font-medium tracking-wide'
  */
 export default function AppLockDialog() {
   const _ = useTranslation();
-  const { envConfig } = useEnv();
   const { settings } = useSettingsStore();
   const {
     pinHash,

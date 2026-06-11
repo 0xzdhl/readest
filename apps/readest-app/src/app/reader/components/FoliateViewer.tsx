@@ -7,7 +7,6 @@ import type { BookConfig, PageInfo } from '@/domain/book';
 import type { FoliateView } from '@/domain/view';
 import { wrappedFoliateView } from '@/types/view';
 import type { Insets } from '@/domain/misc';
-import { useEnv } from '@/context/EnvContext';
 import { usePlatformInfo } from '@/context/EffectRuntimeProvider';
 import { useThemeStore } from '@/store/themeStore';
 import { useReaderStore } from '@/store/readerStore';
@@ -92,7 +91,6 @@ const FoliateViewer: React.FC<{
   contentInsets: Insets;
 }> = ({ bookKey, readerIds, cfi = '', bookDoc, config, gridInsets, contentInsets: insets }) => {
   const _ = useTranslation();
-  const { envConfig } = useEnv();
   const platformInfo = usePlatformInfo();
   const { themeCode, isDarkMode } = useThemeStore();
   const { settings } = useSettingsStore();
@@ -718,7 +716,7 @@ const FoliateViewer: React.FC<{
       mountCustomFonts();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [settings.customFonts, envConfig]);
+  }, [settings.customFonts]);
 
   useEffect(() => {
     if (!viewSettings) return;

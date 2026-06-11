@@ -31,7 +31,6 @@ import { checkForAppUpdates, checkAppReleaseNotes } from '@/helpers/updater';
 import { impactFeedback } from '@tauri-apps/plugin-haptics';
 import { getCurrentWebview } from '@tauri-apps/api/webview';
 
-import { useEnv } from '@/context/EnvContext';
 import { useAuth } from '@/context/AuthContext';
 import { useRunEffect, usePlatformInfo, useBooted } from '@/context/EffectRuntimeProvider';
 import { useThemeStore } from '@/store/themeStore';
@@ -123,7 +122,6 @@ export const Route = createFileRoute('/library/')({
 const LibraryPageContent = () => {
   const searchParams = Route.useSearch();
   const router = useAppRouter();
-  const { envConfig } = useEnv();
   const booted = useBooted();
   const { user } = useAuth();
   const {

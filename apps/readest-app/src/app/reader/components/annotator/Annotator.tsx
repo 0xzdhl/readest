@@ -4,7 +4,6 @@ import { RiDeleteBinLine } from 'react-icons/ri';
 import * as CFI from 'foliate-js/epubcfi.js';
 import { Overlayer } from 'foliate-js/overlayer.js';
 import { Effect, Option } from 'effect';
-import { useEnv } from '@/context/EnvContext';
 import { usePlatformInfo, useRunEffect } from '@/context/EffectRuntimeProvider';
 import { Dialog } from '@/application/ports/Dialog';
 import type { BookNote, BooknoteGroup, HighlightColor, HighlightStyle } from '@/domain/book';
@@ -55,7 +54,6 @@ import ExportMarkdownDialog from './ExportMarkdownDialog';
 
 const Annotator: React.FC<{ bookKey: string }> = ({ bookKey }) => {
   const _ = useTranslation();
-  const { envConfig } = useEnv();
   const platformInfo = usePlatformInfo();
   const runEffect = useRunEffect();
   const { settings, setSettingsDialogBookKey, setSettingsDialogOpen, setActiveSettingsItemId } =

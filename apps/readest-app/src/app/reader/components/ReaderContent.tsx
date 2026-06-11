@@ -8,7 +8,6 @@ import { BookDetailModal } from '@/components/metadata';
 import Spinner from '@/components/Spinner';
 import SettingsDialog from '@/components/settings/SettingsDialog';
 import { useAuth } from '@/context/AuthContext';
-import { useEnv } from '@/context/EnvContext';
 import { usePlatformInfo, useBooted } from '@/context/EffectRuntimeProvider';
 import { parseOpenWithFiles } from '@/helpers/openWith';
 import { useGamepad } from '@/hooks/useGamepad';
@@ -44,7 +43,6 @@ const ReaderContent: React.FC<{ ids: string; cfi?: string; settings: SystemSetti
 }) => {
   const _ = useTranslation();
   const router = useRouter();
-  const { envConfig } = useEnv();
   const booted = useBooted();
   const platformInfo = usePlatformInfo();
   const { bookKeys, dismissBook, getNextBookKey } = useBooksManager(cfi);

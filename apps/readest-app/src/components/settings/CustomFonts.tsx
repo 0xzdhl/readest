@@ -2,7 +2,6 @@ import clsx from 'clsx';
 import React, { useState } from 'react';
 import { MdAdd, MdDelete } from 'react-icons/md';
 import { IoMdCloseCircleOutline } from 'react-icons/io';
-import { useEnv } from '@/context/EnvContext';
 import { Effect } from 'effect';
 import { useRunEffect, useBooted } from '@/context/EffectRuntimeProvider';
 import { FontService } from '@/application/services/FontService';
@@ -29,7 +28,6 @@ type FontFamily = {
 
 const CustomFonts: React.FC<CustomFontsProps> = ({ bookKey, onBack }) => {
   const _ = useTranslation();
-  const { envConfig } = useEnv();
   const booted = useBooted();
   const runEffect = useRunEffect();
   const { settings } = useSettingsStore();

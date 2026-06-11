@@ -2,7 +2,6 @@ import clsx from 'clsx';
 import React, { useCallback } from 'react';
 import { TbBoxMargin } from 'react-icons/tb';
 import { RxLineHeight } from 'react-icons/rx';
-import { useEnv } from '@/context/EnvContext';
 import { usePlatformInfo } from '@/context/EffectRuntimeProvider';
 import { useReaderStore } from '@/store/readerStore';
 import { useTranslation } from '@/hooks/useTranslation';
@@ -44,7 +43,6 @@ export const FontLayoutPanel: React.FC<FontLayoutPanelProps> = ({
   forceMobileLayout,
 }) => {
   const _ = useTranslation();
-  const { envConfig } = useEnv();
   const platformInfo = usePlatformInfo();
   const { getView, getViewSettings } = useReaderStore();
   const viewSettings = getViewSettings(bookKey);
@@ -54,7 +52,7 @@ export const FontLayoutPanel: React.FC<FontLayoutPanelProps> = ({
     (value: number) => {
       saveViewSettings(bookKey, 'defaultFontSize', value);
     },
-    [envConfig, bookKey],
+    [bookKey],
   );
 
   const handleMarginChange = useCallback(
@@ -79,14 +77,14 @@ export const FontLayoutPanel: React.FC<FontLayoutPanelProps> = ({
         view?.renderer.setAttribute('flow', 'scrolled');
       }
     },
-    [envConfig, bookKey, view, getViewSettings],
+    [bookKey, view, getViewSettings],
   );
 
   const handleLineHeightChange = useCallback(
     (value: number) => {
       saveViewSettings(bookKey, 'lineHeight', value / LINE_HEIGHT_LIMITS.MULTIPLIER);
     },
-    [envConfig, bookKey],
+    [bookKey],
   );
 
   const getMarginProgressValue = useCallback((marginPx: number, gapPercent: number) => {

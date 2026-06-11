@@ -3,7 +3,6 @@ import type React from 'react';
 import { MdCheck } from 'react-icons/md';
 import Menu from '@/components/Menu';
 import MenuItem from '@/components/MenuItem';
-import { useEnv } from '@/context/EnvContext';
 import { Effect } from 'effect';
 import { useRunEffect } from '@/context/EffectRuntimeProvider';
 import { FontService } from '@/application/services/FontService';
@@ -30,7 +29,6 @@ const DialogMenu: React.FC<DialogMenuProps> = ({
   resetLabel,
 }) => {
   const _ = useTranslation();
-  const { envConfig } = useEnv();
   const runEffect = useRunEffect();
   const { setFontPanelView } = useSettingsStore();
   const { getViewSettings } = useReaderStore();

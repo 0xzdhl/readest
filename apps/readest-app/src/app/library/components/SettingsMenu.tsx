@@ -12,7 +12,6 @@ import type { PermissionState } from '@tauri-apps/api/core';
 import { isTauriAppPlatform, isWebAppPlatform, getWebsiteUrl } from '@/services/environment';
 import { setBackupDialogVisible } from '@/app/library/components/backupDialog';
 import { useAuth } from '@/context/AuthContext';
-import { useEnv } from '@/context/EnvContext';
 import { useRunEffect, usePlatformInfo, useBooted } from '@/context/EffectRuntimeProvider';
 import { LibraryRepository } from '@/application/repositories/LibraryRepository';
 import { BookRepository } from '@/application/repositories/BookRepository';
@@ -51,7 +50,6 @@ interface Permissions {
 const SettingsMenu: React.FC<SettingsMenuProps> = ({ onPullLibrary, setIsDropdownOpen }) => {
   const _ = useTranslation();
   const router = useRouter();
-  const { envConfig } = useEnv();
   const booted = useBooted();
   const platformInfo = usePlatformInfo();
   const runEffect = useRunEffect();

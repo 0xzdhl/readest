@@ -2,7 +2,6 @@ import clsx from 'clsx';
 import type React from 'react';
 import { useEffect, useState } from 'react';
 import { useAuth } from '@/context/AuthContext';
-import { useEnv } from '@/context/EnvContext';
 import { saveViewSettings } from '@/helpers/settings';
 import { useResetViewSettings } from '@/hooks/useResetSettings';
 import { useTranslation } from '@/hooks/useTranslation';
@@ -35,7 +34,6 @@ const LangPanel: React.FC<SettingsPanelPanelProp> = ({ bookKey, onRegisterReset 
   // synchronous token.
   const { user } = useAuth();
   const hasAuth = !!user;
-  const { envConfig } = useEnv();
   const { settings, applyUILanguage, activeSettingsItemId, setActiveSettingsItemId } =
     useSettingsStore();
   const { getView, getViewSettings, setViewSettings, recreateViewer } = useReaderStore();

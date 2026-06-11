@@ -15,7 +15,6 @@ import Menu from '@/components/Menu';
 import MenuItem from '@/components/MenuItem';
 import { useRouter } from '@tanstack/react-router';
 import { clientEnv } from '@/clientEnv';
-import { useEnv } from '@/context/EnvContext';
 import { usePlatformInfo, useBooted } from '@/context/EffectRuntimeProvider';
 import { useTranslation } from '@/hooks/useTranslation';
 import { isWebAppPlatform } from '@/services/environment';
@@ -111,7 +110,6 @@ interface CatalogManagerProps {
 export function CatalogManager({ inSubPage = false }: CatalogManagerProps = {}) {
   const _ = useTranslation();
   const router = useRouter();
-  const { envConfig } = useEnv();
   const booted = useBooted();
   const platformInfo = usePlatformInfo();
   // Hydrate the store from settings on mount; all CRUD goes through it
@@ -168,7 +166,7 @@ export function CatalogManager({ inSubPage = false }: CatalogManagerProps = {}) 
   // for legacy entries.
   useEffect(() => {
     void useCustomOPDSStore.getState().loadCustomOPDSCatalogs();
-  }, [envConfig]);
+  }, []);
 
   // Surface the latest store state into the local mirror used by
   // subscriptions / dialog rendering. Filters out tombstones.

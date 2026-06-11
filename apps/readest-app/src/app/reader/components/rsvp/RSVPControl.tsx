@@ -11,7 +11,6 @@ import {
   buildRsvpExitConfigUpdate,
 } from '@/services/rsvp';
 import { eventDispatcher } from '@/utils/event';
-import { useEnv } from '@/context/EnvContext';
 import { useTranslation } from '@/hooks/useTranslation';
 import type { BookNote, PageInfo } from '@/domain/book';
 import type { TOCItem } from '@/domain/document';
@@ -110,7 +109,6 @@ const expandRangeToSentence = (range: Range, doc: Document): Range => {
 
 const RSVPControl: React.FC<RSVPControlProps> = ({ bookKey, gridInsets }) => {
   const _ = useTranslation();
-  const { envConfig } = useEnv();
   const { settings } = useSettingsStore();
   const { getView, getProgress } = useReaderStore();
   const { getBookData, getConfig, setConfig, saveConfig } = useBookDataStore();
@@ -431,7 +429,6 @@ const RSVPControl: React.FC<RSVPControlProps> = ({ bookKey, gridInsets }) => {
     setShowStartDialog(false);
   }, [
     bookKey,
-    envConfig,
     getConfig,
     getView,
     removeRsvpHighlight,

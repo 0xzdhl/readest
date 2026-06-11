@@ -2,7 +2,6 @@ import clsx from 'clsx';
 import type React from 'react';
 import { useEffect, useState } from 'react';
 import { usePlatformInfo } from '@/context/EffectRuntimeProvider';
-import { useEnv } from '@/context/EnvContext';
 import { saveViewSettings } from '@/helpers/settings';
 import { useResetViewSettings } from '@/hooks/useResetSettings';
 import { useTranslation } from '@/hooks/useTranslation';
@@ -93,7 +92,6 @@ const FontFace = ({
 
 const FontPanel: React.FC<SettingsPanelPanelProp> = ({ bookKey, onRegisterReset }) => {
   const _ = useTranslation();
-  const { envConfig } = useEnv();
   const platformInfo = usePlatformInfo();
   const { getView, getViewSettings } = useReaderStore();
   const { settings, fontPanelView, setFontPanelView } = useSettingsStore();

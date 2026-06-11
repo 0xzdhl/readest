@@ -12,7 +12,6 @@ import { TbArrowAutofitWidth } from 'react-icons/tb';
 import { TbColumns1, TbColumns2 } from 'react-icons/tb';
 
 import { MAX_ZOOM_LEVEL, MIN_ZOOM_LEVEL, ZOOM_STEP } from '@/services/constants';
-import { useEnv } from '@/context/EnvContext';
 import { usePlatformInfo } from '@/context/EffectRuntimeProvider';
 import { useAuth } from '@/context/AuthContext';
 import { useThemeStore } from '@/store/themeStore';
@@ -44,7 +43,6 @@ const ViewMenu: React.FC<ViewMenuProps> = ({
   const _ = useTranslation();
   const router = useRouter();
   const { user } = useAuth();
-  const { envConfig } = useEnv();
   const platformInfo = usePlatformInfo();
   const { getConfig, getBookData } = useBookDataStore();
   const { setSettingsDialogOpen, setSettingsDialogBookKey } = useSettingsStore();

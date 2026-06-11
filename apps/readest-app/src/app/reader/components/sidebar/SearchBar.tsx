@@ -5,7 +5,6 @@ import { IoMdCloseCircle } from 'react-icons/io';
 import { MdDeleteOutline } from 'react-icons/md';
 
 import { Effect } from 'effect';
-import { useEnv } from '@/context/EnvContext';
 import { usePlatformInfo, useRunEffect } from '@/context/EffectRuntimeProvider';
 import { FileSystem } from '@/application/ports/FileSystem';
 import { useSettingsStore } from '@/store/settingsStore';
@@ -36,7 +35,6 @@ interface SearchBarProps {
 
 const SearchBar: React.FC<SearchBarProps> = ({ isVisible, bookKey, onHideSearchBar }) => {
   const _ = useTranslation();
-  const { envConfig } = useEnv();
   const platformInfo = usePlatformInfo();
   const runEffect = useRunEffect();
   const { settings } = useSettingsStore();

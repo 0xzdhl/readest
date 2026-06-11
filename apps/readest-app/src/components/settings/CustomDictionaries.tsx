@@ -23,7 +23,6 @@ import {
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 
-import { useEnv } from '@/context/EnvContext';
 import { Effect } from 'effect';
 import { useRunEffect, useBooted } from '@/context/EffectRuntimeProvider';
 import { DictionaryService } from '@/application/services/DictionaryService';
@@ -230,7 +229,6 @@ const SortableRow: React.FC<SortableRowProps> = ({
 
 const CustomDictionaries: React.FC<CustomDictionariesProps> = ({ onBack }) => {
   const _ = useTranslation();
-  const { envConfig } = useEnv();
   const booted = useBooted();
   const runEffect = useRunEffect();
   const {

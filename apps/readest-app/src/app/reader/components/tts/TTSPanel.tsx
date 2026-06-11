@@ -6,7 +6,6 @@ import { TbChevronCompactDown, TbChevronCompactUp } from 'react-icons/tb';
 import { RiVoiceAiFill } from 'react-icons/ri';
 import { MdCheck } from 'react-icons/md';
 import type { TTSVoicesGroup } from '@/services/tts';
-import { useEnv } from '@/context/EnvContext';
 import { useReaderStore } from '@/store/readerStore';
 import { useTranslation } from '@/hooks/useTranslation';
 import type { TranslationFunc } from '@/hooks/useTranslation';
@@ -120,7 +119,6 @@ const TTSPanel = ({
   onToogleTTSBar,
 }: TTSPanelProps) => {
   const _ = useTranslation();
-  const { envConfig } = useEnv();
   const { getViewSettings, setViewSettings } = useReaderStore();
   const { settings, setSettings, saveSettings } = useSettingsStore();
   const viewSettings = getViewSettings(bookKey);

@@ -4,7 +4,6 @@ import React, { useRef, useState } from 'react';
 import { MdEdit, MdDelete } from 'react-icons/md';
 
 import { marked } from 'marked';
-import { useEnv } from '@/context/EnvContext';
 import type { BookNote, HighlightColor } from '@/domain/book';
 import { useSettingsStore } from '@/store/settingsStore';
 import { useReaderStore } from '@/store/readerStore';
@@ -27,7 +26,6 @@ interface BooknoteItemProps {
 
 const BooknoteItem: React.FC<BooknoteItemProps> = ({ bookKey, item, isNearest, onClick }) => {
   const _ = useTranslation();
-  const { envConfig } = useEnv();
   const { settings } = useSettingsStore();
   const { getConfig, saveConfig, updateBooknotes } = useBookDataStore();
   const { getProgress, getView, getViewsById } = useReaderStore();

@@ -1,7 +1,6 @@
 import type React from 'react';
 import { useEffect, useState } from 'react';
 import { annotationToolQuickActions } from '@/app/reader/components/annotator/AnnotationTools';
-import { useEnv } from '@/context/EnvContext';
 import { usePlatformInfo } from '@/context/EffectRuntimeProvider';
 import { saveSysSettings, saveViewSettings } from '@/helpers/settings';
 import { useEinkMode } from '@/hooks/useEinkMode';
@@ -19,7 +18,6 @@ import type { SettingsPanelPanelProp } from './SettingsDialog';
 
 const ControlPanel: React.FC<SettingsPanelPanelProp> = ({ bookKey, onRegisterReset }) => {
   const _ = useTranslation();
-  const { envConfig } = useEnv();
   const platformInfo = usePlatformInfo();
   const { getView, getViewSettings, recreateViewer } = useReaderStore();
   const { getBookData } = useBookDataStore();

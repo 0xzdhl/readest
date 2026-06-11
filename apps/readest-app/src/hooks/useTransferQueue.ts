@@ -1,5 +1,4 @@
 import { useEffect, useCallback, useMemo } from 'react';
-import { useEnv } from '@/context/EnvContext';
 import { useBooted } from '@/context/EffectRuntimeProvider';
 import { useTranslation } from './useTranslation';
 import { useLibraryStore } from '@/store/libraryStore';
@@ -8,7 +7,6 @@ import { transferManager } from '@/services/transferManager';
 import type { Book } from '@/domain/book';
 
 export function useTransferQueue(libraryLoaded = true, delayInit = 0) {
-  const { envConfig } = useEnv();
   const booted = useBooted();
   const _ = useTranslation();
 
@@ -34,7 +32,7 @@ export function useTransferQueue(libraryLoaded = true, delayInit = 0) {
         initManager();
       }, delayInit);
     }
-  }, [booted, envConfig, libraryLoaded, delayInit, _]);
+  }, [booted, libraryLoaded, delayInit, _]);
 
   const queueUpload = useCallback((book: Book, priority?: number) => {
     return transferManager.queueUpload(book, priority);

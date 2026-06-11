@@ -1,5 +1,4 @@
 import clsx from 'clsx';
-import { useEnv } from '@/context/EnvContext';
 import { useTranslation } from '@/hooks/useTranslation';
 import { useSettingsStore } from '@/store/settingsStore';
 import {
@@ -62,7 +61,6 @@ const useCategoryCopy = (): Record<SyncCategory, CategoryCopy> => {
 
 export function SyncCategoriesSection() {
   const _ = useTranslation();
-  const { envConfig } = useEnv();
   const { settings, setSettings, saveSettings } = useSettingsStore();
   const copy = useCategoryCopy();
 

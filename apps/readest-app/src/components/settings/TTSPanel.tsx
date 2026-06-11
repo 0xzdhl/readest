@@ -1,6 +1,5 @@
 import type React from 'react';
 import { useEffect, useState } from 'react';
-import { useEnv } from '@/context/EnvContext';
 import { saveViewSettings } from '@/helpers/settings';
 import { useResetViewSettings } from '@/hooks/useResetSettings';
 import { useTranslation } from '@/hooks/useTranslation';
@@ -13,7 +12,6 @@ import type { SettingsPanelPanelProp } from './SettingsDialog';
 
 const TTSPanel: React.FC<SettingsPanelPanelProp> = ({ bookKey, onRegisterReset }) => {
   const _ = useTranslation();
-  const { envConfig } = useEnv();
   const { getViewSettings } = useReaderStore();
   const { settings, setSettings, saveSettings } = useSettingsStore();
   const viewSettings = getViewSettings(bookKey) || settings.globalViewSettings;

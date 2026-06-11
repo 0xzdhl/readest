@@ -17,7 +17,6 @@ import {
 import { authClient } from '@/auth';
 import { clientEnv } from '@/clientEnv';
 import { fetchAuthConfig } from '@/services/authConfig';
-import { useEnv } from '@/context/EnvContext';
 import { usePlatformInfo } from '@/context/EffectRuntimeProvider';
 import { useTheme } from '@/hooks/useTheme';
 import { useTranslation } from '@/hooks/useTranslation';
@@ -65,7 +64,6 @@ type Mode = 'signin' | 'signup' | 'forgot';
 export function AuthComponent() {
   const _ = useTranslation();
   const router = useRouter();
-  const { envConfig } = useEnv();
   const platformInfo = usePlatformInfo();
   const { safeAreaInsets, isRoundedWindow } = useThemeStore();
   const { isTrafficLightVisible } = useTrafficLightStore();

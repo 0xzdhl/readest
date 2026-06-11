@@ -2,7 +2,6 @@ import { Effect } from 'effect';
 import { useEffect } from 'react';
 import { FileSystem } from '@/application/ports/FileSystem';
 import { useAuth } from '@/context/AuthContext';
-import { useEnv } from '@/context/EnvContext';
 import { useBooted } from '@/context/EffectRuntimeProvider';
 import type { ImportedDictionary } from '@/domain/dictionaries';
 import { dictionaryAdapter } from '@/services/sync/adapters/dictionary';
@@ -491,7 +490,6 @@ export const useReplicaPull = ({
   kinds,
   delayMs = REPLICA_PULL_DEFAULT_DELAY_MS,
 }: UseReplicaPullOpts): void => {
-  const { envConfig } = useEnv();
   const booted = useBooted();
   const { user } = useAuth();
   // Stable cache key so the effect doesn't re-run when the caller
@@ -607,7 +605,7 @@ export const useReplicaPull = ({
       if (unsubscribe) unsubscribe();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [kindsKey, booted, envConfig, delayMs, user]);
+  }, [kindsKey, booted, delayMs, user]);
 };
 
 /** Test seam — clear all module-level state and tear down listeners. */

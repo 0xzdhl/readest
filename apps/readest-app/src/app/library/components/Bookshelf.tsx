@@ -20,7 +20,6 @@ import {
   LibrarySortByType,
   type LibraryViewModeType,
 } from '@/domain/settings';
-import { useEnv } from '@/context/EnvContext';
 import { usePlatformInfo } from '@/context/EffectRuntimeProvider';
 import { useThemeStore } from '@/store/themeStore';
 import { useAutoFocus } from '@/hooks/useAutoFocus';
@@ -151,7 +150,6 @@ const Bookshelf: React.FC<BookshelfProps> = ({
   const router = useRouter();
   const location = useLocation();
   const searchParams = new URLSearchParams(location.searchStr);
-  const { envConfig } = useEnv();
   const platformInfo = usePlatformInfo();
   const { settings } = useSettingsStore();
   const { safeAreaInsets } = useThemeStore();
@@ -438,7 +436,7 @@ const Bookshelf: React.FC<BookshelfProps> = ({
       const updatedBook = { ...book, readingStatus: status, updatedAt: Date.now() };
       await updateBooks([updatedBook]);
     },
-    [envConfig, updateBooks],
+    [updateBooks],
   );
 
   const handleDeleteBooksIntent = (event: CustomEvent) => {

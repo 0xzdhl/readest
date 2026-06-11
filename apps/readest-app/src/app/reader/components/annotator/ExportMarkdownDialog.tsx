@@ -1,7 +1,6 @@
 import clsx from 'clsx';
 import React, { useState, useMemo, useEffect } from 'react';
 import { marked } from 'marked';
-import { useEnv } from '@/context/EnvContext';
 import { useTranslation } from '@/hooks/useTranslation';
 import { useReaderStore } from '@/store/readerStore';
 import type { BookNote, BooknoteGroup, NoteExportConfig } from '@/domain/book';
@@ -39,7 +38,6 @@ const ExportMarkdownDialog: React.FC<ExportMarkdownDialogProps> = ({
   onExport,
 }) => {
   const _ = useTranslation();
-  const { envConfig } = useEnv();
   const { getViewSettings } = useReaderStore();
   const viewSettings = getViewSettings(bookKey);
 
@@ -99,7 +97,7 @@ const ExportMarkdownDialog: React.FC<ExportMarkdownDialogProps> = ({
     };
     saveViewSettings(bookKey, 'noteExportConfig', newExportConfig, false, false);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [exportConfig, envConfig, bookKey]);
+  }, [exportConfig, bookKey]);
 
   // Helper function to strip markdown formatting
   const stripMarkdown = (text: string): string => {

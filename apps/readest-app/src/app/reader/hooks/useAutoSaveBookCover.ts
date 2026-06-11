@@ -1,6 +1,5 @@
 import { useCallback, useEffect } from 'react';
 import { Effect } from 'effect';
-import { useEnv } from '@/context/EnvContext';
 import { useRunEffect } from '@/context/EffectRuntimeProvider';
 import { FileSystem } from '@/application/ports/FileSystem';
 import { PathResolver } from '@/application/ports/PathResolver';
@@ -13,7 +12,6 @@ import { eventDispatcher } from '@/utils/event';
 
 export const useBookCoverAutoSave = (bookKey: string) => {
   const _ = useTranslation();
-  const { envConfig } = useEnv();
   const runEffect = useRunEffect();
 
   // eslint-disable-next-line react-hooks/exhaustive-deps

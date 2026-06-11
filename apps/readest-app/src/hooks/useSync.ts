@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useRouter } from '@tanstack/react-router';
-import { useEnv } from '@/context/EnvContext';
 import { useSyncContext } from '@/context/SyncContext';
 import type { SyncData, SyncOp, SyncResult, SyncType } from '@/libs/sync';
 import { isSyncCategoryEnabled } from '@/services/sync/syncCategories';
@@ -38,7 +37,6 @@ const computeMaxTimestamp = (records: BookDataRecord[]): number => {
 const ONE_DAY_IN_MS = 24 * 60 * 60 * 1000;
 export function useSync(bookKey?: string) {
   const router = useRouter();
-  const { envConfig } = useEnv();
   const { settings, setSettings, saveSettings } = useSettingsStore();
   const { getConfig, setConfig } = useBookDataStore();
   const { setIsSyncing } = useReaderStore();

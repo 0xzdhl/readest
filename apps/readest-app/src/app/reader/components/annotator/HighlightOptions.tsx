@@ -2,7 +2,6 @@ import clsx from 'clsx';
 import React, { useEffect, useRef, useState } from 'react';
 import { FaCheckCircle } from 'react-icons/fa';
 import { DEFAULT_HIGHLIGHT_COLORS, type HighlightColor, type HighlightStyle } from '@/domain/book';
-import { useEnv } from '@/context/EnvContext';
 import { useThemeStore } from '@/store/themeStore';
 import { useTranslation } from '@/hooks/useTranslation';
 import { useSettingsStore } from '@/store/settingsStore';
@@ -50,7 +49,6 @@ const HighlightOptions: React.FC<HighlightOptionsProps> = ({
   onHandleHighlight,
 }) => {
   const _ = useTranslation();
-  const { envConfig } = useEnv();
   const { settings } = useSettingsStore();
   const { isDarkMode } = useThemeStore();
   const globalReadSettings = settings.globalReadSettings;

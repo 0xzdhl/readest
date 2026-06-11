@@ -1,5 +1,4 @@
 import { useCallback, useEffect } from 'react';
-import { useEnv } from '@/context/EnvContext';
 import { useSettingsStore } from '@/store/settingsStore';
 import { useBookDataStore } from '@/store/bookDataStore';
 import { useTranslation } from '@/hooks/useTranslation';
@@ -9,21 +8,17 @@ import type { BookNote } from '@/domain/book';
 
 export const useHardcoverSync = (bookKey: string) => {
   const _ = useTranslation();
-  const { envConfig } = useEnv();
   const { getConfig, getBookData } = useBookDataStore();
 
-  const updateLastSyncedAt = useCallback(
-    async (timestamp: number) => {
-      const { settings, setSettings, saveSettings } = useSettingsStore.getState();
-      const newSettings = {
-        ...settings,
-        hardcover: { ...settings.hardcover, lastSyncedAt: timestamp },
-      };
-      setSettings(newSettings);
-      await saveSettings(newSettings);
-    },
-    [envConfig],
-  );
+  const updateLastSyncedAt = useCallback(async (timestamp: number) => {
+    const { settings, setSettings, saveSettings } = useSettingsStore.getState();
+    const newSettings = {
+      ...settings,
+      hardcover: { ...settings.hardcover, lastSyncedAt: timestamp },
+    };
+    setSettings(newSettings);
+    await saveSettings(newSettings);
+  }, []);
 
   const getClient = useCallback(async () => {
     const { settings } = useSettingsStore.getState();

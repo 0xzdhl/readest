@@ -1,7 +1,6 @@
 import clsx from 'clsx';
 import React, { useEffect, useState } from 'react';
 import { RiEditLine, RiDeleteBin7Line } from 'react-icons/ri';
-import { useEnv } from '@/context/EnvContext';
 import { useTranslation } from '@/hooks/useTranslation';
 import { useSettingsStore } from '@/store/settingsStore';
 import { useReaderStore } from '@/store/readerStore';
@@ -182,7 +181,6 @@ const useReplacementRules = (bookKey: string | null) => {
 
 export const ProofreadRulesManager: React.FC = () => {
   const _ = useTranslation();
-  const { envConfig } = useEnv();
   const { recreateViewer } = useReaderStore();
   const { sideBarBookKey } = useSidebarStore();
   const { updateRule, removeRule } = useProofreadStore();

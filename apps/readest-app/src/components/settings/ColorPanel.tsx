@@ -1,7 +1,6 @@
 import clsx from 'clsx';
 import type React from 'react';
 import { useEffect, useState } from 'react';
-import { useEnv } from '@/context/EnvContext';
 import { Effect } from 'effect';
 import { useRunEffect, useBooted } from '@/context/EffectRuntimeProvider';
 import { ImageService } from '@/application/services/ImageService';
@@ -40,7 +39,6 @@ const ColorPanel: React.FC<SettingsPanelPanelProp> = ({ bookKey, onRegisterReset
   const _ = useTranslation();
   const { themeMode, themeColor, isDarkMode, setThemeMode, setThemeColor, saveCustomTheme } =
     useThemeStore();
-  const { envConfig } = useEnv();
   const booted = useBooted();
   const runEffect = useRunEffect();
   const { settings, setSettings, saveSettings } = useSettingsStore();
@@ -127,7 +125,7 @@ const ColorPanel: React.FC<SettingsPanelPanelProp> = ({ bookKey, onRegisterReset
 
   useEffect(() => {
     loadCustomTextures();
-  }, [loadCustomTextures, envConfig]);
+  }, [loadCustomTextures]);
 
   useEffect(() => {
     if (invertImgColorInDark === viewSettings.invertImgColorInDark) return;

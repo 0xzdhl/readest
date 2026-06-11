@@ -1,6 +1,5 @@
 import type React from 'react';
 import { useRouter, useLocation } from '@tanstack/react-router';
-import { useEnv } from '@/context/EnvContext';
 import { useSettingsStore } from '@/store/settingsStore';
 import { useTranslation } from '@/hooks/useTranslation';
 import {
@@ -24,7 +23,6 @@ const ViewMenu: React.FC<ViewMenuProps> = ({ setIsDropdownOpen }) => {
   const router = useRouter();
   const location = useLocation();
   const searchParams = new URLSearchParams(location.searchStr);
-  const { envConfig } = useEnv();
   const { settings } = useSettingsStore();
 
   const viewMode = settings.libraryViewMode;

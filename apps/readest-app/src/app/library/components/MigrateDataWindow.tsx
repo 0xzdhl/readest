@@ -9,7 +9,6 @@ import {
 } from 'react-icons/ri';
 import { documentDir, join } from '@tauri-apps/api/path';
 import { relaunch } from '@tauri-apps/plugin-process';
-import { useEnv } from '@/context/EnvContext';
 import { useRunEffect, usePlatformInfo } from '@/context/EffectRuntimeProvider';
 import { FileSystem } from '@/application/ports/FileSystem';
 import { PathResolver } from '@/application/ports/PathResolver';
@@ -50,7 +49,6 @@ interface MigrationProgress {
 
 export const MigrateDataWindow = () => {
   const _ = useTranslation();
-  const { envConfig } = useEnv();
   const runEffect = useRunEffect();
   const platformInfo = usePlatformInfo();
   const { settings, setSettings, saveSettings } = useSettingsStore();

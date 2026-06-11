@@ -2,7 +2,6 @@ import clsx from 'clsx';
 import React, { useEffect, useState } from 'react';
 import { Trans } from 'react-i18next';
 import type { Insets } from '@/domain/misc';
-import { useEnv } from '@/context/EnvContext';
 import { usePlatformInfo } from '@/context/EffectRuntimeProvider';
 import { useReaderStore } from '@/store/readerStore';
 import { useTranslation } from '@/hooks/useTranslation';
@@ -28,7 +27,6 @@ const ProgressBar: React.FC<ProgressBarProps> = ({
   gridInsets,
 }) => {
   const _ = useTranslation();
-  const { envConfig } = useEnv();
   const platformInfo = usePlatformInfo();
   const { getBookData } = useBookDataStore();
   const { getProgress, getViewSettings, getView } = useReaderStore();

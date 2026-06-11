@@ -1,11 +1,9 @@
 import { useEffect } from 'react';
-import { useEnv } from '@/context/EnvContext';
 import { useSettingsStore } from '@/store/settingsStore';
 import { useSidebarStore } from '@/store/sidebarStore';
 import { saveSysSettings } from '@/helpers/settings';
 
 const useSidebar = (initialWidth: string, isPinned: boolean) => {
-  const { envConfig } = useEnv();
   const { settings } = useSettingsStore();
   const {
     sideBarWidth,

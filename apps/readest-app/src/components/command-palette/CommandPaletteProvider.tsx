@@ -2,7 +2,6 @@ import React, { createContext, useContext, useState, useCallback, useEffect, use
 import { useTranslation } from '@/hooks/useTranslation';
 import { useSettingsStore } from '@/store/settingsStore';
 import { useThemeStore } from '@/store/themeStore';
-import { useEnv } from '@/context/EnvContext';
 import { usePlatformInfo } from '@/context/EffectRuntimeProvider';
 import { isTauriAppPlatform } from '@/services/environment';
 import { tauriHandleSetAlwaysOnTop, tauriHandleToggleFullScreen } from '@/utils/window';
@@ -50,7 +49,6 @@ interface CommandPaletteProviderProps {
 
 export const CommandPaletteProvider: React.FC<CommandPaletteProviderProps> = ({ children }) => {
   const _ = useTranslation();
-  const { envConfig } = useEnv();
   const platformInfo = usePlatformInfo();
   const { themeMode, setThemeMode } = useThemeStore();
   const { settings, setSettingsDialogOpen, setActiveSettingsItemId } = useSettingsStore();
@@ -74,17 +72,17 @@ export const CommandPaletteProvider: React.FC<CommandPaletteProviderProps> = ({ 
     const newValue = !settings.alwaysOnTop;
     saveSysSettings('alwaysOnTop', newValue);
     tauriHandleSetAlwaysOnTop(newValue);
-  }, [envConfig, settings.alwaysOnTop]);
+  }, [settings.alwaysOnTop]);
 
   const toggleScreenWakeLock = useCallback(() => {
     const newValue = !settings.screenWakeLock;
     saveSysSettings('screenWakeLock', newValue);
-  }, [envConfig, settings.screenWakeLock]);
+  }, [settings.screenWakeLock]);
 
   const toggleAutoUpload = useCallback(() => {
     const newValue = !settings.autoUpload;
     saveSysSettings('autoUpload', newValue);
-  }, [envConfig, settings.autoUpload]);
+  }, [settings.autoUpload]);
 
   const reloadPage = useCallback(() => {
     window.location.reload();
@@ -93,7 +91,7 @@ export const CommandPaletteProvider: React.FC<CommandPaletteProviderProps> = ({ 
   const toggleOpenLastBooks = useCallback(() => {
     const newValue = !settings.openLastBooks;
     saveSysSettings('openLastBooks', newValue);
-  }, [envConfig, settings.openLastBooks]);
+  }, [settings.openLastBooks]);
 
   const showAbout = useCallback(() => {
     setAboutDialogVisible(true);
@@ -102,7 +100,7 @@ export const CommandPaletteProvider: React.FC<CommandPaletteProviderProps> = ({ 
   const toggleTelemetry = useCallback(() => {
     const newValue = !settings.telemetryEnabled;
     saveSysSettings('telemetryEnabled', newValue);
-  }, [envConfig, settings.telemetryEnabled]);
+  }, [settings.telemetryEnabled]);
 
   const openSettingsPanel = useCallback(
     (_panel: SettingsPanelType, itemId?: string) => {

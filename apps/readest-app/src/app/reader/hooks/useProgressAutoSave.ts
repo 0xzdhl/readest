@@ -1,12 +1,10 @@
 import { useCallback, useEffect } from 'react';
-import { useEnv } from '@/context/EnvContext';
 import { useBookDataStore } from '@/store/bookDataStore';
 import { useReaderStore } from '@/store/readerStore';
 import { useSettingsStore } from '@/store/settingsStore';
 import { debounce } from '@/utils/debounce';
 
 export const useProgressAutoSave = (bookKey: string) => {
-  const { envConfig } = useEnv();
   const { getConfig, saveConfig } = useBookDataStore();
   const { getProgress } = useReaderStore();
   const progress = getProgress(bookKey);

@@ -1,6 +1,5 @@
 import clsx from 'clsx';
 import React, { useState } from 'react';
-import { useEnv } from '@/context/EnvContext';
 import { useTranslation } from '@/hooks/useTranslation';
 import { useSettingsStore } from '@/store/settingsStore';
 import { eventDispatcher } from '@/utils/event';
@@ -14,7 +13,6 @@ interface HardcoverFormProps {
 
 const HardcoverForm: React.FC<HardcoverFormProps> = ({ onBack }) => {
   const _ = useTranslation();
-  const { envConfig } = useEnv();
   const { settings, setSettings, saveSettings } = useSettingsStore();
 
   const [accessToken, setAccessToken] = useState('');

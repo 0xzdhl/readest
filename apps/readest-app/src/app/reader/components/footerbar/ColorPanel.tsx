@@ -2,7 +2,6 @@ import clsx from 'clsx';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { PiSun, PiMoon } from 'react-icons/pi';
 import { TbSunMoon } from 'react-icons/tb';
-import { useEnv } from '@/context/EnvContext';
 import { usePlatformInfo } from '@/context/EffectRuntimeProvider';
 import { useThemeStore } from '@/store/themeStore';
 import { useTranslation } from '@/hooks/useTranslation';
@@ -31,7 +30,6 @@ export const ColorPanel: React.FC<ColorPanelProps> = ({
   forceMobileLayout,
 }) => {
   const _ = useTranslation();
-  const { envConfig } = useEnv();
   const platformInfo = usePlatformInfo();
   const { settings } = useSettingsStore();
   const { getScreenBrightness, setScreenBrightness } = useDeviceControlStore();
@@ -60,7 +58,7 @@ export const ColorPanel: React.FC<ColorPanelProps> = ({
         saveSysSettings('autoScreenBrightness', false);
         await setScreenBrightness(value / 100);
       }, 100),
-    [envConfig, setScreenBrightness],
+    [setScreenBrightness],
   );
 
   const handleScreenBrightnessChange = useCallback(

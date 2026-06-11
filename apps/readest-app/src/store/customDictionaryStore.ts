@@ -146,7 +146,7 @@ function toSettingsDict(dict: ImportedDictionary): ImportedDictionary {
 // Replica-side mutators (applyRemoteDictionary, softDeleteByContentId,
 // markAvailableByContentId) fire from boot-time pull / download-complete
 // handlers, NOT the settings UI. The shared `replicaPersist` registry
-// holds the envConfig (registered once by EnvProvider); each mutator
+// is registered once by EnvProvider; each mutator
 // fire-and-forget saves through it so the next loadCustomDictionaries
 // reads up-to-date settings.customDictionaries instead of wiping the
 // in-memory rows.

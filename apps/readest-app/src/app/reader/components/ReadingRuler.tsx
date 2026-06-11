@@ -2,7 +2,6 @@ import clsx from 'clsx';
 import React, { useCallback, useRef, useState, useEffect } from 'react';
 import type { Insets } from '@/domain/misc';
 import type { BookFormat, ViewSettings } from '@/domain/book';
-import { useEnv } from '@/context/EnvContext';
 import { useReaderStore } from '@/store/readerStore';
 import { saveViewSettings } from '@/helpers/settings';
 import { READING_RULER_COLORS } from '@/services/constants';
@@ -39,7 +38,6 @@ const ReadingRuler: React.FC<ReadingRulerProps> = ({
   bookFormat,
   viewSettings,
 }) => {
-  const { envConfig } = useEnv();
   const { getProgress } = useReaderStore();
   const progress = getProgress(bookKey);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -71,7 +69,7 @@ const ReadingRuler: React.FC<ReadingRulerProps> = ({
     throttle((pos: number) => {
       saveViewSettings(bookKey, 'readingRulerPosition', pos, false, false);
     }, 10000),
-    [envConfig, bookKey],
+    [bookKey],
   );
 
   const setRulerPosition = useCallback(

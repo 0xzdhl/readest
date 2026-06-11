@@ -3,7 +3,6 @@ import React from 'react';
 
 import { MdCheck } from 'react-icons/md';
 import { useRouter } from '@tanstack/react-router';
-import { useEnv } from '@/context/EnvContext';
 import { usePlatformInfo } from '@/context/EffectRuntimeProvider';
 import { useAuth } from '@/context/AuthContext';
 import { useReaderStore } from '@/store/readerStore';
@@ -31,7 +30,6 @@ interface BookMenuProps {
 const BookMenu: React.FC<BookMenuProps> = ({ menuClassName, setIsDropdownOpen }) => {
   const _ = useTranslation();
   const router = useRouter();
-  const { envConfig } = useEnv();
   const platformInfo = usePlatformInfo();
   const { user } = useAuth();
   const { settings } = useSettingsStore();

@@ -4,7 +4,6 @@ import { PiDotsThreeVerticalBold } from 'react-icons/pi';
 import { VscLibrary } from 'react-icons/vsc';
 
 import type { Insets } from '@/domain/misc';
-import { useEnv } from '@/context/EnvContext';
 import { usePlatformInfo } from '@/context/EffectRuntimeProvider';
 import { useThemeStore } from '@/store/themeStore';
 import { useReaderStore } from '@/store/readerStore';
@@ -57,7 +56,6 @@ const HeaderBar: React.FC<HeaderBarProps> = ({
   onDropdownOpenChange,
 }) => {
   const _ = useTranslation();
-  const { envConfig } = useEnv();
   const platformInfo = usePlatformInfo();
   const { settings } = useSettingsStore();
   const { isTrafficLightVisible } = useTrafficLight();

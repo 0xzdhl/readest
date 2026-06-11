@@ -9,7 +9,6 @@ import AppLockDialog from '@/components/settings/AppLockDialog';
 import { AuthProvider } from '@/context/AuthContext';
 import { DropdownProvider } from '@/context/DropdownContext';
 import { useBooted, useBootSettings } from '@/context/EffectRuntimeProvider';
-import { useEnv } from '@/context/EnvContext';
 import { CSPostHogProvider } from '@/context/PHContext';
 import { SyncProvider } from '@/context/SyncContext';
 import { useBackgroundTexture } from '@/hooks/useBackgroundTexture';
@@ -28,7 +27,6 @@ import { getDirFromUILanguage } from '@/utils/rtl';
 import { getAndroidPatchedViewportContent } from '@/utils/viewport';
 
 const Providers = ({ children }: { children: React.ReactNode }) => {
-  const { envConfig } = useEnv();
   const booted = useBooted();
   const bootSettings = useBootSettings();
   const { applyUILanguage } = useSettingsStore();
@@ -94,7 +92,6 @@ const Providers = ({ children }: { children: React.ReactNode }) => {
   }, [
     booted,
     bootSettings,
-    envConfig,
     applyUILanguage,
     applyBackgroundTexture,
     applyEinkMode,

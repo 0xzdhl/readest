@@ -1,7 +1,6 @@
 import clsx from 'clsx';
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { type as osType } from '@tauri-apps/plugin-os';
-import { useEnv } from '@/context/EnvContext';
 import { usePlatformInfo } from '@/context/EffectRuntimeProvider';
 import { useTranslation } from '@/hooks/useTranslation';
 import { useSettingsStore } from '@/store/settingsStore';
@@ -21,7 +20,6 @@ interface KOSyncFormProps {
 const KOSyncForm: React.FC<KOSyncFormProps> = ({ onBack }) => {
   const _ = useTranslation();
   const { settings, setSettings, saveSettings } = useSettingsStore();
-  const { envConfig } = useEnv();
   const platformInfo = usePlatformInfo();
 
   const [url, setUrl] = useState(settings.kosync.serverUrl || '');
@@ -72,7 +70,7 @@ const KOSyncForm: React.FC<KOSyncFormProps> = ({ onBack }) => {
       setSettings(newSettings);
       saveSettings(newSettings);
     }, 500),
-    [settings, setSettings, saveSettings, envConfig],
+    [settings, setSettings, saveSettings],
   );
 
   const handleDeviceNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {

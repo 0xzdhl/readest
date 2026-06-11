@@ -1,7 +1,6 @@
 import clsx from 'clsx';
 import { useCallback } from 'react';
 import { Effect } from 'effect';
-import { useEnv } from '@/context/EnvContext';
 import { usePlatformInfo, useRunEffect } from '@/context/EffectRuntimeProvider';
 import { BookRepository } from '@/application/repositories/BookRepository';
 import { useLibraryStore } from '@/store/libraryStore';
@@ -125,7 +124,6 @@ const BookshelfItem: React.FC<BookshelfItemProps> = ({
 }) => {
   const _ = useTranslation();
   const router = useAppRouter();
-  const { envConfig } = useEnv();
   const platformInfo = usePlatformInfo();
   const runEffect = useRunEffect();
   const { settings } = useSettingsStore();

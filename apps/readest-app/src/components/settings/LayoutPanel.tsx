@@ -8,7 +8,6 @@ import {
   MdTextRotateVertical,
 } from 'react-icons/md';
 import { TbTextDirectionRtl } from 'react-icons/tb';
-import { useEnv } from '@/context/EnvContext';
 import { usePlatformInfo } from '@/context/EffectRuntimeProvider';
 import { saveViewSettings } from '@/helpers/settings';
 import { useResetViewSettings } from '@/hooks/useResetSettings';
@@ -34,7 +33,6 @@ import type { SettingsPanelPanelProp } from './SettingsDialog';
 
 const LayoutPanel: React.FC<SettingsPanelPanelProp> = ({ bookKey, onRegisterReset }) => {
   const _ = useTranslation();
-  const { envConfig } = useEnv();
   const platformInfo = usePlatformInfo();
   const { settings } = useSettingsStore();
   const { getView, getViewSettings, getGridInsets } = useReaderStore();

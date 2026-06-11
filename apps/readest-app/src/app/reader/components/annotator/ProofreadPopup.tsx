@@ -1,7 +1,6 @@
 import clsx from 'clsx';
 import React, { useRef, useState } from 'react';
 import { RiListSettingsLine } from 'react-icons/ri';
-import { useEnv } from '@/context/EnvContext';
 import { useReaderStore } from '@/store/readerStore';
 import { useTranslation } from '@/hooks/useTranslation';
 import { useAutoFocus } from '@/hooks/useAutoFocus';
@@ -37,7 +36,6 @@ const ProofreadPopup: React.FC<ProofreadPopupProps> = ({
   onManage,
 }) => {
   const _ = useTranslation();
-  const { envConfig } = useEnv();
   const { getProgress, getView, recreateViewer } = useReaderStore();
   const { addRule } = useProofreadStore();
   const progress = getProgress(bookKey)!;

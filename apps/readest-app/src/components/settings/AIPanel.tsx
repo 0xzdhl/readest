@@ -2,7 +2,6 @@ import clsx from 'clsx';
 import type React from 'react';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { PiArrowsClockwise, PiCheckCircle, PiSpinner, PiWarningCircle } from 'react-icons/pi';
-import { useEnv } from '@/context/EnvContext';
 import { useTranslation } from '@/hooks/useTranslation';
 import { DEFAULT_AI_SETTINGS, GATEWAY_MODELS, MODEL_PRICING } from '@/services/ai/constants';
 import { getAIProvider } from '@/services/ai/providers';
@@ -64,7 +63,6 @@ const getModelOptions = (): ModelOption[] => [
 
 const AIPanel: React.FC = () => {
   const _ = useTranslation();
-  const { envConfig } = useEnv();
   const { settings, setSettings, saveSettings } = useSettingsStore();
 
   const aiSettings: AISettings = settings?.aiSettings ?? DEFAULT_AI_SETTINGS;
@@ -117,7 +115,7 @@ const AIPanel: React.FC = () => {
       setSettings(newSettings);
       await saveSettings(newSettings);
     },
-    [envConfig, setSettings, saveSettings],
+    [setSettings, saveSettings],
   );
 
   const fetchOllamaModels = useCallback(async () => {

@@ -14,7 +14,6 @@ import type { Book } from '@/domain/book';
 import type { BookMetadata } from '@/domain/document';
 import { useTranslation } from '@/hooks/useTranslation';
 import { useSettingsStore } from '@/store/settingsStore';
-import { useEnv } from '@/context/EnvContext';
 import {
   formatAuthors,
   formatDate,
@@ -54,7 +53,6 @@ const BookDetailView: React.FC<BookDetailViewProps> = ({
   onExport,
 }) => {
   const _ = useTranslation();
-  const { envConfig } = useEnv();
   const { settings } = useSettingsStore();
 
   const toggleSeriesCollapse = () => {

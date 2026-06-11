@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react';
 import { RiTranslateAi } from 'react-icons/ri';
 
-import { useEnv } from '@/context/EnvContext';
 import { usePlatformInfo } from '@/context/EffectRuntimeProvider';
 import { useReaderStore } from '@/store/readerStore';
 import { useTranslation } from '@/hooks/useTranslation';
@@ -12,7 +11,6 @@ import Button from '@/components/Button';
 
 const TranslationToggler = ({ bookKey }: { bookKey: string }) => {
   const _ = useTranslation();
-  const { envConfig } = useEnv();
   const platformInfo = usePlatformInfo();
   const { getBookData } = useBookDataStore();
   const { getViewSettings, setViewSettings, setHoveredBookKey } = useReaderStore();
