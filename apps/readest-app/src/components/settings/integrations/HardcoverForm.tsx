@@ -25,8 +25,7 @@ const HardcoverForm: React.FC<HardcoverFormProps> = ({ onBack }) => {
   const handleConnect = async () => {
     setIsConnecting(true);
     try {
-      const appService = await envConfig.getAppService();
-      const mapStore = new HardcoverSyncMapStore(appService);
+      const mapStore = new HardcoverSyncMapStore();
       const client = new HardcoverClient({ accessToken }, mapStore);
       const { valid, isNetworkError } = await client.validateToken();
       if (valid) {

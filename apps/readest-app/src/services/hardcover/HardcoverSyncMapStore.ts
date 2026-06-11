@@ -1,5 +1,4 @@
 import { Effect } from 'effect';
-import type { AppService } from '@/domain/system';
 import type { DatabaseService } from '@/domain/database';
 import { Database } from '@/application/ports/Database';
 import { getClientRuntime } from '@/runtime/clientRuntime';
@@ -35,12 +34,6 @@ export class HardcoverSyncMapStore {
   private loadedBookHash: string | null = null;
   private mappings: Map<string, HardcoverSyncMapRow> = new Map();
   private modified: boolean = false;
-
-  // appService is retained in the signature for call-site compatibility; the
-  // database is now opened through the Effect Database port via the client
-  // runtime, so the instance is no longer used directly.
-  // biome-ignore lint/complexity/noUselessConstructor: keep AppService param for call-site signature compatibility
-  constructor(_appService: AppService) {}
 
   private async withDb<T>(fn: (db: OpenDb) => Promise<T>) {
     const db = await getClientRuntime().runPromise(

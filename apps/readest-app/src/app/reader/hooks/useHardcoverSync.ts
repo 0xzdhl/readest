@@ -30,10 +30,9 @@ export const useHardcoverSync = (bookKey: string) => {
     if (!settings.hardcover?.enabled || !settings.hardcover?.accessToken) {
       return null;
     }
-    const appService = await envConfig.getAppService();
-    const mapStore = new HardcoverSyncMapStore(appService);
+    const mapStore = new HardcoverSyncMapStore();
     return new HardcoverClient(settings.hardcover, mapStore);
-  }, [envConfig]);
+  }, []);
 
   const pushNotes = useCallback(async () => {
     const config = getConfig(bookKey);
