@@ -120,12 +120,12 @@ const Providers = ({ children }: { children: React.ReactNode }) => {
     if (updated) meta.content = updated;
   }, []);
 
-  // Preserve SSR and the first client paint even before appService has
-  // resolved. Hooks/components that depend on appService already guard
-  // themselves with optional chaining or early returns.
+  // Preserve SSR and the first client paint even before the Effect boot
+  // (BootApp) has resolved. Hooks/components that depend on boot readiness
+  // already guard themselves via useBooted()/early returns.
   //
-  // Once appService is ready, re-enable the app-lock gate so protected
-  // sessions still hide the shell until the persisted PIN state loads.
+  // Once booted, re-enable the app-lock gate so protected sessions still
+  // hide the shell until the persisted PIN state loads.
   const showAppLockScreen = booted && isLockInitialized && !isUnlocked;
   const appShellHidden = booted && (!isLockInitialized || !isUnlocked);
 
