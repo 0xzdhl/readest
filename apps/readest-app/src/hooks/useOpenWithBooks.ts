@@ -2,6 +2,7 @@ import { useEffect } from 'react';
 import { useRouter } from '@tanstack/react-router';
 import { getAllWindows, getCurrentWindow } from '@tauri-apps/api/window';
 import { useEnv } from '@/context/EnvContext';
+import { usePlatformInfo } from '@/context/EffectRuntimeProvider';
 import { useLibraryStore } from '@/store/libraryStore';
 import { useSettingsStore } from '@/store/settingsStore';
 import { isTauriAppPlatform } from '@/services/environment';
@@ -22,6 +23,7 @@ import { eventDispatcher } from '@/utils/event';
 export function useOpenWithBooks() {
   const router = useRouter();
   const { appService } = useEnv();
+  const platformInfo = usePlatformInfo();
   const { setCheckOpenWithBooks } = useLibraryStore();
 
   useEffect(() => {
@@ -38,7 +40,7 @@ export function useOpenWithBooks() {
       const filePaths: string[] = [];
       for (let url of urls) {
         if (url.startsWith('file://')) {
-          url = appService?.isIOSApp ? decodeURI(url) : decodeURI(url.replace('file://', ''));
+          url = platformInfo.isIOSApp ? decodeURI(url) : decodeURI(url.replace('file://', ''));
         }
         if (!/^(https?:|data:|blob:|readest:)/i.test(url)) {
           filePaths.push(url);
@@ -47,7 +49,7 @@ export function useOpenWithBooks() {
       if (filePaths.length === 0) return;
 
       const settings = useSettingsStore.getState().settings;
-      if (appService?.hasWindow && settings.openBookInNewWindow) {
+      if (platformInfo.hasWindow && settings.openBookInNewWindow) {
         if (await isFirstWindow()) {
           showLibraryWindow(filePaths);
         }

@@ -3,6 +3,7 @@ import { addPluginListener, PluginListener } from '@tauri-apps/api/core';
 import { onOpenUrl } from '@tauri-apps/plugin-deep-link';
 import { getCurrentWindow } from '@tauri-apps/api/window';
 import { useEnv } from '@/context/EnvContext';
+import { usePlatformInfo } from '@/context/EffectRuntimeProvider';
 import { isTauriAppPlatform } from '@/services/environment';
 import { eventDispatcher } from '@/utils/event';
 
@@ -46,6 +47,7 @@ interface SharedIntentPayload {
  */
 export function useAppUrlIngress() {
   const { appService } = useEnv();
+  const platformInfo = usePlatformInfo();
   const listened = useRef(false);
 
   useEffect(() => {
@@ -78,7 +80,7 @@ export function useAppUrlIngress() {
     // on iOS in the past, so it's gated to Android. The Tauri v2 onOpenUrl
     // listener below covers iOS.
     let unlistenSharedIntent: Promise<PluginListener> | null = null;
-    if (appService?.isAndroidApp) {
+    if (platformInfo.isAndroidApp) {
       unlistenSharedIntent = addPluginListener<SharedIntentPayload>(
         'native-bridge',
         'shared-intent',

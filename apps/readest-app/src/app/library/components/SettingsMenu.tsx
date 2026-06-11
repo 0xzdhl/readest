@@ -13,7 +13,7 @@ import { isTauriAppPlatform, isWebAppPlatform, getWebsiteUrl } from '@/services/
 import { setBackupDialogVisible } from '@/app/library/components/backupDialog';
 import { useAuth } from '@/context/AuthContext';
 import { useEnv } from '@/context/EnvContext';
-import { useRunEffect } from '@/context/EffectRuntimeProvider';
+import { useRunEffect, usePlatformInfo } from '@/context/EffectRuntimeProvider';
 import { LibraryRepository } from '@/application/repositories/LibraryRepository';
 import { BookRepository } from '@/application/repositories/BookRepository';
 import { useThemeStore } from '@/store/themeStore';
@@ -52,6 +52,7 @@ const SettingsMenu: React.FC<SettingsMenuProps> = ({ onPullLibrary, setIsDropdow
   const _ = useTranslation();
   const router = useRouter();
   const { envConfig, appService } = useEnv();
+  const platformInfo = usePlatformInfo();
   const runEffect = useRunEffect();
   const { user } = useAuth();
   const { userProfilePlan, quotas } = useQuotaStats(true);
@@ -243,7 +244,7 @@ const SettingsMenu: React.FC<SettingsMenuProps> = ({ onPullLibrary, setIsDropdow
   };
 
   const handleSetSavedBookCoverForLockScreen = async () => {
-    if (!(await requestStoragePermission()) && appService?.distChannel === 'readest') return;
+    if (!(await requestStoragePermission()) && platformInfo.distChannel === 'readest') return;
 
     const newValue = settings.savedBookCoverForLockScreen ? '' : 'default';
     if (newValue) {
@@ -371,7 +372,7 @@ const SettingsMenu: React.FC<SettingsMenuProps> = ({ onPullLibrary, setIsDropdow
         onClick={toggleAutoUploadBooks}
       />
 
-      {isTauriAppPlatform() && !appService?.isMobile && (
+      {isTauriAppPlatform() && !platformInfo.isMobile && (
         <MenuItem
           label={_('Auto Import on File Open')}
           toggled={isAutoImportBooksOnOpen}
@@ -385,7 +386,7 @@ const SettingsMenu: React.FC<SettingsMenuProps> = ({ onPullLibrary, setIsDropdow
           onClick={toggleOpenLastBooks}
         />
       )}
-      {appService?.hasUpdater && (
+      {platformInfo.hasUpdater && (
         <MenuItem
           label={_('Check Updates on Start')}
           toggled={isAutoCheckUpdates}
@@ -393,25 +394,25 @@ const SettingsMenu: React.FC<SettingsMenuProps> = ({ onPullLibrary, setIsDropdow
         />
       )}
       <hr aria-hidden='true' className='border-base-200 my-1' />
-      {appService?.hasWindow && (
+      {platformInfo.hasWindow && (
         <MenuItem
           label={_('Open Book in New Window')}
           toggled={settings.openBookInNewWindow}
           onClick={toggleOpenInNewWindow}
         />
       )}
-      {appService?.hasWindow && <MenuItem label={_('Fullscreen')} onClick={handleFullScreen} />}
-      {appService?.hasWindow && (
+      {platformInfo.hasWindow && <MenuItem label={_('Fullscreen')} onClick={handleFullScreen} />}
+      {platformInfo.hasWindow && (
         <MenuItem label={_('Always on Top')} toggled={isAlwaysOnTop} onClick={toggleAlwaysOnTop} />
       )}
-      {appService?.isMobileApp && (
+      {platformInfo.isMobileApp && (
         <MenuItem
           label={_('Always Show Status Bar')}
           toggled={isAlwaysShowStatusBar}
           onClick={toggleAlwaysShowStatusBar}
         />
       )}
-      {appService?.isAndroidApp && (
+      {platformInfo.isAndroidApp && (
         <MenuItem
           label={_(_('Background Read Aloud'))}
           toggled={alwaysInForeground}
@@ -428,7 +429,7 @@ const SettingsMenu: React.FC<SettingsMenuProps> = ({ onPullLibrary, setIsDropdow
       <MenuItem label={_('Advanced Settings')}>
         <ul className='ms-0 flex flex-col ps-0 before:hidden'>
           <MenuItem label={_('Backup & Restore')} onClick={handleBackupRestore} />
-          {appService?.canCustomizeRootDir && (
+          {platformInfo.canCustomizeRootDir && (
             <MenuItem label={_('Change Data Location')} onClick={handleSetRootDir} />
           )}
           {user && <MenuItem label={_('Data Sync')} onClick={handleManageSync} />}
@@ -451,7 +452,7 @@ const SettingsMenu: React.FC<SettingsMenuProps> = ({ onPullLibrary, setIsDropdow
           {isPinEnabled && (
             <MenuItem label={_('Disable PIN…')} onClick={() => openAppLockDialog('disable')} />
           )}
-          {appService?.isAndroidApp && appService?.distChannel !== 'playstore' && (
+          {platformInfo.isAndroidApp && platformInfo.distChannel !== 'playstore' && (
             <MenuItem
               label={_('Save Book Cover')}
               tooltip={_('Auto-save last book cover')}

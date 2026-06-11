@@ -16,6 +16,7 @@ import MenuItem from '@/components/MenuItem';
 import { useRouter } from '@tanstack/react-router';
 import { clientEnv } from '@/clientEnv';
 import { useEnv } from '@/context/EnvContext';
+import { usePlatformInfo } from '@/context/EffectRuntimeProvider';
 import { useTranslation } from '@/hooks/useTranslation';
 import { isWebAppPlatform } from '@/services/environment';
 import { useCustomOPDSStore } from '@/store/customOPDSStore';
@@ -111,6 +112,7 @@ export function CatalogManager({ inSubPage = false }: CatalogManagerProps = {}) 
   const _ = useTranslation();
   const router = useRouter();
   const { envConfig, appService } = useEnv();
+  const platformInfo = usePlatformInfo();
   // Hydrate the store from settings on mount; all CRUD goes through it
   // so the replica-sync push fires automatically. The local `catalogs`
   // mirror tracks the visible (non-deleted) entries; we keep the
@@ -128,7 +130,7 @@ export function CatalogManager({ inSubPage = false }: CatalogManagerProps = {}) 
   const [headerError, setHeaderError] = useState('');
   const [proxyConsentError, setProxyConsentError] = useState('');
   const [isValidating, setIsValidating] = useState(false);
-  const popularCatalogs = appService?.isOnlineCatalogsAccessible ? POPULAR_CATALOGS : [];
+  const popularCatalogs = platformInfo.isOnlineCatalogsAccessible ? POPULAR_CATALOGS : [];
   const [subscriptionStates, setSubscriptionStates] = useState<
     Record<string, OPDSSubscriptionState>
   >({});
