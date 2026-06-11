@@ -22,6 +22,7 @@ import { eventDispatcher } from '@/utils/event';
 import { navigateToReader } from '@/utils/nav';
 import { getFileExtFromMimeType } from '@/libs/document';
 import type { OPDSFeed, OPDSPublication, OPDSSearch } from '@/domain/opds';
+import type { AppService, BaseDir } from '@/domain/system';
 import {
   getFileExtFromPath,
   isSearchLink,
@@ -40,8 +41,9 @@ import { ImportError } from '@/services/errors';
 import { READEST_OPDS_USER_AGENT } from '@/services/constants';
 import { buildPseStreamFileName } from '@/services/opds/pseStream';
 import { Effect } from 'effect';
-import { useRunEffect } from '@/context/EffectRuntimeProvider';
+import { useRunEffect, usePlatformInfo } from '@/context/EffectRuntimeProvider';
 import { FileSystem } from '@/application/ports/FileSystem';
+import { PathResolver } from '@/application/ports/PathResolver';
 import { importBooks } from '@/application/usecases/book';
 import { FeedView } from './components/FeedView';
 import { PublicationView } from './components/PublicationView';
@@ -114,6 +116,18 @@ function OPDSBrowserPage() {
   const searchTermRef = useRef('');
 
   const runEffect = useRunEffect();
+  const platformInfo = usePlatformInfo();
+
+  // downloadFile (libs/storage) reaches only appService.writeFile; back it by the
+  // Effect runtime so we can drop the appService god-object dependency here.
+  const fsWriter = useMemo(
+    () =>
+      ({
+        writeFile: (path: string, base: BaseDir, content: ArrayBuffer) =>
+          runEffect(Effect.flatMap(FileSystem, (fs) => fs.writeFile(path, base, content))),
+      }) as unknown as AppService,
+    [runEffect],
+  );
 
   useTheme({ systemUIVisible: false });
   useTransferQueue(libraryLoaded);
@@ -475,11 +489,13 @@ function OPDSBrowserPage() {
           const ext = getFileExtFromMimeType(parsed?.mediaType) || getFileExtFromPath(pathname);
           const basename = pathname.replaceAll('/', '_');
           const filename = ext ? `${basename}.${ext}` : basename;
-          let dstFilePath = await appService?.resolveFilePath(filename, 'Cache');
+          let dstFilePath = await runEffect(
+            Effect.flatMap(PathResolver, (r) => r.absolute(filename, 'Cache')),
+          );
           console.log('Downloading to:', url, dstFilePath);
 
           const responseHeaders = await downloadFile({
-            appService,
+            appService: fsWriter,
             dst: dstFilePath,
             cfp: '',
             url: downloadUrl,
@@ -490,8 +506,14 @@ function OPDSBrowserPage() {
           });
           const probedFilename = await probeFilename(responseHeaders);
           if (probedFilename) {
-            const newFilePath = await appService?.resolveFilePath(probedFilename, 'Cache');
-            await appService?.copyFile(dstFilePath, 'None', newFilePath, 'None');
+            const newFilePath = await runEffect(
+              Effect.flatMap(PathResolver, (r) => r.absolute(probedFilename, 'Cache')),
+            );
+            await runEffect(
+              Effect.flatMap(FileSystem, (fs) =>
+                fs.copyFile(dstFilePath, 'None', newFilePath, 'None'),
+              ),
+            );
             await runEffect(Effect.flatMap(FileSystem, (fs) => fs.removeFile(dstFilePath, 'None')));
             console.log('Renamed downloaded file to:', newFilePath);
             dstFilePath = newFilePath;
@@ -528,7 +550,7 @@ function OPDSBrowserPage() {
       }
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [user, state.baseURL, appService, libraryLoaded],
+    [user, state.baseURL, appService, libraryLoaded, fsWriter, runEffect],
   );
 
   const handleStream = useCallback(
@@ -568,10 +590,12 @@ function OPDSBrowserPage() {
       }
 
       const cachedKey = `img_${md5(url)}.png`;
-      const cachePrefix = await appService.resolveFilePath('', 'Cache');
+      const cachePrefix = await runEffect(
+        Effect.flatMap(PathResolver, (r) => r.absolute('', 'Cache')),
+      );
       const cachedPath = `${cachePrefix}/${cachedKey}`;
-      if (await appService.exists(cachedPath, 'None')) {
-        return await appService.getImageURL(cachedPath);
+      if (await runEffect(Effect.flatMap(FileSystem, (fs) => fs.exists(cachedPath, 'None')))) {
+        return await runEffect(Effect.flatMap(FileSystem, (fs) => fs.getUrl(cachedPath)));
       } else {
         const useProxy = needsProxy(url);
         let downloadUrl = useProxy ? getProxiedURL(url, '', true, customHeaders) : url;
@@ -588,7 +612,7 @@ function OPDSBrowserPage() {
           }
         }
         await downloadFile({
-          appService,
+          appService: fsWriter,
           dst: cachedPath,
           cfp: '',
           url: downloadUrl,
@@ -596,10 +620,10 @@ function OPDSBrowserPage() {
           skipSslVerification: true,
           headers,
         });
-        return await appService.getImageURL(cachedPath);
+        return await runEffect(Effect.flatMap(FileSystem, (fs) => fs.getUrl(cachedPath)));
       }
     },
-    [appService],
+    [appService, fsWriter, runEffect],
   );
 
   const handleBack = useCallback(() => {
@@ -673,7 +697,7 @@ function OPDSBrowserPage() {
     <div
       className={clsx(
         'bg-base-100 flex h-screen select-none flex-col',
-        appService?.hasRoundedWindow && isRoundedWindow && 'window-border rounded-window',
+        platformInfo.hasRoundedWindow && isRoundedWindow && 'window-border rounded-window',
       )}
     >
       <div
