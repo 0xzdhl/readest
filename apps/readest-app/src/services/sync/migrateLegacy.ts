@@ -4,7 +4,6 @@ import { uniqueId } from '@/utils/misc';
 import { queueReplicaBinaryUpload } from '@/services/sync/replicaBinaryUpload';
 import { FileSystem } from '@/application/ports/FileSystem';
 import { getClientRuntime } from '@/runtime/clientRuntime';
-import type { EnvConfigType } from '@/services/environment';
 import type { BaseDir } from '@/domain/system';
 
 /**
@@ -43,7 +42,7 @@ export interface MigrateLegacyReplicasDeps<T extends LegacyReplicaRecord> {
   /** Patch the in-memory record with the migrated fields. */
   updateRecord: (id: string, next: T) => void;
   /** Persist the kind's settings entry post-migration. */
-  saveStore: (envConfig: EnvConfigType) => Promise<void>;
+  saveStore: () => Promise<void>;
   /** Publish the now-syncable record to the replica row. */
   publishUpsert: (record: T) => void;
 }
@@ -68,7 +67,6 @@ export interface MigrateLegacyReplicasDeps<T extends LegacyReplicaRecord> {
  * logged and don't block the rest.
  */
 export const migrateLegacyReplicas = async <T extends LegacyReplicaRecord>(
-  envConfig: EnvConfigType,
   deps: MigrateLegacyReplicasDeps<T>,
 ): Promise<void> => {
   const candidates = deps.getCandidates();
@@ -129,7 +127,7 @@ export const migrateLegacyReplicas = async <T extends LegacyReplicaRecord>(
   if (migrated.length === 0) return;
 
   try {
-    await deps.saveStore(envConfig);
+    await deps.saveStore();
   } catch (err) {
     console.warn(`migrateLegacyReplicas[${deps.kind}]: save failed`, err);
   }

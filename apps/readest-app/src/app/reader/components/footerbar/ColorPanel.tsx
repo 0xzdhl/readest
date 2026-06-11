@@ -56,8 +56,8 @@ export const ColorPanel: React.FC<ColorPanelProps> = ({
   const debouncedSetScreenBrightness = useMemo(
     () =>
       debounce(async (value: number) => {
-        saveSysSettings(envConfig, 'screenBrightness', value);
-        saveSysSettings(envConfig, 'autoScreenBrightness', false);
+        saveSysSettings('screenBrightness', value);
+        saveSysSettings('autoScreenBrightness', false);
         await setScreenBrightness(value / 100);
       }, 100),
     [envConfig, setScreenBrightness],

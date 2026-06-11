@@ -13,7 +13,7 @@ export const useUserActions = () => {
 
   const handleLogout = async () => {
     await signOut();
-    saveSysSettings(envConfig, 'keepLogin', false);
+    saveSysSettings('keepLogin', false);
     navigateToLibrary(router);
   };
 

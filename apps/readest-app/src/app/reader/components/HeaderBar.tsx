@@ -103,7 +103,7 @@ const HeaderBar: React.FC<HeaderBarProps> = ({
 
   const handleAnnotationQuickActionSelect = (action: AnnotationToolType | null) => {
     if (viewSettings?.annotationQuickAction === action) action = null;
-    saveViewSettings(envConfig, bookKey, 'annotationQuickAction', action, false, true);
+    saveViewSettings(bookKey, 'annotationQuickAction', action, false, true);
   };
 
   useEffect(() => {

@@ -24,7 +24,6 @@
  * include them.
  */
 import type { SystemSettings } from '@/domain/settings';
-import type { EnvConfigType } from '@/services/environment';
 import { useSettingsStore } from '@/store/settingsStore';
 import { publishReplicaUpsert } from '@/services/sync/replicaPublish';
 import {
@@ -308,10 +307,7 @@ export const publishSettingsIfChanged = async (settings: SystemSettings): Promis
  * cipher fingerprint the orchestrator captured so the next pull
  * doesn't re-prompt for unchanged ciphers.
  */
-export const applyRemoteSettings = (
-  envConfig: EnvConfigType,
-  record: SettingsRemoteRecord,
-): void => {
+export const applyRemoteSettings = (record: SettingsRemoteRecord): void => {
   const { settings, setSettings, saveSettings } = useSettingsStore.getState();
 
   // Persist cipher fingerprint regardless of patch content — the

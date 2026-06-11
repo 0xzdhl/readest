@@ -421,23 +421,18 @@ export const findFontByContentId = (contentId: string): CustomFont | undefined =
  * `migrateLegacyReplicas` — shared with custom textures.
  */
 export const migrateLegacyFonts = (): Promise<void> =>
-  migrateLegacyReplicas<CustomFont>(
-    {},
-    {
-      kind: FONT_KIND,
-      baseDir: 'Fonts',
-      getCandidates: () =>
-        useCustomFontStore
-          .getState()
-          .fonts.filter(
-            (f) => !f.contentId && !f.bundleDir && !f.deletedAt && !f.path.includes('/'),
-          ),
-      computeContentId: computeFontContentId,
-      updateRecord: (id, next) => useCustomFontStore.getState().updateFont(id, next),
-      saveStore: () => useCustomFontStore.getState().saveCustomFonts(),
-      publishUpsert: publishFontUpsert,
-    },
-  );
+  migrateLegacyReplicas<CustomFont>({
+    kind: FONT_KIND,
+    baseDir: 'Fonts',
+    getCandidates: () =>
+      useCustomFontStore
+        .getState()
+        .fonts.filter((f) => !f.contentId && !f.bundleDir && !f.deletedAt && !f.path.includes('/')),
+    computeContentId: computeFontContentId,
+    updateRecord: (id, next) => useCustomFontStore.getState().updateFont(id, next),
+    saveStore: () => useCustomFontStore.getState().saveCustomFonts(),
+    publishUpsert: publishFontUpsert,
+  });
 
 if (typeof window !== 'undefined') {
   window.addEventListener('beforeunload', () => {

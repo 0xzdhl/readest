@@ -133,7 +133,7 @@ const ViewMenu: React.FC<ViewMenuProps> = ({
 
   useEffect(() => {
     if (zoomLevel === viewSettings.zoomLevel) return;
-    saveViewSettings(envConfig, bookKey, 'zoomLevel', zoomLevel, true, true);
+    saveViewSettings(bookKey, 'zoomLevel', zoomLevel, true, true);
     if (bookData.bookDoc?.rendition?.layout === 'pre-paginated') {
       getView(bookKey)?.renderer.setAttribute('scale-factor', String(zoomLevel));
     }
@@ -142,13 +142,13 @@ const ViewMenu: React.FC<ViewMenuProps> = ({
 
   useEffect(() => {
     if (invertImgColorInDark === viewSettings.invertImgColorInDark) return;
-    saveViewSettings(envConfig, bookKey, 'invertImgColorInDark', invertImgColorInDark, true, true);
+    saveViewSettings(bookKey, 'invertImgColorInDark', invertImgColorInDark, true, true);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [invertImgColorInDark]);
 
   useEffect(() => {
     if (applyThemeToPDF === viewSettings.applyThemeToPDF) return;
-    saveViewSettings(envConfig, bookKey, 'applyThemeToPDF', applyThemeToPDF, true, true);
+    saveViewSettings(bookKey, 'applyThemeToPDF', applyThemeToPDF, true, true);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [applyThemeToPDF]);
 
@@ -157,7 +157,7 @@ const ViewMenu: React.FC<ViewMenuProps> = ({
     viewSettings.zoomMode = zoomMode;
     getView(bookKey)?.renderer.setAttribute('zoom', zoomMode);
     setViewSettings(bookKey, viewSettings);
-    saveViewSettings(envConfig, bookKey, 'zoomMode', zoomMode, true, false);
+    saveViewSettings(bookKey, 'zoomMode', zoomMode, true, false);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [zoomMode]);
 
@@ -166,7 +166,7 @@ const ViewMenu: React.FC<ViewMenuProps> = ({
     viewSettings.spreadMode = spreadMode;
     getView(bookKey)?.renderer.setAttribute('spread', spreadMode);
     setViewSettings(bookKey, viewSettings);
-    saveViewSettings(envConfig, bookKey, 'spreadMode', spreadMode, true, false);
+    saveViewSettings(bookKey, 'spreadMode', spreadMode, true, false);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [spreadMode]);
 
@@ -178,7 +178,7 @@ const ViewMenu: React.FC<ViewMenuProps> = ({
     bookData.bookDoc.sections[0]!.pageSpread = keepCoverSpread ? '' : coverSide;
     getView(bookKey)?.renderer.setAttribute('spread', spreadMode);
     setViewSettings(bookKey, viewSettings);
-    saveViewSettings(envConfig, bookKey, 'keepCoverSpread', keepCoverSpread, true, false);
+    saveViewSettings(bookKey, 'keepCoverSpread', keepCoverSpread, true, false);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [keepCoverSpread]);
 

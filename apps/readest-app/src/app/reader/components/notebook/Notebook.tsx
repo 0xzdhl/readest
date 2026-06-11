@@ -128,14 +128,14 @@ const Notebook: React.FC = ({}) => {
     toggleNotebookPin();
     const globalReadSettings = settings.globalReadSettings;
     const newGlobalReadSettings = { ...globalReadSettings, isNotebookPinned: !isNotebookPinned };
-    saveSysSettings(envConfig, 'globalReadSettings', newGlobalReadSettings);
+    saveSysSettings('globalReadSettings', newGlobalReadSettings);
   };
 
   const handleTabChange = (tab: 'notes' | 'ai') => {
     setNotebookActiveTab(tab);
     const globalReadSettings = settings.globalReadSettings;
     const newGlobalReadSettings = { ...globalReadSettings, notebookActiveTab: tab };
-    saveSysSettings(envConfig, 'globalReadSettings', newGlobalReadSettings);
+    saveSysSettings('globalReadSettings', newGlobalReadSettings);
   };
 
   const handleClickOverlay = () => {

@@ -97,7 +97,7 @@ const ExportMarkdownDialog: React.FC<ExportMarkdownDialogProps> = ({
       ...exportConfig,
       customTemplate: customTemplate === defaultTemplate ? '' : customTemplate,
     };
-    saveViewSettings(envConfig, bookKey, 'noteExportConfig', newExportConfig, false, false);
+    saveViewSettings(bookKey, 'noteExportConfig', newExportConfig, false, false);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [exportConfig, envConfig, bookKey]);
 

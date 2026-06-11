@@ -102,7 +102,6 @@ const MiscPanel: React.FC<SettingsPanelPanelProp> = ({ bookKey, onRegisterReset 
     setViewSettings(bookKey, { ...viewSettings });
     getView(bookKey)?.renderer.setStyles?.(getStyles(viewSettings));
     saveViewSettings(
-      envConfig,
       bookKey,
       type === 'book' ? 'userStylesheet' : 'userUIStylesheet',
       formattedCSS,

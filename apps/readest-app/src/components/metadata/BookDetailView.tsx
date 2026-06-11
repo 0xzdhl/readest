@@ -58,19 +58,15 @@ const BookDetailView: React.FC<BookDetailViewProps> = ({
   const { settings } = useSettingsStore();
 
   const toggleSeriesCollapse = () => {
-    saveSysSettings(envConfig, 'metadataSeriesCollapsed', !settings.metadataSeriesCollapsed);
+    saveSysSettings('metadataSeriesCollapsed', !settings.metadataSeriesCollapsed);
   };
 
   const toggleOthersCollapse = () => {
-    saveSysSettings(envConfig, 'metadataOthersCollapsed', !settings.metadataOthersCollapsed);
+    saveSysSettings('metadataOthersCollapsed', !settings.metadataOthersCollapsed);
   };
 
   const toggleDescriptionCollapse = () => {
-    saveSysSettings(
-      envConfig,
-      'metadataDescriptionCollapsed',
-      !settings.metadataDescriptionCollapsed,
-    );
+    saveSysSettings('metadataDescriptionCollapsed', !settings.metadataDescriptionCollapsed);
   };
 
   return (

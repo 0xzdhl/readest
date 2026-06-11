@@ -72,18 +72,18 @@ export const CommandPaletteProvider: React.FC<CommandPaletteProviderProps> = ({ 
 
   const toggleAlwaysOnTop = useCallback(() => {
     const newValue = !settings.alwaysOnTop;
-    saveSysSettings(envConfig, 'alwaysOnTop', newValue);
+    saveSysSettings('alwaysOnTop', newValue);
     tauriHandleSetAlwaysOnTop(newValue);
   }, [envConfig, settings.alwaysOnTop]);
 
   const toggleScreenWakeLock = useCallback(() => {
     const newValue = !settings.screenWakeLock;
-    saveSysSettings(envConfig, 'screenWakeLock', newValue);
+    saveSysSettings('screenWakeLock', newValue);
   }, [envConfig, settings.screenWakeLock]);
 
   const toggleAutoUpload = useCallback(() => {
     const newValue = !settings.autoUpload;
-    saveSysSettings(envConfig, 'autoUpload', newValue);
+    saveSysSettings('autoUpload', newValue);
   }, [envConfig, settings.autoUpload]);
 
   const reloadPage = useCallback(() => {
@@ -92,7 +92,7 @@ export const CommandPaletteProvider: React.FC<CommandPaletteProviderProps> = ({ 
 
   const toggleOpenLastBooks = useCallback(() => {
     const newValue = !settings.openLastBooks;
-    saveSysSettings(envConfig, 'openLastBooks', newValue);
+    saveSysSettings('openLastBooks', newValue);
   }, [envConfig, settings.openLastBooks]);
 
   const showAbout = useCallback(() => {
@@ -101,7 +101,7 @@ export const CommandPaletteProvider: React.FC<CommandPaletteProviderProps> = ({ 
 
   const toggleTelemetry = useCallback(() => {
     const newValue = !settings.telemetryEnabled;
-    saveSysSettings(envConfig, 'telemetryEnabled', newValue);
+    saveSysSettings('telemetryEnabled', newValue);
   }, [envConfig, settings.telemetryEnabled]);
 
   const openSettingsPanel = useCallback(

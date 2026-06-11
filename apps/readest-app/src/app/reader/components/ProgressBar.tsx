@@ -143,7 +143,7 @@ const ProgressBar: React.FC<ProgressBarProps> = ({
   };
 
   useEffect(() => {
-    saveViewSettings(envConfig, bookKey, 'progressInfoMode', progressBarMode as ProgressBarMode);
+    saveViewSettings(bookKey, 'progressInfoMode', progressBarMode as ProgressBarMode);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [progressBarMode]);
 

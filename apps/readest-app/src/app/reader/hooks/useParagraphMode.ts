@@ -380,7 +380,7 @@ export const useParagraphMode = ({ bookKey, viewRef }: UseParagraphModeProps) =>
 
       if (newEnabled) {
         setViewSettings(bookKeyRef.current, { ...settings, paragraphMode: newConfig });
-        saveViewSettings(envConfig, bookKeyRef.current, 'paragraphMode', newConfig, true, false);
+        saveViewSettings(bookKeyRef.current, 'paragraphMode', newConfig, true, false);
 
         const success = await initIterator();
         if (success) {
@@ -388,7 +388,7 @@ export const useParagraphMode = ({ bookKey, viewRef }: UseParagraphModeProps) =>
         }
       } else {
         setViewSettings(bookKeyRef.current, { ...settings, paragraphMode: newConfig });
-        saveViewSettings(envConfig, bookKeyRef.current, 'paragraphMode', newConfig, true, false);
+        saveViewSettings(bookKeyRef.current, 'paragraphMode', newConfig, true, false);
 
         const view = viewRef.current;
         const iterator = iteratorRef.current;

@@ -139,129 +139,115 @@ const LayoutPanel: React.FC<SettingsPanelPanelProp> = ({ bookKey, onRegisterRese
   }, []);
 
   useEffect(() => {
-    saveViewSettings(envConfig, bookKey, 'paragraphMargin', paragraphMargin);
+    saveViewSettings(bookKey, 'paragraphMargin', paragraphMargin);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [paragraphMargin]);
 
   useEffect(() => {
-    saveViewSettings(envConfig, bookKey, 'lineHeight', lineHeight);
+    saveViewSettings(bookKey, 'lineHeight', lineHeight);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [lineHeight]);
 
   useEffect(() => {
-    saveViewSettings(envConfig, bookKey, 'wordSpacing', wordSpacing);
+    saveViewSettings(bookKey, 'wordSpacing', wordSpacing);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [wordSpacing]);
 
   useEffect(() => {
-    saveViewSettings(envConfig, bookKey, 'letterSpacing', letterSpacing);
+    saveViewSettings(bookKey, 'letterSpacing', letterSpacing);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [letterSpacing]);
 
   useEffect(() => {
-    saveViewSettings(envConfig, bookKey, 'textIndent', textIndent);
+    saveViewSettings(bookKey, 'textIndent', textIndent);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [textIndent]);
 
   useEffect(() => {
-    saveViewSettings(envConfig, bookKey, 'fullJustification', fullJustification);
+    saveViewSettings(bookKey, 'fullJustification', fullJustification);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [fullJustification]);
 
   useEffect(() => {
-    saveViewSettings(envConfig, bookKey, 'hyphenation', hyphenation);
+    saveViewSettings(bookKey, 'hyphenation', hyphenation);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [hyphenation]);
 
   useEffect(() => {
     if (marginTopPx === viewSettings.marginTopPx) return;
     if (viewSettings.marginPx !== undefined) {
-      saveViewSettings(envConfig, bookKey, 'marginPx', undefined, false, false);
+      saveViewSettings(bookKey, 'marginPx', undefined, false, false);
     }
-    saveViewSettings(envConfig, bookKey, 'marginTopPx', marginTopPx, false, false);
+    saveViewSettings(bookKey, 'marginTopPx', marginTopPx, false, false);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [marginTopPx]);
 
   useEffect(() => {
     if (marginBottomPx === viewSettings.marginBottomPx) return;
     if (viewSettings.marginPx !== undefined) {
-      saveViewSettings(envConfig, bookKey, 'marginPx', undefined, false, false);
+      saveViewSettings(bookKey, 'marginPx', undefined, false, false);
     }
-    saveViewSettings(envConfig, bookKey, 'marginBottomPx', marginBottomPx, false, false);
+    saveViewSettings(bookKey, 'marginBottomPx', marginBottomPx, false, false);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [marginBottomPx]);
 
   useEffect(() => {
     if (marginRightPx === viewSettings.marginRightPx) return;
     if (viewSettings.marginPx !== undefined) {
-      saveViewSettings(envConfig, bookKey, 'marginPx', undefined, false, false);
+      saveViewSettings(bookKey, 'marginPx', undefined, false, false);
     }
-    saveViewSettings(envConfig, bookKey, 'marginRightPx', marginRightPx, false, false);
+    saveViewSettings(bookKey, 'marginRightPx', marginRightPx, false, false);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [marginRightPx]);
 
   useEffect(() => {
     if (marginLeftPx === viewSettings.marginLeftPx) return;
     if (viewSettings.marginPx !== undefined) {
-      saveViewSettings(envConfig, bookKey, 'marginPx', undefined, false, false);
+      saveViewSettings(bookKey, 'marginPx', undefined, false, false);
     }
-    saveViewSettings(envConfig, bookKey, 'marginLeftPx', marginLeftPx, false, false);
+    saveViewSettings(bookKey, 'marginLeftPx', marginLeftPx, false, false);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [marginLeftPx]);
 
   useEffect(() => {
     if (compactMarginTopPx === viewSettings.compactMarginTopPx) return;
     if (viewSettings.compactMarginPx !== undefined) {
-      saveViewSettings(envConfig, bookKey, 'compactMarginPx', undefined, false, false);
+      saveViewSettings(bookKey, 'compactMarginPx', undefined, false, false);
     }
-    saveViewSettings(envConfig, bookKey, 'compactMarginTopPx', compactMarginTopPx, false, false);
+    saveViewSettings(bookKey, 'compactMarginTopPx', compactMarginTopPx, false, false);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [compactMarginTopPx]);
 
   useEffect(() => {
     if (compactMarginBottomPx === viewSettings.compactMarginBottomPx) return;
     if (viewSettings.compactMarginPx !== undefined) {
-      saveViewSettings(envConfig, bookKey, 'compactMarginPx', undefined, false, false);
+      saveViewSettings(bookKey, 'compactMarginPx', undefined, false, false);
     }
-    saveViewSettings(
-      envConfig,
-      bookKey,
-      'compactMarginBottomPx',
-      compactMarginBottomPx,
-      false,
-      false,
-    );
+    saveViewSettings(bookKey, 'compactMarginBottomPx', compactMarginBottomPx, false, false);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [compactMarginBottomPx]);
 
   useEffect(() => {
     if (compactMarginRightPx === viewSettings.compactMarginRightPx) return;
     if (viewSettings.compactMarginPx !== undefined) {
-      saveViewSettings(envConfig, bookKey, 'compactMarginPx', undefined, false, false);
+      saveViewSettings(bookKey, 'compactMarginPx', undefined, false, false);
     }
-    saveViewSettings(
-      envConfig,
-      bookKey,
-      'compactMarginRightPx',
-      compactMarginRightPx,
-      false,
-      false,
-    );
+    saveViewSettings(bookKey, 'compactMarginRightPx', compactMarginRightPx, false, false);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [compactMarginRightPx]);
 
   useEffect(() => {
     if (compactMarginLeftPx === viewSettings.compactMarginLeftPx) return;
     if (viewSettings.compactMarginPx !== undefined) {
-      saveViewSettings(envConfig, bookKey, 'compactMarginPx', undefined, false, false);
+      saveViewSettings(bookKey, 'compactMarginPx', undefined, false, false);
     }
-    saveViewSettings(envConfig, bookKey, 'compactMarginLeftPx', compactMarginLeftPx, false, false);
+    saveViewSettings(bookKey, 'compactMarginLeftPx', compactMarginLeftPx, false, false);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [compactMarginLeftPx]);
 
   useEffect(() => {
     if (gapPercent === viewSettings.gapPercent) return;
-    saveViewSettings(envConfig, bookKey, 'gapPercent', gapPercent, false, false);
+    saveViewSettings(bookKey, 'gapPercent', gapPercent, false, false);
     view?.renderer.setAttribute('gap', `${gapPercent}%`);
     if (viewSettings.scrolled) {
       view?.renderer.setAttribute('flow', 'scrolled');
@@ -271,7 +257,7 @@ const LayoutPanel: React.FC<SettingsPanelPanelProp> = ({ bookKey, onRegisterRese
 
   useEffect(() => {
     if (maxColumnCount === viewSettings.maxColumnCount) return;
-    saveViewSettings(envConfig, bookKey, 'maxColumnCount', maxColumnCount, false, false);
+    saveViewSettings(bookKey, 'maxColumnCount', maxColumnCount, false, false);
     const newViewSettings = getViewSettings(bookKey)!;
     view?.renderer.setAttribute('max-column-count', String(maxColumnCount));
     view?.renderer.setAttribute('max-inline-size', `${getMaxInlineSize(newViewSettings)}px`);
@@ -280,7 +266,7 @@ const LayoutPanel: React.FC<SettingsPanelPanelProp> = ({ bookKey, onRegisterRese
 
   useEffect(() => {
     if (maxInlineSize === viewSettings.maxInlineSize) return;
-    saveViewSettings(envConfig, bookKey, 'maxInlineSize', maxInlineSize, false, false);
+    saveViewSettings(bookKey, 'maxInlineSize', maxInlineSize, false, false);
     const newViewSettings = getViewSettings(bookKey)!;
     view?.renderer.setAttribute('max-inline-size', `${getMaxInlineSize(newViewSettings)}px`);
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -288,7 +274,7 @@ const LayoutPanel: React.FC<SettingsPanelPanelProp> = ({ bookKey, onRegisterRese
 
   useEffect(() => {
     if (maxBlockSize === viewSettings.maxBlockSize) return;
-    saveViewSettings(envConfig, bookKey, 'maxBlockSize', maxBlockSize, false, false);
+    saveViewSettings(bookKey, 'maxBlockSize', maxBlockSize, false, false);
     view?.renderer.setAttribute('max-block-size', `${maxBlockSize}px`);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [maxBlockSize]);
@@ -302,7 +288,7 @@ const LayoutPanel: React.FC<SettingsPanelPanelProp> = ({ bookKey, onRegisterRese
     } else {
       viewSettings.vertical = false;
     }
-    saveViewSettings(envConfig, bookKey, 'writingMode', writingMode, true).then(() => {
+    saveViewSettings(bookKey, 'writingMode', writingMode, true).then(() => {
       if (view) {
         const newViewSettings = getViewSettings(bookKey)!;
         view.renderer.setStyles?.(getStyles(newViewSettings));
@@ -321,83 +307,69 @@ const LayoutPanel: React.FC<SettingsPanelPanelProp> = ({ bookKey, onRegisterRese
 
   useEffect(() => {
     if (overrideLayout === viewSettings.overrideLayout) return;
-    saveViewSettings(envConfig, bookKey, 'overrideLayout', overrideLayout);
+    saveViewSettings(bookKey, 'overrideLayout', overrideLayout);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [overrideLayout]);
 
   useEffect(() => {
     if (useBookLayout === viewSettings.useBookLayout) return;
-    saveViewSettings(envConfig, bookKey, 'useBookLayout', useBookLayout);
+    saveViewSettings(bookKey, 'useBookLayout', useBookLayout);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [useBookLayout]);
 
   useEffect(() => {
     if (doubleBorder === viewSettings.doubleBorder) return;
-    saveViewSettings(envConfig, bookKey, 'doubleBorder', doubleBorder, false, false);
+    saveViewSettings(bookKey, 'doubleBorder', doubleBorder, false, false);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [doubleBorder]);
 
   useEffect(() => {
-    saveViewSettings(envConfig, bookKey, 'borderColor', borderColor, false, false);
+    saveViewSettings(bookKey, 'borderColor', borderColor, false, false);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [borderColor]);
 
   useEffect(() => {
-    saveViewSettings(envConfig, bookKey, 'showRemainingTime', showRemainingTime, false, false);
+    saveViewSettings(bookKey, 'showRemainingTime', showRemainingTime, false, false);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [showRemainingTime]);
 
   useEffect(() => {
-    saveViewSettings(envConfig, bookKey, 'showRemainingPages', showRemainingPages, false, false);
+    saveViewSettings(bookKey, 'showRemainingPages', showRemainingPages, false, false);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [showRemainingPages]);
 
   useEffect(() => {
-    saveViewSettings(envConfig, bookKey, 'showProgressInfo', showProgressInfo, false, false);
+    saveViewSettings(bookKey, 'showProgressInfo', showProgressInfo, false, false);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [showProgressInfo]);
 
   useEffect(() => {
-    saveViewSettings(envConfig, bookKey, 'showCurrentTime', showCurrentTime, false, false);
+    saveViewSettings(bookKey, 'showCurrentTime', showCurrentTime, false, false);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [showCurrentTime]);
 
   useEffect(() => {
-    saveViewSettings(envConfig, bookKey, 'use24HourClock', use24HourClock, false, false);
+    saveViewSettings(bookKey, 'use24HourClock', use24HourClock, false, false);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [use24HourClock]);
 
   useEffect(() => {
-    saveViewSettings(
-      envConfig,
-      bookKey,
-      'showCurrentBatteryStatus',
-      showCurrentBatteryStatus,
-      false,
-      false,
-    );
+    saveViewSettings(bookKey, 'showCurrentBatteryStatus', showCurrentBatteryStatus, false, false);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [showCurrentBatteryStatus]);
 
   useEffect(() => {
-    saveViewSettings(
-      envConfig,
-      bookKey,
-      'showBatteryPercentage',
-      showBatteryPercentage,
-      false,
-      false,
-    );
+    saveViewSettings(bookKey, 'showBatteryPercentage', showBatteryPercentage, false, false);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [showBatteryPercentage]);
 
   useEffect(() => {
-    saveViewSettings(envConfig, bookKey, 'progressStyle', progressStyle, false, false);
+    saveViewSettings(bookKey, 'progressStyle', progressStyle, false, false);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [progressStyle]);
 
   useEffect(() => {
-    saveViewSettings(envConfig, bookKey, 'tapToToggleFooter', tapToToggleFooter, false, false);
+    saveViewSettings(bookKey, 'tapToToggleFooter', tapToToggleFooter, false, false);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tapToToggleFooter]);
 
@@ -409,7 +381,7 @@ const LayoutPanel: React.FC<SettingsPanelPanelProp> = ({ bookKey, onRegisterRese
       setMarginTopPx(viewSettings.marginTopPx);
       setViewSettings(bookKey, viewSettings);
     }
-    saveViewSettings(envConfig, bookKey, 'showHeader', showHeader, false, false);
+    saveViewSettings(bookKey, 'showHeader', showHeader, false, false);
     // Margin and gap settings will be applied in FoliateViewer
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [showHeader]);
@@ -422,13 +394,13 @@ const LayoutPanel: React.FC<SettingsPanelPanelProp> = ({ bookKey, onRegisterRese
       setMarginBottomPx(viewSettings.marginBottomPx);
       setViewSettings(bookKey, viewSettings);
     }
-    saveViewSettings(envConfig, bookKey, 'showFooter', showFooter, false, false);
+    saveViewSettings(bookKey, 'showFooter', showFooter, false, false);
     // Margin and gap settings will be applied in FoliateViewer
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [showFooter]);
 
   useEffect(() => {
-    saveViewSettings(envConfig, bookKey, 'screenOrientation', screenOrientation, false, false);
+    saveViewSettings(bookKey, 'screenOrientation', screenOrientation, false, false);
     if (platformInfo.isMobileApp) {
       lockScreenOrientation({ orientation: screenOrientation });
     }

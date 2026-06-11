@@ -442,23 +442,20 @@ export const findTextureByContentId = (contentId: string): CustomTexture | undef
  * in `migrateLegacyReplicas` — shared with custom fonts.
  */
 export const migrateLegacyTextures = (): Promise<void> =>
-  migrateLegacyReplicas<CustomTexture>(
-    {},
-    {
-      kind: TEXTURE_KIND,
-      baseDir: 'Images',
-      getCandidates: () =>
-        useCustomTextureStore
-          .getState()
-          .textures.filter(
-            (t) => !t.contentId && !t.bundleDir && !t.deletedAt && !t.path.includes('/'),
-          ),
-      computeContentId: computeTextureContentId,
-      updateRecord: (id, next) => useCustomTextureStore.getState().updateTexture(id, next),
-      saveStore: () => useCustomTextureStore.getState().saveCustomTextures(),
-      publishUpsert: publishTextureUpsert,
-    },
-  );
+  migrateLegacyReplicas<CustomTexture>({
+    kind: TEXTURE_KIND,
+    baseDir: 'Images',
+    getCandidates: () =>
+      useCustomTextureStore
+        .getState()
+        .textures.filter(
+          (t) => !t.contentId && !t.bundleDir && !t.deletedAt && !t.path.includes('/'),
+        ),
+    computeContentId: computeTextureContentId,
+    updateRecord: (id, next) => useCustomTextureStore.getState().updateTexture(id, next),
+    saveStore: () => useCustomTextureStore.getState().saveCustomTextures(),
+    publishUpsert: publishTextureUpsert,
+  });
 
 // Cleanup blob URLs before page unload
 if (typeof window !== 'undefined') {

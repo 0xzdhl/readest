@@ -90,9 +90,9 @@ export default function AppLockDialog() {
       try {
         const salt = generatePinSalt();
         const hash = await hashPin(newPin, salt);
-        await saveSysSettings(envConfig, 'pinCodeSalt', salt);
-        await saveSysSettings(envConfig, 'pinCodeHash', hash);
-        await saveSysSettings(envConfig, 'pinCodeEnabled', true);
+        await saveSysSettings('pinCodeSalt', salt);
+        await saveSysSettings('pinCodeHash', hash);
+        await saveSysSettings('pinCodeEnabled', true);
         setStorePin(hash, salt);
         closeDialog();
       } finally {
@@ -129,8 +129,8 @@ export default function AppLockDialog() {
         }
         const salt = generatePinSalt();
         const hash = await hashPin(newPin, salt);
-        await saveSysSettings(envConfig, 'pinCodeSalt', salt);
-        await saveSysSettings(envConfig, 'pinCodeHash', hash);
+        await saveSysSettings('pinCodeSalt', salt);
+        await saveSysSettings('pinCodeHash', hash);
         setStorePin(hash, salt);
         closeDialog();
       } finally {
@@ -157,9 +157,9 @@ export default function AppLockDialog() {
         currentPinRef.current?.focus();
         return;
       }
-      await saveSysSettings(envConfig, 'pinCodeEnabled', false);
-      await saveSysSettings(envConfig, 'pinCodeHash', undefined);
-      await saveSysSettings(envConfig, 'pinCodeSalt', undefined);
+      await saveSysSettings('pinCodeEnabled', false);
+      await saveSysSettings('pinCodeHash', undefined);
+      await saveSysSettings('pinCodeSalt', undefined);
       clearPin();
       closeDialog();
     } finally {

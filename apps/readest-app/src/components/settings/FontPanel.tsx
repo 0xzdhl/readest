@@ -222,47 +222,47 @@ const FontPanel: React.FC<SettingsPanelPanelProp> = ({ bookKey, onRegisterReset 
   }, [platformInfo.isAndroidApp]);
 
   useEffect(() => {
-    saveViewSettings(envConfig, bookKey, 'defaultFont', defaultFont);
+    saveViewSettings(bookKey, 'defaultFont', defaultFont);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [defaultFont]);
 
   useEffect(() => {
-    saveViewSettings(envConfig, bookKey, 'defaultCJKFont', defaultCJKFont);
+    saveViewSettings(bookKey, 'defaultCJKFont', defaultCJKFont);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [defaultCJKFont]);
 
   useEffect(() => {
-    saveViewSettings(envConfig, bookKey, 'defaultFontSize', defaultFontSize);
+    saveViewSettings(bookKey, 'defaultFontSize', defaultFontSize);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [defaultFontSize]);
 
   useEffect(() => {
-    saveViewSettings(envConfig, bookKey, 'minimumFontSize', minFontSize);
+    saveViewSettings(bookKey, 'minimumFontSize', minFontSize);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [minFontSize]);
 
   useEffect(() => {
-    saveViewSettings(envConfig, bookKey, 'fontWeight', fontWeight);
+    saveViewSettings(bookKey, 'fontWeight', fontWeight);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [fontWeight]);
 
   useEffect(() => {
-    saveViewSettings(envConfig, bookKey, 'serifFont', serifFont);
+    saveViewSettings(bookKey, 'serifFont', serifFont);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [serifFont]);
 
   useEffect(() => {
-    saveViewSettings(envConfig, bookKey, 'sansSerifFont', sansSerifFont);
+    saveViewSettings(bookKey, 'sansSerifFont', sansSerifFont);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [sansSerifFont]);
 
   useEffect(() => {
-    saveViewSettings(envConfig, bookKey, 'monospaceFont', monospaceFont);
+    saveViewSettings(bookKey, 'monospaceFont', monospaceFont);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [monospaceFont]);
 
   useEffect(() => {
-    saveViewSettings(envConfig, bookKey, 'overrideFont', overrideFont);
+    saveViewSettings(bookKey, 'overrideFont', overrideFont);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [overrideFont]);
 

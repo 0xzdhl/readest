@@ -29,7 +29,7 @@ const TranslationToggler = ({ bookKey }: { bookKey: string }) => {
     if (platformInfo.isMobile) {
       setHoveredBookKey('');
     }
-    saveViewSettings(envConfig, bookKey, 'translationEnabled', translationEnabled, true, false);
+    saveViewSettings(bookKey, 'translationEnabled', translationEnabled, true, false);
     viewSettings.translationEnabled = translationEnabled;
     setViewSettings(bookKey, { ...viewSettings });
     // eslint-disable-next-line react-hooks/exhaustive-deps

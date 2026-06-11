@@ -46,13 +46,13 @@ const TTSPanel: React.FC<SettingsPanelPanelProp> = ({ bookKey, onRegisterReset }
 
   useEffect(() => {
     if (ttsMediaMetadata === viewSettings.ttsMediaMetadata) return;
-    saveViewSettings(envConfig, bookKey, 'ttsMediaMetadata', ttsMediaMetadata, false, false);
+    saveViewSettings(bookKey, 'ttsMediaMetadata', ttsMediaMetadata, false, false);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [ttsMediaMetadata]);
 
   const handleTTSStyleChange = (style: TTSHighlightStyle) => {
     setTtsHighlightStyle(style);
-    saveViewSettings(envConfig, bookKey, 'ttsHighlightOptions', {
+    saveViewSettings(bookKey, 'ttsHighlightOptions', {
       style,
       color: ttsHighlightColor,
     });
@@ -60,7 +60,7 @@ const TTSPanel: React.FC<SettingsPanelPanelProp> = ({ bookKey, onRegisterReset }
 
   const handleTTSColorChange = (color: string) => {
     setTtsHighlightColor(color);
-    saveViewSettings(envConfig, bookKey, 'ttsHighlightOptions', {
+    saveViewSettings(bookKey, 'ttsHighlightOptions', {
       style: ttsHighlightStyle,
       color,
     });

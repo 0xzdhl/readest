@@ -131,30 +131,30 @@ const ColorPanel: React.FC<SettingsPanelPanelProp> = ({ bookKey, onRegisterReset
 
   useEffect(() => {
     if (invertImgColorInDark === viewSettings.invertImgColorInDark) return;
-    saveViewSettings(envConfig, bookKey, 'invertImgColorInDark', invertImgColorInDark);
+    saveViewSettings(bookKey, 'invertImgColorInDark', invertImgColorInDark);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [invertImgColorInDark]);
 
   useEffect(() => {
     if (overrideColor === viewSettings.overrideColor) return;
-    saveViewSettings(envConfig, bookKey, 'overrideColor', overrideColor);
+    saveViewSettings(bookKey, 'overrideColor', overrideColor);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [overrideColor]);
 
   useEffect(() => {
     if (highlightOpacity === viewSettings.highlightOpacity) return;
-    saveViewSettings(envConfig, bookKey, 'highlightOpacity', highlightOpacity);
+    saveViewSettings(bookKey, 'highlightOpacity', highlightOpacity);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [highlightOpacity]);
 
   useEffect(() => {
     let update = false;
     if (codeHighlighting !== viewSettings.codeHighlighting) {
-      saveViewSettings(envConfig, bookKey, 'codeHighlighting', codeHighlighting);
+      saveViewSettings(bookKey, 'codeHighlighting', codeHighlighting);
       update = true;
     }
     if (codeLanguage !== viewSettings.codeLanguage) {
-      saveViewSettings(envConfig, bookKey, 'codeLanguage', codeLanguage);
+      saveViewSettings(bookKey, 'codeLanguage', codeLanguage);
       update = true;
     }
     if (!update) return;
@@ -167,42 +167,42 @@ const ColorPanel: React.FC<SettingsPanelPanelProp> = ({ bookKey, onRegisterReset
 
   useEffect(() => {
     if (selectedTextureId === viewSettings.backgroundTextureId) return;
-    saveViewSettings(envConfig, bookKey, 'backgroundTextureId', selectedTextureId);
+    saveViewSettings(bookKey, 'backgroundTextureId', selectedTextureId);
     applyBackgroundTexture();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedTextureId]);
 
   useEffect(() => {
     if (backgroundOpacity === viewSettings.backgroundOpacity) return;
-    saveViewSettings(envConfig, bookKey, 'backgroundOpacity', backgroundOpacity);
+    saveViewSettings(bookKey, 'backgroundOpacity', backgroundOpacity);
     applyBackgroundTexture();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [backgroundOpacity]);
 
   useEffect(() => {
     if (backgroundSize === viewSettings.backgroundSize) return;
-    saveViewSettings(envConfig, bookKey, 'backgroundSize', backgroundSize);
+    saveViewSettings(bookKey, 'backgroundSize', backgroundSize);
     applyBackgroundTexture();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [backgroundSize]);
 
   useEffect(() => {
-    saveViewSettings(envConfig, bookKey, 'readingRulerEnabled', readingRulerEnabled, false, false);
+    saveViewSettings(bookKey, 'readingRulerEnabled', readingRulerEnabled, false, false);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [readingRulerEnabled]);
 
   useEffect(() => {
-    saveViewSettings(envConfig, bookKey, 'readingRulerLines', readingRulerLines, false, false);
+    saveViewSettings(bookKey, 'readingRulerLines', readingRulerLines, false, false);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [readingRulerLines]);
 
   useEffect(() => {
-    saveViewSettings(envConfig, bookKey, 'readingRulerOpacity', readingRulerOpacity, false, false);
+    saveViewSettings(bookKey, 'readingRulerOpacity', readingRulerOpacity, false, false);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [readingRulerOpacity]);
 
   useEffect(() => {
-    saveViewSettings(envConfig, bookKey, 'readingRulerColor', readingRulerColor, false, false);
+    saveViewSettings(bookKey, 'readingRulerColor', readingRulerColor, false, false);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [readingRulerColor]);
 

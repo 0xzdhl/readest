@@ -52,7 +52,7 @@ export const FontLayoutPanel: React.FC<FontLayoutPanelProps> = ({
 
   const handleFontSizeChange = useCallback(
     (value: number) => {
-      saveViewSettings(envConfig, bookKey, 'defaultFontSize', value);
+      saveViewSettings(bookKey, 'defaultFontSize', value);
     },
     [envConfig, bookKey],
   );
@@ -71,7 +71,7 @@ export const FontLayoutPanel: React.FC<FontLayoutPanelProps> = ({
       currentViewSettings.marginLeftPx = marginPx / 2;
       currentViewSettings.marginRightPx = marginPx / 2;
 
-      saveViewSettings(envConfig, bookKey, 'gapPercent', gapPercent, false, false);
+      saveViewSettings(bookKey, 'gapPercent', gapPercent, false, false);
       view?.renderer.setAttribute('margin', `${marginPx}px`);
       view?.renderer.setAttribute('gap', `${gapPercent}%`);
 
@@ -84,7 +84,7 @@ export const FontLayoutPanel: React.FC<FontLayoutPanelProps> = ({
 
   const handleLineHeightChange = useCallback(
     (value: number) => {
-      saveViewSettings(envConfig, bookKey, 'lineHeight', value / LINE_HEIGHT_LIMITS.MULTIPLIER);
+      saveViewSettings(bookKey, 'lineHeight', value / LINE_HEIGHT_LIMITS.MULTIPLIER);
     },
     [envConfig, bookKey],
   );

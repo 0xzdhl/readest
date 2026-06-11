@@ -68,11 +68,9 @@ const BookMenu: React.FC<BookMenuProps> = ({ menuClassName, setIsDropdownOpen })
     setIsSortedTOC((prev) => !prev);
     setIsDropdownOpen?.(false);
     if (sideBarBookKey) {
-      saveViewSettings(envConfig, sideBarBookKey, 'sortedTOC', !isSortedTOC, true, false).then(
-        () => {
-          recreateViewer(sideBarBookKey);
-        },
-      );
+      saveViewSettings(sideBarBookKey, 'sortedTOC', !isSortedTOC, true, false).then(() => {
+        recreateViewer(sideBarBookKey);
+      });
     }
   };
   const handleSetParallel = () => {
@@ -109,7 +107,7 @@ const BookMenu: React.FC<BookMenuProps> = ({ menuClassName, setIsDropdownOpen })
   };
   const toggleDiscordPresence = () => {
     const discordRichPresenceEnabled = !settings.discordRichPresenceEnabled;
-    saveSysSettings(envConfig, 'discordRichPresenceEnabled', discordRichPresenceEnabled);
+    saveSysSettings('discordRichPresenceEnabled', discordRichPresenceEnabled);
     setIsDropdownOpen?.(false);
     if (discordRichPresenceEnabled && !user) {
       navigateToLogin(router);

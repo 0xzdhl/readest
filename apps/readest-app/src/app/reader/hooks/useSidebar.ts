@@ -36,7 +36,7 @@ const useSidebar = (initialWidth: string, isPinned: boolean) => {
     if (isSideBarPinned && isSideBarVisible) setSideBarVisible(false);
     const globalReadSettings = settings.globalReadSettings;
     const newGlobalReadSettings = { ...globalReadSettings, isSideBarPinned: !isSideBarPinned };
-    saveSysSettings(envConfig, 'globalReadSettings', newGlobalReadSettings);
+    saveSysSettings('globalReadSettings', newGlobalReadSettings);
   };
 
   return {

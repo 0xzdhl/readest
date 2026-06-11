@@ -153,7 +153,7 @@ const HighlightOptions: React.FC<HighlightOptionsProps> = ({
 
   const handleSelectStyle = (style: HighlightStyle) => {
     const newGlobalReadSettings = { ...globalReadSettings, highlightStyle: style };
-    saveSysSettings(envConfig, 'globalReadSettings', newGlobalReadSettings);
+    saveSysSettings('globalReadSettings', newGlobalReadSettings);
     setSelectedStyle(style);
     setSelectedColor(globalReadSettings.highlightStyles[style]);
     onHandleHighlight(true);
@@ -165,7 +165,7 @@ const HighlightOptions: React.FC<HighlightOptionsProps> = ({
       highlightStyle: selectedStyle,
       highlightStyles: { ...globalReadSettings.highlightStyles, [selectedStyle]: color },
     };
-    saveSysSettings(envConfig, 'globalReadSettings', newGlobalReadSettings);
+    saveSysSettings('globalReadSettings', newGlobalReadSettings);
     setSelectedColor(color);
     onHandleHighlight(true);
   };

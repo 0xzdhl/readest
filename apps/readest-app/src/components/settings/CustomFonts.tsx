@@ -99,9 +99,9 @@ const CustomFonts: React.FC<CustomFontsProps> = ({ bookKey, onBack }) => {
 
   const handleSelectFamily = (family: FontFamily) => {
     if (currentDefaultFont === 'serif') {
-      saveViewSettings(envConfig, bookKey, 'serifFont', family.name);
+      saveViewSettings(bookKey, 'serifFont', family.name);
     } else {
-      saveViewSettings(envConfig, bookKey, 'sansSerifFont', family.name);
+      saveViewSettings(bookKey, 'sansSerifFont', family.name);
     }
   };
 

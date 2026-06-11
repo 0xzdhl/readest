@@ -84,7 +84,7 @@ const ControlPanel: React.FC<SettingsPanelPanelProp> = ({ bookKey, onRegisterRes
 
   useEffect(() => {
     if (isScrolledMode === viewSettings.scrolled) return;
-    saveViewSettings(envConfig, bookKey, 'scrolled', isScrolledMode);
+    saveViewSettings(bookKey, 'scrolled', isScrolledMode);
     getView(bookKey)?.renderer.setAttribute('flow', isScrolledMode ? 'scrolled' : 'paginated');
     getView(bookKey)?.renderer.setAttribute(
       'max-inline-size',
@@ -96,7 +96,7 @@ const ControlPanel: React.FC<SettingsPanelPanelProp> = ({ bookKey, onRegisterRes
 
   useEffect(() => {
     if (noContinuousScroll === viewSettings.noContinuousScroll) return;
-    saveViewSettings(envConfig, bookKey, 'noContinuousScroll', noContinuousScroll);
+    saveViewSettings(bookKey, 'noContinuousScroll', noContinuousScroll);
     if (noContinuousScroll) {
       getView(bookKey)?.renderer.setAttribute('no-continuous-scroll', '');
     } else {
@@ -106,18 +106,18 @@ const ControlPanel: React.FC<SettingsPanelPanelProp> = ({ bookKey, onRegisterRes
   }, [noContinuousScroll]);
 
   useEffect(() => {
-    saveViewSettings(envConfig, bookKey, 'hideScrollbar', hideScrollbar, false, false);
+    saveViewSettings(bookKey, 'hideScrollbar', hideScrollbar, false, false);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [hideScrollbar]);
 
   useEffect(() => {
     if (scrollingOverlap === viewSettings.scrollingOverlap) return;
-    saveViewSettings(envConfig, bookKey, 'scrollingOverlap', scrollingOverlap, false, false);
+    saveViewSettings(bookKey, 'scrollingOverlap', scrollingOverlap, false, false);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [scrollingOverlap]);
 
   useEffect(() => {
-    saveViewSettings(envConfig, bookKey, 'volumeKeysToFlip', volumeKeysToFlip, false, false);
+    saveViewSettings(bookKey, 'volumeKeysToFlip', volumeKeysToFlip, false, false);
     if (platformInfo.isMobileApp) {
       if (volumeKeysToFlip) {
         acquireVolumeKeyInterception();
@@ -129,39 +129,32 @@ const ControlPanel: React.FC<SettingsPanelPanelProp> = ({ bookKey, onRegisterRes
   }, [volumeKeysToFlip]);
 
   useEffect(() => {
-    saveViewSettings(
-      envConfig,
-      bookKey,
-      'showPaginationButtons',
-      showPaginationButtons,
-      false,
-      false,
-    );
+    saveViewSettings(bookKey, 'showPaginationButtons', showPaginationButtons, false, false);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [showPaginationButtons]);
 
   useEffect(() => {
-    saveViewSettings(envConfig, bookKey, 'disableClick', isDisableClick, false, false);
+    saveViewSettings(bookKey, 'disableClick', isDisableClick, false, false);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isDisableClick]);
 
   useEffect(() => {
-    saveViewSettings(envConfig, bookKey, 'disableDoubleClick', isDisableDoubleClick, false, false);
+    saveViewSettings(bookKey, 'disableDoubleClick', isDisableDoubleClick, false, false);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isDisableDoubleClick]);
 
   useEffect(() => {
-    saveViewSettings(envConfig, bookKey, 'fullscreenClickArea', fullscreenClickArea, false, false);
+    saveViewSettings(bookKey, 'fullscreenClickArea', fullscreenClickArea, false, false);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [fullscreenClickArea]);
 
   useEffect(() => {
-    saveViewSettings(envConfig, bookKey, 'swapClickArea', swapClickArea, false, false);
+    saveViewSettings(bookKey, 'swapClickArea', swapClickArea, false, false);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [swapClickArea]);
 
   useEffect(() => {
-    saveViewSettings(envConfig, bookKey, 'animated', animated, false, false);
+    saveViewSettings(bookKey, 'animated', animated, false, false);
     if (animated) {
       getView(bookKey)?.renderer.setAttribute('animated', '');
     } else {
@@ -171,7 +164,7 @@ const ControlPanel: React.FC<SettingsPanelPanelProp> = ({ bookKey, onRegisterRes
   }, [animated]);
 
   useEffect(() => {
-    saveViewSettings(envConfig, bookKey, 'isEink', isEink);
+    saveViewSettings(bookKey, 'isEink', isEink);
     if (isEink) {
       getView(bookKey)?.renderer.setAttribute('eink', '');
     } else {
@@ -182,25 +175,25 @@ const ControlPanel: React.FC<SettingsPanelPanelProp> = ({ bookKey, onRegisterRes
   }, [isEink]);
 
   useEffect(() => {
-    saveViewSettings(envConfig, bookKey, 'isColorEink', isColorEink);
+    saveViewSettings(bookKey, 'isColorEink', isColorEink);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isColorEink]);
 
   useEffect(() => {
     if (autoScreenBrightness === settings.autoScreenBrightness) return;
-    saveSysSettings(envConfig, 'autoScreenBrightness', autoScreenBrightness);
+    saveSysSettings('autoScreenBrightness', autoScreenBrightness);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [autoScreenBrightness]);
 
   useEffect(() => {
     if (screenWakeLock === settings.screenWakeLock) return;
-    saveSysSettings(envConfig, 'screenWakeLock', screenWakeLock);
+    saveSysSettings('screenWakeLock', screenWakeLock);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [screenWakeLock]);
 
   useEffect(() => {
     if (viewSettings.allowScript === allowScript) return;
-    saveViewSettings(envConfig, bookKey, 'allowScript', allowScript, true, false).then(() => {
+    saveViewSettings(bookKey, 'allowScript', allowScript, true, false).then(() => {
       recreateViewer(bookKey);
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -208,7 +201,6 @@ const ControlPanel: React.FC<SettingsPanelPanelProp> = ({ bookKey, onRegisterRes
 
   useEffect(() => {
     saveViewSettings(
-      envConfig,
       bookKey,
       'enableAnnotationQuickActions',
       enableAnnotationQuickActions,
@@ -219,7 +211,7 @@ const ControlPanel: React.FC<SettingsPanelPanelProp> = ({ bookKey, onRegisterRes
   }, [enableAnnotationQuickActions]);
 
   useEffect(() => {
-    saveViewSettings(envConfig, bookKey, 'copyToNotebook', copyToNotebook, false, false);
+    saveViewSettings(bookKey, 'copyToNotebook', copyToNotebook, false, false);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [copyToNotebook]);
 
@@ -239,7 +231,7 @@ const ControlPanel: React.FC<SettingsPanelPanelProp> = ({ bookKey, onRegisterRes
   const handleSelectAnnotationQuickAction = (event: React.ChangeEvent<HTMLSelectElement>) => {
     const action = event.target.value as typeof annotationQuickAction;
     setAnnotationQuickAction(action);
-    saveViewSettings(envConfig, bookKey, 'annotationQuickAction', action, false, true);
+    saveViewSettings(bookKey, 'annotationQuickAction', action, false, true);
   };
 
   return (

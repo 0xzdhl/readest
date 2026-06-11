@@ -69,7 +69,7 @@ const ReadingRuler: React.FC<ReadingRulerProps> = ({
   // eslint-disable-next-line react-hooks/exhaustive-deps
   const throttledSave = useCallback(
     throttle((pos: number) => {
-      saveViewSettings(envConfig, bookKey, 'readingRulerPosition', pos, false, false);
+      saveViewSettings(bookKey, 'readingRulerPosition', pos, false, false);
     }, 10000),
     [envConfig, bookKey],
   );

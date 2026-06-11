@@ -69,7 +69,7 @@ const Providers = ({ children }: { children: React.ReactNode }) => {
     const settings = bootSettings;
     const globalViewSettings = settings.globalViewSettings;
     applyUILanguage(globalViewSettings.uiLanguage);
-    applyBackgroundTexture(envConfig, globalViewSettings);
+    applyBackgroundTexture(globalViewSettings);
     if (globalViewSettings.isEink) {
       applyEinkMode(true);
     }

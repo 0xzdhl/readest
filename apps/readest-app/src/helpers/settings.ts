@@ -1,13 +1,11 @@
 import type { ViewSettings } from '@/domain/book';
 import type { SystemSettings } from '@/domain/settings';
-import type { EnvConfigType } from '@/services/environment';
 import { useBookDataStore } from '@/store/bookDataStore';
 import { useReaderStore } from '@/store/readerStore';
 import { useSettingsStore } from '@/store/settingsStore';
 import { getStyles } from '@/utils/style';
 
 export const saveViewSettings = async <K extends keyof ViewSettings>(
-  envConfig: EnvConfigType,
   bookKey: string,
   key: K,
   value: ViewSettings[K],
@@ -60,7 +58,6 @@ export const saveViewSettings = async <K extends keyof ViewSettings>(
 };
 
 export const saveSysSettings = async <K extends keyof SystemSettings>(
-  envConfig: EnvConfigType,
   key: K,
   value: SystemSettings[K],
 ) => {

@@ -127,13 +127,13 @@ const SettingsMenu: React.FC<SettingsMenuProps> = ({ onPullLibrary, setIsDropdow
   };
 
   const toggleOpenInNewWindow = () => {
-    saveSysSettings(envConfig, 'openBookInNewWindow', !settings.openBookInNewWindow);
+    saveSysSettings('openBookInNewWindow', !settings.openBookInNewWindow);
     setIsDropdownOpen?.(false);
   };
 
   const toggleAlwaysOnTop = () => {
     const newValue = !settings.alwaysOnTop;
-    saveSysSettings(envConfig, 'alwaysOnTop', newValue);
+    saveSysSettings('alwaysOnTop', newValue);
     setIsAlwaysOnTop(newValue);
     tauriHandleSetAlwaysOnTop(newValue);
     setIsDropdownOpen?.(false);
@@ -141,13 +141,13 @@ const SettingsMenu: React.FC<SettingsMenuProps> = ({ onPullLibrary, setIsDropdow
 
   const toggleAlwaysShowStatusBar = () => {
     const newValue = !settings.alwaysShowStatusBar;
-    saveSysSettings(envConfig, 'alwaysShowStatusBar', newValue);
+    saveSysSettings('alwaysShowStatusBar', newValue);
     setIsAlwaysShowStatusBar(newValue);
   };
 
   const toggleAutoUploadBooks = () => {
     const newValue = !settings.autoUpload;
-    saveSysSettings(envConfig, 'autoUpload', newValue);
+    saveSysSettings('autoUpload', newValue);
     setIsAutoUpload(newValue);
 
     if (newValue && !user) {
@@ -157,25 +157,25 @@ const SettingsMenu: React.FC<SettingsMenuProps> = ({ onPullLibrary, setIsDropdow
 
   const toggleAutoImportBooksOnOpen = () => {
     const newValue = !settings.autoImportBooksOnOpen;
-    saveSysSettings(envConfig, 'autoImportBooksOnOpen', newValue);
+    saveSysSettings('autoImportBooksOnOpen', newValue);
     setIsAutoImportBooksOnOpen(newValue);
   };
 
   const toggleAutoCheckUpdates = () => {
     const newValue = !settings.autoCheckUpdates;
-    saveSysSettings(envConfig, 'autoCheckUpdates', newValue);
+    saveSysSettings('autoCheckUpdates', newValue);
     setIsAutoCheckUpdates(newValue);
   };
 
   const toggleOpenLastBooks = () => {
     const newValue = !settings.openLastBooks;
-    saveSysSettings(envConfig, 'openLastBooks', newValue);
+    saveSysSettings('openLastBooks', newValue);
     setIsOpenLastBooks(newValue);
   };
 
   const toggleTelemetry = () => {
     const newValue = !settings.telemetryEnabled;
-    saveSysSettings(envConfig, 'telemetryEnabled', newValue);
+    saveSysSettings('telemetryEnabled', newValue);
     setIsTelemetryEnabled(newValue);
     if (newValue) {
       optInTelemetry();
@@ -251,10 +251,10 @@ const SettingsMenu: React.FC<SettingsMenuProps> = ({ onPullLibrary, setIsDropdow
     if (newValue) {
       const response = await selectDirectory();
       if (response.path) {
-        saveSysSettings(envConfig, 'savedBookCoverForLockScreenPath', response.path);
+        saveSysSettings('savedBookCoverForLockScreenPath', response.path);
       }
     }
-    saveSysSettings(envConfig, 'savedBookCoverForLockScreen', newValue);
+    saveSysSettings('savedBookCoverForLockScreen', newValue);
     setSavedBookCoverForLockScreen(newValue);
   };
 
@@ -271,7 +271,7 @@ const SettingsMenu: React.FC<SettingsMenuProps> = ({ onPullLibrary, setIsDropdow
       if (permission.postNotification !== 'granted') return;
     }
 
-    saveSysSettings(envConfig, 'alwaysInForeground', requestAlwaysInForeground);
+    saveSysSettings('alwaysInForeground', requestAlwaysInForeground);
     setAlwaysInForeground(requestAlwaysInForeground);
   };
 

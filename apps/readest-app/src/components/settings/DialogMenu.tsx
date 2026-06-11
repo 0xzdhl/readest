@@ -39,7 +39,7 @@ const DialogMenu: React.FC<DialogMenuProps> = ({
   const isSettingsGlobal = viewSettings?.isGlobal ?? true;
 
   const handleToggleGlobal = () => {
-    saveViewSettings(envConfig, bookKey, 'isGlobal', !isSettingsGlobal, true, false);
+    saveViewSettings(bookKey, 'isGlobal', !isSettingsGlobal, true, false);
     setIsDropdownOpen?.(false);
   };
 
