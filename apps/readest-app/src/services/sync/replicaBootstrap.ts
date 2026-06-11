@@ -48,7 +48,7 @@ export const bootstrapReplicaAdapters = (): void => {
       useCustomFontStore.getState().markAvailableByContentId(replicaId);
       return;
     }
-    void useCustomFontStore.getState().activateFontByContentId(env, replicaId);
+    void useCustomFontStore.getState().activateFontByContentId(replicaId);
   });
   // Textures: mark available + load the file into a blob URL so the
   // panel grid renders the swatch and `applyTexture` can mount it
@@ -61,7 +61,7 @@ export const bootstrapReplicaAdapters = (): void => {
       useCustomTextureStore.getState().markAvailableByContentId(replicaId);
       return;
     }
-    void useCustomTextureStore.getState().activateTextureByContentId(env, replicaId);
+    void useCustomTextureStore.getState().activateTextureByContentId(replicaId);
   });
   didBootstrap = true;
 };

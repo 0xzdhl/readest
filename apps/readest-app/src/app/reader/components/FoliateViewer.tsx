@@ -540,7 +540,7 @@ const FoliateViewer: React.FC<{
             const customFontFileName = font.path.split('/').pop()?.toLowerCase();
             if (fontFileName && fontFileName === customFontFileName) {
               if (!font.loaded) {
-                const loadedFont = await loadFont(envConfig, font.id);
+                const loadedFont = await loadFont(font.id);
                 font.blobUrl = loadedFont?.blobUrl;
               }
               if (font.blobUrl) {
@@ -707,7 +707,7 @@ const FoliateViewer: React.FC<{
 
   useEffect(() => {
     const mountCustomFonts = async () => {
-      await loadCustomFonts(envConfig);
+      await loadCustomFonts();
       getLoadedFonts().forEach((font) => {
         mountCustomFont(document, font);
         const docs = viewRef.current?.renderer.getContents();

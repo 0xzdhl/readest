@@ -1,6 +1,5 @@
 import { create } from 'zustand';
 import { Effect } from 'effect';
-import type { EnvConfigType } from '@/services/environment';
 import { getClientRuntime } from '@/runtime/clientRuntime';
 import { FileSystem } from '@/application/ports/FileSystem';
 import {
@@ -62,20 +61,20 @@ interface TextureStoreState {
    * font activation, minus the @font-face injection (textures only
    * mount when selected via `applyTexture`).
    */
-  activateTextureByContentId: (envConfig: EnvConfigType, contentId: string) => Promise<void>;
+  activateTextureByContentId: (contentId: string) => Promise<void>;
 
-  applyTexture: (envConfig: EnvConfigType, textureId: string) => Promise<void>;
-  loadTexture: (envConfig: EnvConfigType, textureId: string) => Promise<CustomTexture>;
-  loadTextures: (envConfig: EnvConfigType, textureIds: string[]) => Promise<CustomTexture[]>;
-  loadAllTextures: (envConfig: EnvConfigType) => Promise<CustomTexture[]>;
+  applyTexture: (textureId: string) => Promise<void>;
+  loadTexture: (textureId: string) => Promise<CustomTexture>;
+  loadTextures: (textureIds: string[]) => Promise<CustomTexture[]>;
+  loadAllTextures: () => Promise<CustomTexture[]>;
   unloadTexture: (textureId: string) => boolean;
   unloadAllTextures: () => void;
 
   getLoadedTextures: () => CustomTexture[];
   isTextureLoaded: (textureId: string) => boolean;
 
-  loadCustomTextures: (envConfig: EnvConfigType) => Promise<void>;
-  saveCustomTextures: (envConfig: EnvConfigType) => Promise<void>;
+  loadCustomTextures: () => Promise<void>;
+  saveCustomTextures: () => Promise<void>;
 }
 
 function toSettingsTexture(texture: CustomTexture): CustomTexture {
@@ -176,7 +175,7 @@ export const useCustomTextureStore = create<TextureStoreState>((set, get) => ({
       return { textures };
     });
     const env = getReplicaPersistEnv();
-    if (env) void get().saveCustomTextures(env);
+    if (env) void get().saveCustomTextures();
   },
 
   softDeleteByContentId: (contentId) => {
@@ -189,7 +188,7 @@ export const useCustomTextureStore = create<TextureStoreState>((set, get) => ({
     }));
     if (target.blobUrl) URL.revokeObjectURL(target.blobUrl);
     const env = getReplicaPersistEnv();
-    if (env) void get().saveCustomTextures(env);
+    if (env) void get().saveCustomTextures();
   },
 
   markAvailableByContentId: (contentId) => {
@@ -199,17 +198,17 @@ export const useCustomTextureStore = create<TextureStoreState>((set, get) => ({
       ),
     }));
     const env = getReplicaPersistEnv();
-    if (env) void get().saveCustomTextures(env);
+    if (env) void get().saveCustomTextures();
   },
 
-  activateTextureByContentId: async (envConfig, contentId) => {
+  activateTextureByContentId: async (contentId) => {
     get().markAvailableByContentId(contentId);
     const target = get().textures.find((t) => t.contentId === contentId && !t.deletedAt);
     if (!target) return;
     try {
-      await get().loadTexture(envConfig, target.id);
+      await get().loadTexture(target.id);
       const env = getReplicaPersistEnv();
-      if (env) await get().saveCustomTextures(env);
+      if (env) await get().saveCustomTextures();
     } catch (err) {
       console.warn('activateTextureByContentId failed', contentId, err);
     }
@@ -238,7 +237,7 @@ export const useCustomTextureStore = create<TextureStoreState>((set, get) => ({
     set({ textures: [] });
   },
 
-  loadTexture: async (_envConfig, textureId) => {
+  loadTexture: async (textureId) => {
     const texture = get().getTexture(textureId);
 
     if (!texture) {
@@ -297,12 +296,10 @@ export const useCustomTextureStore = create<TextureStoreState>((set, get) => ({
     }
   },
 
-  loadTextures: async (envConfig, textureIds) => {
+  loadTextures: async (textureIds) => {
     set({ loading: true });
     try {
-      const results = await Promise.allSettled(
-        textureIds.map((id) => get().loadTexture(envConfig, id)),
-      );
+      const results = await Promise.allSettled(textureIds.map((id) => get().loadTexture(id)));
 
       return results
         .filter(
@@ -315,11 +312,11 @@ export const useCustomTextureStore = create<TextureStoreState>((set, get) => ({
     }
   },
 
-  loadAllTextures: async (envConfig) => {
+  loadAllTextures: async () => {
     const textureIds = get()
       .getAvailableTextures()
       .map((texture) => texture.id);
-    return await get().loadTextures(envConfig, textureIds);
+    return await get().loadTextures(textureIds);
   },
 
   unloadTexture: (textureId) => {
@@ -365,7 +362,7 @@ export const useCustomTextureStore = create<TextureStoreState>((set, get) => ({
     return texture?.loaded === true && !texture.error && !texture.deletedAt;
   },
 
-  applyTexture: async (envConfig, textureId) => {
+  applyTexture: async (textureId) => {
     const customTextures = get().getAvailableTextures();
     const allTextures = [...PREDEFINED_TEXTURES, ...customTextures];
     let selectedTexture = allTextures.find((t) => t.id === textureId);
@@ -376,13 +373,13 @@ export const useCustomTextureStore = create<TextureStoreState>((set, get) => ({
     }
 
     if (customTextures.find((t) => t.id === textureId) && !get().isTextureLoaded(textureId)) {
-      selectedTexture = await get().loadTexture(envConfig, textureId);
+      selectedTexture = await get().loadTexture(textureId);
     }
 
     mountBackgroundTexture(document, selectedTexture);
   },
 
-  loadCustomTextures: async (envConfig) => {
+  loadCustomTextures: async () => {
     try {
       const { settings } = useSettingsStore.getState();
       const currentTextures = get().textures;
@@ -398,14 +395,14 @@ export const useCustomTextureStore = create<TextureStoreState>((set, get) => ({
           };
         });
         set({ textures });
-        await get().loadAllTextures(envConfig);
+        await get().loadAllTextures();
       }
     } catch (error) {
       console.error('Failed to load custom textures settings:', error);
     }
   },
 
-  saveCustomTextures: async (envConfig) => {
+  saveCustomTextures: async () => {
     try {
       const { settings, setSettings, saveSettings } = useSettingsStore.getState();
       const { textures } = get();
@@ -444,21 +441,24 @@ export const findTextureByContentId = (contentId: string): CustomTexture | undef
  * skips textures that already carry `contentId`. Implementation lives
  * in `migrateLegacyReplicas` — shared with custom fonts.
  */
-export const migrateLegacyTextures = (envConfig: EnvConfigType): Promise<void> =>
-  migrateLegacyReplicas<CustomTexture>(envConfig, {
-    kind: TEXTURE_KIND,
-    baseDir: 'Images',
-    getCandidates: () =>
-      useCustomTextureStore
-        .getState()
-        .textures.filter(
-          (t) => !t.contentId && !t.bundleDir && !t.deletedAt && !t.path.includes('/'),
-        ),
-    computeContentId: computeTextureContentId,
-    updateRecord: (id, next) => useCustomTextureStore.getState().updateTexture(id, next),
-    saveStore: (env) => useCustomTextureStore.getState().saveCustomTextures(env),
-    publishUpsert: publishTextureUpsert,
-  });
+export const migrateLegacyTextures = (): Promise<void> =>
+  migrateLegacyReplicas<CustomTexture>(
+    {},
+    {
+      kind: TEXTURE_KIND,
+      baseDir: 'Images',
+      getCandidates: () =>
+        useCustomTextureStore
+          .getState()
+          .textures.filter(
+            (t) => !t.contentId && !t.bundleDir && !t.deletedAt && !t.path.includes('/'),
+          ),
+      computeContentId: computeTextureContentId,
+      updateRecord: (id, next) => useCustomTextureStore.getState().updateTexture(id, next),
+      saveStore: () => useCustomTextureStore.getState().saveCustomTextures(),
+      publishUpsert: publishTextureUpsert,
+    },
+  );
 
 // Cleanup blob URLs before page unload
 if (typeof window !== 'undefined') {

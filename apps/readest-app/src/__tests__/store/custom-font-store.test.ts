@@ -380,19 +380,15 @@ describe('customFontStore', () => {
   // 鈹€鈹€ loadFont 鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€
   describe('loadFont', () => {
     test('throws for non-existent font', async () => {
-      const envConfig = createMockEnvConfig();
-      await expect(
-        useCustomFontStore.getState().loadFont(envConfig, 'nonexistent'),
-      ).rejects.toThrow('not found');
+      await expect(useCustomFontStore.getState().loadFont('nonexistent')).rejects.toThrow(
+        'not found',
+      );
     });
 
     test('throws for deleted font', async () => {
       const font = useCustomFontStore.getState().addFont('/a.ttf');
       useCustomFontStore.getState().removeFont(font.id);
-      const envConfig = createMockEnvConfig();
-      await expect(useCustomFontStore.getState().loadFont(envConfig, font.id)).rejects.toThrow(
-        'deleted',
-      );
+      await expect(useCustomFontStore.getState().loadFont(font.id)).rejects.toThrow('deleted');
     });
 
     test('returns immediately if already loaded', async () => {
@@ -401,8 +397,7 @@ describe('customFontStore', () => {
         loaded: true,
         blobUrl: 'blob:existing',
       });
-      const envConfig = createMockEnvConfig();
-      const result = await useCustomFontStore.getState().loadFont(envConfig, font.id);
+      const result = await useCustomFontStore.getState().loadFont(font.id);
       expect(result.blobUrl).toBe('blob:existing');
     });
   });
@@ -425,8 +420,7 @@ describe('customFontStore', () => {
         saveSettings: mockSaveSettings,
       });
 
-      const envConfig = createMockEnvConfig();
-      await useCustomFontStore.getState().saveCustomFonts(envConfig);
+      await useCustomFontStore.getState().saveCustomFonts();
 
       expect(mockSetSettings).toHaveBeenCalledTimes(1);
       expect(mockSaveSettings).toHaveBeenCalledTimes(1);
@@ -495,7 +489,8 @@ describe('customFontStore', () => {
         loading: false,
       });
       const svc = fakeService();
-      await migrateLegacyFonts(buildEnv(svc));
+      buildEnv(svc);
+      await migrateLegacyFonts();
 
       const after = useCustomFontStore.getState().fonts.find((f) => f.id === 'legacy-1')!;
       expect(after.contentId).toBeDefined();
@@ -516,7 +511,8 @@ describe('customFontStore', () => {
         fonts: [{ id: 'legacy-2', name: 'Inter', path: 'Inter.ttf' }],
         loading: false,
       });
-      await migrateLegacyFonts(buildEnv(fakeService()));
+      buildEnv(fakeService());
+      await migrateLegacyFonts();
       expect(mockPublishReplicaUpsert).toHaveBeenCalledOnce();
       expect(mockPublishReplicaUpsert.mock.calls[0]![0]).toBe('font');
     });
@@ -535,7 +531,8 @@ describe('customFontStore', () => {
         loading: false,
       });
       const svc = fakeService();
-      await migrateLegacyFonts(buildEnv(svc));
+      buildEnv(svc);
+      await migrateLegacyFonts();
       expect(svc.copyFile).not.toHaveBeenCalled();
       expect(svc.deleteFile).not.toHaveBeenCalled();
       expect(mockPublishReplicaUpsert).not.toHaveBeenCalled();
@@ -548,7 +545,8 @@ describe('customFontStore', () => {
       });
       const svc = fakeService();
       svc.exists.mockResolvedValueOnce(false);
-      await migrateLegacyFonts(buildEnv(svc));
+      buildEnv(svc);
+      await migrateLegacyFonts();
       const after = useCustomFontStore.getState().fonts.find((f) => f.id === 'gone')!;
       expect(after.contentId).toBeUndefined();
       expect(svc.copyFile).not.toHaveBeenCalled();
@@ -560,7 +558,8 @@ describe('customFontStore', () => {
         loading: false,
       });
       const svc = fakeService();
-      await migrateLegacyFonts(buildEnv(svc));
+      buildEnv(svc);
+      await migrateLegacyFonts();
       expect(svc.copyFile).not.toHaveBeenCalled();
     });
 
@@ -575,7 +574,8 @@ describe('customFontStore', () => {
       });
       const svc = fakeService();
       svc.copyFile.mockRejectedValueOnce(new Error('disk full'));
-      await migrateLegacyFonts(buildEnv(svc));
+      buildEnv(svc);
+      await migrateLegacyFonts();
       const fonts = useCustomFontStore.getState().fonts;
       const aFont = fonts.find((f) => f.id === 'a')!;
       const bFont = fonts.find((f) => f.id === 'b')!;

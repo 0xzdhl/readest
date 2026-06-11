@@ -59,7 +59,7 @@ const DialogMenu: React.FC<DialogMenuProps> = ({
         void runEffect(Effect.flatMap(FontService, (s) => s.deleteFont(font)));
       }
     });
-    saveCustomFonts(envConfig);
+    saveCustomFonts();
     setIsDropdownOpen?.(false);
   };
 

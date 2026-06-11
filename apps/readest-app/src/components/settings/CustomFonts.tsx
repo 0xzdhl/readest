@@ -74,12 +74,12 @@ const CustomFonts: React.FC<CustomFontsProps> = ({ bookKey, onBack }) => {
         });
         console.log('Added custom font:', customFont);
         if (customFont && !customFont.error) {
-          const loadedFont = await loadFont(envConfig, customFont.id);
+          const loadedFont = await loadFont(customFont.id);
           mountCustomFont(document, loadedFont);
           if (booted) void queueReplicaBinaryUpload('font', customFont);
         }
       }
-      saveCustomFonts(envConfig);
+      saveCustomFonts();
     });
   };
 
@@ -88,7 +88,7 @@ const CustomFonts: React.FC<CustomFontsProps> = ({ bookKey, onBack }) => {
       if (font) {
         if (removeFont(font.id)) {
           void runEffect(Effect.flatMap(FontService, (s) => s.deleteFont(font)));
-          saveCustomFonts(envConfig);
+          saveCustomFonts();
           if (getAvailableFonts().length === 0) {
             setIsDeleteMode(false);
           }

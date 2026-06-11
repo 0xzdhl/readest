@@ -126,7 +126,7 @@ const ColorPanel: React.FC<SettingsPanelPanelProp> = ({ bookKey, onRegisterReset
   }, []);
 
   useEffect(() => {
-    loadCustomTextures(envConfig);
+    loadCustomTextures();
   }, [loadCustomTextures, envConfig]);
 
   useEffect(() => {
@@ -207,7 +207,7 @@ const ColorPanel: React.FC<SettingsPanelPanelProp> = ({ bookKey, onRegisterReset
   }, [readingRulerColor]);
 
   const applyBackgroundTexture = () => {
-    applyTexture(envConfig, selectedTextureId);
+    applyTexture(selectedTextureId);
     document.documentElement.style.setProperty('--bg-texture-opacity', `${backgroundOpacity}`);
     document.documentElement.style.setProperty('--bg-texture-size', backgroundSize);
   };
@@ -268,11 +268,11 @@ const ColorPanel: React.FC<SettingsPanelPanelProp> = ({ bookKey, onRegisterReset
           byteSize: textureInfo.byteSize,
         });
         if (customTexture && !customTexture.error) {
-          await loadTexture(envConfig, customTexture.id);
+          await loadTexture(customTexture.id);
           if (booted) void queueReplicaBinaryUpload('texture', customTexture);
         }
       }
-      saveCustomTextures(envConfig);
+      saveCustomTextures();
     });
   };
 
@@ -286,7 +286,7 @@ const ColorPanel: React.FC<SettingsPanelPanelProp> = ({ bookKey, onRegisterReset
     if (selectedTextureId === textureId) {
       setSelectedTextureId('none');
     }
-    saveCustomTextures(envConfig);
+    saveCustomTextures();
   };
 
   const handleCustomHighlightColorsChange = (colors: Record<HighlightColor, string>) => {

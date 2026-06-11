@@ -32,7 +32,7 @@ export const useBackgroundTexture = () => {
         });
       }
 
-      useCustomTextureStore.getState().applyTexture(envConfig, textureId);
+      useCustomTextureStore.getState().applyTexture(textureId);
     },
     [],
   );

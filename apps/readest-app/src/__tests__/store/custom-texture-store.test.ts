@@ -291,19 +291,15 @@ describe('customTextureStore', () => {
   // 鈹€鈹€ loadTexture 鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€
   describe('loadTexture', () => {
     test('throws for non-existent texture', async () => {
-      const envConfig = createMockEnvConfig();
-      await expect(
-        useCustomTextureStore.getState().loadTexture(envConfig, 'nonexistent'),
-      ).rejects.toThrow('not found');
+      await expect(useCustomTextureStore.getState().loadTexture('nonexistent')).rejects.toThrow(
+        'not found',
+      );
     });
 
     test('throws for deleted texture', async () => {
       const tex = useCustomTextureStore.getState().addTexture('/a.png');
       useCustomTextureStore.getState().removeTexture(tex.id);
-      const envConfig = createMockEnvConfig();
-      await expect(useCustomTextureStore.getState().loadTexture(envConfig, tex.id)).rejects.toThrow(
-        'deleted',
-      );
+      await expect(useCustomTextureStore.getState().loadTexture(tex.id)).rejects.toThrow('deleted');
     });
 
     test('returns immediately if already loaded', async () => {
@@ -312,8 +308,7 @@ describe('customTextureStore', () => {
         loaded: true,
         blobUrl: 'blob:existing',
       });
-      const envConfig = createMockEnvConfig();
-      const result = await useCustomTextureStore.getState().loadTexture(envConfig, tex.id);
+      const result = await useCustomTextureStore.getState().loadTexture(tex.id);
       expect(result.blobUrl).toBe('blob:existing');
     });
   });
@@ -337,8 +332,7 @@ describe('customTextureStore', () => {
         saveSettings: mockSaveSettings,
       });
 
-      const envConfig = createMockEnvConfig();
-      await useCustomTextureStore.getState().saveCustomTextures(envConfig);
+      await useCustomTextureStore.getState().saveCustomTextures();
 
       expect(mockSetSettings).toHaveBeenCalledTimes(1);
       expect(mockSaveSettings).toHaveBeenCalledTimes(1);
@@ -358,22 +352,19 @@ describe('customTextureStore', () => {
   describe('applyTexture', () => {
     test('calls unmountBackgroundTexture for "none" id', async () => {
       const { unmountBackgroundTexture } = await import('@/styles/textures');
-      const envConfig = createMockEnvConfig();
-      await useCustomTextureStore.getState().applyTexture(envConfig, 'none');
+      await useCustomTextureStore.getState().applyTexture('none');
       expect(unmountBackgroundTexture).toHaveBeenCalled();
     });
 
     test('calls unmountBackgroundTexture for unknown texture id', async () => {
       const { unmountBackgroundTexture } = await import('@/styles/textures');
-      const envConfig = createMockEnvConfig();
-      await useCustomTextureStore.getState().applyTexture(envConfig, 'unknown-id');
+      await useCustomTextureStore.getState().applyTexture('unknown-id');
       expect(unmountBackgroundTexture).toHaveBeenCalled();
     });
 
     test('calls mountBackgroundTexture for predefined texture', async () => {
       const { mountBackgroundTexture } = await import('@/styles/textures');
-      const envConfig = createMockEnvConfig();
-      await useCustomTextureStore.getState().applyTexture(envConfig, 'concrete');
+      await useCustomTextureStore.getState().applyTexture('concrete');
       expect(mountBackgroundTexture).toHaveBeenCalled();
     });
   });

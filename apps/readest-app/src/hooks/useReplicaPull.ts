@@ -228,11 +228,11 @@ const fontPullConfig: ReplicaPullConfig<CustomFont> = {
   baseDir: 'Fonts',
   adapter: fontAdapter,
   findByContentId: findFontByContentId,
-  hydrateLocalStore: async (envConfig) => {
-    await useCustomFontStore.getState().loadCustomFonts(envConfig);
+  hydrateLocalStore: async () => {
+    await useCustomFontStore.getState().loadCustomFonts();
     // Rehash legacy flat-path fonts so the user doesn't have to
     // re-import them by hand to get them onto other devices.
-    await migrateLegacyFonts(envConfig);
+    await migrateLegacyFonts();
   },
   applyRemote: (font) => useCustomFontStore.getState().applyRemoteFont(font),
   softDeleteByContentId: (id) => useCustomFontStore.getState().softDeleteByContentId(id),
@@ -243,11 +243,11 @@ const texturePullConfig: ReplicaPullConfig<CustomTexture> = {
   baseDir: 'Images',
   adapter: textureAdapter,
   findByContentId: findTextureByContentId,
-  hydrateLocalStore: async (envConfig) => {
-    await useCustomTextureStore.getState().loadCustomTextures(envConfig);
+  hydrateLocalStore: async () => {
+    await useCustomTextureStore.getState().loadCustomTextures();
     // Rehash legacy flat-path textures so the user doesn't have to
     // re-import them by hand to get them onto other devices.
-    await migrateLegacyTextures(envConfig);
+    await migrateLegacyTextures();
   },
   applyRemote: (texture) => useCustomTextureStore.getState().applyRemoteTexture(texture),
   softDeleteByContentId: (id) => useCustomTextureStore.getState().softDeleteByContentId(id),
