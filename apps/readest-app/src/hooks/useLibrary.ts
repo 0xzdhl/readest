@@ -1,13 +1,12 @@
 import { useEffect, useRef, useState } from 'react';
 import { Effect } from 'effect';
-import { useEnv } from '@/context/EnvContext';
 import { useRunEffect } from '@/context/EffectRuntimeProvider';
 import { LibraryRepository } from '@/application/repositories/LibraryRepository';
+import { SettingsRepository } from '@/application/repositories/SettingsRepository';
 import { useLibraryStore } from '@/store/libraryStore';
 import { useSettingsStore } from '@/store/settingsStore';
 
 export const useLibrary = () => {
-  const { envConfig } = useEnv();
   const runEffect = useRunEffect();
   const { setLibrary, libraryLoaded: storeLibraryLoaded } = useLibraryStore();
   const { setSettings } = useSettingsStore();
@@ -26,8 +25,7 @@ export const useLibrary = () => {
     }
     isInitiating.current = true;
     const initLibrary = async () => {
-      const appService = await envConfig.getAppService();
-      const settings = await appService.loadSettings();
+      const settings = await runEffect(Effect.flatMap(SettingsRepository, (r) => r.load));
       setSettings(settings);
       setLibrary(await runEffect(Effect.flatMap(LibraryRepository, (r) => r.load)));
       setLibraryLoaded(true);
