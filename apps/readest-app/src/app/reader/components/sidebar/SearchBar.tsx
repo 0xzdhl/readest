@@ -4,7 +4,10 @@ import { FaSearch, FaChevronDown } from 'react-icons/fa';
 import { IoMdCloseCircle } from 'react-icons/io';
 import { MdDeleteOutline } from 'react-icons/md';
 
+import { Effect } from 'effect';
 import { useEnv } from '@/context/EnvContext';
+import { usePlatformInfo, useRunEffect } from '@/context/EffectRuntimeProvider';
+import { FileSystem } from '@/application/ports/FileSystem';
 import { useSettingsStore } from '@/store/settingsStore';
 import { useBookDataStore } from '@/store/bookDataStore';
 import { useReaderStore } from '@/store/readerStore';
@@ -33,7 +36,9 @@ interface SearchBarProps {
 
 const SearchBar: React.FC<SearchBarProps> = ({ isVisible, bookKey, onHideSearchBar }) => {
   const _ = useTranslation();
-  const { envConfig, appService } = useEnv();
+  const { envConfig } = useEnv();
+  const platformInfo = usePlatformInfo();
+  const runEffect = useRunEffect();
   const { settings } = useSettingsStore();
   const { getBookData } = useBookDataStore();
   const { getConfig, setConfig, saveConfig } = useBookDataStore();
@@ -109,8 +114,13 @@ const SearchBar: React.FC<SearchBarProps> = ({ isVisible, bookKey, onHideSearchB
       const cacheKey = getSearchCacheKey(term, config);
       const cachePath = `${SEARCH_CACHE_DIR}/${bookHash}/${cacheKey}.json`;
       try {
-        if (await appService?.exists(cachePath, 'Cache')) {
-          const content = await appService?.readFile(cachePath, 'Cache', 'text');
+        const cacheExists = await runEffect(
+          Effect.flatMap(FileSystem, (fs) => fs.exists(cachePath, 'Cache')),
+        );
+        if (cacheExists) {
+          const content = await runEffect(
+            Effect.flatMap(FileSystem, (fs) => fs.readFile(cachePath, 'Cache', 'text')),
+          );
           if (content) return JSON.parse(content as string);
         }
       } catch (error) {
@@ -118,7 +128,7 @@ const SearchBar: React.FC<SearchBarProps> = ({ isVisible, bookKey, onHideSearchB
       }
       return null;
     },
-    [bookHash, appService, getSearchCacheKey],
+    [bookHash, runEffect, getSearchCacheKey],
   );
 
   const saveSearchCache = useCallback(
@@ -131,27 +141,39 @@ const SearchBar: React.FC<SearchBarProps> = ({ isVisible, bookKey, onHideSearchB
       const cacheDir = `${SEARCH_CACHE_DIR}/${bookHash}`;
       const cachePath = `${cacheDir}/${cacheKey}.json`;
       try {
-        if (!(await appService?.exists(cacheDir, 'Cache'))) {
-          await appService?.createDir(cacheDir, 'Cache', true);
+        const cacheDirExists = await runEffect(
+          Effect.flatMap(FileSystem, (fs) => fs.exists(cacheDir, 'Cache')),
+        );
+        if (!cacheDirExists) {
+          await runEffect(
+            Effect.flatMap(FileSystem, (fs) => fs.createDir(cacheDir, 'Cache', true)),
+          );
         }
-        await appService?.writeFile(cachePath, 'Cache', JSON.stringify(results));
+        await runEffect(
+          Effect.flatMap(FileSystem, (fs) =>
+            fs.writeFile(cachePath, 'Cache', JSON.stringify(results)),
+          ),
+        );
       } catch (error) {
         console.error('Failed to save search cache:', error);
       }
     },
-    [bookHash, appService, getSearchCacheKey],
+    [bookHash, runEffect, getSearchCacheKey],
   );
 
   const clearSearchCache = useCallback(async () => {
     const cacheDir = `${SEARCH_CACHE_DIR}/${bookHash}`;
     try {
-      if (await appService?.exists(cacheDir, 'Cache')) {
-        await appService?.deleteDir(cacheDir, 'Cache', true);
+      const cacheDirExists = await runEffect(
+        Effect.flatMap(FileSystem, (fs) => fs.exists(cacheDir, 'Cache')),
+      );
+      if (cacheDirExists) {
+        await runEffect(Effect.flatMap(FileSystem, (fs) => fs.removeDir(cacheDir, 'Cache', true)));
       }
     } catch (error) {
       console.error('Failed to clear search cache:', error);
     }
-  }, [bookHash, appService]);
+  }, [bookHash, runEffect]);
 
   const view = getView(bookKey)!;
   const config = getConfig(bookKey)!;
@@ -175,7 +197,7 @@ const SearchBar: React.FC<SearchBarProps> = ({ isVisible, bookKey, onHideSearchB
       inputRef.current.onfocus = () => {
         inputFocusedRef.current = true;
       };
-      if (!appService?.isMobile) {
+      if (!platformInfo.isMobile) {
         inputRef.current.focus();
       }
     }
@@ -183,7 +205,7 @@ const SearchBar: React.FC<SearchBarProps> = ({ isVisible, bookKey, onHideSearchB
       handleSearchTermChange(searchTerm);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [appService, isVisible]);
+  }, [platformInfo, isVisible]);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {

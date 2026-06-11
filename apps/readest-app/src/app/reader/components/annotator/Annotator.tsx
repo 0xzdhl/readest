@@ -3,7 +3,10 @@ import { RiDeleteBinLine } from 'react-icons/ri';
 
 import * as CFI from 'foliate-js/epubcfi.js';
 import { Overlayer } from 'foliate-js/overlayer.js';
+import { Effect, Option } from 'effect';
 import { useEnv } from '@/context/EnvContext';
+import { usePlatformInfo, useRunEffect } from '@/context/EffectRuntimeProvider';
+import { Dialog } from '@/application/ports/Dialog';
 import type { BookNote, BooknoteGroup, HighlightColor, HighlightStyle } from '@/domain/book';
 import { NOTE_PREFIX } from '@/types/view';
 import type { NativeTouchEventType } from '@/domain/system';
@@ -52,7 +55,9 @@ import ExportMarkdownDialog from './ExportMarkdownDialog';
 
 const Annotator: React.FC<{ bookKey: string }> = ({ bookKey }) => {
   const _ = useTranslation();
-  const { envConfig, appService } = useEnv();
+  const { envConfig } = useEnv();
+  const platformInfo = usePlatformInfo();
+  const runEffect = useRunEffect();
   const { settings, setSettingsDialogBookKey, setSettingsDialogOpen, setActiveSettingsItemId } =
     useSettingsStore();
   const { isDarkMode } = useThemeStore();
@@ -284,7 +289,7 @@ const Annotator: React.FC<{ bookKey: string }> = ({ bookKey }) => {
       }
     };
 
-    if (appService?.isAndroidApp) {
+    if (platformInfo.isAndroidApp) {
       listenToNativeTouchEvents();
       eventDispatcher.on('native-touch', handleNativeTouch);
     }
@@ -390,8 +395,8 @@ const Annotator: React.FC<{ bookKey: string }> = ({ bookKey }) => {
       const fontSizeValue = parseFloat(fontSize) || viewSettings.defaultFontSize;
       const lineHeightValue = parseFloat(lineHeight) || viewSettings.lineHeight * fontSizeValue;
       const strokeWidth = 2;
-      const verticalCompensation = appService?.isMobile ? 0 : -1;
-      const horizontalCompensation = appService?.isMobile ? -1 : 0;
+      const verticalCompensation = platformInfo.isMobile ? 0 : -1;
+      const horizontalCompensation = platformInfo.isMobile ? -1 : 0;
       const padding = viewSettings.vertical
         ? (lineHeightValue - fontSizeValue) / 2 - strokeWidth + verticalCompensation
         : (lineHeightValue - fontSizeValue) / 2 - strokeWidth + horizontalCompensation;
@@ -537,7 +542,7 @@ const Annotator: React.FC<{ bookKey: string }> = ({ bookKey }) => {
     // by the in-progress touch (closes #3935).
     runOrDeferAction(
       deferredQuickActionRef.current,
-      !!appService?.isAndroidApp && !androidTouchEndRef.current,
+      platformInfo.isAndroidApp && !androidTouchEndRef.current,
       runAction,
     );
   };
@@ -639,7 +644,7 @@ const Annotator: React.FC<{ bookKey: string }> = ({ bookKey }) => {
   }, [selection?.cfi, showAnnotationNotes, config.booknotes]);
 
   const handleShowAnnotPopup = () => {
-    if (!appService?.isMobile) {
+    if (!platformInfo.isMobile) {
       containerRef.current?.focus();
     }
     setShowAnnotPopup(true);
@@ -693,7 +698,7 @@ const Annotator: React.FC<{ bookKey: string }> = ({ bookKey }) => {
     if (updatedConfig) {
       saveConfig(envConfig, bookKey, updatedConfig, settings);
     }
-    if (!appService?.isMobile) {
+    if (!platformInfo.isMobile) {
       setNotebookVisible(true);
     }
   };
@@ -908,13 +913,19 @@ const Annotator: React.FC<{ bookKey: string }> = ({ bookKey }) => {
     const ext = isPlainText ? 'txt' : 'md';
     const mimeType = isPlainText ? 'text/plain' : 'text/markdown';
     const filename = `${makeSafeFilename(book.title)}.${ext}`;
-    const saved = await appService?.saveFile(filename, content, {
-      mimeType,
-      share: true,
-      sharePosition,
-    });
+    const saved = await runEffect(
+      Effect.flatMap(Dialog, (dialog) =>
+        dialog
+          .saveFile(filename, content, {
+            mimeType,
+            share: true,
+            sharePosition,
+          })
+          .pipe(Effect.map(Option.isSome)),
+      ),
+    );
 
-    if (appService?.isMacOSApp) return;
+    if (platformInfo.isMacOSApp) return;
     eventDispatcher.dispatch('toast', {
       type: 'info',
       message: saved ? _('Exported successfully') : _('Copied to clipboard'),
