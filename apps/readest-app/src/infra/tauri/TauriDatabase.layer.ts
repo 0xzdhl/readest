@@ -5,8 +5,8 @@ import { Database, type DatabaseShape, type OpenDatabaseInput } from '@/applicat
 import { PathResolver } from '@/application/ports/PathResolver';
 
 /**
- * Faithful port of NativeAppService.openDatabase
- * (src/services/nativeAppService.ts:622–635) into the `DatabaseShape` port.
+ * Faithful port of the legacy native (Tauri) openDatabase routine
+ * into the `DatabaseShape` port.
  *
  * - Resolves the absolute file path via the injected `PathResolver`.
  * - Dynamic-imports `NativeDatabaseService`, `migrate`, and `getMigrations`

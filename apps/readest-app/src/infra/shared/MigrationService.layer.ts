@@ -14,7 +14,7 @@ export const MigrationServiceLive = Layer.effect(
   Effect.gen(function* () {
     const fs = yield* FileSystem;
 
-    // Faithful port of AppService.migrate20251124: rename the legacy backup
+    // Faithful port of the legacy migrate20251124 routine: rename the legacy backup
     // library file (`library_backup.json`) to `${library.json}.bak`. The legacy
     // implementation logs and swallows errors, so fold any failure to void.
     const migrate20251124 = Effect.gen(function* () {

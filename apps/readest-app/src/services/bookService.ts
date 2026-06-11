@@ -212,8 +212,8 @@ export async function mergeBooks(
 
 /**
  * Options consumed by bookService.importBook. Extends the user-facing
- * ImportBookOptions with the required AppService callbacks that are bound by
- * the AppService wrapper.
+ * ImportBookOptions with the required callbacks that are bound by
+ * the service wrapper.
  */
 export interface ImportBookInternalOptions extends ImportBookOptions {
   saveBookConfig: (book: Book, config: BookConfig) => Promise<void>;

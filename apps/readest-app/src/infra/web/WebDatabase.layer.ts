@@ -5,8 +5,8 @@ import { Database, type DatabaseShape, type OpenDatabaseInput } from '@/applicat
 import { PathResolver } from '@/application/ports/PathResolver';
 
 /**
- * Faithful port of WebAppService.openDatabase
- * (src/services/webAppService.ts:400–417) into the `DatabaseShape` port.
+ * Faithful port of the legacy web openDatabase routine
+ * into the `DatabaseShape` port.
  *
  * - Resolves the absolute "path" via the injected `PathResolver` (same as
  *   `resolveFilePath` in the legacy service).

@@ -71,7 +71,7 @@ export interface FileSystem {
 /**
  * Minimal write-only fs contract for libs/storage.downloadFile (which reaches
  * only writeFile). Reuses the legacy FileSystem.writeFile signature so there's
- * one source of truth. The AppService interface is gone (E5b-2); this is the
- * narrow shape its download consumers actually needed.
+ * one source of truth. The legacy god-object interface is gone (E5b-2); this is
+ * the narrow write contract its download consumers actually needed.
  */
 export type FileWriter = Pick<FileSystem, 'writeFile'>;

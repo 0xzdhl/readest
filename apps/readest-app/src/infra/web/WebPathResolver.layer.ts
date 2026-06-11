@@ -9,7 +9,7 @@ import {
   LOCAL_IMAGES_SUBDIR,
 } from '@/services/constants';
 
-// Faithful port of webAppService.ts resolvePath (19-36) + getPrefix (59-64).
+// Faithful port of the legacy web resolvePath + getPrefix.
 // The web filesystem stores flat relative paths under category subdirs; there is no
 // custom root / portable handling, so this resolver does not depend on PathState.
 const webBasePrefix = async () => '';
@@ -40,7 +40,7 @@ const resolvePath = (path: string, base: BaseDir): ResolvedPath => {
 
 export const WebPathResolverLive = Layer.succeed(PathResolver, {
   resolve: (path, base) => Effect.succeed(resolvePath(path, base)),
-  // Mirrors indexedDBFileSystem.getPrefix (webAppService.ts:59-64).
+  // Mirrors the legacy web IndexedDB filesystem getPrefix.
   prefix: (base) =>
     Effect.sync(() => {
       const { basePrefix: _basePrefix, fp } = resolvePath('', base);

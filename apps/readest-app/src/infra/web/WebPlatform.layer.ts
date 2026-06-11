@@ -9,8 +9,8 @@ import type { PlatformInfo } from '@/application/ports/Platform';
 
 /**
  * Compute PlatformInfo for the web platform.
- * Mirrors WebAppService field overrides (webAppService.ts:287–292) plus
- * the BaseAppService defaults (appService.ts:36–66) for every other field.
+ * Mirrors the legacy web platform-flag overrides plus
+ * the shared defaults for every other field.
  */
 function computeInfo(): PlatformInfo {
   const distChannel = clientEnv.VITE_DIST_CHANNEL as DistChannel;
@@ -19,9 +19,9 @@ function computeInfo(): PlatformInfo {
   return {
     appPlatform: 'web',
     osPlatform,
-    // UA-based mobile detection (webAppService.ts:289)
+    // UA-based mobile detection
     isMobile: ['android', 'ios'].includes(osPlatform),
-    // BaseAppService defaults for every other field
+    // shared defaults for every other field
     isAppDataSandbox: false,
     isAndroidApp: false,
     isIOSApp: false,
@@ -37,7 +37,6 @@ function computeInfo(): PlatformInfo {
     hasWindowBar: false,
     hasContextMenu: false,
     hasRoundedWindow: false,
-    // webAppService.ts:292
     hasSafeAreaInset: typeof window !== 'undefined' ? isPWA() : false,
     hasHaptics: false,
     hasUpdater: false,
@@ -46,7 +45,6 @@ function computeInfo(): PlatformInfo {
     hasIAP: false,
     canCustomizeRootDir: false,
     canReadExternalDir: false,
-    // webAppService.ts:291
     supportsCanvasContext2DFilter: typeof navigator !== 'undefined' ? !isSafariBrowser() : true,
     distChannel,
     storefrontRegionCode: null,

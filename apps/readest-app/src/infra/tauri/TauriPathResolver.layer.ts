@@ -21,11 +21,11 @@ import {
 } from '@/services/constants';
 
 // Categories that nest directly under the custom root WITHOUT a leaf BaseDir-name segment.
-// Ported verbatim from getPathResolver() (nativeAppService.ts) `dataDirs`.
+// Ported verbatim from the legacy native getPathResolver() `dataDirs`.
 const DATA_DIRS: BaseDir[] = ['Settings', 'Data', 'Books', 'Fonts', 'Images', 'Dictionaries'];
 
 /**
- * Faithful port of `getPathResolver()` (src/services/nativeAppService.ts:83-195),
+ * Faithful port of the legacy native `getPathResolver()`,
  * parameterised by the current `PathConfig` from `PathState`.
  *
  * Note: under a custom root, the custom prefix collapses to just the root for the
@@ -138,7 +138,7 @@ export const TauriPathResolverLive = Layer.effect(
     const resolve = (path: string, base: BaseDir) =>
       state.get.pipe(Effect.map((cfg) => buildResolved(path, base, cfg)));
 
-    // Mirrors nativeFileSystem.getPrefix (nativeAppService.ts:200-205).
+    // Mirrors the legacy native filesystem getPrefix.
     const prefix = (base: BaseDir) =>
       resolve('', base).pipe(
         Effect.flatMap((r) =>

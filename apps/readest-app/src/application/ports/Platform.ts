@@ -1,7 +1,7 @@
 import { Context, type Effect } from 'effect';
 import type { AppPlatform, DistChannel, OsPlatform } from '@/domain/system';
 
-// Mirrors the capability surface of the legacy AppService (faithful port target for Plan C).
+// Mirrors the capability surface of the legacy platform god-object (faithful port target).
 export type PlatformInfo = {
   readonly appPlatform: AppPlatform;
   readonly osPlatform: OsPlatform;

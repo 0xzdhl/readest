@@ -18,8 +18,8 @@ const safeDecodePath = (input: string): string => {
 };
 
 /**
- * Faithful port of the NativeAppService dialog methods
- * (src/services/nativeAppService.ts:544–620) into the `DialogShape` port.
+ * Faithful port of the legacy native (Tauri) dialog methods
+ * into the `DialogShape` port.
  * Every platform call is wrapped in `Effect.tryPromise` mapping throws to
  * `PlatformError`. Edge-cases preserved:
  *   - `selectFiles`: iOS path-decode (safeDecodePath).

@@ -23,7 +23,7 @@ import type { DictionaryProvider, ImportedDictionary } from '@/domain/dictionari
 import type { BaseDir } from '@/domain/system';
 import { StarDictReader, type StarDictEntry } from '../stardictReader';
 
-/** Subset of the file API the provider needs. Both `AppService` and `FileSystem` satisfy this. */
+/** Subset of the file API the provider needs; satisfied by the `FileSystem` port. */
 export interface DictionaryFileOpener {
   openFile(path: string, base: BaseDir): Promise<File>;
 }

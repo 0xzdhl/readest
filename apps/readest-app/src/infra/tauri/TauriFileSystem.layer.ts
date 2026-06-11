@@ -25,7 +25,7 @@ import { getDirPath, getFilename } from '@/utils/path';
 import { NativeFile, RemoteFile } from '@/utils/file';
 import { copyURIToPath } from '@/utils/bridge';
 
-// Mirrors nativeAppService.ts safeDecodePath (67-73).
+// Mirrors the legacy native safeDecodePath helper.
 const safeDecodePath = (input: string): string => {
   try {
     return decodeURI(input);
@@ -35,7 +35,7 @@ const safeDecodePath = (input: string): string => {
 };
 
 /**
- * Faithful port of `nativeFileSystem` (src/services/nativeAppService.ts:197-419)
+ * Faithful port of the legacy native (Tauri) filesystem
  * into the `FileSystemShape` port. Path logic comes from the injected `PathResolver`
  * (replacing `this.resolvePath`) and the per-OS `openFile` branch reads `Platform`.
  * Every `@tauri-apps/plugin-fs` / `@tauri-apps/api` call is wrapped in
@@ -52,7 +52,7 @@ export const TauriFileSystemLive = Layer.effect(
     // not at import time, so web/test contexts can import this module safely.
     const OS_TYPE = osType();
 
-    // getURL (nativeAppService.ts:206-208) — pure, used by openFile + getBlobUrl.
+    // getURL — pure, used by openFile + getBlobUrl.
     const getUrlSync = (path: string): string => (isValidURL(path) ? path : convertFileSrc(path));
 
     const getUrl = (path: string) =>

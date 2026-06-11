@@ -13,7 +13,7 @@ import { RemoteFile } from '@/utils/file';
 const dbName = 'AppFileSystem';
 const dbVersion = 1;
 
-// Faithful port of openIndexedDB (webAppService.ts:41-55) — same store/keyPath.
+// Faithful port of the legacy web openIndexedDB — same store/keyPath.
 const openIndexedDB = (): Promise<IDBDatabase> =>
   new Promise((resolve, reject) => {
     const request = indexedDB.open(dbName, dbVersion);
@@ -30,7 +30,7 @@ const openIndexedDB = (): Promise<IDBDatabase> =>
   });
 
 /**
- * Faithful port of `indexedDBFileSystem` (src/services/webAppService.ts:57-285) into
+ * Faithful port of the legacy web IndexedDB filesystem into
  * the `FileSystemShape` port. The flat key path (`fp`) comes from the injected
  * `PathResolver` (the Web resolver mirrors the legacy `resolvePath`). All IndexedDB
  * ops are wrapped in `Effect.tryPromise` mapping rejections to `FsError`.
@@ -40,7 +40,7 @@ export const WebFileSystemLive = Layer.effect(
   Effect.gen(function* () {
     const resolver = yield* PathResolver;
 
-    // getURL (webAppService.ts:65-71) — used by openFile + getBlobUrl.
+    // getURL — used by openFile + getBlobUrl.
     const getUrlSync = (path: string): string =>
       isValidURL(path) ? path : URL.createObjectURL(new Blob([path]));
 

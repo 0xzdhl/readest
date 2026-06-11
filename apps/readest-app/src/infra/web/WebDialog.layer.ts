@@ -5,8 +5,8 @@ import type { SaveFileOptions } from '@/application/ports/Dialog';
 import type { SelectDirectoryMode } from '@/domain/system';
 
 /**
- * Faithful port of the WebAppService dialog methods
- * (src/services/webAppService.ts:326–394) into the `DialogShape` port.
+ * Faithful port of the legacy web dialog methods
+ * into the `DialogShape` port.
  *
  * - `ask`:              `window.confirm(message)` — synchronous, wrapped in Effect.
  * - `selectDirectory`:  Not supported in browser — fails with PlatformError.

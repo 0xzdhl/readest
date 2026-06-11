@@ -17,7 +17,7 @@ export const BootApp = Effect.gen(function* () {
     yield* pathState.update((current) => ({ ...current, customRootDir: settings.customRootDir }));
   }
 
-  // Mirrors the legacy boot (web/nativeAppService.runMigrations): `settings.migrationVersion || 0`.
+  // Mirrors the legacy boot migration trigger: `settings.migrationVersion || 0`.
   const lastMigrationVersion = settings.migrationVersion || 0;
   yield* migration.run({ lastMigrationVersion });
 
