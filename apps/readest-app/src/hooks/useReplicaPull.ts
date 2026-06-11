@@ -1,4 +1,6 @@
+import { Effect } from 'effect';
 import { useEffect } from 'react';
+import { FileSystem } from '@/application/ports/FileSystem';
 import { useAuth } from '@/context/AuthContext';
 import { useEnv } from '@/context/EnvContext';
 import type { ImportedDictionary } from '@/domain/dictionaries';
@@ -43,7 +45,8 @@ import type { CustomTexture } from '@/domain/textures';
 import type { OPDSCatalog } from '@/domain/opds';
 import type { Hlc, ReplicaRow } from '@/types/replica';
 import type { SystemSettings } from '@/domain/settings';
-import type { AppService, BaseDir } from '@/domain/system';
+import type { BaseDir } from '@/domain/system';
+import { getClientRuntime } from '@/runtime/clientRuntime';
 import { uniqueId } from '@/utils/misc';
 
 export type ReplicaKind = 'dictionary' | 'font' | 'texture' | 'opds_catalog' | 'settings';
@@ -85,10 +88,10 @@ const pullInFlight = new Set<ReplicaKind>();
 // for the lifetime of the tab regardless of which page is currently
 // mounted.
 const registeredKinds = new Set<ReplicaKind>();
-// Latest service + envConfig captured by a hook mount; the auto-sync
-// triggers read this so the listeners (installed once) don't capture
-// stale references when the env hot-reloads.
-let autoSyncContext: { service: AppService; envConfig: EnvConfigType } | null = null;
+// Latest envConfig captured by a hook mount; the auto-sync triggers
+// read this so the listeners (installed once) don't capture a stale
+// reference when the env hot-reloads.
+let autoSyncContext: { envConfig: EnvConfigType } | null = null;
 let autoSyncListenersInstalled = false;
 let periodicTimer: ReturnType<typeof setInterval> | null = null;
 let lastForegroundPullAt = 0;
@@ -144,7 +147,6 @@ interface ReplicaPullConfig<T extends ReplicaLocalRecord> {
  */
 const buildReplicaPullDeps = <T extends ReplicaLocalRecord>(
   manager: ReplicaSyncManager,
-  service: AppService,
   envConfig: EnvConfigType,
   config: ReplicaPullConfig<T>,
   pullOpts?: { since?: Hlc | null },
@@ -172,14 +174,18 @@ const buildReplicaPullDeps = <T extends ReplicaLocalRecord>(
   // unset and never hit these.
   createBundleDir: async () => {
     const id = uniqueId();
-    await service.createDir(id, config.baseDir!, true);
+    await getClientRuntime().runPromise(
+      Effect.flatMap(FileSystem, (fs) => fs.createDir(id, config.baseDir!, true)),
+    );
     return id;
   },
   queueReplicaDownload: (contentId, displayTitle, files, _bundleDir, base) =>
     transferManager.queueReplicaDownload(config.kind, contentId, displayTitle, files, base),
   filesExist: async (bundleDir, filenames) => {
     for (const filename of filenames) {
-      const exists = await service.exists(`${bundleDir}/${filename}`, config.baseDir!);
+      const exists = await getClientRuntime().runPromise(
+        Effect.flatMap(FileSystem, (fs) => fs.exists(`${bundleDir}/${filename}`, config.baseDir!)),
+      );
       if (!exists) return false;
     }
     return true;
@@ -300,7 +306,6 @@ const settingsPullConfig = (envConfig: EnvConfigType): ReplicaPullConfig<Setting
  */
 const runPullForKind = async (
   kind: ReplicaKind,
-  service: AppService,
   envConfig: EnvConfigType,
   pullOpts?: { since?: Hlc | null },
   pullOverride?: () => Promise<ReplicaRow[]>,
@@ -310,57 +315,28 @@ const runPullForKind = async (
   switch (kind) {
     case 'dictionary':
       await replicaPullAndApply(
-        buildReplicaPullDeps(
-          ctx.manager,
-          service,
-          envConfig,
-          dictionaryPullConfig,
-          pullOpts,
-          pullOverride,
-        ),
+        buildReplicaPullDeps(ctx.manager, envConfig, dictionaryPullConfig, pullOpts, pullOverride),
       );
       return;
     case 'font':
       await replicaPullAndApply(
-        buildReplicaPullDeps(
-          ctx.manager,
-          service,
-          envConfig,
-          fontPullConfig,
-          pullOpts,
-          pullOverride,
-        ),
+        buildReplicaPullDeps(ctx.manager, envConfig, fontPullConfig, pullOpts, pullOverride),
       );
       return;
     case 'texture':
       await replicaPullAndApply(
-        buildReplicaPullDeps(
-          ctx.manager,
-          service,
-          envConfig,
-          texturePullConfig,
-          pullOpts,
-          pullOverride,
-        ),
+        buildReplicaPullDeps(ctx.manager, envConfig, texturePullConfig, pullOpts, pullOverride),
       );
       return;
     case 'opds_catalog':
       await replicaPullAndApply(
-        buildReplicaPullDeps(
-          ctx.manager,
-          service,
-          envConfig,
-          opdsCatalogPullConfig,
-          pullOpts,
-          pullOverride,
-        ),
+        buildReplicaPullDeps(ctx.manager, envConfig, opdsCatalogPullConfig, pullOpts, pullOverride),
       );
       return;
     case 'settings':
       await replicaPullAndApply(
         buildReplicaPullDeps(
           ctx.manager,
-          service,
           envConfig,
           settingsPullConfig(envConfig),
           pullOpts,
@@ -384,7 +360,7 @@ const triggerIncrementalPullAll = (): void => {
   if (!autoSyncContext) return;
   const ctx = getReplicaSync();
   if (!ctx) return;
-  const { service, envConfig } = autoSyncContext;
+  const { envConfig } = autoSyncContext;
 
   const kindsToPull: ReplicaKind[] = [];
   for (const kind of registeredKinds) {
@@ -416,7 +392,7 @@ const triggerIncrementalPullAll = (): void => {
         kindsToPull.map(async (kind) => {
           const rows = rowsByKind.get(kind) ?? [];
           try {
-            await runPullForKind(kind, service, envConfig, undefined, async () => rows);
+            await runPullForKind(kind, envConfig, undefined, async () => rows);
           } catch (err) {
             console.warn(`replica ${kind} incremental apply failed`, err);
           }
@@ -464,12 +440,12 @@ const onPeriodicTick = (): void => {
  * `registeredKinds` so the auto-pull triggers fan it out alongside the
  * caller's requested kinds.
  */
-const ensureSettingsBootPulled = (service: AppService, envConfig: EnvConfigType): Promise<void> => {
+const ensureSettingsBootPulled = (envConfig: EnvConfigType): Promise<void> => {
   if (settingsBootPullPromise) return settingsBootPullPromise;
   registeredKinds.add('settings');
   pulledKinds.add('settings');
   pullInFlight.add('settings');
-  settingsBootPullPromise = runPullForKind('settings', service, envConfig, {
+  settingsBootPullPromise = runPullForKind('settings', envConfig, {
     since: null,
   })
     .catch((err) => {
@@ -486,11 +462,11 @@ const ensureSettingsBootPulled = (service: AppService, envConfig: EnvConfigType)
  * Install document/window listeners + periodic interval for incremental
  * pulls. Idempotent — first call wires everything, subsequent calls
  * just refresh `autoSyncContext` (so listeners always see the latest
- * appService / envConfig). Listeners stay attached for the lifetime of
- * the page; in production this runs exactly once.
+ * envConfig). Listeners stay attached for the lifetime of the page; in
+ * production this runs exactly once.
  */
-const installAutoSyncListeners = (service: AppService, envConfig: EnvConfigType): void => {
-  autoSyncContext = { service, envConfig };
+const installAutoSyncListeners = (envConfig: EnvConfigType): void => {
+  autoSyncContext = { envConfig };
   if (autoSyncListenersInstalled) return;
   autoSyncListenersInstalled = true;
   if (typeof document !== 'undefined') {
@@ -553,7 +529,7 @@ export const useReplicaPull = ({
     let unsubscribe: (() => void) | null = null;
 
     const schedule = () => {
-      installAutoSyncListeners(appService, envConfig);
+      installAutoSyncListeners(envConfig);
       if (timer) return;
       // Settings is implicitly pulled first regardless of whether the
       // caller asked for it (e.g. the reader page only requests
@@ -570,7 +546,7 @@ export const useReplicaPull = ({
           // Await the settings boot pull before dispatching the others.
           // Subsequent mounts share `settingsBootPullPromise` so the
           // pull only happens once per session.
-          await ensureSettingsBootPulled(appService, envConfig);
+          await ensureSettingsBootPulled(envConfig);
           // Boot path skips disabled kinds: enabling a category later
           // re-fires `triggerIncrementalPullAll` from a focus event,
           // which will fetch the missed rows. This keeps boot bandwidth
@@ -616,7 +592,7 @@ export const useReplicaPull = ({
             eligible.map(async (kind) => {
               try {
                 const rows = rowsByKind.get(kind) ?? [];
-                await runPullForKind(kind, appService, envConfig, undefined, async () => rows);
+                await runPullForKind(kind, envConfig, undefined, async () => rows);
               } catch (err) {
                 console.warn(`replica ${kind} boot apply failed`, err);
                 pulledKinds.delete(kind);
