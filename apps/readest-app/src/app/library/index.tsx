@@ -507,7 +507,7 @@ const LibraryPageContent = () => {
     };
 
     const handleOpenWithBooks = async (appService: AppService, library: Book[]) => {
-      const openWithFiles = (await parseOpenWithFiles(appService)) || [];
+      const openWithFiles = (await parseOpenWithFiles()) || [];
 
       if (openWithFiles.length > 0) {
         return await processOpenWithFiles(appService, openWithFiles, library);

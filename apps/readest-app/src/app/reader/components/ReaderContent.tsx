@@ -9,6 +9,7 @@ import Spinner from '@/components/Spinner';
 import SettingsDialog from '@/components/settings/SettingsDialog';
 import { useAuth } from '@/context/AuthContext';
 import { useEnv } from '@/context/EnvContext';
+import { usePlatformInfo } from '@/context/EffectRuntimeProvider';
 import { parseOpenWithFiles } from '@/helpers/openWith';
 import { useGamepad } from '@/hooks/useGamepad';
 import { useTranslation } from '@/hooks/useTranslation';
@@ -44,6 +45,7 @@ const ReaderContent: React.FC<{ ids: string; cfi?: string; settings: SystemSetti
   const _ = useTranslation();
   const router = useRouter();
   const { envConfig, appService } = useEnv();
+  const platformInfo = usePlatformInfo();
   const { bookKeys, dismissBook, getNextBookKey } = useBooksManager(cfi);
   const { sideBarBookKey, setSideBarBookKey } = useSidebarStore();
   const { saveSettings } = useSettingsStore();
@@ -175,7 +177,7 @@ const ReaderContent: React.FC<{ ids: string; cfi?: string; settings: SystemSetti
     console.log('Closing book', bookKey);
 
     const viewState = getViewState(bookKey);
-    if (viewState?.isPrimary && appService?.isDesktopApp) {
+    if (viewState?.isPrimary && platformInfo.isDesktopApp) {
       await clearDiscordPresence();
     }
 
@@ -229,8 +231,8 @@ const ReaderContent: React.FC<{ ids: string; cfi?: string; settings: SystemSetti
     }
     dismissBook(bookKey);
     if (bookKeys.filter((key) => key !== bookKey).length == 0) {
-      const openWithFiles = (await parseOpenWithFiles(appService)) || [];
-      if (appService?.hasWindow) {
+      const openWithFiles = (await parseOpenWithFiles()) || [];
+      if (platformInfo.hasWindow) {
         if (openWithFiles.length > 0) {
           tauriHandleOnCloseWindow(handleCloseBooks);
           return await tauriHandleClose();
