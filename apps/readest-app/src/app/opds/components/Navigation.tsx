@@ -4,7 +4,7 @@ import { useRouter, useLocation } from '@tanstack/react-router';
 import { FaSearch } from 'react-icons/fa';
 import { IoMdCloseCircle } from 'react-icons/io';
 import { IoChevronBack, IoChevronForward, IoHome } from 'react-icons/io5';
-import { useEnv } from '@/context/EnvContext';
+import { usePlatformInfo } from '@/context/EffectRuntimeProvider';
 import { useTranslation } from '@/hooks/useTranslation';
 import { useTrafficLight } from '@/hooks/useTrafficLight';
 import { useSettingsStore } from '@/store/settingsStore';
@@ -37,7 +37,7 @@ export function Navigation({
   const router = useRouter();
   const location = useLocation();
   const searchParams = new URLSearchParams(location.searchStr);
-  const { appService } = useEnv();
+  const platformInfo = usePlatformInfo();
   const { settings } = useSettingsStore();
   const viewSettings = settings.globalViewSettings;
 
@@ -80,7 +80,7 @@ export function Navigation({
       className={clsx(
         'navbar min-h-0 px-2',
         'flex h-[48px] w-full items-center',
-        appService?.isMobile ? '' : 'bg-base-100',
+        platformInfo.isMobile ? '' : 'bg-base-100',
       )}
     >
       <div className={clsx('justify-start gap-1 sm:gap-3', isTrafficLightVisible && '!pl-16')}>

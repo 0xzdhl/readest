@@ -1,7 +1,7 @@
 import clsx from 'clsx';
 import { useRef } from 'react';
 import { IoArrowBack } from 'react-icons/io5';
-import { useEnv } from '@/context/EnvContext';
+import { usePlatformInfo } from '@/context/EffectRuntimeProvider';
 import { useTranslation } from '@/hooks/useTranslation';
 import { useTrafficLightStore } from '@/store/trafficLightStore';
 import WindowButtons from '@/components/WindowButtons';
@@ -12,7 +12,7 @@ interface ProfileHeaderProps {
 
 const ProfileHeader: React.FC<ProfileHeaderProps> = ({ onGoBack }) => {
   const _ = useTranslation();
-  const { appService } = useEnv();
+  const platformInfo = usePlatformInfo();
   const { isTrafficLightVisible } = useTrafficLightStore();
   const headerRef = useRef<HTMLDivElement>(null);
 
@@ -21,7 +21,7 @@ const ProfileHeader: React.FC<ProfileHeaderProps> = ({ onGoBack }) => {
       ref={headerRef}
       className={clsx(
         'fixed z-30 flex w-full items-center justify-between py-2 pe-6 ps-4',
-        appService?.hasTrafficLight && 'pt-11',
+        platformInfo.hasTrafficLight && 'pt-11',
       )}
     >
       <button
@@ -32,7 +32,7 @@ const ProfileHeader: React.FC<ProfileHeaderProps> = ({ onGoBack }) => {
         <IoArrowBack className='text-base-content' />
       </button>
 
-      {appService?.hasWindowBar && (
+      {platformInfo.hasWindowBar && (
         <WindowButtons
           headerRef={headerRef}
           showMinimize={!isTrafficLightVisible}
