@@ -102,9 +102,7 @@ vi.mock('@/store/libraryStore', async () => {
 
 import { useProofreadStore, validateReplacementRulePattern } from '@/store/proofreadStore';
 
-const envConfig = {
-  getAppService: vi.fn(),
-} as unknown as import('@/services/environment').EnvConfigType;
+const envConfig = {} as import('@/services/environment').EnvConfigType;
 
 // ---------------------------------------------------------------------------
 // Helpers

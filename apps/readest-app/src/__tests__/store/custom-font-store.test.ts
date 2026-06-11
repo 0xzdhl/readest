@@ -70,9 +70,7 @@ function makeFont(overrides: Partial<CustomFont> & { id: string; name: string })
 }
 
 function createMockEnvConfig(): EnvConfigType {
-  return {
-    getAppService: vi.fn(),
-  } as unknown as EnvConfigType;
+  return {} as EnvConfigType;
 }
 
 beforeEach(() => {
@@ -406,7 +404,6 @@ describe('customFontStore', () => {
       const envConfig = createMockEnvConfig();
       const result = await useCustomFontStore.getState().loadFont(envConfig, font.id);
       expect(result.blobUrl).toBe('blob:existing');
-      expect(envConfig.getAppService).not.toHaveBeenCalled();
     });
   });
 

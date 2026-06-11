@@ -47,7 +47,7 @@ const makeSettings = (overrides: Partial<SystemSettings> = {}): SystemSettings =
     ...overrides,
   }) as unknown as SystemSettings;
 
-const makeEnvConfig = (): EnvConfigType => ({ getAppService: vi.fn() }) as unknown as EnvConfigType;
+const makeEnvConfig = (): EnvConfigType => ({}) as EnvConfigType;
 
 /**
  * Opt the current test into credential sync. Most tests in this file

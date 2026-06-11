@@ -25,9 +25,7 @@ function makeTexture(
 }
 
 function createMockEnvConfig(): EnvConfigType {
-  return {
-    getAppService: vi.fn(),
-  } as unknown as EnvConfigType;
+  return {} as EnvConfigType;
 }
 
 beforeEach(() => {
@@ -317,8 +315,6 @@ describe('customTextureStore', () => {
       const envConfig = createMockEnvConfig();
       const result = await useCustomTextureStore.getState().loadTexture(envConfig, tex.id);
       expect(result.blobUrl).toBe('blob:existing');
-      // getAppService should not be called
-      expect(envConfig.getAppService).not.toHaveBeenCalled();
     });
   });
 

@@ -15,10 +15,7 @@ vi.mock('@/services/sync/replicaPublish', () => ({
 
 import { publishReplicaUpsert, publishReplicaDelete } from '@/services/sync/replicaPublish';
 
-const makeEnvConfig = (): EnvConfigType =>
-  ({
-    getAppService: vi.fn(),
-  }) as unknown as EnvConfigType;
+const makeEnvConfig = (): EnvConfigType => ({}) as EnvConfigType;
 
 const makeSettings = (overrides: Partial<SystemSettings> = {}): SystemSettings =>
   ({

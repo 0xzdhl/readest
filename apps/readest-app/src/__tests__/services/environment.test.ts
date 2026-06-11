@@ -289,12 +289,4 @@ describe('environment', () => {
       expect(getNodeAPIBaseUrl()).toBe('https://node.example.com/api');
     });
   });
-
-  // ── environmentConfig default export ───────────────────────────
-  describe('environmentConfig', () => {
-    test('exports an object with getAppService function', async () => {
-      const envConfig = await import('@/services/environment');
-      expect(typeof envConfig.default.getAppService).toBe('function');
-    });
-  });
 });

@@ -55,13 +55,6 @@ vi.mock('@/services/environment', async (importOriginal) => {
         : {}), // keep all real default fields
       API_BASE: 'http://localhost',
       ENABLE_TRANSLATOR: false,
-      // EnvProvider is now thin and no longer boots replica sync (that moved
-      // to EffectRuntimeProvider, which this test doesn't render), so
-      // getAppService/loadSettings are never called here. Kept as a harmless
-      // default-export stub for any other environment importers.
-      getAppService: vi.fn().mockResolvedValue({
-        loadSettings: vi.fn().mockResolvedValue({}),
-      }),
     },
   };
 });

@@ -6,19 +6,9 @@ import ProofreadPopup from '@/app/reader/components/annotator/ProofreadPopup';
 vi.mock('@/services/environment', async () => {
   const actual = await vi.importActual('@/services/environment');
 
-  const mockAppService = {
-    init: vi.fn().mockResolvedValue(undefined),
-    // EnvProvider is now thin and no longer boots replica sync (that moved to
-    // EffectRuntimeProvider, which this test doesn't render), so loadSettings
-    // is never called here. Kept as a harmless default-export stub.
-    loadSettings: vi.fn().mockResolvedValue({}),
-  };
-
   return {
     ...actual,
-    default: {
-      getAppService: vi.fn().mockResolvedValue(mockAppService),
-    },
+    default: {},
   };
 });
 

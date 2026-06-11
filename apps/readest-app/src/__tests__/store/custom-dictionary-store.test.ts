@@ -557,10 +557,7 @@ describe('customDictionaryStore — loadCustomDictionaries reconciliation', () =
       } as unknown as SettingsState['settings'],
     } as unknown as SettingsState);
 
-    const fakeAppService = { exists: vi.fn().mockResolvedValue(false) };
-    const fakeEnv = {
-      getAppService: () => Promise.resolve(fakeAppService),
-    } as unknown as EnvConfigType;
+    const fakeEnv = {} as EnvConfigType;
 
     await useCustomDictionaryStore.getState().loadCustomDictionaries(fakeEnv);
 
@@ -587,10 +584,7 @@ describe('customDictionaryStore — loadCustomDictionaries reconciliation', () =
       } as unknown as SettingsState['settings'],
     } as unknown as SettingsState);
 
-    const fakeAppService = { exists: vi.fn().mockResolvedValue(false) };
-    const fakeEnv = {
-      getAppService: () => Promise.resolve(fakeAppService),
-    } as unknown as EnvConfigType;
+    const fakeEnv = {} as EnvConfigType;
 
     await useCustomDictionaryStore.getState().loadCustomDictionaries(fakeEnv);
 
@@ -625,10 +619,7 @@ describe('customDictionaryStore — loadCustomDictionaries reconciliation', () =
       } as unknown as SettingsState['settings'],
     } as unknown as SettingsState);
 
-    const fakeAppService = { exists: vi.fn().mockResolvedValue(false) };
-    const fakeEnv = {
-      getAppService: () => Promise.resolve(fakeAppService),
-    } as unknown as EnvConfigType;
+    const fakeEnv = {} as EnvConfigType;
 
     await useCustomDictionaryStore.getState().loadCustomDictionaries(fakeEnv);
 
@@ -678,10 +669,7 @@ describe('customDictionaryStore — loadCustomDictionaries reconciliation', () =
       } as unknown as SettingsState['settings'],
     } as unknown as SettingsState);
 
-    const fakeAppService = { exists: vi.fn().mockResolvedValue(false) };
-    const fakeEnv = {
-      getAppService: () => Promise.resolve(fakeAppService),
-    } as unknown as EnvConfigType;
+    const fakeEnv = {} as EnvConfigType;
 
     await useCustomDictionaryStore.getState().loadCustomDictionaries(fakeEnv);
 
