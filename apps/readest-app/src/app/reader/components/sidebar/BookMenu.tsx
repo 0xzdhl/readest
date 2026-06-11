@@ -4,6 +4,7 @@ import React from 'react';
 import { MdCheck } from 'react-icons/md';
 import { useRouter } from '@tanstack/react-router';
 import { useEnv } from '@/context/EnvContext';
+import { usePlatformInfo } from '@/context/EffectRuntimeProvider';
 import { useAuth } from '@/context/AuthContext';
 import { useReaderStore } from '@/store/readerStore';
 import { useLibraryStore } from '@/store/libraryStore';
@@ -30,7 +31,8 @@ interface BookMenuProps {
 const BookMenu: React.FC<BookMenuProps> = ({ menuClassName, setIsDropdownOpen }) => {
   const _ = useTranslation();
   const router = useRouter();
-  const { envConfig, appService } = useEnv();
+  const { envConfig } = useEnv();
+  const platformInfo = usePlatformInfo();
   const { user } = useAuth();
   const { settings } = useSettingsStore();
   const { bookKeys, recreateViewer, getViewSettings } = useReaderStore();
@@ -184,7 +186,7 @@ const BookMenu: React.FC<BookMenuProps> = ({ menuClassName, setIsDropdownOpen })
           </ul>
         </MenuItem>
       )}
-      {appService?.isDesktopApp && (
+      {platformInfo.isDesktopApp && (
         <>
           <hr aria-hidden='true' className='border-base-200 my-1' />
           <MenuItem

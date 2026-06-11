@@ -8,6 +8,7 @@ import type { FoliateView } from '@/domain/view';
 import { wrappedFoliateView } from '@/types/view';
 import type { Insets } from '@/domain/misc';
 import { useEnv } from '@/context/EnvContext';
+import { usePlatformInfo } from '@/context/EffectRuntimeProvider';
 import { useThemeStore } from '@/store/themeStore';
 import { useReaderStore } from '@/store/readerStore';
 import { useBookDataStore } from '@/store/bookDataStore';
@@ -91,7 +92,8 @@ const FoliateViewer: React.FC<{
   contentInsets: Insets;
 }> = ({ bookKey, readerIds, cfi = '', bookDoc, config, gridInsets, contentInsets: insets }) => {
   const _ = useTranslation();
-  const { appService, envConfig } = useEnv();
+  const { envConfig } = useEnv();
+  const platformInfo = usePlatformInfo();
   const { themeCode, isDarkMode } = useThemeStore();
   const { settings } = useSettingsStore();
   const { loadFont, loadCustomFonts, getLoadedFonts, getAvailableFonts } = useCustomFontStore();
@@ -548,8 +550,8 @@ const FoliateViewer: React.FC<{
           });
         }
       });
-      const viewWidth = appService?.isMobile ? screen.width : window.innerWidth;
-      const viewHeight = appService?.isMobile ? screen.height : window.innerHeight;
+      const viewWidth = platformInfo.isMobile ? screen.width : window.innerWidth;
+      const viewHeight = platformInfo.isMobile ? screen.height : window.innerHeight;
       const width = viewWidth - insets.left - insets.right;
       const height = viewHeight - insets.top - insets.bottom;
       book.transformTarget?.addEventListener('data', getDocTransformHandler({ width, height }));
@@ -563,7 +565,7 @@ const FoliateViewer: React.FC<{
       const maxInlineSize = getMaxInlineSize(viewSettings);
       const maxBlockSize = viewSettings.maxBlockSize!;
       const screenOrientation = viewSettings.screenOrientation!;
-      if (appService?.isMobileApp) {
+      if (platformInfo.isMobileApp) {
         await lockScreenOrientation({ orientation: screenOrientation });
       }
       if (animated) {
@@ -571,7 +573,7 @@ const FoliateViewer: React.FC<{
       } else {
         view.renderer.removeAttribute('animated');
       }
-      if (appService?.isAndroidApp) {
+      if (platformInfo.isAndroidApp) {
         if (eink) {
           view.renderer.setAttribute('eink', '');
         } else {
@@ -649,7 +651,7 @@ const FoliateViewer: React.FC<{
     if (viewSettings.scrolled) {
       const headerVisible = showTopHeader;
       const footerVisible = showBottomFooter;
-      const safeBottomPadding = appService?.hasSafeAreaInset ? gridInsets.bottom * 0.33 : 0;
+      const safeBottomPadding = platformInfo.hasSafeAreaInset ? gridInsets.bottom * 0.33 : 0;
       const footerBarHeight = safeBottomPadding + viewSettings.marginBottomPx;
       const scrollTop = headerVisible ? gridInsets.top + viewSettings.marginTopPx : 0;
       const scrollBottom = footerVisible ? Math.max(footerBarHeight, ttsBarHeight) : ttsBarHeight;

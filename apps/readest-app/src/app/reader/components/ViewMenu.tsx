@@ -13,6 +13,7 @@ import { TbColumns1, TbColumns2 } from 'react-icons/tb';
 
 import { MAX_ZOOM_LEVEL, MIN_ZOOM_LEVEL, ZOOM_STEP } from '@/services/constants';
 import { useEnv } from '@/context/EnvContext';
+import { usePlatformInfo } from '@/context/EffectRuntimeProvider';
 import { useAuth } from '@/context/AuthContext';
 import { useThemeStore } from '@/store/themeStore';
 import { useReaderStore } from '@/store/readerStore';
@@ -43,7 +44,8 @@ const ViewMenu: React.FC<ViewMenuProps> = ({
   const _ = useTranslation();
   const router = useRouter();
   const { user } = useAuth();
-  const { envConfig, appService } = useEnv();
+  const { envConfig } = useEnv();
+  const platformInfo = usePlatformInfo();
   const { getConfig, getBookData } = useBookDataStore();
   const { setSettingsDialogOpen, setSettingsDialogBookKey } = useSettingsStore();
   const { getView, getViewSettings, getViewState, getProgress, setViewSettings } = useReaderStore();
@@ -352,7 +354,7 @@ const ViewMenu: React.FC<ViewMenuProps> = ({
 
       <hr aria-hidden='true' className='border-base-300 my-1' />
 
-      {appService?.hasWindow && <MenuItem label={_('Fullscreen')} onClick={handleFullScreen} />}
+      {platformInfo.hasWindow && <MenuItem label={_('Fullscreen')} onClick={handleFullScreen} />}
       <MenuItem
         label={
           themeMode === 'dark'
@@ -364,7 +366,7 @@ const ViewMenu: React.FC<ViewMenuProps> = ({
         Icon={themeMode === 'dark' ? BiMoon : themeMode === 'light' ? BiSun : TbSunMoon}
         onClick={cycleThemeMode}
       />
-      {bookData.book?.format === 'PDF' && appService?.supportsCanvasContext2DFilter && (
+      {bookData.book?.format === 'PDF' && platformInfo.supportsCanvasContext2DFilter && (
         <MenuItem
           label={_('Apply Theme Colors to PDF')}
           Icon={applyThemeToPDF ? MdCheck : undefined}

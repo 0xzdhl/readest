@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { useEnv } from '@/context/EnvContext';
+import { usePlatformInfo } from '@/context/EffectRuntimeProvider';
 import type { FoliateView } from '@/domain/view';
 import type { ViewSettings } from '@/domain/book';
 import { useReaderStore } from '@/store/readerStore';
@@ -105,7 +105,7 @@ export const usePagination = (
   viewRef: React.RefObject<FoliateView | null>,
   containerRef: React.RefObject<HTMLDivElement | null>,
 ) => {
-  const { appService } = useEnv();
+  const platformInfo = usePlatformInfo();
   const { getBookData } = useBookDataStore();
   const { getViewSettings, getViewState } = useReaderStore();
   const { hoveredBookKey, setHoveredBookKey } = useReaderStore();
@@ -136,7 +136,7 @@ export const usePagination = (
             let windowStartX;
             // Currently for tauri APP the window.screenX is always 0
             if (isTauriAppPlatform()) {
-              if (appService?.isMobile) {
+              if (platformInfo.isMobile) {
                 windowStartX = 0;
               } else {
                 const windowPosition = (await tauriGetWindowLogicalPosition()) as {
@@ -248,7 +248,7 @@ export const usePagination = (
   };
 
   useEffect(() => {
-    if (!appService?.isMobileApp) return;
+    if (!platformInfo.isMobileApp) return;
 
     const viewSettings = getViewSettings(bookKey);
     if (viewSettings?.volumeKeysToFlip) {

@@ -2,7 +2,7 @@ import clsx from 'clsx';
 import React, { useCallback } from 'react';
 import { IoChevronBack, IoChevronForward } from 'react-icons/io5';
 import { RiArrowLeftDoubleLine, RiArrowRightDoubleLine } from 'react-icons/ri';
-import { useEnv } from '@/context/EnvContext';
+import { usePlatformInfo } from '@/context/EffectRuntimeProvider';
 import { useReaderStore } from '@/store/readerStore';
 import { useTranslation } from '@/hooks/useTranslation';
 import { viewPagination } from '../hooks/usePagination';
@@ -18,7 +18,7 @@ const PageNavigationButtons: React.FC<PageNavigationButtonsProps> = ({
   isDropdownOpen,
 }) => {
   const _ = useTranslation();
-  const { appService } = useEnv();
+  const platformInfo = usePlatformInfo();
   const { getBookData } = useBookDataStore();
   const { getView, getProgress, getViewSettings, hoveredBookKey } = useReaderStore();
   const bookData = getBookData(bookKey);
@@ -85,14 +85,16 @@ const PageNavigationButtons: React.FC<PageNavigationButtonsProps> = ({
           'absolute left-2 -translate-y-1/2',
           'flex items-center gap-1',
           isPageNavigationButtonsVisible ? 'top-1/2 opacity-100' : 'bottom-2 opacity-0',
-          !isPageNavigationButtonsVisible && !appService?.isAndroidApp ? 'pointer-events-none' : '',
+          !isPageNavigationButtonsVisible && !platformInfo.isAndroidApp
+            ? 'pointer-events-none'
+            : '',
         )}
       >
         <button
           onClick={handleGoLeftSection}
           className={clsx(
             'flex h-20 w-20 items-center justify-center focus:outline-none',
-            !isPageNavigationButtonsVisible && appService?.isAndroidApp && 'h-4 w-4',
+            !isPageNavigationButtonsVisible && platformInfo.isAndroidApp && 'h-4 w-4',
           )}
           aria-hidden={false}
           aria-label={getLeftSectionLabel()}
@@ -134,7 +136,9 @@ const PageNavigationButtons: React.FC<PageNavigationButtonsProps> = ({
           'absolute right-2 -translate-y-1/2',
           'flex items-center gap-1',
           isPageNavigationButtonsVisible ? 'top-1/2 opacity-100' : 'bottom-2 opacity-0',
-          !isPageNavigationButtonsVisible && !appService?.isAndroidApp ? 'pointer-events-none' : '',
+          !isPageNavigationButtonsVisible && !platformInfo.isAndroidApp
+            ? 'pointer-events-none'
+            : '',
         )}
       >
         <button
@@ -159,7 +163,7 @@ const PageNavigationButtons: React.FC<PageNavigationButtonsProps> = ({
           onClick={handleGoRightSection}
           className={clsx(
             'flex h-20 w-20 items-center justify-center focus:outline-none',
-            !isPageNavigationButtonsVisible && appService?.isAndroidApp && 'h-4 w-4',
+            !isPageNavigationButtonsVisible && platformInfo.isAndroidApp && 'h-4 w-4',
           )}
           aria-hidden={false}
           aria-label={getRightSectionLabel()}

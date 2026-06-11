@@ -5,7 +5,7 @@ import { IoIosList } from 'react-icons/io';
 import { PiNotePencil } from 'react-icons/pi';
 import { LuMessageSquare } from 'react-icons/lu';
 
-import { useEnv } from '@/context/EnvContext';
+import { usePlatformInfo } from '@/context/EffectRuntimeProvider';
 import { useTranslation } from '@/hooks/useTranslation';
 import { useSettingsStore } from '@/store/settingsStore';
 
@@ -14,7 +14,7 @@ const TabNavigation: React.FC<{
   onTabChange: (tab: string) => void;
 }> = ({ activeTab, onTabChange }) => {
   const _ = useTranslation();
-  const { appService } = useEnv();
+  const platformInfo = usePlatformInfo();
   const { settings } = useSettingsStore();
   const aiEnabled = settings?.aiSettings?.enabled ?? false;
 
@@ -39,7 +39,7 @@ const TabNavigation: React.FC<{
     <div
       className={clsx(
         'bottom-tab border-base-300/50 bg-base-200 flex w-full border-t',
-        appService?.hasRoundedWindow && 'rounded-window-bottom-left',
+        platformInfo.hasRoundedWindow && 'rounded-window-bottom-left',
       )}
       dir='ltr'
     >

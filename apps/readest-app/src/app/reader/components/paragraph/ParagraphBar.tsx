@@ -9,7 +9,7 @@ import {
 } from 'react-icons/md';
 import type { ViewSettings } from '@/domain/book';
 import type { Insets } from '@/domain/misc';
-import { useEnv } from '@/context/EnvContext';
+import { usePlatformInfo } from '@/context/EffectRuntimeProvider';
 import { useReaderStore } from '@/store/readerStore';
 import { useResponsiveSize } from '@/hooks/useResponsiveSize';
 import { useTranslation } from '@/hooks/useTranslation';
@@ -52,7 +52,7 @@ const ParagraphBar: React.FC<ParagraphBarProps> = ({
   gridInsets,
 }) => {
   const _ = useTranslation();
-  const { appService } = useEnv();
+  const platformInfo = usePlatformInfo();
   const { hoveredBookKey } = useReaderStore();
   const iconSize = useResponsiveSize(18);
   const buttonDirections = getParagraphButtonDirections(viewSettings);
@@ -190,7 +190,7 @@ const ParagraphBar: React.FC<ParagraphBarProps> = ({
             : 'pointer-events-none translate-y-4 scale-90 opacity-0 blur-sm',
         )}
         style={{
-          paddingBottom: appService?.hasSafeAreaInset ? `${gridInsets.bottom * 0.33}px` : 0,
+          paddingBottom: platformInfo.hasSafeAreaInset ? `${gridInsets.bottom * 0.33}px` : 0,
         }}
         onMouseEnter={() => {
           isInTriggerZoneRef.current = true;

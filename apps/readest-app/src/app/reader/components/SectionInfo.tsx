@@ -1,7 +1,7 @@
 import clsx from 'clsx';
 import type React from 'react';
 import type { Insets } from '@/domain/misc';
-import { useEnv } from '@/context/EnvContext';
+import { usePlatformInfo } from '@/context/EffectRuntimeProvider';
 import { useThemeStore } from '@/store/themeStore';
 import { useReaderStore } from '@/store/readerStore';
 import { useTranslation } from '@/hooks/useTranslation';
@@ -31,13 +31,13 @@ const SectionInfo: React.FC<SectionInfoProps> = ({
   gridInsets,
 }) => {
   const _ = useTranslation();
-  const { appService } = useEnv();
+  const platformInfo = usePlatformInfo();
   const { hoveredBookKey, getView, getViewSettings, setHoveredBookKey } = useReaderStore();
   const { systemUIVisible, statusBarHeight } = useThemeStore();
   const viewSettings = getViewSettings(bookKey)!;
   const topInset = Math.max(
     gridInsets.top,
-    appService?.isAndroidApp && systemUIVisible ? statusBarHeight / 2 : 0,
+    platformInfo.isAndroidApp && systemUIVisible ? statusBarHeight / 2 : 0,
   );
 
   const handleNotchClick = () => {
@@ -99,7 +99,7 @@ const SectionInfo: React.FC<SectionInfoProps> = ({
             'text-center',
             isVertical ? '' : 'line-clamp-1',
             !isVertical &&
-              (hoveredBookKey == bookKey || (hoveredBookKey && appService?.isMobile)) &&
+              (hoveredBookKey == bookKey || (hoveredBookKey && platformInfo.isMobile)) &&
               'hidden',
           )}
         >

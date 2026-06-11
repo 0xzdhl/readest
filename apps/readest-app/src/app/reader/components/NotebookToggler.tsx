@@ -1,7 +1,7 @@
 import type React from 'react';
 import { LuNotebookPen } from 'react-icons/lu';
 
-import { useEnv } from '@/context/EnvContext';
+import { usePlatformInfo } from '@/context/EffectRuntimeProvider';
 import { useReaderStore } from '@/store/readerStore';
 import { useSidebarStore } from '@/store/sidebarStore';
 import { useNotebookStore } from '@/store/notebookStore';
@@ -15,14 +15,14 @@ interface NotebookTogglerProps {
 
 const NotebookToggler: React.FC<NotebookTogglerProps> = ({ bookKey }) => {
   const _ = useTranslation();
-  const { appService } = useEnv();
+  const platformInfo = usePlatformInfo();
   const { setHoveredBookKey } = useReaderStore();
   const { sideBarBookKey, setSideBarBookKey } = useSidebarStore();
   const { isNotebookVisible, toggleNotebook } = useNotebookStore();
   const iconSize16 = useResponsiveSize(16);
 
   const handleToggleSidebar = () => {
-    if (appService?.isMobile) {
+    if (platformInfo.isMobile) {
       setHoveredBookKey('');
     }
     if (sideBarBookKey === bookKey) {

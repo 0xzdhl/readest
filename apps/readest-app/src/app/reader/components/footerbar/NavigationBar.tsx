@@ -5,7 +5,7 @@ import { RxSlider as SliderIcon } from 'react-icons/rx';
 import { RiFontFamily as FontIcon } from 'react-icons/ri';
 import { PiSun as ColorIcon } from 'react-icons/pi';
 import { MdOutlineHeadphones as TTSIcon } from 'react-icons/md';
-import { useEnv } from '@/context/EnvContext';
+import { usePlatformInfo } from '@/context/EffectRuntimeProvider';
 import { useReaderStore } from '@/store/readerStore';
 import { useTranslation } from '@/hooks/useTranslation';
 import { useResponsiveSize } from '@/hooks/useResponsiveSize';
@@ -29,7 +29,7 @@ export const NavigationBar: React.FC<NavigationBarProps> = ({
 }) => {
   const isMobile = forceMobileLayout || window.innerWidth < 640 || window.innerHeight < 640;
   const _ = useTranslation();
-  const { appService } = useEnv();
+  const platformInfo = usePlatformInfo();
   const { getViewState } = useReaderStore();
   const viewState = getViewState(bookKey);
   const tocIconSize = useResponsiveSize(23);
@@ -44,7 +44,7 @@ export const NavigationBar: React.FC<NavigationBarProps> = ({
         !forceMobileLayout && 'sm:hidden',
       )}
       style={{
-        paddingBottom: appService?.isAndroidApp
+        paddingBottom: platformInfo.isAndroidApp
           ? `calc(env(safe-area-inset-bottom) + 16px)`
           : navPadding,
       }}

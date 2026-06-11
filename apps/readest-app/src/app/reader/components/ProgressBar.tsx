@@ -3,6 +3,7 @@ import React, { useEffect, useState } from 'react';
 import { Trans } from 'react-i18next';
 import type { Insets } from '@/domain/misc';
 import { useEnv } from '@/context/EnvContext';
+import { usePlatformInfo } from '@/context/EffectRuntimeProvider';
 import { useReaderStore } from '@/store/readerStore';
 import { useTranslation } from '@/hooks/useTranslation';
 import { useBookDataStore } from '@/store/bookDataStore';
@@ -27,7 +28,8 @@ const ProgressBar: React.FC<ProgressBarProps> = ({
   gridInsets,
 }) => {
   const _ = useTranslation();
-  const { envConfig, appService } = useEnv();
+  const { envConfig } = useEnv();
+  const platformInfo = usePlatformInfo();
   const { getBookData } = useBookDataStore();
   const { getProgress, getViewSettings, getView } = useReaderStore();
   const view = getView(bookKey);
@@ -157,7 +159,7 @@ const ProgressBar: React.FC<ProgressBarProps> = ({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [viewSettings.tapToToggleFooter]);
 
-  const isMobile = appService?.isMobile || window.innerWidth < 640;
+  const isMobile = platformInfo.isMobile || window.innerWidth < 640;
   const showStatusInfo =
     (progressBarMode === 'all' ||
       progressBarMode.includes('battery') ||
@@ -203,7 +205,7 @@ const ProgressBar: React.FC<ProgressBarProps> = ({
           : {
               paddingInlineStart: `calc(${horizontalGap / 2}% + ${contentInsets.left / 2}px)`,
               paddingInlineEnd: `calc(${horizontalGap / 2}% + ${contentInsets.right / 2}px)`,
-              paddingBottom: appService?.hasSafeAreaInset ? `${gridInsets.bottom * 0.33}px` : 0,
+              paddingBottom: platformInfo.hasSafeAreaInset ? `${gridInsets.bottom * 0.33}px` : 0,
             }
       }
     >

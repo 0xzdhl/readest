@@ -5,6 +5,7 @@ import { VscLibrary } from 'react-icons/vsc';
 
 import type { Insets } from '@/domain/misc';
 import { useEnv } from '@/context/EnvContext';
+import { usePlatformInfo } from '@/context/EffectRuntimeProvider';
 import { useThemeStore } from '@/store/themeStore';
 import { useReaderStore } from '@/store/readerStore';
 import { useBookDataStore } from '@/store/bookDataStore';
@@ -56,7 +57,8 @@ const HeaderBar: React.FC<HeaderBarProps> = ({
   onDropdownOpenChange,
 }) => {
   const _ = useTranslation();
-  const { envConfig, appService } = useEnv();
+  const { envConfig } = useEnv();
+  const platformInfo = usePlatformInfo();
   const { settings } = useSettingsStore();
   const { isTrafficLightVisible } = useTrafficLight();
   const { trafficLightInFullscreen, setTrafficLightVisibility } = useTrafficLightStore();
@@ -105,7 +107,7 @@ const HeaderBar: React.FC<HeaderBarProps> = ({
   };
 
   useEffect(() => {
-    if (!appService?.hasTrafficLight) return;
+    if (!platformInfo.hasTrafficLight) return;
 
     if (hoveredBookKey === bookKey && isTopLeft) {
       setTrafficLightVisibility(true, { x: 10, y: 20 });
@@ -117,7 +119,7 @@ const HeaderBar: React.FC<HeaderBarProps> = ({
       }, 100);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [appService, hoveredBookKey]);
+  }, [hoveredBookKey]);
 
   useEffect(() => {
     const header = headerRef.current;
@@ -145,9 +147,9 @@ const HeaderBar: React.FC<HeaderBarProps> = ({
 
   useSpatialNavigation(headerRef, isHeaderVisible);
   const trafficLightInHeader =
-    appService?.hasTrafficLight && !trafficLightInFullscreen && !isSideBarVisible && isTopLeft;
+    platformInfo.hasTrafficLight && !trafficLightInFullscreen && !isSideBarVisible && isTopLeft;
   const windowButtonVisible =
-    appService?.hasWindowBar && !isTrafficLightVisible && !trafficLightInHeader;
+    platformInfo.hasWindowBar && !isTrafficLightVisible && !trafficLightInHeader;
 
   return (
     <div
@@ -157,7 +159,7 @@ const HeaderBar: React.FC<HeaderBarProps> = ({
         window.innerWidth < 640 ? 'fixed z-20' : 'absolute',
       )}
       style={{
-        paddingTop: appService?.hasSafeAreaInset ? `${insets.top}px` : '0px',
+        paddingTop: platformInfo.hasSafeAreaInset ? `${insets.top}px` : '0px',
       }}
     >
       <div
@@ -165,13 +167,13 @@ const HeaderBar: React.FC<HeaderBarProps> = ({
         tabIndex={-1}
         className={clsx('absolute top-0 z-10 h-11 w-full', pointerInDoc && 'pointer-events-none')}
         onClick={() => setHoveredBookKey(bookKey)}
-        onMouseEnter={() => !appService?.isMobile && setHoveredBookKey(bookKey)}
-        onTouchStart={() => !appService?.isMobile && setHoveredBookKey(bookKey)}
+        onMouseEnter={() => !platformInfo.isMobile && setHoveredBookKey(bookKey)}
+        onTouchStart={() => !platformInfo.isMobile && setHoveredBookKey(bookKey)}
       />
       <div
         className={clsx(
           'bg-base-100 absolute left-0 right-0 top-0 z-10',
-          appService?.hasRoundedWindow && 'rounded-window-top-right',
+          platformInfo.hasRoundedWindow && 'rounded-window-top-right',
           isHeaderVisible ? 'visible' : 'hidden',
         )}
         style={{
@@ -186,8 +188,8 @@ const HeaderBar: React.FC<HeaderBarProps> = ({
           `header-bar bg-base-100 absolute top-0 z-10 flex h-11 w-full items-center pr-4`,
           `shadow-xs transition-[opacity,margin-top] duration-300`,
           trafficLightInHeader ? 'pl-20' : isSideBarVisible ? 'ps-4' : 'ps-4 sm:ps-1.5',
-          appService?.hasRoundedWindow && 'rounded-window-top-right',
-          !isSideBarVisible && appService?.hasRoundedWindow && 'rounded-window-top-left',
+          platformInfo.hasRoundedWindow && 'rounded-window-top-right',
+          !isSideBarVisible && platformInfo.hasRoundedWindow && 'rounded-window-top-left',
           isHoveredAnim && 'hover-bar-anim',
           isHeaderVisible ? 'pointer-events-auto visible' : 'pointer-events-none opacity-0',
           isDropdownOpen && 'header-bar-pinned',
@@ -197,9 +199,9 @@ const HeaderBar: React.FC<HeaderBarProps> = ({
             ? `${Math.max(insets.top, statusBarHeight)}px`
             : `${insets.top}px`,
         }}
-        onFocus={() => !appService?.isMobile && setHoveredBookKey(bookKey)}
+        onFocus={() => !platformInfo.isMobile && setHoveredBookKey(bookKey)}
         onMouseLeave={(e) => {
-          if (!appService?.isMobile && isMouseOutsideHeader(e.clientX, e.clientY)) {
+          if (!platformInfo.isMobile && isMouseOutsideHeader(e.clientX, e.clientY)) {
             setHoveredBookKey('');
           }
         }}

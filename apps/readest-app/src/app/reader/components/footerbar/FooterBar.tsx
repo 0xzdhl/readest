@@ -1,6 +1,6 @@
 import clsx from 'clsx';
 import React, { useState, useCallback, useMemo, useEffect, useRef } from 'react';
-import { useEnv } from '@/context/EnvContext';
+import { usePlatformInfo } from '@/context/EffectRuntimeProvider';
 import { useSpatialNavigation } from '@/app/reader/hooks/useSpatialNavigation';
 import { useReaderStore } from '@/store/readerStore';
 import { useSidebarStore } from '@/store/sidebarStore';
@@ -24,7 +24,7 @@ const FooterBar: React.FC<FooterBarProps> = ({
   gridInsets,
 }) => {
   const _ = useTranslation();
-  const { appService } = useEnv();
+  const platformInfo = usePlatformInfo();
   const { getConfig, setConfig, getBookData } = useBookDataStore();
   const { hoveredBookKey, setHoveredBookKey } = useReaderStore();
   const { getView, getViewState, getProgress, getViewSettings } = useReaderStore();
@@ -175,7 +175,7 @@ const FooterBar: React.FC<FooterBarProps> = ({
   );
 
   useEffect(() => {
-    if (!appService?.isAndroidApp) return;
+    if (!platformInfo.isAndroidApp) return;
 
     if (hoveredBookKey) {
       acquireBackKeyInterception();
@@ -198,7 +198,7 @@ const FooterBar: React.FC<FooterBarProps> = ({
   // (innerWidth < 640) are intentionally excluded so their styling and panel
   // slide-down animation remain exactly as before — see #3742 / #3746.
   const forceMobileLayout =
-    !!appService?.isMobile && window.innerWidth >= 640 && window.innerWidth <= window.innerHeight;
+    platformInfo.isMobile && window.innerWidth >= 640 && window.innerWidth <= window.innerHeight;
 
   const commonProps: FooterBarChildProps = {
     bookKey,
@@ -222,8 +222,8 @@ const FooterBar: React.FC<FooterBarProps> = ({
     'not-eink:border-base-300/50 eink:border-base-content border-t',
     'transition-[opacity,transform] duration-300',
     forceMobileLayout || window.innerWidth < 640 ? 'fixed' : 'absolute',
-    appService?.hasRoundedWindow && 'rounded-window-bottom-right',
-    !isSideBarVisible && appService?.hasRoundedWindow && 'rounded-window-bottom-left',
+    platformInfo.hasRoundedWindow && 'rounded-window-bottom-right',
+    !isSideBarVisible && platformInfo.hasRoundedWindow && 'rounded-window-bottom-left',
     isHoveredAnim && 'hover-bar-anim',
     !forceMobileLayout &&
       (needHorizontalScroll ? 'sm:!bottom-3 sm:!h-10 sm:justify-end' : 'sm:justify-center'),
@@ -234,7 +234,7 @@ const FooterBar: React.FC<FooterBarProps> = ({
         : 'pointer-events-none translate-y-full opacity-0 sm:translate-y-0',
   );
 
-  const isMobile = appService?.isMobile || window.innerWidth < 640;
+  const isMobile = platformInfo.isMobile || window.innerWidth < 640;
 
   return (
     <>
@@ -258,7 +258,7 @@ const FooterBar: React.FC<FooterBarProps> = ({
         aria-label={_('Footer Bar')}
         className={containerClasses}
         dir={viewSettings?.rtl ? 'rtl' : 'ltr'}
-        onFocus={() => !appService?.isMobile && setHoveredBookKey(bookKey)}
+        onFocus={() => !platformInfo.isMobile && setHoveredBookKey(bookKey)}
         onMouseLeave={() => window.innerWidth >= 640 && setHoveredBookKey('')}
       >
         <MobileFooterBar {...commonProps} />

@@ -3,6 +3,7 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { PiSun, PiMoon } from 'react-icons/pi';
 import { TbSunMoon } from 'react-icons/tb';
 import { useEnv } from '@/context/EnvContext';
+import { usePlatformInfo } from '@/context/EffectRuntimeProvider';
 import { useThemeStore } from '@/store/themeStore';
 import { useTranslation } from '@/hooks/useTranslation';
 import { useSettingsStore } from '@/store/settingsStore';
@@ -30,7 +31,8 @@ export const ColorPanel: React.FC<ColorPanelProps> = ({
   forceMobileLayout,
 }) => {
   const _ = useTranslation();
-  const { envConfig, appService } = useEnv();
+  const { envConfig } = useEnv();
+  const platformInfo = usePlatformInfo();
   const { settings } = useSettingsStore();
   const { getScreenBrightness, setScreenBrightness } = useDeviceControlStore();
   const { themeMode, themeColor, isDarkMode, setThemeMode, setThemeColor } = useThemeStore();
@@ -40,7 +42,7 @@ export const ColorPanel: React.FC<ColorPanelProps> = ({
   );
 
   useEffect(() => {
-    if (!appService?.isMobileApp) return;
+    if (!platformInfo.isMobileApp) return;
     if (actionTab !== 'color') return;
 
     getScreenBrightness().then((brightness) => {
@@ -49,7 +51,7 @@ export const ColorPanel: React.FC<ColorPanelProps> = ({
         setScreenBrightnessValue(screenBrightness);
       }
     });
-  }, [actionTab, appService, getScreenBrightness]);
+  }, [actionTab, getScreenBrightness]);
 
   const debouncedSetScreenBrightness = useMemo(
     () =>
@@ -63,12 +65,12 @@ export const ColorPanel: React.FC<ColorPanelProps> = ({
 
   const handleScreenBrightnessChange = useCallback(
     async (value: number) => {
-      if (!appService?.isMobileApp) return;
+      if (!platformInfo.isMobileApp) return;
 
       setScreenBrightnessValue(value);
       debouncedSetScreenBrightness(value);
     },
-    [appService, debouncedSetScreenBrightness],
+    [debouncedSetScreenBrightness],
   );
 
   const cycleThemeMode = () => {
@@ -89,12 +91,12 @@ export const ColorPanel: React.FC<ColorPanelProps> = ({
     <div
       className={classes}
       style={{
-        bottom: appService?.isAndroidApp
+        bottom: platformInfo.isAndroidApp
           ? `calc(env(safe-area-inset-bottom) + 64px)`
           : bottomOffset,
       }}
     >
-      {appService?.hasScreenBrightness && (
+      {platformInfo.hasScreenBrightness && (
         <Slider
           label={_('Screen Brightness')}
           initialValue={screenBrightnessValue}

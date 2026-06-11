@@ -1,6 +1,6 @@
 import clsx from 'clsx';
 import React, { useState, useRef, useEffect } from 'react';
-import { useEnv } from '@/context/EnvContext';
+import { usePlatformInfo } from '@/context/EffectRuntimeProvider';
 import { useThemeStore } from '@/store/themeStore';
 import { useReaderStore } from '@/store/readerStore';
 import { useTranslation } from '@/hooks/useTranslation';
@@ -26,7 +26,7 @@ interface TTSControlProps {
 
 const TTSControl: React.FC<TTSControlProps> = ({ bookKey, gridInsets }) => {
   const _ = useTranslation();
-  const { appService } = useEnv();
+  const platformInfo = usePlatformInfo();
   const { safeAreaInsets } = useThemeStore();
   const { hoveredBookKey, getViewSettings } = useReaderStore();
 
@@ -192,11 +192,11 @@ const TTSControl: React.FC<TTSControlProps> = ({ bookKey, gridInsets }) => {
             'absolute h-12 w-12',
             'transition-transform duration-300',
             viewSettings?.rtl ? 'left-8' : 'right-6',
-            !appService?.hasSafeAreaInset && 'bottom-[70px] sm:bottom-14',
+            !platformInfo.hasSafeAreaInset && 'bottom-[70px] sm:bottom-14',
           )}
           style={{
-            bottom: appService?.hasSafeAreaInset
-              ? `calc(env(safe-area-inset-bottom, 0px) * ${appService?.isIOSApp ? 0.33 : 1} + ${hoveredBookKey ? 70 : 52}px)`
+            bottom: platformInfo.hasSafeAreaInset
+              ? `calc(env(safe-area-inset-bottom, 0px) * ${platformInfo.isIOSApp ? 0.33 : 1} + ${hoveredBookKey ? 70 : 52}px)`
               : undefined,
           }}
         >

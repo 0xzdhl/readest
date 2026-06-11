@@ -3,6 +3,7 @@ import React, { useCallback } from 'react';
 import { TbBoxMargin } from 'react-icons/tb';
 import { RxLineHeight } from 'react-icons/rx';
 import { useEnv } from '@/context/EnvContext';
+import { usePlatformInfo } from '@/context/EffectRuntimeProvider';
 import { useReaderStore } from '@/store/readerStore';
 import { useTranslation } from '@/hooks/useTranslation';
 import { saveViewSettings } from '@/helpers/settings';
@@ -43,7 +44,8 @@ export const FontLayoutPanel: React.FC<FontLayoutPanelProps> = ({
   forceMobileLayout,
 }) => {
   const _ = useTranslation();
-  const { envConfig, appService } = useEnv();
+  const { envConfig } = useEnv();
+  const platformInfo = usePlatformInfo();
   const { getView, getViewSettings } = useReaderStore();
   const viewSettings = getViewSettings(bookKey);
   const view = getView(bookKey);
@@ -105,7 +107,7 @@ export const FontLayoutPanel: React.FC<FontLayoutPanelProps> = ({
     <div
       className={classes}
       style={{
-        bottom: appService?.isAndroidApp
+        bottom: platformInfo.isAndroidApp
           ? `calc(env(safe-area-inset-bottom) + 64px)`
           : bottomOffset,
       }}

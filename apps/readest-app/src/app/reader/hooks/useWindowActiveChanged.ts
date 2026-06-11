@@ -4,7 +4,7 @@
 
 import { useEffect, useRef } from 'react';
 
-import { useEnv } from '@/context/EnvContext';
+import { usePlatformInfo } from '@/context/EffectRuntimeProvider';
 
 export type ActiveCallback = (isActive: boolean) => void;
 
@@ -28,9 +28,9 @@ async function activeChangedOther(onChange: ActiveCallback): Promise<Cleanup> {
 
 export function useWindowActiveChanged(callback: ActiveCallback) {
   const onActiveChanged = useRef<ActiveCallback>(callback);
-  const { appService } = useEnv();
+  const platformInfo = usePlatformInfo();
 
-  const subscribe = appService?.isDesktopApp ? activeChangedDesktop : activeChangedOther;
+  const subscribe = platformInfo.isDesktopApp ? activeChangedDesktop : activeChangedOther;
 
   useEffect(() => {
     onActiveChanged.current = callback;
