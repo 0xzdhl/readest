@@ -21,6 +21,7 @@ import {
   type LibraryViewModeType,
 } from '@/domain/settings';
 import { useEnv } from '@/context/EnvContext';
+import { usePlatformInfo } from '@/context/EffectRuntimeProvider';
 import { useThemeStore } from '@/store/themeStore';
 import { useAutoFocus } from '@/hooks/useAutoFocus';
 import { useSettingsStore } from '@/store/settingsStore';
@@ -150,7 +151,8 @@ const Bookshelf: React.FC<BookshelfProps> = ({
   const router = useRouter();
   const location = useLocation();
   const searchParams = new URLSearchParams(location.searchStr);
-  const { envConfig, appService } = useEnv();
+  const { envConfig } = useEnv();
+  const platformInfo = usePlatformInfo();
   const { settings } = useSettingsStore();
   const { safeAreaInsets } = useThemeStore();
 
@@ -348,7 +350,7 @@ const Bookshelf: React.FC<BookshelfProps> = ({
 
   const openSelectedBooks = () => {
     handleSetSelectMode(false);
-    if (appService?.hasWindow && settings.openBookInNewWindow) {
+    if (platformInfo.hasWindow && settings.openBookInNewWindow) {
       showReaderWindow(getSelectedBooks());
     } else {
       setTimeout(() => setLoading(true), 200);

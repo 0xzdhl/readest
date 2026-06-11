@@ -8,6 +8,7 @@ import {
   RiDownloadCloud2Line,
 } from 'react-icons/ri';
 import { useEnv } from '@/context/EnvContext';
+import { usePlatformInfo } from '@/context/EffectRuntimeProvider';
 import { useRunEffect } from '@/context/EffectRuntimeProvider';
 import { useTranslation } from '@/hooks/useTranslation';
 import { useFileSelector } from '@/hooks/useFileSelector';
@@ -43,6 +44,7 @@ export const BackupWindow: React.FC<BackupWindowProps> = ({
 }) => {
   const _ = useTranslation();
   const { appService } = useEnv();
+  const platformInfo = usePlatformInfo();
   const runEffect = useRunEffect();
   const { setLibrary } = useLibraryStore();
   const { selectFiles } = useFileSelector(_);
@@ -165,7 +167,7 @@ export const BackupWindow: React.FC<BackupWindowProps> = ({
       isOpen={isOpen}
       title={_('Backup & Restore')}
       onClose={handleClose}
-      snapHeight={appService?.isMobile ? 0.45 : undefined}
+      snapHeight={platformInfo.isMobile ? 0.45 : undefined}
       dismissible={!isProcessing}
       boxClassName='sm:!w-[520px] sm:!max-w-screen-sm sm:h-auto'
     >
