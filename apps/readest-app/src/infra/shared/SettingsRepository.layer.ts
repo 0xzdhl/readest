@@ -1,6 +1,5 @@
 import { Effect, Layer } from 'effect';
 import type { SystemSettings } from '@/domain/settings';
-import { SettingsError } from '@/application/errors/AppError';
 import { FileSystem } from '@/application/ports/FileSystem';
 import { PathResolver } from '@/application/ports/PathResolver';
 import { Platform } from '@/application/ports/Platform';
@@ -8,40 +7,37 @@ import {
   SettingsRepository,
   type SettingsRepositoryShape,
 } from '@/application/repositories/SettingsRepository';
-import { makeLegacyFsAdapter } from './fsPortAdapter';
+import { getDefaultViewSettings } from '@/application/services/settings/viewSettings';
 import {
-  getDefaultViewSettings,
-  loadSettings as legacyLoadSettings,
-  saveSettings as legacySaveSettings,
-} from '@/services/settingsService';
+  loadSystemSettings,
+  saveSystemSettings,
+} from '@/application/services/settings/systemSettings';
 
 export const SettingsRepositoryLive = Layer.effect(
   SettingsRepository,
   Effect.gen(function* () {
     const fsPort = yield* FileSystem;
     const resolver = yield* PathResolver;
-    const platform = yield* Platform;
-    const info = yield* platform.info;
+    const info = yield* (yield* Platform).info;
 
-    const fs = makeLegacyFsAdapter(fsPort, resolver);
+    const provide = <A, E>(e: Effect.Effect<A, E, FileSystem | PathResolver>) =>
+      e.pipe(
+        Effect.provideService(FileSystem, fsPort),
+        Effect.provideService(PathResolver, resolver),
+      );
+
     const ctx = {
-      fs,
       isMobile: info.isMobile,
       isEink: info.isEink,
       isAppDataSandbox: info.isAppDataSandbox,
     };
 
     return {
-      load: Effect.tryPromise({
-        try: () => legacyLoadSettings(ctx),
-        catch: (cause) => new SettingsError({ operation: 'load', cause }),
-      }),
-      save: (settings: SystemSettings) =>
-        Effect.tryPromise({
-          try: () => legacySaveSettings(fs, settings),
-          catch: (cause) => new SettingsError({ operation: 'save', cause }),
-        }),
-      getDefaultViewSettings: Effect.sync(() => getDefaultViewSettings(ctx)),
+      load: provide(loadSystemSettings(ctx)),
+      save: (s: SystemSettings) => provide(saveSystemSettings(s)),
+      getDefaultViewSettings: Effect.sync(() =>
+        getDefaultViewSettings({ isMobile: info.isMobile, isEink: info.isEink }),
+      ),
     } satisfies SettingsRepositoryShape;
   }),
 );
