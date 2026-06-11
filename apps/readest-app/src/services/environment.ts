@@ -1,5 +1,4 @@
 import { clientEnv } from '@/clientEnv';
-import type { AppService } from '@/domain/system';
 
 declare global {
   interface Window {
@@ -40,38 +39,11 @@ export const getAPIBaseUrl = () => (isWebDevMode() ? '/api' : `${getBaseUrl()}/a
 // For Node.js API that currently not supported in some edge runtimes
 export const getNodeAPIBaseUrl = () => (isWebDevMode() ? '/api' : `${getNodeBaseUrl()}/api`);
 
-export interface EnvConfigType {
-  getAppService: () => Promise<AppService>;
-}
+// EnvConfigType is now empty — the legacy app-service accessor is gone (E5b-2,
+// god-objects deleted). The ~513 vestigial `envConfig` threading sites still
+// compile against this empty shape; their removal is the optional E5b-3 cleanup.
+export type EnvConfigType = Record<string, never>;
 
-let nativeAppService: AppService | null = null;
-const getNativeAppService = async () => {
-  if (!nativeAppService) {
-    const { NativeAppService } = await import('@/services/nativeAppService');
-    nativeAppService = new NativeAppService();
-    await nativeAppService.init();
-  }
-  return nativeAppService;
-};
-
-let webAppService: AppService | null = null;
-const getWebAppService = async () => {
-  if (!webAppService) {
-    const { WebAppService } = await import('@/services/webAppService');
-    webAppService = new WebAppService();
-    await webAppService.init();
-  }
-  return webAppService;
-};
-
-const environmentConfig: EnvConfigType = {
-  getAppService: async () => {
-    if (isTauriAppPlatform()) {
-      return getNativeAppService();
-    } else {
-      return getWebAppService();
-    }
-  },
-};
+const environmentConfig: EnvConfigType = {};
 
 export default environmentConfig;
