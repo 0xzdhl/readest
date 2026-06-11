@@ -1,5 +1,5 @@
 import { getAPIBaseUrl, isWebAppPlatform } from '@/services/environment';
-import type { AppService } from '@/domain/system';
+import type { FileWriter } from '@/domain/system';
 import { getUserID } from '@/utils/access';
 import { fetchWithAuth } from '@/utils/fetch';
 import { tauriUpload, tauriDownload, webUpload, webDownload } from '@/utils/transfer';
@@ -176,7 +176,7 @@ export const batchGetDownloadUrls = async (files: { lfp: string; cfp: string }[]
 };
 
 type DownloadFileParams = {
-  appService: AppService;
+  appService: FileWriter;
   dst: string;
   cfp: string;
   url?: string;

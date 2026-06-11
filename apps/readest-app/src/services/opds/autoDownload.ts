@@ -1,6 +1,6 @@
 import { Effect } from 'effect';
 import type { Book } from '@/domain/book';
-import type { AppService, BaseDir } from '@/domain/system';
+import type { FileWriter, BaseDir } from '@/domain/system';
 import type { OPDSCatalog } from '@/domain/opds';
 import { getClientRuntime } from '@/runtime/clientRuntime';
 import { FileSystem } from '@/application/ports/FileSystem';
@@ -34,7 +34,7 @@ async function downloadAndImport(
   const writer = {
     writeFile: (path: string, base: BaseDir, content: ArrayBuffer) =>
       rt.runPromise(Effect.flatMap(FileSystem, (fs) => fs.writeFile(path, base, content))),
-  } as unknown as AppService;
+  } as unknown as FileWriter;
 
   const url = resolveURL(item.acquisitionHref, item.baseURL);
   const username = catalog.username ?? '';

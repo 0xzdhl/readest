@@ -1,6 +1,6 @@
 import { Effect, Layer } from 'effect';
 import type { Book } from '@/domain/book';
-import type { AppService, BaseDir } from '@/domain/system';
+import type { FileWriter, BaseDir } from '@/domain/system';
 import { CloudError } from '@/application/errors/AppError';
 import { FileSystem } from '@/application/ports/FileSystem';
 import { PathResolver } from '@/application/ports/PathResolver';
@@ -24,7 +24,8 @@ export const CloudServiceLive = Layer.effect(
     // The cloud download fns thread `appService` only into libs/storage.downloadFile,
     // which uses exactly one method: appService.writeFile. The legacy adapter has it,
     // so the same object satisfies both the `fs` and the `appService` params.
-    const appService = fs as unknown as AppService;
+    // `fs` is the legacy adapter; it has writeFile, so it satisfies FileWriter directly.
+    const writer: FileWriter = fs;
     const resolveFilePath = (path: string, base: BaseDir) =>
       Effect.runPromise(resolver.absolute(path, base));
     const err = (operation: string) => (cause: unknown) => new CloudError({ operation, cause });
@@ -39,7 +40,7 @@ export const CloudServiceLive = Layer.effect(
         Effect.tryPromise({
           try: () =>
             CloudSvc.downloadBook(
-              appService,
+              writer,
               fs,
               localBooksDir,
               book,
@@ -51,12 +52,12 @@ export const CloudServiceLive = Layer.effect(
         }),
       downloadBookCovers: (books: Book[]) =>
         Effect.tryPromise({
-          try: () => CloudSvc.downloadBookCovers(appService, fs, localBooksDir, books),
+          try: () => CloudSvc.downloadBookCovers(writer, fs, localBooksDir, books),
           catch: err('downloadBookCovers'),
         }),
       downloadCloudFile: (lfp, cfp, onProgress) =>
         Effect.tryPromise({
-          try: () => CloudSvc.downloadCloudFile(appService, localBooksDir, lfp, cfp, onProgress),
+          try: () => CloudSvc.downloadCloudFile(writer, localBooksDir, lfp, cfp, onProgress),
           catch: err('downloadCloudFile'),
         }),
       uploadFileToCloud: (lfp, cfp, base, onProgress, hash, temp) =>
@@ -77,7 +78,7 @@ export const CloudServiceLive = Layer.effect(
           // literal lfp and subsequent openFile(lfp, base) fails.
           try: async () => {
             const dst = await resolveFilePath(opts.lfp, opts.base);
-            return CloudSvc.downloadReplicaFileFromCloud(appService, {
+            return CloudSvc.downloadReplicaFileFromCloud(writer, {
               kind: opts.kind,
               replicaId: opts.replicaId,
               filename: opts.filename,
@@ -104,7 +105,7 @@ export const CloudServiceLive = Layer.effect(
           // Effect.tryPromise maps it to CloudError).
           try: () =>
             BookSvc.fetchBookDetails(fs, book, (b) =>
-              CloudSvc.downloadBook(appService, fs, localBooksDir, b),
+              CloudSvc.downloadBook(writer, fs, localBooksDir, b),
             ),
           catch: err('fetchBookDetails'),
         }),

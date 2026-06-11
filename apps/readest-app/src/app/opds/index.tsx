@@ -21,7 +21,7 @@ import { eventDispatcher } from '@/utils/event';
 import { navigateToReader } from '@/utils/nav';
 import { getFileExtFromMimeType } from '@/libs/document';
 import type { OPDSFeed, OPDSPublication, OPDSSearch } from '@/domain/opds';
-import type { AppService, BaseDir } from '@/domain/system';
+import type { FileWriter, BaseDir } from '@/domain/system';
 import {
   getFileExtFromPath,
   isSearchLink,
@@ -124,7 +124,7 @@ function OPDSBrowserPage() {
       ({
         writeFile: (path: string, base: BaseDir, content: ArrayBuffer) =>
           runEffect(Effect.flatMap(FileSystem, (fs) => fs.writeFile(path, base, content))),
-      }) as unknown as AppService,
+      }) as unknown as FileWriter,
     [runEffect],
   );
 
