@@ -1,6 +1,5 @@
 import clsx from 'clsx';
 import React, { useState } from 'react';
-import { useEnv } from '@/context/EnvContext';
 import { useTranslation } from '@/hooks/useTranslation';
 import { useSettingsStore } from '@/store/settingsStore';
 import { eventDispatcher } from '@/utils/event';
@@ -14,7 +13,6 @@ interface ReadwiseFormProps {
 
 const ReadwiseForm: React.FC<ReadwiseFormProps> = ({ onBack }) => {
   const _ = useTranslation();
-  const { envConfig } = useEnv();
   const { settings, setSettings, saveSettings } = useSettingsStore();
 
   const [accessToken, setAccessToken] = useState('');
@@ -37,7 +35,7 @@ const ReadwiseForm: React.FC<ReadwiseFormProps> = ({ onBack }) => {
           },
         };
         setSettings(newSettings);
-        await saveSettings(envConfig, newSettings);
+        await saveSettings(newSettings);
       } else if (isNetworkError) {
         eventDispatcher.dispatch('toast', {
           message: _('Unable to connect to Readwise. Please check your network connection.'),
@@ -61,7 +59,7 @@ const ReadwiseForm: React.FC<ReadwiseFormProps> = ({ onBack }) => {
       readwise: { enabled: false, accessToken: '', lastSyncedAt: 0 },
     };
     setSettings(newSettings);
-    await saveSettings(envConfig, newSettings);
+    await saveSettings(newSettings);
     eventDispatcher.dispatch('toast', { message: _('Disconnected from Readwise'), type: 'info' });
   };
 
@@ -71,7 +69,7 @@ const ReadwiseForm: React.FC<ReadwiseFormProps> = ({ onBack }) => {
       readwise: { ...settings.readwise, enabled: !settings.readwise?.enabled },
     };
     setSettings(newSettings);
-    await saveSettings(envConfig, newSettings);
+    await saveSettings(newSettings);
   };
 
   const lastSyncedAt = settings.readwise?.lastSyncedAt ?? 0;

@@ -1,8 +1,11 @@
+import { Effect } from 'effect';
 import { create } from 'zustand';
-import type { SystemSettings } from '@/types/settings';
-import type { Book, BookConfig, BookNote } from '@/types/book';
-import type { EnvConfigType } from '@/services/environment';
-import type { BookDoc } from '@/libs/document';
+import type { SystemSettings } from '@/domain/settings';
+import type { Book, BookConfig, BookNote } from '@/domain/book';
+import type { BookDoc } from '@/domain/document';
+import { BookRepository } from '@/application/repositories/BookRepository';
+import { LibraryRepository } from '@/application/repositories/LibraryRepository';
+import { getClientRuntime } from '@/runtime/clientRuntime';
 import { useLibraryStore } from './libraryStore';
 
 export interface BookData {
@@ -19,12 +22,7 @@ interface BookDataState {
   booksData: { [id: string]: BookData };
   getConfig: (key: string | null) => BookConfig | null;
   setConfig: (key: string, partialConfig: Partial<BookConfig>) => void;
-  saveConfig: (
-    envConfig: EnvConfigType,
-    bookKey: string,
-    config: BookConfig,
-    settings: SystemSettings,
-  ) => Promise<void>;
+  saveConfig: (bookKey: string, config: BookConfig, settings: SystemSettings) => Promise<void>;
   updateBooknotes: (key: string, booknotes: BookNote[]) => BookConfig | undefined;
   getBookData: (keyOrId: string) => BookData | null;
   clearBookData: (keyOrId: string) => void;
@@ -70,13 +68,7 @@ export const useBookDataStore = create<BookDataState>((set, get) => ({
       };
     });
   },
-  saveConfig: async (
-    envConfig: EnvConfigType,
-    bookKey: string,
-    config: BookConfig,
-    settings: SystemSettings,
-  ) => {
-    const appService = await envConfig.getAppService();
+  saveConfig: async (bookKey: string, config: BookConfig, settings: SystemSettings) => {
     const { library, hashIndex, setLibrary } = useLibraryStore.getState();
     const hash = bookKey.split('-')[0]!;
     const idx = hashIndex.get(hash);
@@ -97,8 +89,13 @@ export const useBookDataStore = create<BookDataState>((set, get) => ({
     setLibrary(newLibrary);
 
     config.updatedAt = Date.now();
-    await appService.saveBookConfig(updatedBook, config, settings);
-    await appService.saveLibraryBooks(useLibraryStore.getState().library);
+    const runtime = getClientRuntime();
+    await runtime.runPromise(
+      Effect.flatMap(BookRepository, (r) => r.saveConfig(updatedBook, config, settings)),
+    );
+    await runtime.runPromise(
+      Effect.flatMap(LibraryRepository, (r) => r.save(useLibraryStore.getState().library)),
+    );
   },
   updateBooknotes: (key: string, booknotes: BookNote[]) => {
     let updatedConfig: BookConfig | undefined;

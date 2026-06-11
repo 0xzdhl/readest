@@ -3,7 +3,6 @@ import { useEffect, useRef, useState } from 'react';
 
 import ModalPortal from '@/components/ModalPortal';
 import PinInput, { type PinInputHandle } from '@/components/PinInput';
-import { useEnv } from '@/context/EnvContext';
 import { useTranslation } from '@/hooks/useTranslation';
 import { saveSysSettings } from '@/helpers/settings';
 import { PIN_LENGTH, generatePinSalt, hashPin, isValidPin, verifyPin } from '@/libs/crypto/applock';
@@ -21,7 +20,6 @@ const fieldLabelClass = 'text-base-content/70 text-xs font-medium tracking-wide'
  */
 export default function AppLockDialog() {
   const _ = useTranslation();
-  const { envConfig } = useEnv();
   const { settings } = useSettingsStore();
   const {
     pinHash,
@@ -90,9 +88,9 @@ export default function AppLockDialog() {
       try {
         const salt = generatePinSalt();
         const hash = await hashPin(newPin, salt);
-        await saveSysSettings(envConfig, 'pinCodeSalt', salt);
-        await saveSysSettings(envConfig, 'pinCodeHash', hash);
-        await saveSysSettings(envConfig, 'pinCodeEnabled', true);
+        await saveSysSettings('pinCodeSalt', salt);
+        await saveSysSettings('pinCodeHash', hash);
+        await saveSysSettings('pinCodeEnabled', true);
         setStorePin(hash, salt);
         closeDialog();
       } finally {
@@ -129,8 +127,8 @@ export default function AppLockDialog() {
         }
         const salt = generatePinSalt();
         const hash = await hashPin(newPin, salt);
-        await saveSysSettings(envConfig, 'pinCodeSalt', salt);
-        await saveSysSettings(envConfig, 'pinCodeHash', hash);
+        await saveSysSettings('pinCodeSalt', salt);
+        await saveSysSettings('pinCodeHash', hash);
         setStorePin(hash, salt);
         closeDialog();
       } finally {
@@ -157,9 +155,9 @@ export default function AppLockDialog() {
         currentPinRef.current?.focus();
         return;
       }
-      await saveSysSettings(envConfig, 'pinCodeEnabled', false);
-      await saveSysSettings(envConfig, 'pinCodeHash', undefined);
-      await saveSysSettings(envConfig, 'pinCodeSalt', undefined);
+      await saveSysSettings('pinCodeEnabled', false);
+      await saveSysSettings('pinCodeHash', undefined);
+      await saveSysSettings('pinCodeSalt', undefined);
       clearPin();
       closeDialog();
     } finally {

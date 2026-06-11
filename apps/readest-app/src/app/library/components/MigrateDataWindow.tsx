@@ -1,4 +1,5 @@
 import clsx from 'clsx';
+import { Effect, Option } from 'effect';
 import { useEffect, useState } from 'react';
 import {
   RiFolderOpenLine,
@@ -8,12 +9,16 @@ import {
 } from 'react-icons/ri';
 import { documentDir, join } from '@tauri-apps/api/path';
 import { relaunch } from '@tauri-apps/plugin-process';
-import { useEnv } from '@/context/EnvContext';
+import { useRunEffect, usePlatformInfo } from '@/context/EffectRuntimeProvider';
+import { FileSystem } from '@/application/ports/FileSystem';
+import { PathResolver } from '@/application/ports/PathResolver';
+import { Dialog as DialogPort } from '@/application/ports/Dialog';
+import { ChangeRootDirectory } from '@/application/usecases/settings/ChangeRootDirectory';
 import { useTranslation } from '@/hooks/useTranslation';
 import { useSettingsStore } from '@/store/settingsStore';
 import { revealItemInDir } from '@tauri-apps/plugin-opener';
 import { DATA_SUBDIR } from '@/services/constants';
-import type { FileItem } from '@/types/system';
+import type { FileItem } from '@/domain/system';
 import { getDirPath } from '@/utils/path';
 import { formatBytes } from '@/utils/book';
 import { getOSPlatform } from '@/utils/misc';
@@ -44,7 +49,8 @@ interface MigrationProgress {
 
 export const MigrateDataWindow = () => {
   const _ = useTranslation();
-  const { appService, envConfig } = useEnv();
+  const runEffect = useRunEffect();
+  const platformInfo = usePlatformInfo();
   const { settings, setSettings, saveSettings } = useSettingsStore();
   const [isOpen, setIsOpen] = useState(false);
   const [currentDataDir, setCurrentDataDir] = useState('');
@@ -84,11 +90,13 @@ export const MigrateDataWindow = () => {
 
   const loadCurrentDataDir = async () => {
     try {
-      if (!appService) return;
-
-      const dataDir = await appService.resolveFilePath('', 'Data');
+      const dataDir = await runEffect(
+        Effect.flatMap(PathResolver, (resolver) => resolver.absolute('', 'Data')),
+      );
       setCurrentDataDir(dataDir);
-      const files = await appService.readDirectory(dataDir, 'None');
+      const files = await runEffect(
+        Effect.flatMap(FileSystem, (fs) => fs.readDir(dataDir, 'None')),
+      );
       setFilesToMigrate(files);
       setCurrentDirFileCount(files.length.toLocaleString());
       setCurrentDirFileSize(files.reduce((acc, file) => acc + file.size, 0));
@@ -99,7 +107,7 @@ export const MigrateDataWindow = () => {
 
   const loadAndroidDirs = async () => {
     try {
-      if (appService?.isAndroidApp) {
+      if (platformInfo.isAndroidApp) {
         const sdCardPathResponse = await getExternalSDCardPath();
         let sdcardDirs = [
           { path: '/storage/emulated/0', label: '/sdcard/0' },
@@ -120,7 +128,7 @@ export const MigrateDataWindow = () => {
         const localDocumentDir = await documentDir();
         setAndroidNewDirs([
           // For Google Play version we won't request permission to access root of /sdcard
-          ...(appService?.distChannel === 'playstore' ? [] : sdcardDirs),
+          ...(platformInfo.distChannel === 'playstore' ? [] : sdcardDirs),
           { path: localDocumentDir, label: '/sdcard/APPDATA/Documents' },
         ]);
       }
@@ -134,10 +142,13 @@ export const MigrateDataWindow = () => {
     setErrorMessage('');
 
     try {
-      const selectedDir = await appService?.selectDirectory?.('write');
+      const selectedDirOption = await runEffect(
+        Effect.flatMap(DialogPort, (dialog) => dialog.selectDirectory('write')),
+      );
+      const selectedDir = Option.getOrElse(selectedDirOption, () => '');
       if (selectedDir) {
         const newDataDir = await join(selectedDir, DATA_SUBDIR);
-        await appService?.createDir(newDataDir, 'None', true);
+        await runEffect(Effect.flatMap(FileSystem, (fs) => fs.createDir(newDataDir, 'None', true)));
         setNewDataDir(newDataDir);
         setMigrationStatus('idle');
       } else {
@@ -159,7 +170,7 @@ export const MigrateDataWindow = () => {
 
     try {
       const newDataDir = await join(dir, DATA_SUBDIR);
-      await appService?.createDir(newDataDir, 'None', true);
+      await runEffect(Effect.flatMap(FileSystem, (fs) => fs.createDir(newDataDir, 'None', true)));
       setNewDataDir(newDataDir);
       setMigrationStatus('idle');
     } catch (error) {
@@ -170,7 +181,7 @@ export const MigrateDataWindow = () => {
   };
 
   const handleStartMigration = async () => {
-    if (!appService || !currentDataDir || !newDataDir || !filesToMigrate.length) return;
+    if (!currentDataDir || !newDataDir || !filesToMigrate.length) return;
 
     setMigrationStatus('migrating');
     setErrorMessage('');
@@ -192,11 +203,15 @@ export const MigrateDataWindow = () => {
 
         const srcPath = await join(currentDataDir, file.path);
         const destPath = await join(newDataDir, file.path);
-        await appService.copyFile(srcPath, 'None', destPath, 'None');
+        await runEffect(
+          Effect.flatMap(FileSystem, (fs) => fs.copyFile(srcPath, 'None', destPath, 'None')),
+        );
       }
 
       // Verify all files copied
-      const filesMigrated = await appService.readDirectory(newDataDir, 'None');
+      const filesMigrated = await runEffect(
+        Effect.flatMap(FileSystem, (fs) => fs.readDir(newDataDir, 'None')),
+      );
       for (const file of filesToMigrate) {
         if (!filesMigrated.find((f) => f.path === file.path && f.size === file.size)) {
           throw new Error(`File ${file.path} failed to copy.`);
@@ -204,15 +219,19 @@ export const MigrateDataWindow = () => {
       }
 
       // Delete old data directory
-      await appService.deleteDir(currentDataDir, 'None', true);
+      await runEffect(
+        Effect.flatMap(FileSystem, (fs) => fs.removeDir(currentDataDir, 'None', true)),
+      );
 
       // Update settings for new data directory
       const customRootDir = getDirPath(newDataDir);
-      await appService.setCustomRootDir(customRootDir);
+      await runEffect(ChangeRootDirectory(customRootDir));
       settings.customRootDir = customRootDir;
-      settings.localBooksDir = await appService.resolveFilePath('', 'Books');
+      settings.localBooksDir = await runEffect(
+        Effect.flatMap(PathResolver, (resolver) => resolver.absolute('', 'Books')),
+      );
       setSettings({ ...settings });
-      await saveSettings(envConfig, settings);
+      await saveSettings(settings);
 
       // Finalize migration
       setMigrationStatus('completed');
@@ -244,7 +263,7 @@ export const MigrateDataWindow = () => {
   };
 
   const handleRevealDir = (dataDir: string) => {
-    if (dataDir && appService?.isDesktopApp) {
+    if (dataDir && platformInfo.isDesktopApp) {
       revealItemInDir(dataDir);
     }
   };
@@ -316,7 +335,7 @@ export const MigrateDataWindow = () => {
                 </span>
               </button>
             )}
-            {appService?.isAndroidApp ? (
+            {platformInfo.isAndroidApp ? (
               <Dropdown
                 label={_('Choose New Folder')}
                 className='dropdown-bottom flex w-full justify-center'

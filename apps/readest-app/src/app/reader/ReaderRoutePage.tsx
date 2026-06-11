@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { useEnv } from '@/context/EnvContext';
+import { usePlatformInfo } from '@/context/EffectRuntimeProvider';
 import { checkForAppUpdates, checkAppReleaseNotes } from '@/helpers/updater';
 import { useAppUrlIngress } from '@/hooks/useAppUrlIngress';
 import { useOpenAnnotationLink } from '@/hooks/useOpenAnnotationLink';
@@ -17,7 +17,7 @@ type ReaderRoutePageProps = {
 
 export function ReaderRoutePage({ ids, cfi = '' }: ReaderRoutePageProps) {
   const _ = useTranslation();
-  const { appService } = useEnv();
+  const platformInfo = usePlatformInfo();
   const { settings } = useSettingsStore();
 
   useAppUrlIngress();
@@ -27,20 +27,20 @@ export function ReaderRoutePage({ ids, cfi = '' }: ReaderRoutePageProps) {
 
   useEffect(() => {
     const doCheckAppUpdates = async () => {
-      if (appService?.hasUpdater && settings.autoCheckUpdates) {
+      if (platformInfo.hasUpdater && settings.autoCheckUpdates) {
         await checkForAppUpdates(_);
-      } else if (appService?.hasUpdater === false) {
+      } else if (platformInfo.hasUpdater === false) {
         checkAppReleaseNotes();
       }
     };
 
-    if (appService?.hasWindow && settings.alwaysOnTop) {
+    if (platformInfo.hasWindow && settings.alwaysOnTop) {
       tauriHandleSetAlwaysOnTop(settings.alwaysOnTop);
     }
 
     doCheckAppUpdates();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [appService?.hasUpdater, settings.autoCheckUpdates]);
+  }, [platformInfo.hasUpdater, settings.autoCheckUpdates]);
 
   return <Reader ids={ids} cfi={cfi} />;
 }

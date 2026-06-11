@@ -13,14 +13,14 @@ import {
   type GridListProps,
   type ListProps,
 } from 'react-virtuoso';
-import type { Book, BooksGroup, ReadingStatus } from '@/types/book';
+import type { Book, BooksGroup, ReadingStatus } from '@/domain/book';
 import {
   type LibraryCoverFitType,
   LibraryGroupByType,
   LibrarySortByType,
   type LibraryViewModeType,
-} from '@/types/settings';
-import { useEnv } from '@/context/EnvContext';
+} from '@/domain/settings';
+import { usePlatformInfo } from '@/context/EffectRuntimeProvider';
 import { useThemeStore } from '@/store/themeStore';
 import { useAutoFocus } from '@/hooks/useAutoFocus';
 import { useSettingsStore } from '@/store/settingsStore';
@@ -52,6 +52,8 @@ import ShareBookDialog from './ShareBookDialog';
 import { useAuth } from '@/context/AuthContext';
 import GroupingModal from './GroupingModal';
 import SetStatusAlert from './SetStatusAlert';
+import { useRunEffect } from '@/context/EffectRuntimeProvider';
+import { importBooks } from '@/application/usecases/book';
 
 interface BookshelfProps {
   libraryBooks: Book[];
@@ -148,7 +150,7 @@ const Bookshelf: React.FC<BookshelfProps> = ({
   const router = useRouter();
   const location = useLocation();
   const searchParams = new URLSearchParams(location.searchStr);
-  const { envConfig, appService } = useEnv();
+  const platformInfo = usePlatformInfo();
   const { settings } = useSettingsStore();
   const { safeAreaInsets } = useThemeStore();
 
@@ -168,6 +170,7 @@ const Bookshelf: React.FC<BookshelfProps> = ({
   const [showGroupingModal, setShowGroupingModal] = useState(false);
   const [importBookUrl] = useState(searchParams?.get('url') || '');
 
+  const runEffect = useRunEffect();
   const abortDeletionRef = useRef(false);
   const isImportingBook = useRef(false);
   const iconSize15 = useResponsiveSize(15);
@@ -315,20 +318,22 @@ const Bookshelf: React.FC<BookshelfProps> = ({
     if (isImportingBook.current) return;
     isImportingBook.current = true;
 
-    if (importBookUrl && appService) {
+    if (importBookUrl) {
       const importBook = async () => {
         console.log('Importing book from URL:', importBookUrl);
-        const book = await appService.importBook(importBookUrl, libraryBooks);
+        const { imported, library } = await runEffect(
+          importBooks(libraryBooks, [{ file: importBookUrl }]),
+        );
+        const book = imported[0];
         if (book) {
-          setLibrary(libraryBooks);
-          appService.saveLibraryBooks(libraryBooks);
+          setLibrary(library);
           navigateToReader(router, [book.hash]);
         }
       };
       importBook();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [importBookUrl, appService]);
+  }, [importBookUrl]);
 
   useEffect(() => {
     setCurrentBookshelf(currentBookshelfItems);
@@ -343,8 +348,8 @@ const Bookshelf: React.FC<BookshelfProps> = ({
 
   const openSelectedBooks = () => {
     handleSetSelectMode(false);
-    if (appService?.hasWindow && settings.openBookInNewWindow) {
-      showReaderWindow(appService, getSelectedBooks());
+    if (platformInfo.hasWindow && settings.openBookInNewWindow) {
+      showReaderWindow(getSelectedBooks());
     } else {
       setTimeout(() => setLoading(true), 200);
       navigateToReader(router, getSelectedBooks());
@@ -418,7 +423,7 @@ const Bookshelf: React.FC<BookshelfProps> = ({
     }
 
     if (booksToUpdate.length > 0) {
-      await updateBooks(envConfig, booksToUpdate);
+      await updateBooks(booksToUpdate);
     }
 
     setSelectedBooks([]);
@@ -429,9 +434,9 @@ const Bookshelf: React.FC<BookshelfProps> = ({
   const handleUpdateReadingStatus = useCallback(
     async (book: Book, status: ReadingStatus | undefined) => {
       const updatedBook = { ...book, readingStatus: status, updatedAt: Date.now() };
-      await updateBooks(envConfig, [updatedBook]);
+      await updateBooks([updatedBook]);
     },
-    [envConfig, updateBooks],
+    [updateBooks],
   );
 
   const handleDeleteBooksIntent = (event: CustomEvent) => {

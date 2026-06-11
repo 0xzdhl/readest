@@ -1,8 +1,8 @@
 import clsx from 'clsx';
 import React, { useEffect, useState } from 'react';
 import { Trans } from 'react-i18next';
-import type { Insets } from '@/types/misc';
-import { useEnv } from '@/context/EnvContext';
+import type { Insets } from '@/domain/misc';
+import { usePlatformInfo } from '@/context/EffectRuntimeProvider';
 import { useReaderStore } from '@/store/readerStore';
 import { useTranslation } from '@/hooks/useTranslation';
 import { useBookDataStore } from '@/store/bookDataStore';
@@ -10,7 +10,7 @@ import { formatNumber, formatProgress } from '@/utils/progress';
 import { saveViewSettings } from '@/helpers/settings';
 import { eventDispatcher } from '@/utils/event';
 import { SIZE_PER_LOC, SIZE_PER_TIME_UNIT } from '@/services/constants';
-import type { ProgressBarMode } from '@/types/book.ts';
+import type { ProgressBarMode } from '@/domain/book';
 import StatusInfo from './StatusInfo.tsx';
 
 interface ProgressBarProps {
@@ -27,7 +27,7 @@ const ProgressBar: React.FC<ProgressBarProps> = ({
   gridInsets,
 }) => {
   const _ = useTranslation();
-  const { envConfig, appService } = useEnv();
+  const platformInfo = usePlatformInfo();
   const { getBookData } = useBookDataStore();
   const { getProgress, getViewSettings, getView } = useReaderStore();
   const view = getView(bookKey);
@@ -141,7 +141,7 @@ const ProgressBar: React.FC<ProgressBarProps> = ({
   };
 
   useEffect(() => {
-    saveViewSettings(envConfig, bookKey, 'progressInfoMode', progressBarMode as ProgressBarMode);
+    saveViewSettings(bookKey, 'progressInfoMode', progressBarMode as ProgressBarMode);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [progressBarMode]);
 
@@ -157,7 +157,7 @@ const ProgressBar: React.FC<ProgressBarProps> = ({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [viewSettings.tapToToggleFooter]);
 
-  const isMobile = appService?.isMobile || window.innerWidth < 640;
+  const isMobile = platformInfo.isMobile || window.innerWidth < 640;
   const showStatusInfo =
     (progressBarMode === 'all' ||
       progressBarMode.includes('battery') ||
@@ -203,7 +203,7 @@ const ProgressBar: React.FC<ProgressBarProps> = ({
           : {
               paddingInlineStart: `calc(${horizontalGap / 2}% + ${contentInsets.left / 2}px)`,
               paddingInlineEnd: `calc(${horizontalGap / 2}% + ${contentInsets.right / 2}px)`,
-              paddingBottom: appService?.hasSafeAreaInset ? `${gridInsets.bottom * 0.33}px` : 0,
+              paddingBottom: platformInfo.hasSafeAreaInset ? `${gridInsets.bottom * 0.33}px` : 0,
             }
       }
     >

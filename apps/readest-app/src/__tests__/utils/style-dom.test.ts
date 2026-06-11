@@ -15,7 +15,7 @@ vi.mock('@/styles/themes', async (importOriginal) => {
   };
 });
 
-import type { ViewSettings } from '@/types/book';
+import type { ViewSettings } from '@/domain/book';
 import type { ThemeCode } from '@/utils/style';
 import {
   applyThemeModeClass,

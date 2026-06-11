@@ -12,8 +12,8 @@
  * The footer is rendered by the shell; this provider's outcome carries
  * `sourceLabel` so the shell shows attribution.
  */
-import type { DictionaryProvider, DictionaryLookupOutcome } from '../types';
-import { BUILTIN_PROVIDER_IDS } from '../types';
+import type { DictionaryProvider, DictionaryLookupOutcome } from '@/domain/dictionaries';
+import { BUILTIN_PROVIDER_IDS } from '@/domain/dictionaries';
 import { stubTranslation as _ } from '@/utils/misc';
 import { isTauriAppPlatform } from '@/services/environment';
 import { isRecord } from '@/utils/unknown';

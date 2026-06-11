@@ -1,9 +1,11 @@
 import { create } from 'zustand';
-import type { EnvConfigType } from '@/services/environment';
+import { Effect } from 'effect';
+import { getClientRuntime } from '@/runtime/clientRuntime';
+import { FileSystem } from '@/application/ports/FileSystem';
 import { createCustomFont, getFontFormat, getMimeType, mountCustomFont } from '@/styles/fonts';
-import type { CustomFont } from '@/styles/fonts';
+import type { CustomFont } from '@/domain/fonts';
 import { useSettingsStore } from './settingsStore';
-import { getReplicaPersistEnv } from '@/services/sync/replicaPersist';
+import { isReplicaPersistEnabled } from '@/services/sync/replicaPersist';
 import { publishReplicaDelete, publishReplicaUpsert } from '@/services/sync/replicaPublish';
 import { FONT_KIND } from '@/services/sync/adapters/font';
 import { computeFontContentId } from '@/services/fontService';
@@ -51,11 +53,11 @@ interface FontStoreState {
    * `CustomFonts.tsx`; auto-download needs the same plumbing or the
    * font appears in the UI but renders in a fallback face.
    */
-  activateFontByContentId: (envConfig: EnvConfigType, contentId: string) => Promise<void>;
+  activateFontByContentId: (contentId: string) => Promise<void>;
 
-  loadFont: (envConfig: EnvConfigType, fontId: string) => Promise<CustomFont>;
-  loadFonts: (envConfig: EnvConfigType, fontIds: string[]) => Promise<CustomFont[]>;
-  loadAllFonts: (envConfig: EnvConfigType) => Promise<CustomFont[]>;
+  loadFont: (fontId: string) => Promise<CustomFont>;
+  loadFonts: (fontIds: string[]) => Promise<CustomFont[]>;
+  loadAllFonts: () => Promise<CustomFont[]>;
   unloadFont: (fontId: string) => boolean;
   unloadAllFonts: () => void;
 
@@ -63,8 +65,8 @@ interface FontStoreState {
   getLoadedFonts: () => CustomFont[];
   isFontLoaded: (fontId: string) => boolean;
 
-  loadCustomFonts: (envConfig: EnvConfigType) => Promise<void>;
-  saveCustomFonts: (envConfig: EnvConfigType) => Promise<void>;
+  loadCustomFonts: () => Promise<void>;
+  saveCustomFonts: () => Promise<void>;
 }
 
 function toSettingsFont(font: CustomFont): CustomFont {
@@ -160,8 +162,7 @@ export const useCustomFontStore = create<FontStoreState>((set, get) => ({
           : [...state.fonts, font];
       return { fonts };
     });
-    const env = getReplicaPersistEnv();
-    if (env) void get().saveCustomFonts(env);
+    if (isReplicaPersistEnabled()) void get().saveCustomFonts();
   },
 
   softDeleteByContentId: (contentId) => {
@@ -173,8 +174,7 @@ export const useCustomFontStore = create<FontStoreState>((set, get) => ({
       ),
     }));
     if (target.blobUrl) URL.revokeObjectURL(target.blobUrl);
-    const env = getReplicaPersistEnv();
-    if (env) void get().saveCustomFonts(env);
+    if (isReplicaPersistEnabled()) void get().saveCustomFonts();
   },
 
   markAvailableByContentId: (contentId) => {
@@ -183,21 +183,19 @@ export const useCustomFontStore = create<FontStoreState>((set, get) => ({
         f.contentId === contentId ? { ...f, unavailable: undefined } : f,
       ),
     }));
-    const env = getReplicaPersistEnv();
-    if (env) void get().saveCustomFonts(env);
+    if (isReplicaPersistEnabled()) void get().saveCustomFonts();
   },
 
-  activateFontByContentId: async (envConfig, contentId) => {
+  activateFontByContentId: async (contentId) => {
     get().markAvailableByContentId(contentId);
     const target = get().fonts.find((f) => f.contentId === contentId && !f.deletedAt);
     if (!target) return;
     try {
-      const loaded = await get().loadFont(envConfig, target.id);
+      const loaded = await get().loadFont(target.id);
       if (typeof document !== 'undefined') {
         mountCustomFont(document, loaded);
       }
-      const env = getReplicaPersistEnv();
-      if (env) await get().saveCustomFonts(env);
+      if (isReplicaPersistEnabled()) await get().saveCustomFonts();
     } catch (err) {
       console.warn('activateFontByContentId failed', contentId, err);
     }
@@ -226,7 +224,7 @@ export const useCustomFontStore = create<FontStoreState>((set, get) => ({
     set({ fonts: [] });
   },
 
-  loadFont: async (envConfig, fontId) => {
+  loadFont: async (fontId) => {
     const font = get().getFont(fontId);
 
     if (!font) {
@@ -247,8 +245,9 @@ export const useCustomFontStore = create<FontStoreState>((set, get) => ({
         error: undefined,
       });
 
-      const appService = await envConfig.getAppService();
-      const fontFile = await appService.openFile(font.path, 'Fonts');
+      const fontFile = await getClientRuntime().runPromise(
+        Effect.flatMap(FileSystem, (fs) => fs.openFile(font.path, 'Fonts')),
+      );
 
       const format = getFontFormat(font.path);
       const mimeType = getMimeType(format);
@@ -275,10 +274,10 @@ export const useCustomFontStore = create<FontStoreState>((set, get) => ({
     }
   },
 
-  loadFonts: async (envConfig, fontIds) => {
+  loadFonts: async (fontIds) => {
     set({ loading: true });
     try {
-      const results = await Promise.allSettled(fontIds.map((id) => get().loadFont(envConfig, id)));
+      const results = await Promise.allSettled(fontIds.map((id) => get().loadFont(id)));
 
       return results
         .filter(
@@ -290,11 +289,11 @@ export const useCustomFontStore = create<FontStoreState>((set, get) => ({
     }
   },
 
-  loadAllFonts: async (envConfig) => {
+  loadAllFonts: async () => {
     const fontIds = get()
       .getAvailableFonts()
       .map((font) => font.id);
-    return await get().loadFonts(envConfig, fontIds);
+    return await get().loadFonts(fontIds);
   },
 
   unloadFont: (fontId) => {
@@ -349,7 +348,7 @@ export const useCustomFontStore = create<FontStoreState>((set, get) => ({
     return font?.loaded === true && !font.error && !font.deletedAt;
   },
 
-  loadCustomFonts: async (envConfig) => {
+  loadCustomFonts: async () => {
     try {
       const { settings } = useSettingsStore.getState();
       const currentFonts = get().fonts;
@@ -364,7 +363,7 @@ export const useCustomFontStore = create<FontStoreState>((set, get) => ({
           };
         });
         set({ fonts });
-        await get().loadAllFonts(envConfig);
+        await get().loadAllFonts();
         // Mount @font-face on the main document so settings UI / library
         // chrome can render in the actual face. The Reader mounts again
         // into book documents on top of this; mountCustomFont keys by
@@ -380,13 +379,13 @@ export const useCustomFontStore = create<FontStoreState>((set, get) => ({
     }
   },
 
-  saveCustomFonts: async (envConfig) => {
+  saveCustomFonts: async () => {
     try {
       const { settings, setSettings, saveSettings } = useSettingsStore.getState();
       const { fonts } = get();
       settings.customFonts = fonts.map(toSettingsFont);
       setSettings(settings);
-      saveSettings(envConfig, settings);
+      saveSettings(settings);
     } catch (error) {
       console.error('Failed to save custom fonts settings:', error);
       throw error;
@@ -417,8 +416,8 @@ export const findFontByContentId = (contentId: string): CustomFont | undefined =
  * skips fonts that already carry `contentId`. Implementation lives in
  * `migrateLegacyReplicas` — shared with custom textures.
  */
-export const migrateLegacyFonts = (envConfig: EnvConfigType): Promise<void> =>
-  migrateLegacyReplicas<CustomFont>(envConfig, {
+export const migrateLegacyFonts = (): Promise<void> =>
+  migrateLegacyReplicas<CustomFont>({
     kind: FONT_KIND,
     baseDir: 'Fonts',
     getCandidates: () =>
@@ -427,7 +426,7 @@ export const migrateLegacyFonts = (envConfig: EnvConfigType): Promise<void> =>
         .fonts.filter((f) => !f.contentId && !f.bundleDir && !f.deletedAt && !f.path.includes('/')),
     computeContentId: computeFontContentId,
     updateRecord: (id, next) => useCustomFontStore.getState().updateFont(id, next),
-    saveStore: (env) => useCustomFontStore.getState().saveCustomFonts(env),
+    saveStore: () => useCustomFontStore.getState().saveCustomFonts(),
     publishUpsert: publishFontUpsert,
   });
 

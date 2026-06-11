@@ -1,5 +1,8 @@
 import { useCallback, useEffect } from 'react';
-import { useEnv } from '@/context/EnvContext';
+import { Effect } from 'effect';
+import { useRunEffect } from '@/context/EffectRuntimeProvider';
+import { FileSystem } from '@/application/ports/FileSystem';
+import { PathResolver } from '@/application/ports/PathResolver';
 import { useTranslation } from '@/hooks/useTranslation';
 import { useBookDataStore } from '@/store/bookDataStore';
 import { useSettingsStore } from '@/store/settingsStore';
@@ -9,7 +12,7 @@ import { eventDispatcher } from '@/utils/event';
 
 export const useBookCoverAutoSave = (bookKey: string) => {
   const _ = useTranslation();
-  const { envConfig, appService } = useEnv();
+  const runEffect = useRunEffect();
 
   // eslint-disable-next-line react-hooks/exhaustive-deps
   const saveBookCover = useCallback(
@@ -21,24 +24,38 @@ export const useBookCoverAutoSave = (bookKey: string) => {
           const book = bookData?.book;
           const savedBookHash = settings.savedBookCoverForLockScreen;
           const savedCoverPath = settings.savedBookCoverForLockScreenPath;
-          if (appService && book && savedBookHash && savedBookHash !== book?.hash) {
-            const coverPath = await appService.resolveFilePath(getCoverFilename(book), 'Books');
+          if (book && savedBookHash && savedBookHash !== book?.hash) {
+            const coverPath = await runEffect(
+              Effect.flatMap(PathResolver, (resolver) =>
+                resolver.absolute(getCoverFilename(book), 'Books'),
+              ),
+            );
             try {
               const lastCoverFilename = 'last-book-cover.png';
-              const builtinImagesPath = await appService.resolveFilePath('', 'Images');
+              const builtinImagesPath = await runEffect(
+                Effect.flatMap(PathResolver, (resolver) => resolver.absolute('', 'Images')),
+              );
               if (!savedCoverPath || savedCoverPath === builtinImagesPath) {
-                await appService.copyFile(coverPath, 'None', lastCoverFilename, 'Images');
+                await runEffect(
+                  Effect.flatMap(FileSystem, (fs) =>
+                    fs.copyFile(coverPath, 'None', lastCoverFilename, 'Images'),
+                  ),
+                );
               } else {
-                await appService.copyFile(
-                  coverPath,
-                  'None',
-                  `${savedCoverPath}/${lastCoverFilename}`,
-                  'None',
+                await runEffect(
+                  Effect.flatMap(FileSystem, (fs) =>
+                    fs.copyFile(
+                      coverPath,
+                      'None',
+                      `${savedCoverPath}/${lastCoverFilename}`,
+                      'None',
+                    ),
+                  ),
                 );
               }
               settings.savedBookCoverForLockScreen = book.hash;
               useSettingsStore.getState().setSettings(settings);
-              useSettingsStore.getState().saveSettings(envConfig, settings);
+              useSettingsStore.getState().saveSettings(settings);
             } catch (error) {
               eventDispatcher.dispatch('toast', {
                 type: 'error',

@@ -7,7 +7,7 @@ import {
   IoTrashOutline,
 } from 'react-icons/io5';
 import { PiDotsThreeVerticalBold } from 'react-icons/pi';
-import { useEnv } from '@/context/EnvContext';
+import { usePlatformInfo } from '@/context/EffectRuntimeProvider';
 import { useTranslation } from '@/hooks/useTranslation';
 import { eventDispatcher } from '@/utils/event';
 import { listShares, revokeShare } from '@/libs/share';
@@ -65,7 +65,7 @@ const ShareCover: React.FC<{ token: string; alt: string }> = ({ token, alt }) =>
 
 const SharedLinksSection: React.FC = () => {
   const _ = useTranslation();
-  const { appService } = useEnv();
+  const platformInfo = usePlatformInfo();
   const [rows, setRows] = useState<ShareRow[]>([]);
   const [cursor, setCursor] = useState<string | null>(null);
   const [shareUrlBase, setShareUrlBase] = useState<string>('');
@@ -145,7 +145,7 @@ const SharedLinksSection: React.FC = () => {
     // See ShareBookDialog.handleNativeShare for the rationale: only fall
     // through to copy when no native share method is available at all.
     // User-dismissal of the share sheet must NOT silently copy the link.
-    if (appService?.isMobileApp || appService?.hasWindow) {
+    if (platformInfo.isMobileApp || platformInfo.hasWindow) {
       let sharekitWorked = false;
       try {
         const { shareText } = await import('@choochmeque/tauri-plugin-sharekit-api');

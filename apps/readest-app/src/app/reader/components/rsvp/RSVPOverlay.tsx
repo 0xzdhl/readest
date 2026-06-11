@@ -1,10 +1,10 @@
 import React, { useEffect, useState, useCallback, useRef, useMemo } from 'react';
 import clsx from 'clsx';
-import type { Insets } from '@/types/misc';
+import type { Insets } from '@/domain/misc';
 import { type RsvpState, RSVPController } from '@/services/rsvp';
 import { containsCJK } from '@/services/rsvp/utils';
 import { useThemeStore } from '@/store/themeStore';
-import type { TOCItem } from '@/libs/document';
+import type { TOCItem } from '@/domain/document';
 import {
   IoClose,
   IoPlay,

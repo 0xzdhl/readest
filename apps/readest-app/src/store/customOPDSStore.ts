@@ -1,8 +1,7 @@
 import { create } from 'zustand';
-import type { EnvConfigType } from '@/services/environment';
-import type { OPDSCatalog } from '@/types/opds';
+import type { OPDSCatalog } from '@/domain/opds';
 import { useSettingsStore } from './settingsStore';
-import { getReplicaPersistEnv } from '@/services/sync/replicaPersist';
+import { isReplicaPersistEnabled } from '@/services/sync/replicaPersist';
 import { publishReplicaDelete, publishReplicaUpsert } from '@/services/sync/replicaPublish';
 import {
   computeOpdsCatalogContentId,
@@ -82,9 +81,9 @@ interface OPDSStoreState {
   softDeleteByContentId(contentId: string): void;
 
   /** Hydrate from `settings.opdsCatalogs`. Backfills sync fields if needed. */
-  loadCustomOPDSCatalogs(envConfig: EnvConfigType): Promise<void>;
+  loadCustomOPDSCatalogs(): Promise<void>;
   /** Persist current state back into settings. */
-  saveCustomOPDSCatalogs(envConfig: EnvConfigType): Promise<void>;
+  saveCustomOPDSCatalogs(): Promise<void>;
 }
 
 export const useCustomOPDSStore = create<OPDSStoreState>((set, get) => ({
@@ -193,8 +192,7 @@ export const useCustomOPDSStore = create<OPDSStoreState>((set, get) => ({
       }
       return { catalogs: [...state.catalogs, catalog] };
     });
-    const env = getReplicaPersistEnv();
-    if (env) void get().saveCustomOPDSCatalogs(env);
+    if (isReplicaPersistEnabled()) void get().saveCustomOPDSCatalogs();
   },
 
   softDeleteByContentId: (contentId) => {
@@ -205,11 +203,10 @@ export const useCustomOPDSStore = create<OPDSStoreState>((set, get) => ({
         c.id === target.id ? { ...c, deletedAt: Date.now() } : c,
       ),
     }));
-    const env = getReplicaPersistEnv();
-    if (env) void get().saveCustomOPDSCatalogs(env);
+    if (isReplicaPersistEnabled()) void get().saveCustomOPDSCatalogs();
   },
 
-  loadCustomOPDSCatalogs: async (_envConfig) => {
+  loadCustomOPDSCatalogs: async () => {
     try {
       const { settings } = useSettingsStore.getState();
       const persisted = settings?.opdsCatalogs ?? [];
@@ -218,7 +215,7 @@ export const useCustomOPDSStore = create<OPDSStoreState>((set, get) => ({
       // If backfill mutated anything, persist + publish the fresh
       // contentIds so existing catalogs start syncing on next push.
       if (backfilled !== persisted) {
-        await get().saveCustomOPDSCatalogs(_envConfig);
+        await get().saveCustomOPDSCatalogs();
         for (const c of backfilled) {
           if (c.contentId && !c.deletedAt) publishOpdsUpsert(c);
         }
@@ -228,7 +225,7 @@ export const useCustomOPDSStore = create<OPDSStoreState>((set, get) => ({
     }
   },
 
-  saveCustomOPDSCatalogs: async (_envConfig) => {
+  saveCustomOPDSCatalogs: async () => {
     try {
       const { settings, setSettings, saveSettings } = useSettingsStore.getState();
       const { catalogs } = get();
@@ -238,7 +235,7 @@ export const useCustomOPDSStore = create<OPDSStoreState>((set, get) => ({
       // tombstones back into memory if the row is still deleted.
       settings.opdsCatalogs = catalogs.filter((c) => !c.deletedAt);
       setSettings(settings);
-      saveSettings(_envConfig, settings);
+      saveSettings(settings);
     } catch (error) {
       console.error('Failed to save OPDS catalogs:', error);
       throw error;

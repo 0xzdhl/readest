@@ -1,6 +1,11 @@
-import type { Book } from '@/types/book';
-import type { AppService } from '@/types/system';
-import type { OPDSCatalog } from '@/types/opds';
+import { Effect } from 'effect';
+import type { Book } from '@/domain/book';
+import type { FileWriter, BaseDir } from '@/domain/system';
+import type { OPDSCatalog } from '@/domain/opds';
+import { getClientRuntime } from '@/runtime/clientRuntime';
+import { FileSystem } from '@/application/ports/FileSystem';
+import { PathResolver } from '@/application/ports/PathResolver';
+import { importBooks as importBooksUsecase } from '@/application/usecases/book';
 import { downloadFile } from '@/libs/storage';
 import { getFileExtFromMimeType } from '@/libs/document';
 import { needsProxy, getProxiedURL, probeAuth, probeFilename } from '@/app/opds/utils/opdsReq';
@@ -22,9 +27,15 @@ import type { PendingItem, SyncResult, OPDSSubscriptionState, FailedEntry } from
 async function downloadAndImport(
   item: PendingItem,
   catalog: OPDSCatalog,
-  appService: AppService,
   books: Book[],
 ): Promise<Book> {
+  const rt = getClientRuntime();
+  // downloadFile (libs/storage) reaches only appService.writeFile; back it by the runtime.
+  const writer = {
+    writeFile: (path: string, base: BaseDir, content: ArrayBuffer) =>
+      rt.runPromise(Effect.flatMap(FileSystem, (fs) => fs.writeFile(path, base, content))),
+  } as unknown as FileWriter;
+
   const url = resolveURL(item.acquisitionHref, item.baseURL);
   const username = catalog.username ?? '';
   const password = catalog.password ?? '';
@@ -64,11 +75,13 @@ async function downloadAndImport(
   const sanitized = (lastSegment || item.entryId).replaceAll(/[/\\:*?"<>|]/g, '_').slice(0, 200);
   const basename = sanitized || 'opds-download';
   const filename = ext ? `${basename}.${ext}` : basename;
-  let dstFilePath = await appService.resolveFilePath(filename, 'Cache');
+  let dstFilePath = await rt.runPromise(
+    Effect.flatMap(PathResolver, (r) => r.absolute(filename, 'Cache')),
+  );
 
   console.log(`[OPDS] downloading "${item.title}" from ${url}`);
   const responseHeaders = await downloadFile({
-    appService,
+    appService: writer,
     dst: dstFilePath,
     cfp: '',
     url: downloadUrl,
@@ -78,14 +91,25 @@ async function downloadAndImport(
 
   const probedFilename = await probeFilename(responseHeaders);
   if (probedFilename) {
-    const newFilePath = await appService.resolveFilePath(probedFilename, 'Cache');
-    await appService.copyFile(dstFilePath, 'None', newFilePath, 'None');
-    await appService.deleteFile(dstFilePath, 'None');
+    const newFilePath = await rt.runPromise(
+      Effect.flatMap(PathResolver, (r) => r.absolute(probedFilename, 'Cache')),
+    );
+    await rt.runPromise(
+      Effect.flatMap(FileSystem, (fs) => fs.copyFile(dstFilePath, 'None', newFilePath, 'None')),
+    );
+    await rt.runPromise(Effect.flatMap(FileSystem, (fs) => fs.removeFile(dstFilePath, 'None')));
     dstFilePath = newFilePath;
   }
 
-  const book = await appService.importBook(dstFilePath, books);
-  if (!book) throw new Error(`importBook returned null for ${item.title}`);
+  const { imported, failed } = await rt.runPromise(
+    importBooksUsecase(books, [{ file: dstFilePath }], { persist: false }),
+  );
+  const book = imported[0];
+  if (!book)
+    throw new Error(
+      (failed[0]?.error as Error | undefined)?.message ??
+        `importBook returned null for ${item.title}`,
+    );
   console.log(`[OPDS] imported "${item.title}"`);
   return book;
 }
@@ -124,10 +148,9 @@ async function runWithConcurrency<T, R>(
  */
 async function syncCatalog(
   catalog: OPDSCatalog,
-  appService: AppService,
   books: Book[],
 ): Promise<{ newBooks: Book[]; state: OPDSSubscriptionState }> {
-  const state = await loadSubscriptionState(appService, catalog.id);
+  const state = await loadSubscriptionState(catalog.id);
 
   // Discovery: find new items from feeds
   const pendingItems = await checkFeedForNewItems(catalog, state);
@@ -164,13 +187,13 @@ async function syncCatalog(
   }
   if (allItems.length === 0) {
     state.lastCheckedAt = Date.now();
-    await saveSubscriptionState(appService, state);
+    await saveSubscriptionState(state);
     return { newBooks: [], state };
   }
 
   // Acquisition: download with bounded concurrency
   const downloadResults = await runWithConcurrency(allItems, DOWNLOAD_CONCURRENCY, (item) =>
-    downloadAndImport(item, catalog, appService, books),
+    downloadAndImport(item, catalog, books),
   );
 
   // Process results and update state
@@ -210,7 +233,7 @@ async function syncCatalog(
   state.knownEntryIds = pruneKnownEntryIds([...state.knownEntryIds, ...newKnownIds]);
   state.failedEntries = updatedFailedEntries;
   state.lastCheckedAt = Date.now();
-  await saveSubscriptionState(appService, state);
+  await saveSubscriptionState(state);
 
   return { newBooks, state };
 }
@@ -226,7 +249,6 @@ async function syncCatalog(
  */
 export async function syncSubscribedCatalogs(
   catalogs: OPDSCatalog[],
-  appService: AppService,
   books: Book[],
 ): Promise<SyncResult> {
   const eligible = catalogs.filter((c) => c.autoDownload && !c.disabled);
@@ -239,7 +261,7 @@ export async function syncSubscribedCatalogs(
 
   for (const catalog of eligible) {
     try {
-      const { newBooks } = await syncCatalog(catalog, appService, books);
+      const { newBooks } = await syncCatalog(catalog, books);
       allNewBooks.push(...newBooks);
     } catch (reason) {
       console.error(`OPDS sync: catalog "${catalog.name}" failed:`, reason);
@@ -249,9 +271,9 @@ export async function syncSubscribedCatalogs(
         error: reason instanceof Error ? reason.message : String(reason),
       });
       try {
-        const state = await loadSubscriptionState(appService, catalog.id);
+        const state = await loadSubscriptionState(catalog.id);
         state.lastCheckedAt = Date.now();
-        await saveSubscriptionState(appService, state);
+        await saveSubscriptionState(state);
       } catch {
         // Best effort
       }

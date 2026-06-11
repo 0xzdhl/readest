@@ -1,7 +1,7 @@
 import { describe, test, expect, beforeEach } from 'vitest';
 import { useNotebookStore } from '@/store/notebookStore';
-import type { BookNote } from '@/types/book';
-import type { TextSelection } from '@/utils/sel';
+import type { BookNote } from '@/domain/book';
+import type { TextSelection } from '@/domain/selection';
 
 beforeEach(() => {
   useNotebookStore.setState({

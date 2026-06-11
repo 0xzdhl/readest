@@ -19,12 +19,12 @@ vi.mock('@tauri-apps/plugin-cli', () => ({
   getMatches: () => mockGetMatches(),
 }));
 
-import { parseOpenWithFiles } from '@/helpers/openWith';
+let mockIsIOSApp = false;
+vi.mock('@/runtime/clientRuntime', () => ({
+  getPlatformInfo: () => ({ isIOSApp: mockIsIOSApp }),
+}));
 
-// Helper type matching the AppService subset used in openWith
-interface MockAppService {
-  isIOSApp: boolean;
-}
+import { parseOpenWithFiles } from '@/helpers/openWith';
 
 beforeEach(() => {
   vi.clearAllMocks();
@@ -33,6 +33,7 @@ beforeEach(() => {
   vi.spyOn(console, 'info').mockImplementation(() => {});
   mockIsWebAppPlatform = false;
   mockHasCli = false;
+  mockIsIOSApp = false;
   // Reset window globals
   delete window.OPEN_WITH_FILES;
   // Reset location.search
@@ -52,7 +53,7 @@ describe('parseOpenWithFiles', () => {
     test('returns empty array on web platform', async () => {
       mockIsWebAppPlatform = true;
 
-      const result = await parseOpenWithFiles(null);
+      const result = await parseOpenWithFiles();
 
       expect(result).toEqual([]);
     });
@@ -67,7 +68,7 @@ describe('parseOpenWithFiles', () => {
       });
       mockGetCurrent.mockResolvedValue(null);
 
-      const result = await parseOpenWithFiles(null);
+      const result = await parseOpenWithFiles();
 
       expect(result).toEqual(['book1.epub', 'book2.epub']);
     });
@@ -76,7 +77,7 @@ describe('parseOpenWithFiles', () => {
       window.OPEN_WITH_FILES = ['/path/to/book.epub'];
       mockGetCurrent.mockResolvedValue(null);
 
-      const result = await parseOpenWithFiles(null);
+      const result = await parseOpenWithFiles();
 
       expect(result).toEqual(['/path/to/book.epub']);
     });
@@ -89,7 +90,7 @@ describe('parseOpenWithFiles', () => {
       window.OPEN_WITH_FILES = ['/path/to/window-book.epub'];
       mockGetCurrent.mockResolvedValue(null);
 
-      const result = await parseOpenWithFiles(null);
+      const result = await parseOpenWithFiles();
 
       expect(result).toEqual(['url-book.epub']);
     });
@@ -109,7 +110,7 @@ describe('parseOpenWithFiles', () => {
       });
       mockGetCurrent.mockResolvedValue(null);
 
-      const result = await parseOpenWithFiles(null);
+      const result = await parseOpenWithFiles();
 
       expect(result).toEqual(['/path/file1.epub', '/path/file2.epub']);
     });
@@ -126,7 +127,7 @@ describe('parseOpenWithFiles', () => {
       });
       mockGetCurrent.mockResolvedValue(null);
 
-      const result = await parseOpenWithFiles(null);
+      const result = await parseOpenWithFiles();
 
       // Falls through to intent, which returns null
       expect(result).toBeNull();
@@ -136,7 +137,7 @@ describe('parseOpenWithFiles', () => {
       mockHasCli = false;
       mockGetCurrent.mockResolvedValue(null);
 
-      const result = await parseOpenWithFiles(null);
+      const result = await parseOpenWithFiles();
 
       expect(mockGetMatches).not.toHaveBeenCalled();
       expect(result).toBeNull();
@@ -147,7 +148,7 @@ describe('parseOpenWithFiles', () => {
       mockGetMatches.mockResolvedValue({ args: null });
       mockGetCurrent.mockResolvedValue(null);
 
-      const result = await parseOpenWithFiles(null);
+      const result = await parseOpenWithFiles();
 
       expect(result).toBeNull();
     });
@@ -158,16 +159,16 @@ describe('parseOpenWithFiles', () => {
     test('parses file:// URLs', async () => {
       mockGetCurrent.mockResolvedValue(['file:///path/to/book.epub']);
 
-      const result = await parseOpenWithFiles(null);
+      const result = await parseOpenWithFiles();
 
       expect(result).toEqual(['/path/to/book.epub']);
     });
 
     test('preserves file:// prefix for iOS', async () => {
-      const mockAppService = { isIOSApp: true } as MockAppService;
+      mockIsIOSApp = true;
       mockGetCurrent.mockResolvedValue(['file:///path/to/book.epub']);
 
-      const result = await parseOpenWithFiles(mockAppService as never);
+      const result = await parseOpenWithFiles();
 
       expect(result).toEqual(['file:///path/to/book.epub']);
     });
@@ -175,7 +176,7 @@ describe('parseOpenWithFiles', () => {
     test('handles content:// URLs (Android)', async () => {
       mockGetCurrent.mockResolvedValue(['content://com.example/book.epub']);
 
-      const result = await parseOpenWithFiles(null);
+      const result = await parseOpenWithFiles();
 
       expect(result).toEqual(['content://com.example/book.epub']);
     });
@@ -187,7 +188,7 @@ describe('parseOpenWithFiles', () => {
         'content://com.example/book2.epub',
       ]);
 
-      const result = await parseOpenWithFiles(null);
+      const result = await parseOpenWithFiles();
 
       expect(result).toEqual(['/path/book.epub', 'content://com.example/book2.epub']);
     });
@@ -195,7 +196,7 @@ describe('parseOpenWithFiles', () => {
     test('decodes URI-encoded file paths', async () => {
       mockGetCurrent.mockResolvedValue(['file:///path/to/my%20book.epub']);
 
-      const result = await parseOpenWithFiles(null);
+      const result = await parseOpenWithFiles();
 
       expect(result).toEqual(['/path/to/my book.epub']);
     });
@@ -203,7 +204,7 @@ describe('parseOpenWithFiles', () => {
     test('returns null when no deep link URLs', async () => {
       mockGetCurrent.mockResolvedValue(null);
 
-      const result = await parseOpenWithFiles(null);
+      const result = await parseOpenWithFiles();
 
       expect(result).toBeNull();
     });
@@ -211,7 +212,7 @@ describe('parseOpenWithFiles', () => {
     test('returns null when deep link returns empty array', async () => {
       mockGetCurrent.mockResolvedValue([]);
 
-      const result = await parseOpenWithFiles(null);
+      const result = await parseOpenWithFiles();
 
       expect(result).toBeNull();
     });
@@ -226,7 +227,7 @@ describe('parseOpenWithFiles', () => {
       });
       mockHasCli = true;
 
-      const result = await parseOpenWithFiles(null);
+      const result = await parseOpenWithFiles();
 
       expect(result).toEqual(['from-url.epub']);
       expect(mockGetMatches).not.toHaveBeenCalled();
@@ -244,7 +245,7 @@ describe('parseOpenWithFiles', () => {
         },
       });
 
-      const result = await parseOpenWithFiles(null);
+      const result = await parseOpenWithFiles();
 
       expect(result).toEqual(['/cli-file.epub']);
       expect(mockGetCurrent).not.toHaveBeenCalled();
@@ -254,7 +255,7 @@ describe('parseOpenWithFiles', () => {
       mockHasCli = false;
       mockGetCurrent.mockResolvedValue(['file:///intent-file.epub']);
 
-      const result = await parseOpenWithFiles(null);
+      const result = await parseOpenWithFiles();
 
       expect(result).toEqual(['/intent-file.epub']);
     });

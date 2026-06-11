@@ -1,8 +1,9 @@
+import { Effect } from 'effect';
 import { useEffect } from 'react';
+import { FileSystem } from '@/application/ports/FileSystem';
 import { useAuth } from '@/context/AuthContext';
-import { useEnv } from '@/context/EnvContext';
-import type { ImportedDictionary } from '@/services/dictionaries/types';
-import type { EnvConfigType } from '@/services/environment';
+import { useBooted } from '@/context/EffectRuntimeProvider';
+import type { ImportedDictionary } from '@/domain/dictionaries';
 import { dictionaryAdapter } from '@/services/sync/adapters/dictionary';
 import { fontAdapter } from '@/services/sync/adapters/font';
 import { opdsCatalogAdapter } from '@/services/sync/adapters/opdsCatalog';
@@ -38,12 +39,13 @@ import {
   useCustomTextureStore,
 } from '@/store/customTextureStore';
 import { useSettingsStore } from '@/store/settingsStore';
-import type { CustomFont } from '@/styles/fonts';
-import type { CustomTexture } from '@/styles/textures';
-import type { OPDSCatalog } from '@/types/opds';
+import type { CustomFont } from '@/domain/fonts';
+import type { CustomTexture } from '@/domain/textures';
+import type { OPDSCatalog } from '@/domain/opds';
 import type { Hlc, ReplicaRow } from '@/types/replica';
-import type { SystemSettings } from '@/types/settings';
-import type { AppService, BaseDir } from '@/types/system';
+import type { SystemSettings } from '@/domain/settings';
+import type { BaseDir } from '@/domain/system';
+import { getClientRuntime } from '@/runtime/clientRuntime';
 import { uniqueId } from '@/utils/misc';
 
 export type ReplicaKind = 'dictionary' | 'font' | 'texture' | 'opds_catalog' | 'settings';
@@ -85,10 +87,9 @@ const pullInFlight = new Set<ReplicaKind>();
 // for the lifetime of the tab regardless of which page is currently
 // mounted.
 const registeredKinds = new Set<ReplicaKind>();
-// Latest service + envConfig captured by a hook mount; the auto-sync
-// triggers read this so the listeners (installed once) don't capture
-// stale references when the env hot-reloads.
-let autoSyncContext: { service: AppService; envConfig: EnvConfigType } | null = null;
+// Set once the auto-sync listeners are installed; the triggers consult
+// it to short-circuit before the first mount has wired anything up.
+let autoSyncInstalled = false;
 let autoSyncListenersInstalled = false;
 let periodicTimer: ReturnType<typeof setInterval> | null = null;
 let lastForegroundPullAt = 0;
@@ -121,7 +122,7 @@ interface ReplicaPullConfig<T extends ReplicaLocalRecord> {
   baseDir?: BaseDir;
   adapter: ReplicaAdapter<T>;
   findByContentId: (id: string) => T | undefined;
-  hydrateLocalStore?: (envConfig: EnvConfigType) => Promise<void>;
+  hydrateLocalStore?: () => Promise<void>;
   applyRemote: (record: T) => void;
   softDeleteByContentId: (id: string) => void;
   /** Forwarded to PullAndApplyDeps; see that field for semantics. */
@@ -144,8 +145,6 @@ interface ReplicaPullConfig<T extends ReplicaLocalRecord> {
  */
 const buildReplicaPullDeps = <T extends ReplicaLocalRecord>(
   manager: ReplicaSyncManager,
-  service: AppService,
-  envConfig: EnvConfigType,
   config: ReplicaPullConfig<T>,
   pullOpts?: { since?: Hlc | null },
   pullOverride?: () => Promise<ReplicaRow[]>,
@@ -157,9 +156,7 @@ const buildReplicaPullDeps = <T extends ReplicaLocalRecord>(
   // result is fanned out to per-kind apply without re-hitting the wire.
   pull: pullOverride ?? (() => manager.pull(config.kind, pullOpts)),
   findByContentId: config.findByContentId,
-  hydrateLocalStore: config.hydrateLocalStore
-    ? () => config.hydrateLocalStore!(envConfig)
-    : undefined,
+  hydrateLocalStore: config.hydrateLocalStore ? () => config.hydrateLocalStore!() : undefined,
   applyRemote: config.applyRemote,
   softDeleteByContentId: config.softDeleteByContentId,
   silentDecrypt: config.silentDecrypt,
@@ -172,20 +169,24 @@ const buildReplicaPullDeps = <T extends ReplicaLocalRecord>(
   // unset and never hit these.
   createBundleDir: async () => {
     const id = uniqueId();
-    await service.createDir(id, config.baseDir!, true);
+    await getClientRuntime().runPromise(
+      Effect.flatMap(FileSystem, (fs) => fs.createDir(id, config.baseDir!, true)),
+    );
     return id;
   },
   queueReplicaDownload: (contentId, displayTitle, files, _bundleDir, base) =>
     transferManager.queueReplicaDownload(config.kind, contentId, displayTitle, files, base),
   filesExist: async (bundleDir, filenames) => {
     for (const filename of filenames) {
-      const exists = await service.exists(`${bundleDir}/${filename}`, config.baseDir!);
+      const exists = await getClientRuntime().runPromise(
+        Effect.flatMap(FileSystem, (fs) => fs.exists(`${bundleDir}/${filename}`, config.baseDir!)),
+      );
       if (!exists) return false;
     }
     return true;
   },
   queueLocalBinaryUpload: async (record) => {
-    await queueReplicaBinaryUpload(config.kind, record, service);
+    await queueReplicaBinaryUpload(config.kind, record);
   },
   // The pull skips when this resolves false. We piggyback the
   // user-facing category gate here so disabling a kind in
@@ -210,8 +211,7 @@ const dictionaryPullConfig: ReplicaPullConfig<ImportedDictionary> = {
   // would write back only the just-applied rows and clobber every
   // persisted dict that hadn't been hydrated by an Annotator/Settings
   // mount. Library-page refreshes were the visible victim.
-  hydrateLocalStore: (envConfig) =>
-    useCustomDictionaryStore.getState().loadCustomDictionaries(envConfig),
+  hydrateLocalStore: () => useCustomDictionaryStore.getState().loadCustomDictionaries(),
   applyRemote: (dict) => useCustomDictionaryStore.getState().applyRemoteDictionary(dict),
   softDeleteByContentId: (id) => useCustomDictionaryStore.getState().softDeleteByContentId(id),
 };
@@ -221,11 +221,11 @@ const fontPullConfig: ReplicaPullConfig<CustomFont> = {
   baseDir: 'Fonts',
   adapter: fontAdapter,
   findByContentId: findFontByContentId,
-  hydrateLocalStore: async (envConfig) => {
-    await useCustomFontStore.getState().loadCustomFonts(envConfig);
+  hydrateLocalStore: async () => {
+    await useCustomFontStore.getState().loadCustomFonts();
     // Rehash legacy flat-path fonts so the user doesn't have to
     // re-import them by hand to get them onto other devices.
-    await migrateLegacyFonts(envConfig);
+    await migrateLegacyFonts();
   },
   applyRemote: (font) => useCustomFontStore.getState().applyRemoteFont(font),
   softDeleteByContentId: (id) => useCustomFontStore.getState().softDeleteByContentId(id),
@@ -236,11 +236,11 @@ const texturePullConfig: ReplicaPullConfig<CustomTexture> = {
   baseDir: 'Images',
   adapter: textureAdapter,
   findByContentId: findTextureByContentId,
-  hydrateLocalStore: async (envConfig) => {
-    await useCustomTextureStore.getState().loadCustomTextures(envConfig);
+  hydrateLocalStore: async () => {
+    await useCustomTextureStore.getState().loadCustomTextures();
     // Rehash legacy flat-path textures so the user doesn't have to
     // re-import them by hand to get them onto other devices.
-    await migrateLegacyTextures(envConfig);
+    await migrateLegacyTextures();
   },
   applyRemote: (texture) => useCustomTextureStore.getState().applyRemoteTexture(texture),
   softDeleteByContentId: (id) => useCustomTextureStore.getState().softDeleteByContentId(id),
@@ -251,12 +251,12 @@ const opdsCatalogPullConfig: ReplicaPullConfig<OPDSCatalog> = {
   // metadata-only — no baseDir
   adapter: opdsCatalogAdapter,
   findByContentId: findOPDSCatalogByContentId,
-  hydrateLocalStore: (envConfig) => useCustomOPDSStore.getState().loadCustomOPDSCatalogs(envConfig),
+  hydrateLocalStore: () => useCustomOPDSStore.getState().loadCustomOPDSCatalogs(),
   applyRemote: (catalog) => useCustomOPDSStore.getState().applyRemoteCatalog(catalog),
   softDeleteByContentId: (id) => useCustomOPDSStore.getState().softDeleteByContentId(id),
 };
 
-const settingsPullConfig = (envConfig: EnvConfigType): ReplicaPullConfig<SettingsRemoteRecord> => ({
+const settingsPullConfig: ReplicaPullConfig<SettingsRemoteRecord> = {
   kind: 'settings',
   // metadata-only — no baseDir
   adapter: settingsAdapter,
@@ -275,7 +275,7 @@ const settingsPullConfig = (envConfig: EnvConfigType): ReplicaPullConfig<Setting
     patch: {} as Partial<SystemSettings>,
     lastSeenCipher: getStoredLastSeenCipher(),
   }),
-  applyRemote: (record) => applyRemoteSettings(envConfig, record),
+  applyRemote: (record) => applyRemoteSettings(record),
   // Settings is a singleton — never tombstoned. The server-side
   // forget-passphrase wipe doesn't touch this row.
   softDeleteByContentId: () => {},
@@ -289,7 +289,7 @@ const settingsPullConfig = (envConfig: EnvConfigType): ReplicaPullConfig<Setting
     const settings = useSettingsStore.getState().settings;
     if (settings) void publishSettingsIfChanged(settings);
   },
-});
+};
 
 /**
  * Per-kind dispatch for both the boot pull (one HTTP per kind) and the
@@ -300,8 +300,6 @@ const settingsPullConfig = (envConfig: EnvConfigType): ReplicaPullConfig<Setting
  */
 const runPullForKind = async (
   kind: ReplicaKind,
-  service: AppService,
-  envConfig: EnvConfigType,
   pullOpts?: { since?: Hlc | null },
   pullOverride?: () => Promise<ReplicaRow[]>,
 ): Promise<void> => {
@@ -310,62 +308,27 @@ const runPullForKind = async (
   switch (kind) {
     case 'dictionary':
       await replicaPullAndApply(
-        buildReplicaPullDeps(
-          ctx.manager,
-          service,
-          envConfig,
-          dictionaryPullConfig,
-          pullOpts,
-          pullOverride,
-        ),
+        buildReplicaPullDeps(ctx.manager, dictionaryPullConfig, pullOpts, pullOverride),
       );
       return;
     case 'font':
       await replicaPullAndApply(
-        buildReplicaPullDeps(
-          ctx.manager,
-          service,
-          envConfig,
-          fontPullConfig,
-          pullOpts,
-          pullOverride,
-        ),
+        buildReplicaPullDeps(ctx.manager, fontPullConfig, pullOpts, pullOverride),
       );
       return;
     case 'texture':
       await replicaPullAndApply(
-        buildReplicaPullDeps(
-          ctx.manager,
-          service,
-          envConfig,
-          texturePullConfig,
-          pullOpts,
-          pullOverride,
-        ),
+        buildReplicaPullDeps(ctx.manager, texturePullConfig, pullOpts, pullOverride),
       );
       return;
     case 'opds_catalog':
       await replicaPullAndApply(
-        buildReplicaPullDeps(
-          ctx.manager,
-          service,
-          envConfig,
-          opdsCatalogPullConfig,
-          pullOpts,
-          pullOverride,
-        ),
+        buildReplicaPullDeps(ctx.manager, opdsCatalogPullConfig, pullOpts, pullOverride),
       );
       return;
     case 'settings':
       await replicaPullAndApply(
-        buildReplicaPullDeps(
-          ctx.manager,
-          service,
-          envConfig,
-          settingsPullConfig(envConfig),
-          pullOpts,
-          pullOverride,
-        ),
+        buildReplicaPullDeps(ctx.manager, settingsPullConfig, pullOpts, pullOverride),
       );
       return;
   }
@@ -381,10 +344,9 @@ const runPullForKind = async (
  */
 const triggerIncrementalPullAll = (): void => {
   if (!hasCurrentUser) return;
-  if (!autoSyncContext) return;
+  if (!autoSyncInstalled) return;
   const ctx = getReplicaSync();
   if (!ctx) return;
-  const { service, envConfig } = autoSyncContext;
 
   const kindsToPull: ReplicaKind[] = [];
   for (const kind of registeredKinds) {
@@ -416,7 +378,7 @@ const triggerIncrementalPullAll = (): void => {
         kindsToPull.map(async (kind) => {
           const rows = rowsByKind.get(kind) ?? [];
           try {
-            await runPullForKind(kind, service, envConfig, undefined, async () => rows);
+            await runPullForKind(kind, undefined, async () => rows);
           } catch (err) {
             console.warn(`replica ${kind} incremental apply failed`, err);
           }
@@ -464,12 +426,12 @@ const onPeriodicTick = (): void => {
  * `registeredKinds` so the auto-pull triggers fan it out alongside the
  * caller's requested kinds.
  */
-const ensureSettingsBootPulled = (service: AppService, envConfig: EnvConfigType): Promise<void> => {
+const ensureSettingsBootPulled = (): Promise<void> => {
   if (settingsBootPullPromise) return settingsBootPullPromise;
   registeredKinds.add('settings');
   pulledKinds.add('settings');
   pullInFlight.add('settings');
-  settingsBootPullPromise = runPullForKind('settings', service, envConfig, {
+  settingsBootPullPromise = runPullForKind('settings', {
     since: null,
   })
     .catch((err) => {
@@ -485,12 +447,11 @@ const ensureSettingsBootPulled = (service: AppService, envConfig: EnvConfigType)
 /**
  * Install document/window listeners + periodic interval for incremental
  * pulls. Idempotent — first call wires everything, subsequent calls
- * just refresh `autoSyncContext` (so listeners always see the latest
- * appService / envConfig). Listeners stay attached for the lifetime of
- * the page; in production this runs exactly once.
+ * just re-mark `autoSyncInstalled`. Listeners stay attached for the
+ * lifetime of the page; in production this runs exactly once.
  */
-const installAutoSyncListeners = (service: AppService, envConfig: EnvConfigType): void => {
-  autoSyncContext = { service, envConfig };
+const installAutoSyncListeners = (): void => {
+  autoSyncInstalled = true;
   if (autoSyncListenersInstalled) return;
   autoSyncListenersInstalled = true;
   if (typeof document !== 'undefined') {
@@ -529,7 +490,7 @@ export const useReplicaPull = ({
   kinds,
   delayMs = REPLICA_PULL_DEFAULT_DELAY_MS,
 }: UseReplicaPullOpts): void => {
-  const { envConfig, appService } = useEnv();
+  const booted = useBooted();
   const { user } = useAuth();
   // Stable cache key so the effect doesn't re-run when the caller
   // passes a freshly-allocated array literal each render.
@@ -544,7 +505,7 @@ export const useReplicaPull = ({
   }, [user]);
 
   useEffect(() => {
-    if (!appService) return;
+    if (!booted) return;
     if (!user) return;
 
     for (const kind of kinds) registeredKinds.add(kind);
@@ -553,7 +514,7 @@ export const useReplicaPull = ({
     let unsubscribe: (() => void) | null = null;
 
     const schedule = () => {
-      installAutoSyncListeners(appService, envConfig);
+      installAutoSyncListeners();
       if (timer) return;
       // Settings is implicitly pulled first regardless of whether the
       // caller asked for it (e.g. the reader page only requests
@@ -570,7 +531,7 @@ export const useReplicaPull = ({
           // Await the settings boot pull before dispatching the others.
           // Subsequent mounts share `settingsBootPullPromise` so the
           // pull only happens once per session.
-          await ensureSettingsBootPulled(appService, envConfig);
+          await ensureSettingsBootPulled();
           // Boot path skips disabled kinds: enabling a category later
           // re-fires `triggerIncrementalPullAll` from a focus event,
           // which will fetch the missed rows. This keeps boot bandwidth
@@ -616,7 +577,7 @@ export const useReplicaPull = ({
             eligible.map(async (kind) => {
               try {
                 const rows = rowsByKind.get(kind) ?? [];
-                await runPullForKind(kind, appService, envConfig, undefined, async () => rows);
+                await runPullForKind(kind, undefined, async () => rows);
               } catch (err) {
                 console.warn(`replica ${kind} boot apply failed`, err);
                 pulledKinds.delete(kind);
@@ -632,9 +593,9 @@ export const useReplicaPull = ({
     if (getReplicaSync()) {
       schedule();
     } else {
-      // Hard-refresh race: appService resolved before
-      // EnvContext.initReplicaSync finished (loadSettings is async,
-      // setAppService runs first). Wait for the ready signal so the
+      // Hard-refresh race: boot resolved before
+      // replica-sync init finished (loadSettings is async,
+      // the booted flag flips first). Wait for the ready signal so the
       // pull still fires once the singleton lands.
       unsubscribe = subscribeReplicaSyncReady(schedule);
     }
@@ -644,7 +605,7 @@ export const useReplicaPull = ({
       if (unsubscribe) unsubscribe();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [kindsKey, appService, envConfig, delayMs, user]);
+  }, [kindsKey, booted, delayMs, user]);
 };
 
 /** Test seam — clear all module-level state and tear down listeners. */
@@ -652,7 +613,7 @@ export const __resetReplicaPullForTests = (): void => {
   pulledKinds.clear();
   pullInFlight.clear();
   registeredKinds.clear();
-  autoSyncContext = null;
+  autoSyncInstalled = false;
   if (typeof document !== 'undefined') {
     document.removeEventListener('visibilitychange', onVisibilityChange);
   }

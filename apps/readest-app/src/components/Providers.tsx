@@ -8,7 +8,7 @@ import PassphrasePrompt from '@/components/PassphrasePrompt';
 import AppLockDialog from '@/components/settings/AppLockDialog';
 import { AuthProvider } from '@/context/AuthContext';
 import { DropdownProvider } from '@/context/DropdownContext';
-import { useEnv } from '@/context/EnvContext';
+import { useBooted, useBootSettings } from '@/context/EffectRuntimeProvider';
 import { CSPostHogProvider } from '@/context/PHContext';
 import { SyncProvider } from '@/context/SyncContext';
 import { useBackgroundTexture } from '@/hooks/useBackgroundTexture';
@@ -27,7 +27,8 @@ import { getDirFromUILanguage } from '@/utils/rtl';
 import { getAndroidPatchedViewportContent } from '@/utils/viewport';
 
 const Providers = ({ children }: { children: React.ReactNode }) => {
-  const { envConfig, appService } = useEnv();
+  const booted = useBooted();
+  const bootSettings = useBootSettings();
   const { applyUILanguage } = useSettingsStore();
   const { applyBackgroundTexture } = useBackgroundTexture();
   const { applyEinkMode } = useEinkMode();
@@ -61,38 +62,36 @@ const Providers = ({ children }: { children: React.ReactNode }) => {
 
   useEffect(() => {
     loadDataTheme();
-    if (appService) {
-      initSystemThemeListener(appService);
-      appService.loadSettings().then((settings) => {
-        const globalViewSettings = settings.globalViewSettings;
-        applyUILanguage(globalViewSettings.uiLanguage);
-        applyBackgroundTexture(envConfig, globalViewSettings);
-        if (globalViewSettings.isEink) {
-          applyEinkMode(true);
-        }
-        // Initialize the app-lock gate from on-disk settings. Until
-        // this runs, the gate renders nothing — guarantees the
-        // library can't flash on screen before the lock screen does.
-        initializeAppLock({
-          enabled: !!settings.pinCodeEnabled,
-          hash: settings.pinCodeHash,
-          salt: settings.pinCodeSalt,
-        });
-        // Subscribe the bundled-settings publisher to settingsStore
-        // changes, AFTER priming the publish snapshot from the just-
-        // loaded disk settings. Without this priming, the very first
-        // setSettings(disk_default) at boot (typically from library
-        // page's initLibrary) would diff every whitelisted field
-        // against `undefined`, treat them all as "new", and push the
-        // local defaults to the server with a fresh HLC — overwriting
-        // the cross-device authoritative values another device set.
-        // Idempotent — safe to call on remount.
-        initSettingsSync(settings);
-      });
+    if (!booted || !bootSettings) return;
+    initSystemThemeListener();
+    const settings = bootSettings;
+    const globalViewSettings = settings.globalViewSettings;
+    applyUILanguage(globalViewSettings.uiLanguage);
+    applyBackgroundTexture(globalViewSettings);
+    if (globalViewSettings.isEink) {
+      applyEinkMode(true);
     }
+    // Initialize the app-lock gate from on-disk settings. Until
+    // this runs, the gate renders nothing — guarantees the
+    // library can't flash on screen before the lock screen does.
+    initializeAppLock({
+      enabled: !!settings.pinCodeEnabled,
+      hash: settings.pinCodeHash,
+      salt: settings.pinCodeSalt,
+    });
+    // Subscribe the bundled-settings publisher to settingsStore
+    // changes, AFTER priming the publish snapshot from the just-
+    // loaded disk settings. Without this priming, the very first
+    // setSettings(disk_default) at boot (typically from library
+    // page's initLibrary) would diff every whitelisted field
+    // against `undefined`, treat them all as "new", and push the
+    // local defaults to the server with a fresh HLC — overwriting
+    // the cross-device authoritative values another device set.
+    // Idempotent — safe to call on remount.
+    initSettingsSync(settings);
   }, [
-    envConfig,
-    appService,
+    booted,
+    bootSettings,
     applyUILanguage,
     applyBackgroundTexture,
     applyEinkMode,
@@ -118,14 +117,14 @@ const Providers = ({ children }: { children: React.ReactNode }) => {
     if (updated) meta.content = updated;
   }, []);
 
-  // Preserve SSR and the first client paint even before appService has
-  // resolved. Hooks/components that depend on appService already guard
-  // themselves with optional chaining or early returns.
+  // Preserve SSR and the first client paint even before the Effect boot
+  // (BootApp) has resolved. Hooks/components that depend on boot readiness
+  // already guard themselves via useBooted()/early returns.
   //
-  // Once appService is ready, re-enable the app-lock gate so protected
-  // sessions still hide the shell until the persisted PIN state loads.
-  const showAppLockScreen = !!appService && isLockInitialized && !isUnlocked;
-  const appShellHidden = !!appService && (!isLockInitialized || !isUnlocked);
+  // Once booted, re-enable the app-lock gate so protected sessions still
+  // hide the shell until the persisted PIN state loads.
+  const showAppLockScreen = booted && isLockInitialized && !isUnlocked;
+  const appShellHidden = booted && (!isLockInitialized || !isUnlocked);
 
   return (
     <CSPostHogProvider>

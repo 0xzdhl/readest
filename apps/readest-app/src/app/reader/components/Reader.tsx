@@ -3,7 +3,7 @@ import * as React from 'react';
 import { useEffect, Suspense } from 'react';
 import { useRouter } from '@tanstack/react-router';
 
-import { useEnv } from '@/context/EnvContext';
+import { usePlatformInfo } from '@/context/EffectRuntimeProvider';
 import { useTheme } from '@/hooks/useTheme';
 import { useLibrary } from '@/hooks/useLibrary';
 import { useThemeStore } from '@/store/themeStore';
@@ -52,7 +52,7 @@ Z-Index Layering Guide:
 
 const Reader: React.FC<{ ids: string; cfi?: string }> = ({ ids, cfi = '' }) => {
   const router = useRouter();
-  const { appService } = useEnv();
+  const platformInfo = usePlatformInfo();
   const { settings } = useSettingsStore();
   const { libraryLoaded } = useLibrary();
   const { sideBarBookKey } = useSidebarStore();
@@ -87,23 +87,23 @@ const Reader: React.FC<{ ids: string; cfi?: string }> = ({ ids, cfi = '' }) => {
   useEffect(() => {
     const brightness = settings.screenBrightness;
     const autoBrightness = settings.autoScreenBrightness;
-    if (appService?.hasScreenBrightness && !autoBrightness && brightness >= 0) {
+    if (platformInfo.hasScreenBrightness && !autoBrightness && brightness >= 0) {
       setScreenBrightness(brightness / 100);
     }
     let previousBrightness = -1;
-    if (appService?.isIOSApp) {
+    if (platformInfo.isIOSApp) {
       getScreenBrightness().then((b) => {
         previousBrightness = b;
       });
     }
 
     return () => {
-      if (appService?.hasScreenBrightness && !autoBrightness) {
+      if (platformInfo.hasScreenBrightness && !autoBrightness) {
         setScreenBrightness(previousBrightness);
       }
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [appService]);
+  }, []);
 
   const handleKeyDown = (event: CustomEvent) => {
     if (event.detail.keyName === 'Back') {
@@ -125,35 +125,28 @@ const Reader: React.FC<{ ids: string; cfi?: string }> = ({ ids, cfi = '' }) => {
   };
 
   useEffect(() => {
-    if (!appService?.isAndroidApp) return;
+    if (!platformInfo.isAndroidApp) return;
     acquireBackKeyInterception();
     return () => {
       releaseBackKeyInterception();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [appService?.isAndroidApp]);
+  }, []);
 
   useEffect(() => {
-    if (appService?.isAndroidApp) {
+    if (platformInfo.isAndroidApp) {
       eventDispatcher.onSync('native-key-down', handleKeyDown);
     }
     return () => {
-      if (appService?.isAndroidApp) {
+      if (platformInfo.isAndroidApp) {
         eventDispatcher.offSync('native-key-down', handleKeyDown);
       }
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [
-    appService?.isAndroidApp,
-    sideBarBookKey,
-    isSideBarPinned,
-    isSideBarVisible,
-    isNotebookPinned,
-    isNotebookVisible,
-  ]);
+  }, [sideBarBookKey, isSideBarPinned, isSideBarVisible, isNotebookPinned, isNotebookVisible]);
 
   useEffect(() => {
-    if (!appService?.isMobileApp) return;
+    if (!platformInfo.isMobileApp) return;
     const systemUIVisible = !!hoveredBookKey || settings.alwaysShowStatusBar;
     const visible = !!(systemUIVisible && !systemUIAlwaysHidden);
     setSystemUIVisibility({ visible, darkMode: isDarkMode });
@@ -169,7 +162,7 @@ const Reader: React.FC<{ ids: string; cfi?: string }> = ({ ids, cfi = '' }) => {
     <div
       className={clsx(
         'reader-page bg-base-100 text-base-content full-height select-none overflow-hidden',
-        appService?.hasRoundedWindow && isRoundedWindow && 'window-border rounded-window',
+        platformInfo.hasRoundedWindow && isRoundedWindow && 'window-border rounded-window',
       )}
     >
       <Suspense fallback={<div className='full-height'></div>}>
@@ -182,7 +175,7 @@ const Reader: React.FC<{ ids: string; cfi?: string }> = ({ ids, cfi = '' }) => {
       </Suspense>
     </div>
   ) : (
-    <div className={clsx('full-height', !appService?.isLinuxApp && 'bg-base-100')}></div>
+    <div className={clsx('full-height', !platformInfo.isLinuxApp && 'bg-base-100')}></div>
   );
 };
 

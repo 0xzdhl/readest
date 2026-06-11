@@ -1,9 +1,15 @@
 import type { Configuration, ZipWriter } from '@zip.js/zip.js';
-import type { AppService } from '@/types/system';
+import { Effect, Option } from 'effect';
 import { isTauriAppPlatform } from '@/services/environment';
-import type { Book, BookConfig, BookNote } from '@/types/book';
+import type { Book, BookConfig, BookNote } from '@/domain/book';
 import { getLibraryFilename } from '@/utils/book';
 import { configureZip } from '@/utils/zip';
+import { getClientRuntime } from '@/runtime/clientRuntime';
+import { FileSystem } from '@/application/ports/FileSystem';
+import { PathResolver } from '@/application/ports/PathResolver';
+import { Dialog } from '@/application/ports/Dialog';
+import { LibraryRepository } from '@/application/repositories/LibraryRepository';
+import { importBooks as importBooksUsecase } from '@/application/usecases/book';
 
 /** Book file extensions for identifying book files in backup directories. */
 const BOOK_EXTS = new Set(['epub', 'pdf', 'mobi', 'azw', 'azw3', 'cbz', 'fb2', 'fbz', 'txt', 'md']);
@@ -73,21 +79,25 @@ type ProgressCallback = (current: number, total: number, filename: string) => vo
  */
 async function addBackupEntriesToZip(
   writer: ZipWriter<unknown>,
-  appService: AppService,
   onProgress?: ProgressCallback,
 ): Promise<void> {
+  const rt = getClientRuntime();
   const { Uint8ArrayReader } = await import('@zip.js/zip.js');
 
   // Generate canonical library.json from the current storage backend
-  const books = await appService.loadLibraryBooks();
+  const books = await rt.runPromise(Effect.flatMap(LibraryRepository, (r) => r.load));
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const libraryBooks = books.map(({ coverImageUrl, ...rest }) => rest);
   const libraryJson = new TextEncoder().encode(JSON.stringify(libraryBooks, null, 2));
   await writer.add(getLibraryFilename(), new Uint8ArrayReader(libraryJson));
 
   // Add all book files, skipping library metadata files
-  const booksDir = await appService.resolveFilePath('', 'Books');
-  const files = await appService.readDirectory(booksDir, 'None');
+  const booksDir = await rt.runPromise(
+    Effect.flatMap(PathResolver, (r) => r.absolute('', 'Books')),
+  );
+  const files = await rt.runPromise(
+    Effect.flatMap(FileSystem, (fs) => fs.readDir(booksDir, 'None')),
+  );
   const bookFiles = files.filter((f) => f.size > 0 && !isLibraryMetaFile(f.path));
   const total = bookFiles.length;
 
@@ -95,7 +105,9 @@ async function addBackupEntriesToZip(
     const file = bookFiles[i]!;
     onProgress?.(i + 1, total, file.path);
     try {
-      const content = await appService.readFile(file.path, 'Books', 'binary');
+      const content = await rt.runPromise(
+        Effect.flatMap(FileSystem, (fs) => fs.readFile(file.path, 'Books', 'binary')),
+      );
       const data = new Uint8Array(content as ArrayBuffer);
       await writer.add(file.path, new Uint8ArrayReader(data), { level: 0 });
     } catch (error) {
@@ -114,16 +126,13 @@ const ZIP_WRITE_CONFIG: Partial<Configuration> = {
  * Create a backup zip in memory, returning an ArrayBuffer.
  * Used on web where streaming to a file is not available.
  */
-export async function createBackupZip(
-  appService: AppService,
-  onProgress?: ProgressCallback,
-): Promise<ArrayBuffer> {
+export async function createBackupZip(onProgress?: ProgressCallback): Promise<ArrayBuffer> {
   await configureZip(ZIP_WRITE_CONFIG);
   const { BlobWriter, ZipWriter } = await import('@zip.js/zip.js');
 
   const blobWriter = new BlobWriter('application/zip');
   const writer = new ZipWriter(blobWriter);
-  await addBackupEntriesToZip(writer, appService, onProgress);
+  await addBackupEntriesToZip(writer, onProgress);
   await writer.close();
   const blob = await blobWriter.getData();
   return await blob.arrayBuffer();
@@ -135,7 +144,6 @@ export async function createBackupZip(
  * Only available on Tauri (requires @tauri-apps/plugin-fs).
  */
 export async function createBackupZipToFile(
-  appService: AppService,
   filePath: string,
   onProgress?: ProgressCallback,
 ): Promise<void> {
@@ -149,7 +157,7 @@ export async function createBackupZipToFile(
   const writePromise = writeFile(filePath, readable);
 
   const writer = new ZipWriter(writable);
-  await addBackupEntriesToZip(writer, appService, onProgress);
+  await addBackupEntriesToZip(writer, onProgress);
   await writer.close();
   await writePromise;
 }
@@ -170,10 +178,10 @@ export function validateBackupStructure(entryNames: string[]): boolean {
  * - Import orphan hash directories not listed in library.json
  */
 export async function restoreFromBackupZip(
-  appService: AppService,
   zipBlob: Blob,
   onProgress?: (current: number, total: number, filename: string) => void,
 ): Promise<{ booksAdded: number; booksUpdated: number }> {
+  const rt = getClientRuntime();
   await configureZip();
   const { BlobReader, ZipReader, Uint8ArrayWriter } = await import('@zip.js/zip.js');
 
@@ -200,7 +208,7 @@ export async function restoreFromBackupZip(
   const backupBooks: Book[] = JSON.parse(new TextDecoder().decode(libraryData));
 
   // Load current library
-  const currentBooks = await appService.loadLibraryBooks();
+  const currentBooks = await rt.runPromise(Effect.flatMap(LibraryRepository, (r) => r.load));
 
   const currentBooksMap = new Map<string, Book>();
   for (const book of currentBooks) {
@@ -242,7 +250,9 @@ export async function restoreFromBackupZip(
           // Merge config
           let currentConfig: Partial<BookConfig> = {};
           try {
-            const str = (await appService.readFile(entry.filename, 'Books', 'text')) as string;
+            const str = (await rt.runPromise(
+              Effect.flatMap(FileSystem, (fs) => fs.readFile(entry.filename, 'Books', 'text')),
+            )) as string;
             currentConfig = JSON.parse(str);
           } catch {
             /* use empty config if current doesn't exist */
@@ -250,10 +260,18 @@ export async function restoreFromBackupZip(
 
           const backupConfig: Partial<BookConfig> = JSON.parse(new TextDecoder().decode(data));
           const mergedConfig = mergeBookConfigs(currentConfig, backupConfig);
-          await appService.writeFile(entry.filename, 'Books', JSON.stringify(mergedConfig));
+          await rt.runPromise(
+            Effect.flatMap(FileSystem, (fs) =>
+              fs.writeFile(entry.filename, 'Books', JSON.stringify(mergedConfig)),
+            ),
+          );
         } else {
           // Override book file and cover image
-          await appService.writeFile(entry.filename, 'Books', data.buffer as ArrayBuffer);
+          await rt.runPromise(
+            Effect.flatMap(FileSystem, (fs) =>
+              fs.writeFile(entry.filename, 'Books', data.buffer as ArrayBuffer),
+            ),
+          );
         }
       }
 
@@ -262,12 +280,16 @@ export async function restoreFromBackupZip(
       booksUpdated++;
     } else {
       // Add new book: extract all files
-      if (!(await appService.exists(bookDir, 'Books'))) {
-        await appService.createDir(bookDir, 'Books');
+      if (!(await rt.runPromise(Effect.flatMap(FileSystem, (fs) => fs.exists(bookDir, 'Books'))))) {
+        await rt.runPromise(Effect.flatMap(FileSystem, (fs) => fs.createDir(bookDir, 'Books')));
       }
       for (const entry of bookFileEntries) {
         const data = await entry.getData!(new Uint8ArrayWriter());
-        await appService.writeFile(entry.filename, 'Books', data.buffer as ArrayBuffer);
+        await rt.runPromise(
+          Effect.flatMap(FileSystem, (fs) =>
+            fs.writeFile(entry.filename, 'Books', data.buffer as ArrayBuffer),
+          ),
+        );
       }
       currentBooks.push(backupBook);
       currentBooksMap.set(backupBook.hash, backupBook);
@@ -290,18 +312,30 @@ export async function restoreFromBackupZip(
     if (!bookEntry) continue;
 
     // Extract all files to the Books directory
-    if (!(await appService.exists(hash, 'Books'))) {
-      await appService.createDir(hash, 'Books');
+    if (!(await rt.runPromise(Effect.flatMap(FileSystem, (fs) => fs.exists(hash, 'Books'))))) {
+      await rt.runPromise(Effect.flatMap(FileSystem, (fs) => fs.createDir(hash, 'Books')));
     }
     for (const entry of orphanEntries) {
       const data = await entry.getData!(new Uint8ArrayWriter());
-      await appService.writeFile(entry.filename, 'Books', data.buffer as ArrayBuffer);
+      await rt.runPromise(
+        Effect.flatMap(FileSystem, (fs) =>
+          fs.writeFile(entry.filename, 'Books', data.buffer as ArrayBuffer),
+        ),
+      );
     }
 
     // Import the book file from the extracted location
     try {
-      const filePath = await appService.resolveFilePath(bookEntry.filename, 'Books');
-      const imported = await appService.importBook(filePath, currentBooks, { overwrite: true });
+      const filePath = await rt.runPromise(
+        Effect.flatMap(PathResolver, (r) => r.absolute(bookEntry.filename, 'Books')),
+      );
+      const { imported: importedBooks } = await rt.runPromise(
+        importBooksUsecase(currentBooks, [{ file: filePath }], {
+          overwrite: true,
+          persist: false,
+        }),
+      );
+      const imported = importedBooks[0];
       if (imported) {
         currentBooksMap.set(imported.hash, imported);
         booksAdded++;
@@ -312,7 +346,7 @@ export async function restoreFromBackupZip(
   }
 
   // Save merged library
-  await appService.saveLibraryBooks(currentBooks);
+  await rt.runPromise(Effect.flatMap(LibraryRepository, (r) => r.save(currentBooks)));
 
   await reader.close();
 
@@ -325,10 +359,10 @@ export async function restoreFromBackupZip(
  * On web, builds the zip in memory and triggers a download.
  */
 export async function saveBackupFile(
-  appService: AppService,
   filename: string,
   onProgress?: ProgressCallback,
 ): Promise<boolean> {
+  const rt = getClientRuntime();
   if (isTauriAppPlatform()) {
     // Tauri: stream directly to the chosen file path
     const { save: saveDialog } = await import('@tauri-apps/plugin-dialog');
@@ -338,12 +372,17 @@ export async function saveBackupFile(
       filters: [{ name: ext.toUpperCase(), extensions: [ext] }],
     });
     if (!filePath) return false;
-    await createBackupZipToFile(appService, filePath, onProgress);
+    await createBackupZipToFile(filePath, onProgress);
     return true;
   } else {
     // Web: build zip in memory then save
-    const zipData = await createBackupZip(appService, onProgress);
-    let filePath: string | undefined;
-    return appService.saveFile(filename, zipData, { filePath, mimeType: 'application/zip' });
+    const zipData = await createBackupZip(onProgress);
+    const filePath: string | undefined = undefined;
+    const saved = await rt.runPromise(
+      Effect.flatMap(Dialog, (d) =>
+        d.saveFile(filename, zipData, { filePath, mimeType: 'application/zip' }),
+      ),
+    );
+    return Option.isSome(saved);
   }
 }

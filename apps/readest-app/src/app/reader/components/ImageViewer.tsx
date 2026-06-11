@@ -3,7 +3,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { IoChevronBack, IoChevronForward } from 'react-icons/io5';
 import { useTranslation } from '@/hooks/useTranslation';
 import { useKeyDownActions } from '@/hooks/useKeyDownActions';
-import type { Insets } from '@/types/misc';
+import type { Insets } from '@/domain/misc';
 import ZoomControls from './ZoomControls';
 
 interface ImageViewerProps {

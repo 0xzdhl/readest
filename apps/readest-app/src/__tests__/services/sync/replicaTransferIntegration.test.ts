@@ -4,6 +4,32 @@ vi.mock('@/services/sync/replicaPublish', () => ({
   publishReplicaManifest: vi.fn(),
 }));
 
+// The integration hashes uploaded files by opening them through the FileSystem
+// port resolved via getClientRuntime(). Mock the runtime so that openFile is a
+// spy returning a real File, mirroring the faithful-port mock in
+// opds-auto-download.test.ts.
+const openFileSpy = vi.fn(async (path: string, _base?: string) => {
+  const content = `content-of-${path}`;
+  return new File([content], path, { type: 'application/octet-stream' });
+});
+
+vi.mock('@/runtime/clientRuntime', async () => {
+  const { Effect, Layer } = await import('effect');
+  const { FileSystem } = await import('@/application/ports/FileSystem');
+  const FakePorts = Layer.succeed(FileSystem, {
+    openFile: (path: string, base?: string) => Effect.promise(() => openFileSpy(path, base)),
+  } as never);
+  return {
+    getClientRuntime: () => ({
+      runPromise: (effect: never) =>
+        Effect.runPromise(
+          Effect.provide(effect, FakePorts) as unknown as Parameters<typeof Effect.runPromise>[0],
+        ),
+    }),
+    setClientRuntime: vi.fn(),
+  };
+});
+
 import { eventDispatcher } from '@/utils/event';
 import { publishReplicaManifest } from '@/services/sync/replicaPublish';
 import {
@@ -13,7 +39,6 @@ import {
 } from '@/services/sync/replicaTransferIntegration';
 import { clearReplicaAdapters, registerReplicaAdapter } from '@/services/sync/replicaRegistry';
 import type { ReplicaAdapter } from '@/services/sync/replicaRegistry';
-import type { AppService } from '@/types/system';
 
 const mockPublish = publishReplicaManifest as ReturnType<typeof vi.fn>;
 const downloadHandler = vi.fn();
@@ -29,17 +54,6 @@ const fakeDictionaryAdapter: ReplicaAdapter<unknown> = {
     localBaseDir: 'Dictionaries',
     enumerateFiles: () => [],
   },
-};
-
-const makeFakeAppService = () => {
-  const close = vi.fn();
-  return {
-    openFile: vi.fn(async (path: string) => {
-      const content = `content-of-${path}`;
-      return new File([content], path, { type: 'application/octet-stream' });
-    }),
-    _close: close,
-  };
 };
 
 beforeEach(() => {
@@ -58,8 +72,7 @@ afterEach(() => {
 
 describe('replicaTransferIntegration', () => {
   test('upload event triggers publishReplicaManifest', async () => {
-    const appService = makeFakeAppService() as unknown as AppService;
-    startReplicaTransferIntegration(appService);
+    startReplicaTransferIntegration();
     mockPublish.mockResolvedValue(undefined);
 
     await eventDispatcher.dispatch('replica-transfer-complete', {
@@ -84,8 +97,7 @@ describe('replicaTransferIntegration', () => {
   });
 
   test('upload openFile uses the adapter binary base dir', async () => {
-    const appService = makeFakeAppService() as unknown as AppService;
-    startReplicaTransferIntegration(appService);
+    startReplicaTransferIntegration();
     mockPublish.mockResolvedValue(undefined);
 
     await eventDispatcher.dispatch('replica-transfer-complete', {
@@ -95,12 +107,11 @@ describe('replicaTransferIntegration', () => {
       files: [{ logical: 'webster.mdx', lfp: 'b/webster.mdx', byteSize: 1 }],
     });
 
-    expect(appService.openFile).toHaveBeenCalledWith('b/webster.mdx', 'Dictionaries');
+    expect(openFileSpy).toHaveBeenCalledWith('b/webster.mdx', 'Dictionaries');
   });
 
   test('upload event carries reincarnation token into manifest publish', async () => {
-    const appService = makeFakeAppService() as unknown as AppService;
-    startReplicaTransferIntegration(appService);
+    startReplicaTransferIntegration();
     mockPublish.mockResolvedValue(undefined);
 
     await eventDispatcher.dispatch('replica-transfer-complete', {
@@ -116,8 +127,7 @@ describe('replicaTransferIntegration', () => {
   });
 
   test('download event does NOT publish a manifest (publish is upload-side only)', async () => {
-    const appService = makeFakeAppService() as unknown as AppService;
-    startReplicaTransferIntegration(appService);
+    startReplicaTransferIntegration();
 
     await eventDispatcher.dispatch('replica-transfer-complete', {
       kind: 'dictionary',
@@ -129,8 +139,7 @@ describe('replicaTransferIntegration', () => {
   });
 
   test('download event invokes the per-kind handler with the replicaId', async () => {
-    const appService = makeFakeAppService() as unknown as AppService;
-    startReplicaTransferIntegration(appService);
+    startReplicaTransferIntegration();
 
     await eventDispatcher.dispatch('replica-transfer-complete', {
       kind: 'dictionary',
@@ -143,8 +152,7 @@ describe('replicaTransferIntegration', () => {
   });
 
   test('upload event does NOT invoke the download handler', async () => {
-    const appService = makeFakeAppService() as unknown as AppService;
-    startReplicaTransferIntegration(appService);
+    startReplicaTransferIntegration();
     mockPublish.mockResolvedValue(undefined);
 
     await eventDispatcher.dispatch('replica-transfer-complete', {
@@ -157,8 +165,7 @@ describe('replicaTransferIntegration', () => {
   });
 
   test('event for an unknown kind (no registered adapter) is ignored', async () => {
-    const appService = makeFakeAppService() as unknown as AppService;
-    startReplicaTransferIntegration(appService);
+    startReplicaTransferIntegration();
 
     await eventDispatcher.dispatch('replica-transfer-complete', {
       kind: 'unregistered-kind',
@@ -171,13 +178,12 @@ describe('replicaTransferIntegration', () => {
   });
 
   test('event for a kind without a registered download handler is ignored cleanly', async () => {
-    const appService = makeFakeAppService() as unknown as AppService;
     // Register a SECOND adapter without a download handler.
     registerReplicaAdapter({
       ...fakeDictionaryAdapter,
       kind: 'font',
     });
-    startReplicaTransferIntegration(appService);
+    startReplicaTransferIntegration();
 
     await eventDispatcher.dispatch('replica-transfer-complete', {
       kind: 'font',
@@ -189,8 +195,7 @@ describe('replicaTransferIntegration', () => {
   });
 
   test('delete event is ignored', async () => {
-    const appService = makeFakeAppService() as unknown as AppService;
-    startReplicaTransferIntegration(appService);
+    startReplicaTransferIntegration();
 
     await eventDispatcher.dispatch('replica-transfer-complete', {
       kind: 'dictionary',
@@ -203,8 +208,7 @@ describe('replicaTransferIntegration', () => {
   });
 
   test('upload event with no files is ignored', async () => {
-    const appService = makeFakeAppService() as unknown as AppService;
-    startReplicaTransferIntegration(appService);
+    startReplicaTransferIntegration();
 
     await eventDispatcher.dispatch('replica-transfer-complete', {
       kind: 'dictionary',
@@ -216,9 +220,8 @@ describe('replicaTransferIntegration', () => {
   });
 
   test('start is idempotent — second call does not double-register', async () => {
-    const appService = makeFakeAppService() as unknown as AppService;
-    startReplicaTransferIntegration(appService);
-    startReplicaTransferIntegration(appService);
+    startReplicaTransferIntegration();
+    startReplicaTransferIntegration();
 
     await eventDispatcher.dispatch('replica-transfer-complete', {
       kind: 'dictionary',
@@ -236,8 +239,7 @@ describe('replicaTransferIntegration', () => {
   });
 
   test('publish error is caught (does not bubble up to event dispatcher)', async () => {
-    const appService = makeFakeAppService() as unknown as AppService;
-    startReplicaTransferIntegration(appService);
+    startReplicaTransferIntegration();
     mockPublish.mockRejectedValueOnce(new Error('network outage'));
     vi.spyOn(console, 'warn').mockImplementation(() => {});
 

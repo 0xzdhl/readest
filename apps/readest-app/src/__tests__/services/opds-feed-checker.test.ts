@@ -1,6 +1,6 @@
 import { describe, it, expect, vi } from 'vitest';
 import { getFeed } from 'foliate-js/opds.js';
-import type { OPDSFeed, OPDSPublication } from '@/types/opds';
+import type { OPDSFeed, OPDSPublication } from '@/domain/opds';
 import {
   getAcquisitionLink,
   collectNewEntries,

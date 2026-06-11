@@ -1,25 +1,26 @@
+import { Effect } from 'effect';
 import { create } from 'zustand';
 
 import {
-  type BookContent,
   type BookConfig,
   type PageInfo,
   type BookProgress,
   type ViewSettings,
   type TimeInfo,
   FIXED_LAYOUT_FORMATS,
-} from '@/types/book';
-import type { Insets } from '@/types/misc';
-import type { EnvConfigType } from '@/services/environment';
+} from '@/domain/book';
+import type { Insets } from '@/domain/misc';
 import { clientEnv } from '@/clientEnv';
-import type { FoliateView } from '@/types/view';
-import { DocumentLoader, type TOCItem } from '@/libs/document';
+import type { FoliateView } from '@/domain/view';
+import { DocumentLoader } from '@/libs/document';
+import type { TOCItem } from '@/domain/document';
 import {
   isPseStreamFileName,
   openPseStreamBook,
   parsePseStreamFileName,
 } from '@/services/opds/pseStream';
-import { BOOK_NAV_VERSION, computeBookNav, hydrateBookNav, updateToc } from '@/services/nav';
+import { computeBookNav, hydrateBookNav, updateToc } from '@/services/nav';
+import { BOOK_NAV_VERSION } from '@/domain/nav';
 import { formatTitle, getMetadataHash, getPrimaryLanguage } from '@/utils/book';
 import { getBaseFilename } from '@/utils/path';
 import { SUPPORTED_LANGNAMES } from '@/services/constants';
@@ -27,6 +28,8 @@ import { useSettingsStore } from './settingsStore';
 import { type BookData, useBookDataStore } from './bookDataStore';
 import { useLibraryStore } from './libraryStore';
 import { uniqueId } from '@/utils/misc';
+import { getClientRuntime } from '@/runtime/clientRuntime';
+import { BookRepository } from '@/application/repositories/BookRepository';
 
 interface ViewState {
   /* Unique key for each book view */
@@ -82,20 +85,14 @@ interface ReaderStore {
   setViewSettings: (key: string, viewSettings: ViewSettings) => void;
   getViewSettings: (key: string) => ViewSettings | null;
 
-  initViewState: (
-    envConfig: EnvConfigType,
-    id: string,
-    key: string,
-    isPrimary?: boolean,
-    reload?: boolean,
-  ) => Promise<void>;
+  initViewState: (id: string, key: string, isPrimary?: boolean, reload?: boolean) => Promise<void>;
   clearViewState: (key: string) => void;
   getViewState: (key: string) => ViewState | null;
   getGridInsets: (key: string) => Insets | null;
   setGridInsets: (key: string, insets: Insets | null) => void;
   setViewInited: (key: string, inited: boolean) => void;
   setPreviewMode: (key: string, previewMode: boolean) => void;
-  recreateViewer: (envConfig: EnvConfigType, key: string) => void;
+  recreateViewer: (key: string) => void;
 }
 
 export const useReaderStore = create<ReaderStore>((set, get) => ({
@@ -128,13 +125,7 @@ export const useReaderStore = create<ReaderStore>((set, get) => ({
     });
   },
   getViewState: (key: string) => get().viewStates[key] || null,
-  initViewState: async (
-    envConfig: EnvConfigType,
-    id: string,
-    key: string,
-    isPrimary = true,
-    reload = false,
-  ) => {
+  initViewState: async (id: string, key: string, isPrimary = true, reload = false) => {
     const booksData = useBookDataStore.getState().booksData;
     const bookData = booksData[id];
     set((state) => ({
@@ -159,7 +150,7 @@ export const useReaderStore = create<ReaderStore>((set, get) => ({
       },
     }));
     try {
-      const appService = await envConfig.getAppService();
+      const runtime = getClientRuntime();
       const { settings } = useSettingsStore.getState();
       const { getBookByHash, library } = useLibraryStore.getState();
       const book = getBookByHash(id);
@@ -180,26 +171,28 @@ export const useReaderStore = create<ReaderStore>((set, get) => ({
           bookDoc = doc.book;
           file = null;
         } else {
-          const content = (await appService.loadBookContent(book)) as BookContent;
+          const content = await runtime.runPromise(
+            Effect.flatMap(BookRepository, (r) => r.loadContent(book)),
+          );
           file = content.file;
           const doc = await new DocumentLoader(file).open();
           bookDoc = doc.book;
         }
       }
-      const config = await appService.loadBookConfig(book, settings);
+      const config = await runtime.runPromise(
+        Effect.flatMap(BookRepository, (r) => r.loadConfig(book, settings)),
+      );
       // Import annotations from third-party readers on first open
       if (bookDoc.metadata.identifier) {
         const { getAnnotationProviders } = await import('@/services/annotation');
         for (const provider of getAnnotationProviders()) {
-          if (provider.isAvailable(appService)) {
-            const merged = await provider.importAnnotations(
-              appService,
-              bookDoc.metadata.identifier,
-              config,
-            );
+          if (provider.isAvailable()) {
+            const merged = await provider.importAnnotations(bookDoc.metadata.identifier, config);
             if (merged !== config) {
               Object.assign(config, merged);
-              await appService.saveBookConfig(book, config, settings);
+              await runtime.runPromise(
+                Effect.flatMap(BookRepository, (r) => r.saveConfig(book, config, settings)),
+              );
             }
           }
         }
@@ -208,14 +201,18 @@ export const useReaderStore = create<ReaderStore>((set, get) => ({
       config.booknotes = config.booknotes?.filter((booknote) => booknote.cfi) ?? [];
       // Load cached book navigation (TOC + section fragments) or compute and persist.
       if (book.format === 'EPUB' && bookDoc.rendition?.layout !== 'pre-paginated') {
-        const cachedNav = await appService.loadBookNav(book);
+        const cachedNav = await runtime.runPromise(
+          Effect.flatMap(BookRepository, (r) => r.loadNav(book)),
+        );
         if (cachedNav?.version === BOOK_NAV_VERSION && clientEnv.NODE_ENV === 'production') {
           hydrateBookNav(bookDoc, cachedNav);
         } else {
           const freshNav = await computeBookNav(bookDoc);
           hydrateBookNav(bookDoc, freshNav);
           try {
-            await appService.saveBookNav(book, freshNav);
+            await runtime.runPromise(
+              Effect.flatMap(BookRepository, (r) => r.saveNav(book, freshNav)),
+            );
           } catch (e) {
             console.warn('Failed to persist book nav cache:', e);
           }
@@ -498,10 +495,10 @@ export const useReaderStore = create<ReaderStore>((set, get) => ({
       },
     })),
 
-  recreateViewer: (envConfig: EnvConfigType, key: string) => {
+  recreateViewer: (key: string) => {
     const id = key.split('-')[0]!;
     get()
-      .initViewState(envConfig, id, key, true, true)
+      .initViewState(id, key, true, true)
       .then(() => {
         set((state) => ({
           viewStates: {

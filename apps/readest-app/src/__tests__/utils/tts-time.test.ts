@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { estimateTTSTime } from '@/utils/ttsTime';
-import type { BookProgress } from '@/types/book';
+import type { BookProgress } from '@/domain/book';
 
 const createProgress = (values: {
   sectionMin: number;

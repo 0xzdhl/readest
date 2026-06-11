@@ -6,12 +6,14 @@ vi.mock('@/services/sync/replicaPublish', () => ({
 }));
 
 import { useCustomDictionaryStore, findDictionaryByContentId } from '@/store/customDictionaryStore';
-import { enableReplicaAutoPersist } from '@/services/sync/replicaPersist';
-import { BUILTIN_WEB_SEARCH_IDS } from '@/services/dictionaries/types';
+import {
+  enableReplicaAutoPersist,
+  __resetReplicaPersistForTests,
+} from '@/services/sync/replicaPersist';
+import { BUILTIN_WEB_SEARCH_IDS } from '@/domain/dictionaries';
 import { publishReplicaUpsert } from '@/services/sync/replicaPublish';
 import { useSettingsStore } from '@/store/settingsStore';
-import type { EnvConfigType } from '@/services/environment';
-import type { ImportedDictionary } from '@/services/dictionaries/types';
+import type { ImportedDictionary } from '@/domain/dictionaries';
 
 const ZERO = (s: string) => s.startsWith('web:builtin:');
 const mockPublishReplicaUpsert = vi.mocked(publishReplicaUpsert);
@@ -231,13 +233,12 @@ describe('customDictionaryStore — web search CRUD', () => {
       const saveSettings = vi
         .spyOn(useSettingsStore.getState(), 'saveSettings')
         .mockResolvedValue(undefined);
-      const fakeEnv = { name: 'test-env' } as unknown as EnvConfigType;
-      enableReplicaAutoPersist(fakeEnv);
-      return { setSettings, saveSettings, fakeEnv };
+      enableReplicaAutoPersist();
+      return { setSettings, saveSettings };
     };
 
     it('applyRemoteDictionary persists state via saveCustomDictionaries when env is registered', async () => {
-      const { setSettings, saveSettings, fakeEnv } = setupSpyEnv();
+      const { setSettings, saveSettings } = setupSpyEnv();
       useCustomDictionaryStore.getState().applyRemoteDictionary(baseDict());
 
       // setSettings runs synchronously inside saveCustomDictionaries; the
@@ -245,7 +246,7 @@ describe('customDictionaryStore — web search CRUD', () => {
       await Promise.resolve();
       await Promise.resolve();
       expect(setSettings).toHaveBeenCalled();
-      expect(saveSettings).toHaveBeenCalledWith(fakeEnv, expect.any(Object));
+      expect(saveSettings).toHaveBeenCalledWith(expect.any(Object));
       const persisted = setSettings.mock.calls.at(-1)![0];
       expect(persisted.customDictionaries?.some((d) => d.id === 'remote-bundle-1')).toBe(true);
     });
@@ -332,10 +333,10 @@ describe('customDictionaryStore — web search CRUD', () => {
       expect('phantom-imp' in after.providerEnabled).toBe(false);
     });
 
-    it('does not persist when env has not been registered', async () => {
-      // Wipe the registry by re-enabling with null-equivalent. We expose
-      // enableReplicaAutoPersist with a nullable arg for test isolation.
-      enableReplicaAutoPersist(null);
+    it('does not persist when auto-persist has not been enabled', async () => {
+      // Reset the module flag back to disabled for test isolation; the
+      // public boot-time API is enable-only, so tests use the reset helper.
+      __resetReplicaPersistForTests();
       const setSettings = vi.spyOn(useSettingsStore.getState(), 'setSettings');
       const saveSettings = vi
         .spyOn(useSettingsStore.getState(), 'saveSettings')
@@ -467,9 +468,7 @@ describe('customDictionaryStore — saveCustomDictionaries reference identity (P
     });
 
     const before = useSettingsStore.getState().settings;
-    await useCustomDictionaryStore
-      .getState()
-      .saveCustomDictionaries({ name: 'env' } as unknown as EnvConfigType);
+    await useCustomDictionaryStore.getState().saveCustomDictionaries();
     const after = useSettingsStore.getState().settings;
 
     // The whole point: the post-save settings reference must be NEW
@@ -557,12 +556,7 @@ describe('customDictionaryStore — loadCustomDictionaries reconciliation', () =
       } as unknown as SettingsState['settings'],
     } as unknown as SettingsState);
 
-    const fakeAppService = { exists: vi.fn().mockResolvedValue(false) };
-    const fakeEnv = {
-      getAppService: () => Promise.resolve(fakeAppService),
-    } as unknown as EnvConfigType;
-
-    await useCustomDictionaryStore.getState().loadCustomDictionaries(fakeEnv);
+    await useCustomDictionaryStore.getState().loadCustomDictionaries();
 
     const after = useCustomDictionaryStore.getState().settings;
     expect(after.providerOrder.includes('imp1')).toBe(false);
@@ -587,12 +581,7 @@ describe('customDictionaryStore — loadCustomDictionaries reconciliation', () =
       } as unknown as SettingsState['settings'],
     } as unknown as SettingsState);
 
-    const fakeAppService = { exists: vi.fn().mockResolvedValue(false) };
-    const fakeEnv = {
-      getAppService: () => Promise.resolve(fakeAppService),
-    } as unknown as EnvConfigType;
-
-    await useCustomDictionaryStore.getState().loadCustomDictionaries(fakeEnv);
+    await useCustomDictionaryStore.getState().loadCustomDictionaries();
 
     const after = useCustomDictionaryStore.getState().settings;
     expect(after.providerOrder.includes('pending-import')).toBe(true);
@@ -625,12 +614,7 @@ describe('customDictionaryStore — loadCustomDictionaries reconciliation', () =
       } as unknown as SettingsState['settings'],
     } as unknown as SettingsState);
 
-    const fakeAppService = { exists: vi.fn().mockResolvedValue(false) };
-    const fakeEnv = {
-      getAppService: () => Promise.resolve(fakeAppService),
-    } as unknown as EnvConfigType;
-
-    await useCustomDictionaryStore.getState().loadCustomDictionaries(fakeEnv);
+    await useCustomDictionaryStore.getState().loadCustomDictionaries();
 
     const after = useCustomDictionaryStore.getState().settings;
     // Existing order is preserved; default-builtin backfill runs first.
@@ -678,12 +662,7 @@ describe('customDictionaryStore — loadCustomDictionaries reconciliation', () =
       } as unknown as SettingsState['settings'],
     } as unknown as SettingsState);
 
-    const fakeAppService = { exists: vi.fn().mockResolvedValue(false) };
-    const fakeEnv = {
-      getAppService: () => Promise.resolve(fakeAppService),
-    } as unknown as EnvConfigType;
-
-    await useCustomDictionaryStore.getState().loadCustomDictionaries(fakeEnv);
+    await useCustomDictionaryStore.getState().loadCustomDictionaries();
 
     const after = useCustomDictionaryStore.getState().settings;
     expect(after.providerOrder.includes('imp-tombstoned')).toBe(false);

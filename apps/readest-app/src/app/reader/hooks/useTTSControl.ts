@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, useCallback, useMemo } from 'react';
-import { useEnv } from '@/context/EnvContext';
+import { usePlatformInfo } from '@/context/EffectRuntimeProvider';
 import { useAuth } from '@/context/AuthContext';
 import { useThemeStore } from '@/store/themeStore';
 import { useBookDataStore } from '@/store/bookDataStore';
@@ -32,7 +32,7 @@ interface UseTTSControlProps {
 
 export const useTTSControl = ({ bookKey, onRequestHidePanel }: UseTTSControlProps) => {
   const _ = useTranslation();
-  const { appService } = useEnv();
+  const platformInfo = usePlatformInfo();
   const { user } = useAuth();
   const { isDarkMode } = useThemeStore();
   const { getBookData } = useBookDataStore();
@@ -426,17 +426,17 @@ export const useTTSControl = ({ bookKey, onRequestHidePanel }: UseTTSControlProp
         setShowBackToCurrentTTSLocation(false);
       }
       previousSectionLabelRef.current = undefined;
-      if (appService?.isIOSApp) {
+      if (platformInfo.isIOSApp) {
         await invokeUseBackgroundAudio({ enabled: false });
       }
-      if (appService?.isMobile) {
+      if (platformInfo.isMobile) {
         releaseUnblockAudio();
       }
       await deinitMediaSession();
       setTTSEnabled(bookKey, false);
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [appService],
+    [platformInfo],
   );
 
   // handleTTSSpeak / handleTTSStop (plain functions, registered once at mount via closure)
@@ -497,10 +497,10 @@ export const useTTSControl = ({ bookKey, onRequestHidePanel }: UseTTSControlProp
       }
 
       try {
-        if (appService?.isIOSApp) {
+        if (platformInfo.isIOSApp) {
           await invokeUseBackgroundAudio({ enabled: true });
         }
-        if (appService?.isMobile) {
+        if (platformInfo.isMobile) {
           unblockAudio();
         }
         await initMediaSession();
@@ -508,7 +508,6 @@ export const useTTSControl = ({ bookKey, onRequestHidePanel }: UseTTSControlProp
 
         setShowIndicator(true);
         const ttsController = new TTSController(
-          appService,
           view,
           !!user?.id,
           preprocessSSMLForTTS,

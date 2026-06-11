@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
-import type { TOCItem } from '@/libs/document';
+import type { TOCItem } from '@/domain/document';
 
 /**
  * Regression test for TOC sidebar blank on initial book load.

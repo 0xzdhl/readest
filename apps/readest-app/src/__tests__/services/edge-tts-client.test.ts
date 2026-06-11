@@ -41,6 +41,12 @@ vi.mock('@/services/tts/TTSUtils', () => ({
   },
 }));
 
+// Platform flags now come from getPlatformInfo() instead of an injected appService.
+// EdgeTTSClient only reads isLinuxApp (in the audio-play path); default to non-Linux.
+vi.mock('@/runtime/clientRuntime', () => ({
+  getPlatformInfo: () => ({ isLinuxApp: false }),
+}));
+
 import { EdgeTTSClient } from '@/services/tts/EdgeTTSClient';
 import { TTSController } from '@/services/tts/TTSController';
 
@@ -75,17 +81,14 @@ describe('EdgeTTSClient', () => {
       expect(client.initialized).toBe(false);
     });
 
-    test('stores controller and appService when provided', () => {
+    test('stores controller when provided', () => {
       const mockController = {} as TTSController;
-      const mockAppService = { isLinuxApp: false } as never;
-      const c = new EdgeTTSClient(mockController, mockAppService);
+      const c = new EdgeTTSClient(mockController);
       expect(c.controller).toBe(mockController);
-      expect(c.appService).toBe(mockAppService);
     });
 
-    test('controller and appService are undefined when not provided', () => {
+    test('controller is undefined when not provided', () => {
       expect(client.controller).toBeUndefined();
-      expect(client.appService).toBeUndefined();
     });
   });
 

@@ -1,11 +1,13 @@
 import clsx from 'clsx';
 import React, { useEffect, useRef, useState, useCallback } from 'react';
-import { convertBlobUrlToDataUrl, type BookDoc, getDirection } from '@/libs/document';
+import { convertBlobUrlToDataUrl, getDirection } from '@/libs/document';
+import type { BookDoc } from '@/domain/document';
 import { BOOK_IDS_SEPARATOR } from '@/services/constants';
-import type { BookConfig, PageInfo } from '@/types/book';
-import { type FoliateView, wrappedFoliateView } from '@/types/view';
-import type { Insets } from '@/types/misc';
-import { useEnv } from '@/context/EnvContext';
+import type { BookConfig, PageInfo } from '@/domain/book';
+import type { FoliateView } from '@/domain/view';
+import { wrappedFoliateView } from '@/types/view';
+import type { Insets } from '@/domain/misc';
+import { usePlatformInfo } from '@/context/EffectRuntimeProvider';
 import { useThemeStore } from '@/store/themeStore';
 import { useReaderStore } from '@/store/readerStore';
 import { useBookDataStore } from '@/store/bookDataStore';
@@ -89,7 +91,7 @@ const FoliateViewer: React.FC<{
   contentInsets: Insets;
 }> = ({ bookKey, readerIds, cfi = '', bookDoc, config, gridInsets, contentInsets: insets }) => {
   const _ = useTranslation();
-  const { appService, envConfig } = useEnv();
+  const platformInfo = usePlatformInfo();
   const { themeCode, isDarkMode } = useThemeStore();
   const { settings } = useSettingsStore();
   const { loadFont, loadCustomFonts, getLoadedFonts, getAvailableFonts } = useCustomFontStore();
@@ -536,7 +538,7 @@ const FoliateViewer: React.FC<{
             const customFontFileName = font.path.split('/').pop()?.toLowerCase();
             if (fontFileName && fontFileName === customFontFileName) {
               if (!font.loaded) {
-                const loadedFont = await loadFont(envConfig, font.id);
+                const loadedFont = await loadFont(font.id);
                 font.blobUrl = loadedFont?.blobUrl;
               }
               if (font.blobUrl) {
@@ -546,8 +548,8 @@ const FoliateViewer: React.FC<{
           });
         }
       });
-      const viewWidth = appService?.isMobile ? screen.width : window.innerWidth;
-      const viewHeight = appService?.isMobile ? screen.height : window.innerHeight;
+      const viewWidth = platformInfo.isMobile ? screen.width : window.innerWidth;
+      const viewHeight = platformInfo.isMobile ? screen.height : window.innerHeight;
       const width = viewWidth - insets.left - insets.right;
       const height = viewHeight - insets.top - insets.bottom;
       book.transformTarget?.addEventListener('data', getDocTransformHandler({ width, height }));
@@ -561,7 +563,7 @@ const FoliateViewer: React.FC<{
       const maxInlineSize = getMaxInlineSize(viewSettings);
       const maxBlockSize = viewSettings.maxBlockSize!;
       const screenOrientation = viewSettings.screenOrientation!;
-      if (appService?.isMobileApp) {
+      if (platformInfo.isMobileApp) {
         await lockScreenOrientation({ orientation: screenOrientation });
       }
       if (animated) {
@@ -569,7 +571,7 @@ const FoliateViewer: React.FC<{
       } else {
         view.renderer.removeAttribute('animated');
       }
-      if (appService?.isAndroidApp) {
+      if (platformInfo.isAndroidApp) {
         if (eink) {
           view.renderer.setAttribute('eink', '');
         } else {
@@ -647,7 +649,7 @@ const FoliateViewer: React.FC<{
     if (viewSettings.scrolled) {
       const headerVisible = showTopHeader;
       const footerVisible = showBottomFooter;
-      const safeBottomPadding = appService?.hasSafeAreaInset ? gridInsets.bottom * 0.33 : 0;
+      const safeBottomPadding = platformInfo.hasSafeAreaInset ? gridInsets.bottom * 0.33 : 0;
       const footerBarHeight = safeBottomPadding + viewSettings.marginBottomPx;
       const scrollTop = headerVisible ? gridInsets.top + viewSettings.marginTopPx : 0;
       const scrollBottom = footerVisible ? Math.max(footerBarHeight, ttsBarHeight) : ttsBarHeight;
@@ -703,7 +705,7 @@ const FoliateViewer: React.FC<{
 
   useEffect(() => {
     const mountCustomFonts = async () => {
-      await loadCustomFonts(envConfig);
+      await loadCustomFonts();
       getLoadedFonts().forEach((font) => {
         mountCustomFont(document, font);
         const docs = viewRef.current?.renderer.getContents();
@@ -714,11 +716,11 @@ const FoliateViewer: React.FC<{
       mountCustomFonts();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [settings.customFonts, envConfig]);
+  }, [settings.customFonts]);
 
   useEffect(() => {
     if (!viewSettings) return;
-    applyBackgroundTexture(envConfig, viewSettings);
+    applyBackgroundTexture(viewSettings);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
     viewSettings?.backgroundTextureId,

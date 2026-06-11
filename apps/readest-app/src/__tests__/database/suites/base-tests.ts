@@ -1,5 +1,5 @@
 import { it, expect } from 'vitest';
-import type { DatabaseService } from '@/types/database';
+import type { DatabaseService } from '@/domain/database';
 
 /**
  * Shared base database operation tests exercised against any DatabaseService.

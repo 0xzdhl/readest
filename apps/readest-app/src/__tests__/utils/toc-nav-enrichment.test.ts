@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
-import type { BookDoc, SectionItem, TOCItem } from '@/libs/document';
+import type { BookDoc, SectionItem, TOCItem } from '@/domain/document';
 import { computeBookNav } from '@/services/nav';
 
 // Polyfill CSS.escape for jsdom — matches book-nav-cache.test.ts.

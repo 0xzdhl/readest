@@ -1,25 +1,30 @@
-import type { AppService } from '@/types/system';
+import type { PlatformInfo } from '@/application/ports/Platform';
 
-export const parseWebViewInfo = (appService: AppService | null): string => {
+type WebViewPlatformInfo = Pick<
+  PlatformInfo,
+  'isAndroidApp' | 'isIOSApp' | 'isMacOSApp' | 'appPlatform' | 'osPlatform'
+>;
+
+export const parseWebViewInfo = (info: WebViewPlatformInfo): string => {
   const ua = navigator.userAgent;
 
-  if (appService?.isAndroidApp) {
+  if (info.isAndroidApp) {
     // Android WebView
     const chromeMatch = ua.match(/Chrome\/([0-9.]+)/);
     return chromeMatch ? `WebView ${chromeMatch[1]}` : 'Android WebView';
-  } else if (appService?.isIOSApp) {
+  } else if (info.isIOSApp) {
     // iOS WebView
     const webkitMatch = ua.match(/AppleWebKit\/([0-9.]+)/);
     return webkitMatch ? `WebView ${webkitMatch[1]}` : 'iOS WebView';
-  } else if (appService?.isMacOSApp) {
+  } else if (info.isMacOSApp) {
     // macOS WebView
     const webkitMatch = ua.match(/AppleWebKit\/([0-9.]+)/);
     return webkitMatch ? `WebView ${webkitMatch[1]}` : 'macOS WebView';
-  } else if (appService?.appPlatform === 'tauri' && appService?.osPlatform === 'windows') {
+  } else if (info.appPlatform === 'tauri' && info.osPlatform === 'windows') {
     // Windows WebView2
     const match = ua.match(/Edg\/([0-9.]+)/);
     return match ? `Edge ${match[1]}` : 'Edge WebView2';
-  } else if (appService?.appPlatform === 'tauri' && appService?.osPlatform === 'linux') {
+  } else if (info.appPlatform === 'tauri' && info.osPlatform === 'linux') {
     // Linux WebView
     const match = ua.match(/AppleWebKit\/([0-9.]+)/);
     return match ? `WebView ${match[1]}` : 'Linux WebView';
@@ -64,8 +69,8 @@ export const parseWebViewInfo = (appService: AppService | null): string => {
   }
 };
 
-export const parseWebViewVersion = (appService: AppService | null): number => {
-  const webViewInfo = parseWebViewInfo(appService);
+export const parseWebViewVersion = (info: WebViewPlatformInfo): number => {
+  const webViewInfo = parseWebViewInfo(info);
   const versionMatch = webViewInfo.match(/([0-9]+)\./);
   return versionMatch ? parseFloat(versionMatch[1]!) : 0;
 };

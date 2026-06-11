@@ -5,15 +5,23 @@ import { useState, useRef, useEffect, Suspense, useCallback } from 'react';
 import { createFileRoute, stripSearchParams } from '@tanstack/react-router';
 import { z } from 'zod';
 
-import type { Book } from '@/types/book';
-import type { BookMetadata } from '@/libs/document';
-import type { AppService, DeleteAction } from '@/types/system';
-import { buildBookLookupIndex } from '@/services/bookService';
+import type { Book } from '@/domain/book';
+import type { BookMetadata } from '@/domain/document';
+import type { DeleteAction } from '@/domain/system';
+import { Effect, Option } from 'effect';
 import { navigateToLibrary, navigateToReader } from '@/utils/nav';
+import { LibraryRepository } from '@/application/repositories/LibraryRepository';
+import { SettingsRepository } from '@/application/repositories/SettingsRepository';
+import { BookRepository } from '@/application/repositories/BookRepository';
+import { CoverService } from '@/application/services/CoverService';
+import { CloudService } from '@/application/services/CloudService';
+import { FileSystem } from '@/application/ports/FileSystem';
+import { Dialog } from '@/application/ports/Dialog';
+import { importBooks as importBooksUsecase } from '@/application/usecases/book';
 import { formatAuthors, formatTitle, getPrimaryLanguage, listFormater } from '@/utils/book';
 import { getImportErrorMessage } from '@/services/errors';
 import { eventDispatcher } from '@/utils/event';
-import type { ProgressPayload } from '@/utils/transfer';
+import type { ProgressPayload } from '@/domain/transfer';
 import { throttle } from '@/utils/throttle';
 import { transferManager } from '@/services/transferManager';
 import { getDirPath, getFilename, joinPaths } from '@/utils/path';
@@ -23,8 +31,8 @@ import { checkForAppUpdates, checkAppReleaseNotes } from '@/helpers/updater';
 import { impactFeedback } from '@tauri-apps/plugin-haptics';
 import { getCurrentWebview } from '@tauri-apps/api/webview';
 
-import { useEnv } from '@/context/EnvContext';
 import { useAuth } from '@/context/AuthContext';
+import { useRunEffect, usePlatformInfo, useBooted } from '@/context/EffectRuntimeProvider';
 import { useThemeStore } from '@/store/themeStore';
 import { useTranslation } from '@/hooks/useTranslation';
 import { useLibraryStore } from '@/store/libraryStore';
@@ -45,7 +53,7 @@ import { useOpenAnnotationLink } from '@/hooks/useOpenAnnotationLink';
 import { useOpenShareLink } from '@/hooks/useOpenShareLink';
 import { useKeyDownActions } from '@/hooks/useKeyDownActions';
 import { useFileSelector } from '@/hooks/useFileSelector';
-import type { SelectedFile } from '@/hooks/useFileSelector';
+import type { SelectedFile } from '@/domain/file-selector';
 import { lockScreenOrientation, selectDirectory } from '@/utils/bridge';
 import { requestStoragePermission } from '@/utils/permission';
 import { SUPPORTED_BOOK_EXTS } from '@/services/constants';
@@ -56,7 +64,7 @@ import {
   tauriQuitApp,
 } from '@/utils/window';
 
-import { LibraryGroupByType } from '@/types/settings';
+import { LibraryGroupByType } from '@/domain/settings';
 import { AboutWindow } from '@/components/AboutWindow';
 import { KeyboardShortcutsHelp } from '@/components/KeyboardShortcutsHelp';
 import { BookDetailModal } from '@/components/metadata';
@@ -114,7 +122,7 @@ export const Route = createFileRoute('/library/')({
 const LibraryPageContent = () => {
   const searchParams = Route.useSearch();
   const router = useAppRouter();
-  const { envConfig, appService } = useEnv();
+  const booted = useBooted();
   const { user } = useAuth();
   const {
     library: libraryBooks,
@@ -131,7 +139,9 @@ const LibraryPageContent = () => {
     setCheckLastOpenBooks,
   } = useLibraryStore();
   const _ = useTranslation();
-  const { selectFiles } = useFileSelector(appService, _);
+  const runEffect = useRunEffect();
+  const platformInfo = usePlatformInfo();
+  const { selectFiles } = useFileSelector(_);
   const { safeAreaInsets: insets, isRoundedWindow } = useThemeStore();
   const { clearBookData } = useBookDataStore();
   const { settings, setSettings, saveSettings } = useSettingsStore();
@@ -298,14 +308,14 @@ const LibraryPageContent = () => {
 
   useKeyDownActions({
     onCancel: triggerBackUpOneGroupLevel,
-    enabled: !!appService?.isAndroidApp && !!currentGroupPath,
+    enabled: platformInfo.isAndroidApp && !!currentGroupPath,
   });
 
   useEffect(() => {
     const doCheckAppUpdates = async () => {
-      if (appService?.hasUpdater && settings.autoCheckUpdates) {
+      if (platformInfo.hasUpdater && settings.autoCheckUpdates) {
         await checkForAppUpdates(_);
-      } else if (appService?.hasUpdater === false) {
+      } else if (platformInfo.hasUpdater === false) {
         checkAppReleaseNotes();
       }
     };
@@ -314,16 +324,16 @@ const LibraryPageContent = () => {
     }
     doCheckAppUpdates();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [appService?.hasUpdater, settings]);
+  }, [settings]);
 
   useEffect(() => {
-    if (appService?.isMobileApp) {
+    if (platformInfo.isMobileApp) {
       lockScreenOrientation({ orientation: 'auto' });
     }
-  }, [appService]);
+  }, [platformInfo.isMobileApp]);
 
   useEffect(() => {
-    if (appService?.hasWindow) {
+    if (platformInfo.hasWindow) {
       const currentWebview = getCurrentWebview();
       const unlisten = currentWebview.listen('close-reader-window', async () => {
         // Reader windows are independent Tauri webviews with their own
@@ -331,9 +341,8 @@ const LibraryPageContent = () => {
         // updates from the reader window do NOT propagate to this main
         // window's store. Reload from disk so the library reflects the
         // changes the reader just persisted.
-        const appService = await envConfig.getAppService();
-        const settings = await appService.loadSettings();
-        const library = await appService.loadLibraryBooks();
+        const settings = await runEffect(Effect.flatMap(SettingsRepository, (r) => r.load));
+        const library = await runEffect(Effect.flatMap(LibraryRepository, (r) => r.load));
         setSettings(settings);
         setLibrary(library);
       });
@@ -343,7 +352,7 @@ const LibraryPageContent = () => {
     }
     return;
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [appService, envConfig]);
+  }, [platformInfo.hasWindow]);
 
   const handleImportBookFiles = useCallback(async (event: CustomEvent) => {
     const selectedFiles: SelectedFile[] = event.detail.files;
@@ -377,30 +386,30 @@ const LibraryPageContent = () => {
   }, [libraryBooks]);
 
   const processOpenWithFiles = useCallback(
-    async (appService: AppService, openWithFiles: string[], libraryBooks: Book[]) => {
-      const settings = await appService.loadSettings();
+    async (openWithFiles: string[], libraryBooks: Book[]) => {
+      const settings = await runEffect(Effect.flatMap(SettingsRepository, (r) => r.load));
       const bookIds: string[] = [];
-      for (const file of openWithFiles) {
-        console.log('Open with book:', file);
-        try {
-          const temp = appService.isMobile ? false : !settings.autoImportBooksOnOpen;
-          const book = await appService.importBook(file, libraryBooks, { transient: temp });
-          if (book) {
-            bookIds.push(book.hash);
-          }
-          if (user && book && !temp && !book.uploadedAt && settings.autoUpload) {
-            setTimeout(() => {
-              console.log('Queueing upload for book:', book.title);
-              transferManager.queueUpload(book);
-              // wait for the initialization of the transfer manager and opening of the book
-            }, 3000);
-          }
-        } catch (error) {
-          console.log('Failed to import book:', file, error);
-        }
-      }
-      setLibrary(libraryBooks);
-      appService.saveLibraryBooks(libraryBooks);
+      const temp = platformInfo.isMobile ? false : !settings.autoImportBooksOnOpen;
+      const { library: nextLibrary } = await runEffect(
+        importBooksUsecase(
+          libraryBooks,
+          openWithFiles.map((file) => ({ file })),
+          {
+            transient: temp,
+            onImported: (book) => {
+              bookIds.push(book.hash);
+              if (user && !temp && !book.uploadedAt && settings.autoUpload) {
+                setTimeout(() => {
+                  console.log('Queueing upload for book:', book.title);
+                  transferManager.queueUpload(book);
+                  // wait for the initialization of the transfer manager and opening of the book
+                }, 3000);
+              }
+            },
+          },
+        ),
+      );
+      setLibrary(nextLibrary);
 
       console.log('Opening books:', bookIds);
       if (bookIds.length > 0) {
@@ -413,16 +422,12 @@ const LibraryPageContent = () => {
     [],
   );
 
-  const handleOpenLastBooks = async (
-    appService: AppService,
-    lastBookIds: string[],
-    libraryBooks: Book[],
-  ) => {
+  const handleOpenLastBooks = async (lastBookIds: string[], libraryBooks: Book[]) => {
     if (lastBookIds.length === 0) return false;
     const bookIds: string[] = [];
     for (const bookId of lastBookIds) {
       const book = libraryBooks.find((b) => b.hash === bookId);
-      if (book && (await appService.isBookAvailable(book))) {
+      if (book && (await runEffect(Effect.flatMap(BookRepository, (r) => r.isAvailable(book))))) {
         bookIds.push(book.hash);
       }
     }
@@ -453,15 +458,14 @@ const LibraryPageContent = () => {
         navigateToReader(router, bookIds);
       }
     }
-  }, [pendingNavigationBookIds, appService, router]);
+  }, [pendingNavigationBookIds, router]);
 
   useEffect(() => {
     if (isInitiating.current) return;
     isInitiating.current = true;
 
     const initLogin = async () => {
-      const appService = await envConfig.getAppService();
-      const settings = await appService.loadSettings();
+      const settings = await runEffect(Effect.flatMap(SettingsRepository, (r) => r.load));
       // After Phase 7, the React-side "is signed in" check is `!!user`
       // (web cookies are validated by `useSession`; native bearers are
       // resolved by the same hook). No separate token field is needed.
@@ -469,7 +473,7 @@ const LibraryPageContent = () => {
         if (!settings.keepLogin) {
           settings.keepLogin = true;
           setSettings(settings);
-          saveSettings(envConfig, settings);
+          saveSettings(settings);
         }
       } else if (settings.keepLogin) {
         router.navigate({ to: '/auth' });
@@ -478,19 +482,21 @@ const LibraryPageContent = () => {
 
     const loadingTimeout = setTimeout(() => setLoading(true), 500);
     const initLibrary = async () => {
-      const appService = await envConfig.getAppService();
-      const settings = await appService.loadSettings();
+      const settings = await runEffect(Effect.flatMap(SettingsRepository, (r) => r.load));
       setSettings(settings);
 
       // Reuse the library from the store when we return from the reader
-      const library = libraryBooks.length > 0 ? libraryBooks : await appService.loadLibraryBooks();
+      const library =
+        libraryBooks.length > 0
+          ? libraryBooks
+          : await runEffect(Effect.flatMap(LibraryRepository, (r) => r.load));
       let opened = false;
       if (checkOpenWithBooks) {
-        opened = await handleOpenWithBooks(appService, library);
+        opened = await handleOpenWithBooks(library);
       }
       setCheckOpenWithBooks(opened);
       if (!opened && checkLastOpenBooks && settings.openLastBooks) {
-        opened = await handleOpenLastBooks(appService, settings.lastOpenBooks, library);
+        opened = await handleOpenLastBooks(settings.lastOpenBooks, library);
       }
       setCheckLastOpenBooks(opened);
 
@@ -500,11 +506,11 @@ const LibraryPageContent = () => {
       setLoading(false);
     };
 
-    const handleOpenWithBooks = async (appService: AppService, library: Book[]) => {
-      const openWithFiles = (await parseOpenWithFiles(appService)) || [];
+    const handleOpenWithBooks = async (library: Book[]) => {
+      const openWithFiles = (await parseOpenWithFiles()) || [];
 
       if (openWithFiles.length > 0) {
-        return await processOpenWithFiles(appService, openWithFiles, library);
+        return await processOpenWithFiles(openWithFiles, library);
       }
       return false;
     };
@@ -573,7 +579,7 @@ const LibraryPageContent = () => {
         }
       }
       setLibrary(newLibrary);
-      appService?.saveLibraryBooks(newLibrary);
+      void runEffect(Effect.flatMap(LibraryRepository, (r) => r.save(newLibrary)));
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [demoBooks, libraryLoaded]);
@@ -581,63 +587,61 @@ const LibraryPageContent = () => {
   const importBooks = async (files: SelectedFile[], groupId?: string) => {
     setLoading(true);
     const { library } = useLibraryStore.getState();
-    // Build the lookup index ONCE per import batch so each book lookup is
-    // O(1) instead of O(n) over the existing library. importBook also keeps
-    // the index updated as new books are appended, so subsequent files in
-    // the same batch see the additions.
-    const lookupIndex = buildBookLookupIndex(library);
     const failedImports: Array<{ filename: string; errorMessage: string }> = [];
     const successfulImports: string[] = [];
 
-    const processFile = async (selectedFile: SelectedFile): Promise<Book | null> => {
+    const inputs: Array<{ file: string | File; path?: string; basePath?: string }> = [];
+    for (const selectedFile of files) {
       const file = selectedFile.file || selectedFile.path;
-      if (!file) return null;
-      try {
-        const book = await appService?.importBook(file, library, { lookupIndex });
-        if (!book) return null;
-        const { path, basePath } = selectedFile;
-        if (groupId) {
-          book.groupId = groupId;
-          book.groupName = getGroupName(groupId);
-        } else if (path && basePath) {
-          const rootPath = getDirPath(basePath);
-          const groupName = getDirPath(path).replace(rootPath, '').replace(/^\//, '');
-          book.groupName = groupName;
-          book.groupId = getGroupId(groupName);
-        }
+      if (!file) continue;
+      inputs.push({ file, path: selectedFile.path, basePath: selectedFile.basePath });
+    }
 
-        if (user && !book.uploadedAt && settings.autoUpload) {
-          console.log('Queueing upload for book:', book.title);
-          transferManager.queueUpload(book);
-        }
-        successfulImports.push(book.title);
-        return book;
-      } catch (error) {
-        const filename = typeof file === 'string' ? file : file.name;
-        const baseFilename = getFilename(filename);
-        const errorMessage = error instanceof Error ? _(getImportErrorMessage(error.message)) : '';
-        failedImports.push({ filename: baseFilename, errorMessage });
-        console.error('Failed to import book:', filename, error);
-        return null;
-      }
-    };
+    const { failed } = await runEffect(
+      importBooksUsecase(library, inputs, {
+        // persist:false + a manual final save below: updateBooks REPLACES
+        // store.library with a new merged array (Map dedup), so the store's
+        // view diverges from the array the usecase mutates. We persist the
+        // store's library after all batches so the saved copy matches the UI.
+        // Safe to read getState() right after the loop: updateBooks with
+        // skipSave runs its store set() synchronously (no await), and the
+        // usecase fires onBatch synchronously, so all batches are applied
+        // before runEffect resolves.
+        persist: false,
+        onImported: (book, input) => {
+          if (groupId) {
+            book.groupId = groupId;
+            book.groupName = getGroupName(groupId);
+          } else if (input.path && input.basePath) {
+            const rootPath = getDirPath(input.basePath);
+            const groupName = getDirPath(input.path).replace(rootPath, '').replace(/^\//, '');
+            book.groupName = groupName;
+            book.groupId = getGroupId(groupName);
+          }
+          if (user && !book.uploadedAt && settings.autoUpload) {
+            console.log('Queueing upload for book:', book.title);
+            transferManager.queueUpload(book);
+          }
+          successfulImports.push(book.title);
+        },
+        onBatch: (batch) => {
+          void updateBooks(batch, { skipSave: true });
+        },
+      }),
+    );
 
-    const concurrency = 4;
-    for (let i = 0; i < files.length; i += concurrency) {
-      const batch = files.slice(i, i + concurrency);
-      const importedBooks = (await Promise.all(batch.map(processFile))).filter((book) => !!book);
-      // Update store state per batch (so the UI can render imported books
-      // incrementally) but defer disk persistence until the entire batch is
-      // done — saving library.json once per batch of 4 books was the dominant
-      // cost for large imports.
-      await updateBooks(envConfig, importedBooks, { skipSave: true });
+    for (const f of failed) {
+      const baseFilename = getFilename(f.filename);
+      const errorMessage =
+        f.error instanceof Error ? _(getImportErrorMessage(f.error.message)) : '';
+      failedImports.push({ filename: baseFilename, errorMessage });
+      console.error('Failed to import book:', f.filename, f.error);
     }
 
     // Persist the full library once after every file in the batch is done.
     if (successfulImports.length > 0) {
       const finalLibrary = useLibraryStore.getState().library;
-      const finalAppService = await envConfig.getAppService();
-      await finalAppService.saveLibraryBooks(finalLibrary);
+      await runEffect(Effect.flatMap(LibraryRepository, (r) => r.save(finalLibrary)));
     }
 
     pushLibrary();
@@ -701,10 +705,14 @@ const LibraryPageContent = () => {
       const { redownload = false, queued = false } = downloadOptions;
       if (redownload || !queued) {
         try {
-          await appService?.downloadBook(book, false, redownload, (progress) => {
-            updateBookTransferProgress(book.hash, progress);
-          });
-          await updateBook(envConfig, book);
+          await runEffect(
+            Effect.flatMap(CloudService, (c) =>
+              c.downloadBook(book, false, redownload, (progress) => {
+                updateBookTransferProgress(book.hash, progress);
+              }),
+            ),
+          );
+          await updateBook(book);
           eventDispatcher.dispatch('toast', {
             type: 'info',
             timeout: 2000,
@@ -739,7 +747,7 @@ const LibraryPageContent = () => {
       return false;
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [appService],
+    [],
   );
 
   const handleBookDelete = (deleteAction: DeleteAction) => {
@@ -758,13 +766,13 @@ const LibraryPageContent = () => {
       try {
         // Handle local deletion immediately
         if (deleteAction === 'local' || deleteAction === 'both') {
-          await appService?.deleteBook(book, 'local');
+          await runEffect(Effect.flatMap(CloudService, (c) => c.deleteBook(book, 'local')));
           if (deleteAction === 'both') {
             book.deletedAt = Date.now();
             book.downloadedAt = null;
             book.coverDownloadedAt = null;
           }
-          await updateBook(envConfig, book);
+          await updateBook(book);
           clearBookData(book.hash);
           if (syncBooks) pushLibrary();
         }
@@ -802,10 +810,14 @@ const LibraryPageContent = () => {
     if (metadata.coverImageBlobUrl || metadata.coverImageUrl || metadata.coverImageFile) {
       book.coverImageUrl = metadata.coverImageBlobUrl || metadata.coverImageUrl;
       try {
-        await appService?.updateCoverImage(
-          book,
-          metadata.coverImageBlobUrl || metadata.coverImageUrl,
-          metadata.coverImageFile,
+        await runEffect(
+          Effect.flatMap(CoverService, (c) =>
+            c.updateCoverImage(
+              book,
+              metadata.coverImageBlobUrl || metadata.coverImageUrl,
+              metadata.coverImageFile,
+            ),
+          ),
         );
       } catch (error) {
         console.warn('Failed to update cover image:', error);
@@ -821,7 +833,7 @@ const LibraryPageContent = () => {
     }
     metadata.coverImageBlobUrl = undefined;
     metadata.coverImageFile = undefined;
-    await updateBook(envConfig, book);
+    await updateBook(book);
   };
 
   const handleImportBooksFromFiles = async () => {
@@ -835,18 +847,20 @@ const LibraryPageContent = () => {
   };
 
   const handleImportBooksFromDirectory = async (dirPath?: string) => {
-    if (!appService || !isTauriAppPlatform()) return;
+    if (!isTauriAppPlatform()) return;
 
     setIsSelectMode(false);
     console.log('Importing books from directory...');
     let importDirectory: string | undefined = dirPath;
     if (!importDirectory) {
-      if (appService.isAndroidApp) {
+      if (platformInfo.isAndroidApp) {
         if (!(await requestStoragePermission())) return;
         const response = await selectDirectory();
         importDirectory = response.path;
       } else {
-        const selectedDir = await appService.selectDirectory?.('read');
+        const selectedDir = Option.getOrUndefined(
+          await runEffect(Effect.flatMap(Dialog, (d) => d.selectDirectory('read'))),
+        );
         importDirectory = selectedDir;
       }
     }
@@ -854,7 +868,9 @@ const LibraryPageContent = () => {
       console.log('No directory selected');
       return;
     }
-    const files = await appService.readDirectory(importDirectory, 'None');
+    const files = await runEffect(
+      Effect.flatMap(FileSystem, (fs) => fs.readDir(importDirectory!, 'None')),
+    );
     const supportedFiles = files.filter((file) => {
       const ext = file.path.split('.').pop()?.toLowerCase() || '';
       return SUPPORTED_BOOK_EXTS.includes(ext);
@@ -871,7 +887,7 @@ const LibraryPageContent = () => {
   };
 
   const handleSetSelectMode = (selectMode: boolean) => {
-    if (selectMode && appService?.hasHaptics) {
+    if (selectMode && platformInfo.hasHaptics) {
       impactFeedback('medium');
     }
     setIsSelectMode(selectMode);
@@ -900,8 +916,8 @@ const LibraryPageContent = () => {
     handleLibraryNavigation(group);
   };
 
-  if (!appService || !insets || checkOpenWithBooks || checkLastOpenBooks) {
-    return <div className={clsx('full-height', !appService?.isLinuxApp && 'bg-base-200')} />;
+  if (!booted || !insets || checkOpenWithBooks || checkLastOpenBooks) {
+    return <div className={clsx('full-height', !platformInfo.isLinuxApp && 'bg-base-200')} />;
   }
 
   const showBookshelf = libraryLoaded || libraryBooks.length > 0;
@@ -913,7 +929,7 @@ const LibraryPageContent = () => {
       className={clsx(
         'library-page text-base-content full-height flex select-none flex-col overflow-hidden',
         viewSettings?.isEink ? 'bg-base-100' : 'bg-base-200',
-        appService?.hasRoundedWindow && isRoundedWindow && 'window-border rounded-window',
+        platformInfo.hasRoundedWindow && isRoundedWindow && 'window-border rounded-window',
       )}
     >
       <div
@@ -928,7 +944,7 @@ const LibraryPageContent = () => {
           onPullLibrary={pullLibrary}
           onImportBooksFromFiles={handleImportBooksFromFiles}
           onImportBooksFromDirectory={
-            appService?.canReadExternalDir ? handleImportBooksFromDirectory : undefined
+            platformInfo.canReadExternalDir ? handleImportBooksFromDirectory : undefined
           }
           onOpenCatalogManager={handleShowOPDSDialog}
           onToggleSelectMode={() => handleSetSelectMode(!isSelectMode)}

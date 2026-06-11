@@ -2,10 +2,10 @@ import clsx from 'clsx';
 import type React from 'react';
 import { PiNotePencil, PiRobot } from 'react-icons/pi';
 
-import { useEnv } from '@/context/EnvContext';
+import { usePlatformInfo } from '@/context/EffectRuntimeProvider';
 import { useTranslation } from '@/hooks/useTranslation';
 import { useSettingsStore } from '@/store/settingsStore';
-import type { NotebookTab } from '@/store/notebookStore';
+import type { NotebookTab } from '@/domain/notebook';
 
 interface NotebookTabNavigationProps {
   activeTab: NotebookTab;
@@ -17,7 +17,7 @@ const NotebookTabNavigation: React.FC<NotebookTabNavigationProps> = ({
   onTabChange,
 }) => {
   const _ = useTranslation();
-  const { appService } = useEnv();
+  const platformInfo = usePlatformInfo();
   const { settings } = useSettingsStore();
   const aiEnabled = settings?.aiSettings?.enabled ?? false;
 
@@ -49,7 +49,7 @@ const NotebookTabNavigation: React.FC<NotebookTabNavigationProps> = ({
     <div
       className={clsx(
         'bottom-tab border-base-300/50 bg-base-200/20 flex min-h-[52px] w-full border-t',
-        appService?.hasRoundedWindow && 'rounded-window-bottom-right',
+        platformInfo.hasRoundedWindow && 'rounded-window-bottom-right',
       )}
       dir='ltr'
     >

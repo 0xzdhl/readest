@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef } from 'react';
 import { useRouter } from '@tanstack/react-router';
 import { getCurrent } from '@tauri-apps/plugin-deep-link';
-import { useEnv } from '@/context/EnvContext';
+import { useBooted } from '@/context/EffectRuntimeProvider';
 import { useLibraryStore } from '@/store/libraryStore';
 import { isTauriAppPlatform } from '@/services/environment';
 import { eventDispatcher } from '@/utils/event';
@@ -43,7 +43,7 @@ let coldStartConsumed = false;
 export function useOpenShareLink() {
   const _ = useTranslation();
   const router = useRouter();
-  const { appService } = useEnv();
+  const booted = useBooted();
   const { user } = useAuth();
   const libraryLoaded = useLibraryStore((s) => s.libraryLoaded);
   const pending = useRef<ShareDeepLink | null>(null);
@@ -58,7 +58,7 @@ export function useOpenShareLink() {
         });
         return;
       }
-      if (!appService) return;
+      if (!booted) return;
       try {
         const result = await importShare(token);
         // The /import endpoint only creates rows + R2 bytes server-side; the
@@ -66,7 +66,7 @@ export function useOpenShareLink() {
         // Book entry and the bytes on disk before navigating, otherwise
         // `getBookByHash` returns undefined and the reader throws "Book not
         // found". See src/libs/shareImport.ts for the three branches.
-        await ensureSharedBookLocal({ token, importResult: result, appService });
+        await ensureSharedBookLocal({ token, importResult: result });
         // Best-effort analytics ping; doesn't affect UX.
         confirmDownload(token);
 
@@ -92,11 +92,11 @@ export function useOpenShareLink() {
         });
       }
     },
-    [_, router, user, appService],
+    [_, router, user, booted],
   );
 
   useEffect(() => {
-    if (!isTauriAppPlatform() || !appService) return;
+    if (!isTauriAppPlatform() || !booted) return;
 
     const handle = (url: string) => {
       const parsed = parseShareDeepLink(url);
@@ -126,7 +126,7 @@ export function useOpenShareLink() {
     return () => {
       eventDispatcher.off('app-incoming-url', onIncoming);
     };
-  }, [appService, handleShareLink]);
+  }, [booted, handleShareLink]);
 
   // Replay any deferred deep link once the library hydrates.
   useEffect(() => {

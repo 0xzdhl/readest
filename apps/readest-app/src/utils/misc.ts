@@ -1,4 +1,4 @@
-import type { OsPlatform } from '@/types/system';
+import type { OsPlatform } from '@/domain/system';
 import { md5 } from '@/utils/md5';
 import { isCaselessLang } from './lang';
 

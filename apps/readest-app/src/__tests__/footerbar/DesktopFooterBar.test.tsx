@@ -8,10 +8,6 @@ vi.mock('@/hooks/useTranslation', () => ({
   useTranslation: () => (key: string) => key,
 }));
 
-vi.mock('@/context/EnvContext', () => ({
-  useEnv: () => ({ envConfig: {}, appService: { isMobile: false } }),
-}));
-
 const mockGetView = vi.fn(() => ({
   history: { canGoBack: true, canGoForward: true },
 }));

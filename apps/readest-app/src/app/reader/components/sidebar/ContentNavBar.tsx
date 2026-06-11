@@ -3,8 +3,8 @@ import type React from 'react';
 import { IoIosList, IoMdCloseCircle } from 'react-icons/io';
 import { MdChevronLeft, MdChevronRight } from 'react-icons/md';
 
-import type { Insets } from '@/types/misc';
-import { useEnv } from '@/context/EnvContext';
+import type { Insets } from '@/domain/misc';
+import { usePlatformInfo } from '@/context/EffectRuntimeProvider';
 import { useTranslation } from '@/hooks/useTranslation';
 import { useResponsiveSize } from '@/hooks/useResponsiveSize';
 import { useReaderStore } from '@/store/readerStore';
@@ -48,14 +48,14 @@ const ContentNavBar: React.FC<ContentNavBarProps> = ({
   onPrevious,
   onNext,
 }) => {
-  const { appService } = useEnv();
+  const platformInfo = usePlatformInfo();
   const _ = useTranslation();
   const { getViewSettings } = useReaderStore();
   const viewSettings = getViewSettings(bookKey);
   const iconSize16 = useResponsiveSize(16);
   const iconSize20 = useResponsiveSize(20);
 
-  const showSection = appService?.isMobile || !viewSettings?.showHeader;
+  const showSection = platformInfo.isMobile || !viewSettings?.showHeader;
 
   return (
     <div

@@ -277,7 +277,7 @@ describe.skipIf(!url)('/api/share/* (rlsMiddleware + publicMiddleware)', () => {
   });
 
   // ─── public cover / download ─────────────────────────────────────────────
-  it('$token/cover GET: 302 to signed URL for share with cover', async () => {
+  it('$token/cover GET: streams cover bytes same-origin (no cross-origin redirect)', async () => {
     await seedBookFile(userA, 'hash-A-cov', true);
     const token = 'ABCDEFGHIJKLMNOPQRSTUZ';
     const tokenHash = await shareServer.hashShareToken(token);
@@ -286,13 +286,29 @@ describe.skipIf(!url)('/api/share/* (rlsMiddleware + publicMiddleware)', () => {
         VALUES (${tokenHash}, ${token}, ${userA}, 'hash-A-cov', 'A', 'EPUB', 1000,
                 ${new Date(Date.now() + 86400000)})`;
 
-    const request = new Request(`http://localhost/api/share/${token}/cover`, { method: 'GET' });
-    const response = await runRoute(coverModule.Route as RouteLike, 'GET', {
-      request,
-      params: { token },
-    });
-    expect(response.status).toBe(302);
-    expect(response.headers.get('Location')).toMatch(/^https:\/\/signed.test\//);
+    // The cover endpoint proxies the presigned storage URL rather than 302-ing
+    // to it, so the cross-origin-isolated landing page (COEP: require-corp) can
+    // embed the <img>. Stub the upstream fetch of the signed storage URL.
+    const fetchMock = vi.spyOn(globalThis, 'fetch').mockResolvedValue(
+      new Response(new Uint8Array([0x89, 0x50, 0x4e, 0x47]), {
+        status: 200,
+        headers: { 'Content-Type': 'image/png', 'Content-Length': '4' },
+      }),
+    );
+    try {
+      const request = new Request(`http://localhost/api/share/${token}/cover`, { method: 'GET' });
+      const response = await runRoute(coverModule.Route as RouteLike, 'GET', {
+        request,
+        params: { token },
+      });
+      expect(response.status).toBe(200);
+      expect(response.headers.get('Location')).toBeNull();
+      expect(response.headers.get('Content-Type')).toBe('image/png');
+      expect(response.headers.get('Cross-Origin-Resource-Policy')).toBe('same-origin');
+      expect(fetchMock).toHaveBeenCalledWith(expect.stringMatching(/^https:\/\/signed.test\//));
+    } finally {
+      fetchMock.mockRestore();
+    }
   });
 
   it('$token/download GET: 302 to signed URL', async () => {

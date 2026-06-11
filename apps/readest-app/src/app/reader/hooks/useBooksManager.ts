@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from '@tanstack/react-router';
-import { useEnv } from '@/context/EnvContext';
 import { useReaderStore } from '@/store/readerStore';
 import { useSidebarStore } from '@/store/sidebarStore';
 import { uniqueId } from '@/utils/misc';
@@ -10,7 +9,6 @@ import { buildReaderQueryParams } from '../readerSearch';
 
 const useBooksManager = (cfi = '') => {
   const router = useRouter();
-  const { envConfig } = useEnv();
   const { bookKeys } = useReaderStore();
   const { setBookKeys, initViewState } = useReaderStore();
   const { sideBarBookKey, setSideBarBookKey } = useSidebarStore();
@@ -32,7 +30,7 @@ const useBooksManager = (cfi = '') => {
   // Append a new book and sync with bookKeys and URL
   const appendBook = (id: string, isPrimary: boolean, isParallel: boolean) => {
     const newKey = `${id}-${uniqueId()}`;
-    initViewState(envConfig, id, newKey, isPrimary);
+    initViewState(id, newKey, isPrimary);
     if (!bookKeys.includes(newKey)) {
       const updatedKeys = [...bookKeys, newKey];
       setBookKeys(updatedKeys);

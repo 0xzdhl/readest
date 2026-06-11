@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { getMetadataHash, getMetadataHashInfo } from '@/utils/book';
-import type { BookMetadata } from '@/libs/document';
+import type { BookMetadata } from '@/domain/document';
 
 describe('getMetadataHashInfo', () => {
   it('returns hash plus the inputs used to compute it', () => {

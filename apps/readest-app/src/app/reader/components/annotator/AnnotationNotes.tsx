@@ -1,8 +1,8 @@
 import clsx from 'clsx';
 import dayjs from 'dayjs';
 import React, { useMemo } from 'react';
-import type { BookNote } from '@/types/book';
-import { useEnv } from '@/context/EnvContext';
+import type { BookNote } from '@/domain/book';
+import { usePlatformInfo } from '@/context/EffectRuntimeProvider';
 import { useBookDataStore } from '@/store/bookDataStore';
 import { useReaderStore } from '@/store/readerStore';
 import { useSidebarStore } from '@/store/sidebarStore';
@@ -29,7 +29,7 @@ const AnnotationNotes: React.FC<AnnotationNotesProps> = ({
   popupHeight,
   onDismiss,
 }) => {
-  const { appService } = useEnv();
+  const platformInfo = usePlatformInfo();
   const { getConfig, setConfig } = useBookDataStore();
   const { setHoveredBookKey } = useReaderStore();
   const { setSideBarVisible } = useSidebarStore();
@@ -43,7 +43,7 @@ const AnnotationNotes: React.FC<AnnotationNotesProps> = ({
   const handleShowAnnotation = (note: BookNote) => {
     if (!note.id) return;
 
-    if (appService?.isMobile) {
+    if (platformInfo.isMobile) {
       onDismiss();
     }
 

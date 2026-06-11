@@ -1,4 +1,7 @@
-import type { BookConfig, BookNote, HighlightColor, HighlightStyle } from '@/types/book';
+import { Effect } from 'effect';
+import { FileSystem } from '@/application/ports/FileSystem';
+import { getClientRuntime, getPlatformInfo } from '@/runtime/clientRuntime';
+import type { BookConfig, BookNote, HighlightColor, HighlightStyle } from '@/domain/book';
 import { mergeBookConfigs } from '@/services/backupService';
 import { md5 } from '@/utils/md5';
 import type { AnnotationImportProvider } from '../types';
@@ -137,19 +140,25 @@ export function parseFoliateData(json: string): FoliateData | null {
 
 export const foliateProvider: AnnotationImportProvider = {
   name: 'foliate',
-  isAvailable: (appService) => appService.isLinuxApp,
-  importAnnotations: async (appService, identifier, config) => {
+  isAvailable: () => getPlatformInfo().isLinuxApp,
+  importAnnotations: async (identifier, config) => {
     if (config.foliateImportedAt) return config;
     try {
       const { dataDir } = await import('@tauri-apps/api/path');
       const dir = await dataDir();
       const path = getFoliateDataPath(dir, identifier);
 
-      if (!(await appService.exists(path, 'None'))) {
+      const runtime = getClientRuntime();
+      const exists = await runtime.runPromise(
+        Effect.flatMap(FileSystem, (fs) => fs.exists(path, 'None')),
+      );
+      if (!exists) {
         return config;
       }
 
-      const json = (await appService.readFile(path, 'None', 'text')) as string;
+      const json = (await runtime.runPromise(
+        Effect.flatMap(FileSystem, (fs) => fs.readFile(path, 'None', 'text')),
+      )) as string;
       const foliateData = parseFoliateData(json);
       if (!foliateData) {
         return config;

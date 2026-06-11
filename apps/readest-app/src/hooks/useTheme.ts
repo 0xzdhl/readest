@@ -1,9 +1,10 @@
 import { useCallback, useEffect, useRef } from 'react';
-import { useEnv } from '@/context/EnvContext';
+import { usePlatformInfo } from '@/context/EffectRuntimeProvider';
 import { useThemeStore } from '@/store/themeStore';
 import { useSettingsStore } from '@/store/settingsStore';
 import { useSafeAreaInsets } from './useSafeAreaInsets';
-import { themes, applyCustomTheme, type Palette } from '@/styles/themes';
+import { themes, applyCustomTheme } from '@/styles/themes';
+import type { Palette } from '@/domain/themes';
 import { getStatusBarHeight, setSystemUIVisibility } from '@/utils/bridge';
 import { getOSPlatform } from '@/utils/misc';
 import { parseWebViewVersion } from '@/utils/ua';
@@ -17,7 +18,7 @@ export const useTheme = ({
   systemUIVisible = true,
   appThemeColor = 'base-100',
 }: UseThemeProps = {}) => {
-  const { appService } = useEnv();
+  const platformInfo = usePlatformInfo();
   const { settings } = useSettingsStore();
   const isEink = settings?.globalViewSettings?.isEink;
   const isColorEink = settings?.globalViewSettings?.isColorEink;
@@ -39,7 +40,7 @@ export const useTheme = ({
 
   useEffect(() => {
     updateAppTheme(appThemeColor);
-    if (appService?.isAndroidApp) {
+    if (platformInfo.isAndroidApp) {
       getStatusBarHeight().then((res) => {
         if (res.height && res.height > 0) {
           setStatusBarHeight(res.height / window.devicePixelRatio);
@@ -48,11 +49,11 @@ export const useTheme = ({
       handleSystemUIVisibility(true);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [appService?.isAndroidApp]);
+  }, [platformInfo.isAndroidApp]);
 
   const handleSystemUIVisibility = useCallback(
     (updateInsets = false) => {
-      if (!appService?.isMobileApp) return;
+      if (!platformInfo.isMobileApp) return;
 
       const visible = !!(systemUIVisible && !systemUIAlwaysHidden);
       if (visible) {
@@ -67,18 +68,18 @@ export const useTheme = ({
       });
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [appService, isDarkMode, systemUIVisible],
+    [platformInfo.isMobileApp, isDarkMode, systemUIVisible],
   );
 
   useEffect(() => {
-    if (appService?.isMobileApp) {
+    if (platformInfo.isMobileApp) {
       handleSystemUIVisibility();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [handleSystemUIVisibility]);
 
   useEffect(() => {
-    if (!appService?.isMobileApp) return;
+    if (!platformInfo.isMobileApp) return;
 
     handleSystemUIVisibility();
     const handleVisibilityChange = () => {
@@ -87,7 +88,7 @@ export const useTheme = ({
       }
     };
     const handleOrientationChange = () => {
-      if (appService?.isIOSApp && getOSPlatform() === 'ios') {
+      if (platformInfo.isIOSApp && getOSPlatform() === 'ios') {
         // FIXME: This is a workaround for iPhone apps where the system UI is not visible in landscape mode
         // when the app is in fullscreen mode until we find a better solution to override the prefersStatusBarHidden
         // in the ViewController. Note that screen.orientation.type is not abailable in iOS before 16.4.
@@ -106,11 +107,11 @@ export const useTheme = ({
   }, [handleSystemUIVisibility]);
 
   useEffect(() => {
-    if (!appService?.isAndroidApp) return;
-    const webViewVersion = parseWebViewVersion(appService);
+    if (!platformInfo.isAndroidApp) return;
+    const webViewVersion = parseWebViewVersion(platformInfo);
     // OKLCH color model is supported in Chromium 111+
     useFallbackColors.current = webViewVersion < 111;
-  }, [appService]);
+  }, [platformInfo]);
 
   useEffect(() => {
     if (!themeColor || !themes.find((t) => t.name === themeColor)) return;

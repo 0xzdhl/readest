@@ -5,8 +5,8 @@ import { useReaderStore } from '@/store/readerStore';
 import { useBookDataStore } from '@/store/bookDataStore';
 import { isCfiInLocation } from '@/utils/cfi';
 import { findTocItemBS } from '@/services/nav';
-import type { BookNoteType } from '@/types/book';
-import type { TOCItem } from '@/libs/document';
+import type { BookNoteType } from '@/domain/book';
+import type { TOCItem } from '@/domain/document';
 
 export function useBooknotesNav(bookKey: string, toc: TOCItem[]) {
   const { getView, getProgress } = useReaderStore();

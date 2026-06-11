@@ -15,14 +15,14 @@ import Menu from '@/components/Menu';
 import MenuItem from '@/components/MenuItem';
 import { useRouter } from '@tanstack/react-router';
 import { clientEnv } from '@/clientEnv';
-import { useEnv } from '@/context/EnvContext';
+import { usePlatformInfo, useBooted } from '@/context/EffectRuntimeProvider';
 import { useTranslation } from '@/hooks/useTranslation';
 import { isWebAppPlatform } from '@/services/environment';
 import { useCustomOPDSStore } from '@/store/customOPDSStore';
 import { ensurePassphraseUnlocked } from '@/services/sync/passphraseGate';
 import { isCredentialsSyncEnabled } from '@/services/sync/syncCategories';
 import { isSyncError } from '@/libs/errors';
-import type { OPDSCatalog } from '@/types/opds';
+import type { OPDSCatalog } from '@/domain/opds';
 import { isLanAddress } from '@/utils/network';
 import { eventDispatcher } from '@/utils/event';
 import { SectionTitle } from '@/components/settings/primitives';
@@ -110,7 +110,8 @@ interface CatalogManagerProps {
 export function CatalogManager({ inSubPage = false }: CatalogManagerProps = {}) {
   const _ = useTranslation();
   const router = useRouter();
-  const { envConfig, appService } = useEnv();
+  const booted = useBooted();
+  const platformInfo = usePlatformInfo();
   // Hydrate the store from settings on mount; all CRUD goes through it
   // so the replica-sync push fires automatically. The local `catalogs`
   // mirror tracks the visible (non-deleted) entries; we keep the
@@ -128,20 +129,20 @@ export function CatalogManager({ inSubPage = false }: CatalogManagerProps = {}) 
   const [headerError, setHeaderError] = useState('');
   const [proxyConsentError, setProxyConsentError] = useState('');
   const [isValidating, setIsValidating] = useState(false);
-  const popularCatalogs = appService?.isOnlineCatalogsAccessible ? POPULAR_CATALOGS : [];
+  const popularCatalogs = platformInfo.isOnlineCatalogsAccessible ? POPULAR_CATALOGS : [];
   const [subscriptionStates, setSubscriptionStates] = useState<
     Record<string, OPDSSubscriptionState>
   >({});
   const [failedDialogCatalogId, setFailedDialogCatalogId] = useState<string | null>(null);
 
   const reloadSubscriptionStates = useCallback(async () => {
-    if (!appService) return;
+    if (!booted) return;
     const eligible = catalogs.filter((c) => c.autoDownload);
     const entries = await Promise.all(
-      eligible.map(async (c) => [c.id, await loadSubscriptionState(appService, c.id)] as const),
+      eligible.map(async (c) => [c.id, await loadSubscriptionState(c.id)] as const),
     );
     setSubscriptionStates(Object.fromEntries(entries));
-  }, [appService, catalogs]);
+  }, [booted, catalogs]);
 
   useEffect(() => {
     reloadSubscriptionStates();
@@ -164,8 +165,8 @@ export function CatalogManager({ inSubPage = false }: CatalogManagerProps = {}) 
   // happens once per mount; the store handles backfilling contentId
   // for legacy entries.
   useEffect(() => {
-    void useCustomOPDSStore.getState().loadCustomOPDSCatalogs(envConfig);
-  }, [envConfig]);
+    void useCustomOPDSStore.getState().loadCustomOPDSCatalogs();
+  }, []);
 
   // Surface the latest store state into the local mirror used by
   // subscriptions / dialog rendering. Filters out tombstones.
@@ -176,7 +177,7 @@ export function CatalogManager({ inSubPage = false }: CatalogManagerProps = {}) 
   // Persist via the store (settings + replica push), then update local
   // mirror. Replica sync fan-out happens inside the store mutators.
   const persistMutation = () => {
-    void useCustomOPDSStore.getState().saveCustomOPDSCatalogs(envConfig);
+    void useCustomOPDSStore.getState().saveCustomOPDSCatalogs();
   };
 
   const handleAddCatalog = async () => {
@@ -315,10 +316,10 @@ export function CatalogManager({ inSubPage = false }: CatalogManagerProps = {}) 
   const handleRemoveCatalog = (id: string) => {
     useCustomOPDSStore.getState().removeCatalog(id);
     persistMutation();
-    if (appService) {
+    if (booted) {
       // Don't await — leftover state files are harmless and we don't want to
       // block UI removal if the filesystem call fails.
-      void deleteSubscriptionState(appService, id);
+      void deleteSubscriptionState(id);
     }
   };
 

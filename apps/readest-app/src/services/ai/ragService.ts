@@ -4,7 +4,13 @@ import { chunkSection, extractTextFromDocument } from './utils/chunker';
 import { withRetryAndTimeout, AI_TIMEOUTS, AI_RETRY_CONFIGS } from './utils/retry';
 import { getAIProvider } from './providers';
 import { aiLogger } from './logger';
-import type { AISettings, TextChunk, ScoredChunk, EmbeddingProgress, BookIndexMeta } from './types';
+import type {
+  AISettings,
+  TextChunk,
+  ScoredChunk,
+  EmbeddingProgress,
+  BookIndexMeta,
+} from '@/domain/ai';
 
 interface SectionItem {
   id: string;

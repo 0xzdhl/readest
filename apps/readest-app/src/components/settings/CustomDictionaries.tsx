@@ -23,15 +23,17 @@ import {
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 
-import { useEnv } from '@/context/EnvContext';
+import { Effect } from 'effect';
+import { useRunEffect, useBooted } from '@/context/EffectRuntimeProvider';
+import { DictionaryService } from '@/application/services/DictionaryService';
 import { useTranslation } from '@/hooks/useTranslation';
 import { useFileSelector } from '@/hooks/useFileSelector';
 import { useCustomDictionaryStore } from '@/store/customDictionaryStore';
 import { eventDispatcher } from '@/utils/event';
 import { evictProvider } from '@/services/dictionaries/registry';
-import { BUILTIN_PROVIDER_IDS } from '@/services/dictionaries/types';
+import { BUILTIN_PROVIDER_IDS } from '@/domain/dictionaries';
 import { queueDictionaryBinaryUpload } from '@/services/sync/replicaBinaryUpload';
-import type { ImportedDictionary, WebSearchEntry } from '@/services/dictionaries/types';
+import type { ImportedDictionary, WebSearchEntry } from '@/domain/dictionaries';
 import {
   getBuiltinWebSearch,
   isValidUrlTemplate,
@@ -227,7 +229,8 @@ const SortableRow: React.FC<SortableRowProps> = ({
 
 const CustomDictionaries: React.FC<CustomDictionariesProps> = ({ onBack }) => {
   const _ = useTranslation();
-  const { appService, envConfig } = useEnv();
+  const booted = useBooted();
+  const runEffect = useRunEffect();
   const {
     dictionaries,
     settings,
@@ -245,11 +248,11 @@ const CustomDictionaries: React.FC<CustomDictionariesProps> = ({ onBack }) => {
   } = useCustomDictionaryStore();
 
   useEffect(() => {
-    void loadCustomDictionaries(envConfig).catch(() => {});
+    void loadCustomDictionaries().catch(() => {});
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const { selectFiles } = useFileSelector(appService, _);
+  const { selectFiles } = useFileSelector(_);
   const [importing, setImporting] = useState(false);
   // Edit and Delete are mutually-exclusive row affordances. Toggling one on
   // turns the other off so the trailing column never shows two icons at once.
@@ -306,7 +309,7 @@ const CustomDictionaries: React.FC<CustomDictionariesProps> = ({ onBack }) => {
     // Adding a new web search appends to providerOrder (an explicit
     // user reorder); editing only changes name/URL, so providerOrder
     // is untouched and the auto-mutation gate stays closed.
-    await saveCustomDictionaries(envConfig, { publishOrderChange: isAdd });
+    await saveCustomDictionaries({ publishOrderChange: isAdd });
     setWebModal(null);
   };
 
@@ -330,7 +333,7 @@ const CustomDictionaries: React.FC<CustomDictionariesProps> = ({ onBack }) => {
     // Provider instances cache the dict's `label` from `dict.name`; evict
     // so the next lookup picks up the new name in tabs / source labels.
     evictProvider(dictModal.id);
-    await saveCustomDictionaries(envConfig);
+    await saveCustomDictionaries();
     setDictModal(null);
   };
 
@@ -424,18 +427,19 @@ const CustomDictionaries: React.FC<CustomDictionariesProps> = ({ onBack }) => {
     try {
       const result = await selectFiles({ type: 'dictionaries', multiple: true });
       if (result.error || result.files.length === 0) return;
-      const importResult = await appService?.importDictionaries(result.files, dictionaries);
-      if (!importResult) return;
+      const importResult = await runEffect(
+        Effect.flatMap(DictionaryService, (s) => s.importDictionaries(result.files, dictionaries)),
+      );
       let added = 0;
       for (const dict of importResult.imported) {
         addDictionary(dict);
-        if (appService) void queueDictionaryBinaryUpload(dict, appService);
+        if (booted) void queueDictionaryBinaryUpload(dict);
         added += 1;
       }
       let replaced = 0;
       for (const { oldIds, newDict } of importResult.replacements) {
         replaceDictionaries(oldIds, newDict);
-        if (appService) void queueDictionaryBinaryUpload(newDict, appService);
+        if (booted) void queueDictionaryBinaryUpload(newDict);
         // Invalidate any cached provider instances for the replaced ids so
         // their next lookup picks up the new bundle's files.
         for (const oldId of oldIds) evictProvider(oldId);
@@ -443,7 +447,7 @@ const CustomDictionaries: React.FC<CustomDictionariesProps> = ({ onBack }) => {
       }
       // Import / replace both mutate providerOrder (prepend or splice
       // into existing slot), so this is an explicit user reorder.
-      await saveCustomDictionaries(envConfig, { publishOrderChange: added > 0 || replaced > 0 });
+      await saveCustomDictionaries({ publishOrderChange: added > 0 || replaced > 0 });
       if (added > 0) {
         eventDispatcher.dispatch('toast', {
           type: 'info',
@@ -484,7 +488,7 @@ const CustomDictionaries: React.FC<CustomDictionariesProps> = ({ onBack }) => {
     if (row.imported) {
       const dict = row.imported;
       try {
-        await appService?.deleteDictionary(dict);
+        await runEffect(Effect.flatMap(DictionaryService, (s) => s.deleteDictionary(dict)));
       } catch (err) {
         console.warn('Failed to delete dictionary files:', err);
       }
@@ -497,7 +501,7 @@ const CustomDictionaries: React.FC<CustomDictionariesProps> = ({ onBack }) => {
       return;
     }
     // Delete removes the id from providerOrder — explicit user reorder.
-    await saveCustomDictionaries(envConfig, { publishOrderChange: true });
+    await saveCustomDictionaries({ publishOrderChange: true });
     // Auto-leave delete mode when the last deletable entry is gone — there's
     // nothing left to delete (edit mode is gated on the same row set).
     const remaining = rows.filter(
@@ -514,7 +518,7 @@ const CustomDictionaries: React.FC<CustomDictionariesProps> = ({ onBack }) => {
     // Toggling enabled state doesn't change providerOrder; the gate
     // stays closed and providerEnabled auto-publishes through the
     // standard diff path.
-    await saveCustomDictionaries(envConfig);
+    await saveCustomDictionaries();
   };
 
   const handleDragStart = (event: DragStartEvent) => {
@@ -542,7 +546,7 @@ const CustomDictionaries: React.FC<CustomDictionariesProps> = ({ onBack }) => {
     reorder(order);
     // Drag-drop is the canonical user-action providerOrder change;
     // open the gate so the new order ships cross-device.
-    await saveCustomDictionaries(envConfig, { publishOrderChange: true });
+    await saveCustomDictionaries({ publishOrderChange: true });
   };
 
   const handleDragCancel = () => setDragOverId(null);

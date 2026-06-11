@@ -3,7 +3,6 @@ import React, { useMemo } from 'react';
 import { FixedSizeList as List } from 'react-window';
 import { FiChevronUp, FiChevronLeft } from 'react-icons/fi';
 import { MdCheck } from 'react-icons/md';
-import { useEnv } from '@/context/EnvContext';
 import { useTranslation } from '@/hooks/useTranslation';
 import { useResponsiveSize } from '@/hooks/useResponsiveSize';
 
@@ -79,7 +78,6 @@ const FontDropdown: React.FC<DropdownProps> = ({
   onGetFontFamily,
 }) => {
   const _ = useTranslation();
-  const { appService } = useEnv();
   const iconSize = useResponsiveSize(16);
   const allOptions = [...options, ...(moreOptions ?? [])];
   const selectedOption = allOptions.find((option) => option.option === selected) ?? allOptions[0]!;
@@ -95,9 +93,8 @@ const FontDropdown: React.FC<DropdownProps> = ({
       onGetFontFamily,
       family: family ?? '',
       iconSize,
-      appService,
     }),
-    [options, selected, onSelect, onGetFontFamily, family, iconSize, appService],
+    [options, selected, onSelect, onGetFontFamily, family, iconSize],
   );
 
   const moreListData = useMemo(

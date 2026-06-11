@@ -1,6 +1,6 @@
 import clsx from 'clsx';
 import React, { useEffect, useRef } from 'react';
-import { useEnv } from '@/context/EnvContext';
+import { usePlatformInfo } from '@/context/EffectRuntimeProvider';
 
 import { tauriHandleMinimize, tauriHandleToggleMaximize, tauriHandleClose } from '@/utils/window';
 import { isTauriAppPlatform } from '@/services/environment';
@@ -49,7 +49,7 @@ const WindowButtons: React.FC<WindowButtonsProps> = ({
 }) => {
   const _ = useTranslation();
   const parentRef = useRef<HTMLDivElement>(null);
-  const { appService } = useEnv();
+  const platformInfo = usePlatformInfo();
 
   const touchState = useRef({
     lastPointerTime: 0,
@@ -199,7 +199,7 @@ const WindowButtons: React.FC<WindowButtonsProps> = ({
         className,
       )}
     >
-      {showMinimize && appService?.hasWindowBar && (
+      {showMinimize && platformInfo.hasWindowBar && (
         <WindowButton onClick={handleMinimize} label={_('Minimize')} id='titlebar-minimize'>
           <svg xmlns='http://www.w3.org/2000/svg' width='1em' height='1em' viewBox='0 0 24 24'>
             <path fill='currentColor' d='M20 14H4v-2h16' />
@@ -207,7 +207,7 @@ const WindowButtons: React.FC<WindowButtonsProps> = ({
         </WindowButton>
       )}
 
-      {showMaximize && appService?.hasWindowBar && (
+      {showMaximize && platformInfo.hasWindowBar && (
         <WindowButton
           onClick={handleMaximize}
           label={_('Maximize or Restore')}
@@ -219,7 +219,7 @@ const WindowButtons: React.FC<WindowButtonsProps> = ({
         </WindowButton>
       )}
 
-      {showClose && (appService?.hasWindowBar || onClose) && (
+      {showClose && (platformInfo.hasWindowBar || onClose) && (
         <WindowButton
           onClick={handleClose}
           label={closeButtonLabel || _('Close')}

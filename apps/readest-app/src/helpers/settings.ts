@@ -1,13 +1,11 @@
-import type { ViewSettings } from '@/types/book';
-import type { SystemSettings } from '@/types/settings';
-import type { EnvConfigType } from '@/services/environment';
+import type { ViewSettings } from '@/domain/book';
+import type { SystemSettings } from '@/domain/settings';
 import { useBookDataStore } from '@/store/bookDataStore';
 import { useReaderStore } from '@/store/readerStore';
 import { useSettingsStore } from '@/store/settingsStore';
 import { getStyles } from '@/utils/style';
 
 export const saveViewSettings = async <K extends keyof ViewSettings>(
-  envConfig: EnvConfigType,
   bookKey: string,
   key: K,
   value: ViewSettings[K],
@@ -31,7 +29,7 @@ export const saveViewSettings = async <K extends keyof ViewSettings>(
       }
       const config = getConfig(bookKey);
       if (viewState?.isPrimary && config) {
-        await saveConfig(envConfig, bookKey, config, settings);
+        await saveConfig(bookKey, config, settings);
       }
     }
   };
@@ -53,14 +51,13 @@ export const saveViewSettings = async <K extends keyof ViewSettings>(
     for (const bookKey of bookKeys) {
       await applyViewSettings(bookKey);
     }
-    await saveSettings(envConfig, nextSettings);
+    await saveSettings(nextSettings);
   } else if (bookKey) {
     await applyViewSettings(bookKey);
   }
 };
 
 export const saveSysSettings = async <K extends keyof SystemSettings>(
-  envConfig: EnvConfigType,
   key: K,
   value: SystemSettings[K],
 ) => {
@@ -68,6 +65,6 @@ export const saveSysSettings = async <K extends keyof SystemSettings>(
   if (settings[key] !== value) {
     settings[key] = value;
     setSettings(settings);
-    await saveSettings(envConfig, settings);
+    await saveSettings(settings);
   }
 };

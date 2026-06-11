@@ -1,7 +1,7 @@
 import type React from 'react';
 import { useEffect, useState } from 'react';
 import { annotationToolQuickActions } from '@/app/reader/components/annotator/AnnotationTools';
-import { useEnv } from '@/context/EnvContext';
+import { usePlatformInfo } from '@/context/EffectRuntimeProvider';
 import { saveSysSettings, saveViewSettings } from '@/helpers/settings';
 import { useEinkMode } from '@/hooks/useEinkMode';
 import { useResetViewSettings } from '@/hooks/useResetSettings';
@@ -18,7 +18,7 @@ import type { SettingsPanelPanelProp } from './SettingsDialog';
 
 const ControlPanel: React.FC<SettingsPanelPanelProp> = ({ bookKey, onRegisterReset }) => {
   const _ = useTranslation();
-  const { envConfig, appService } = useEnv();
+  const platformInfo = usePlatformInfo();
   const { getView, getViewSettings, recreateViewer } = useReaderStore();
   const { getBookData } = useBookDataStore();
   const { settings } = useSettingsStore();
@@ -82,7 +82,7 @@ const ControlPanel: React.FC<SettingsPanelPanelProp> = ({ bookKey, onRegisterRes
 
   useEffect(() => {
     if (isScrolledMode === viewSettings.scrolled) return;
-    saveViewSettings(envConfig, bookKey, 'scrolled', isScrolledMode);
+    saveViewSettings(bookKey, 'scrolled', isScrolledMode);
     getView(bookKey)?.renderer.setAttribute('flow', isScrolledMode ? 'scrolled' : 'paginated');
     getView(bookKey)?.renderer.setAttribute(
       'max-inline-size',
@@ -94,7 +94,7 @@ const ControlPanel: React.FC<SettingsPanelPanelProp> = ({ bookKey, onRegisterRes
 
   useEffect(() => {
     if (noContinuousScroll === viewSettings.noContinuousScroll) return;
-    saveViewSettings(envConfig, bookKey, 'noContinuousScroll', noContinuousScroll);
+    saveViewSettings(bookKey, 'noContinuousScroll', noContinuousScroll);
     if (noContinuousScroll) {
       getView(bookKey)?.renderer.setAttribute('no-continuous-scroll', '');
     } else {
@@ -104,19 +104,19 @@ const ControlPanel: React.FC<SettingsPanelPanelProp> = ({ bookKey, onRegisterRes
   }, [noContinuousScroll]);
 
   useEffect(() => {
-    saveViewSettings(envConfig, bookKey, 'hideScrollbar', hideScrollbar, false, false);
+    saveViewSettings(bookKey, 'hideScrollbar', hideScrollbar, false, false);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [hideScrollbar]);
 
   useEffect(() => {
     if (scrollingOverlap === viewSettings.scrollingOverlap) return;
-    saveViewSettings(envConfig, bookKey, 'scrollingOverlap', scrollingOverlap, false, false);
+    saveViewSettings(bookKey, 'scrollingOverlap', scrollingOverlap, false, false);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [scrollingOverlap]);
 
   useEffect(() => {
-    saveViewSettings(envConfig, bookKey, 'volumeKeysToFlip', volumeKeysToFlip, false, false);
-    if (appService?.isMobileApp) {
+    saveViewSettings(bookKey, 'volumeKeysToFlip', volumeKeysToFlip, false, false);
+    if (platformInfo.isMobileApp) {
       if (volumeKeysToFlip) {
         acquireVolumeKeyInterception();
       } else {
@@ -127,39 +127,32 @@ const ControlPanel: React.FC<SettingsPanelPanelProp> = ({ bookKey, onRegisterRes
   }, [volumeKeysToFlip]);
 
   useEffect(() => {
-    saveViewSettings(
-      envConfig,
-      bookKey,
-      'showPaginationButtons',
-      showPaginationButtons,
-      false,
-      false,
-    );
+    saveViewSettings(bookKey, 'showPaginationButtons', showPaginationButtons, false, false);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [showPaginationButtons]);
 
   useEffect(() => {
-    saveViewSettings(envConfig, bookKey, 'disableClick', isDisableClick, false, false);
+    saveViewSettings(bookKey, 'disableClick', isDisableClick, false, false);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isDisableClick]);
 
   useEffect(() => {
-    saveViewSettings(envConfig, bookKey, 'disableDoubleClick', isDisableDoubleClick, false, false);
+    saveViewSettings(bookKey, 'disableDoubleClick', isDisableDoubleClick, false, false);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isDisableDoubleClick]);
 
   useEffect(() => {
-    saveViewSettings(envConfig, bookKey, 'fullscreenClickArea', fullscreenClickArea, false, false);
+    saveViewSettings(bookKey, 'fullscreenClickArea', fullscreenClickArea, false, false);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [fullscreenClickArea]);
 
   useEffect(() => {
-    saveViewSettings(envConfig, bookKey, 'swapClickArea', swapClickArea, false, false);
+    saveViewSettings(bookKey, 'swapClickArea', swapClickArea, false, false);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [swapClickArea]);
 
   useEffect(() => {
-    saveViewSettings(envConfig, bookKey, 'animated', animated, false, false);
+    saveViewSettings(bookKey, 'animated', animated, false, false);
     if (animated) {
       getView(bookKey)?.renderer.setAttribute('animated', '');
     } else {
@@ -169,7 +162,7 @@ const ControlPanel: React.FC<SettingsPanelPanelProp> = ({ bookKey, onRegisterRes
   }, [animated]);
 
   useEffect(() => {
-    saveViewSettings(envConfig, bookKey, 'isEink', isEink);
+    saveViewSettings(bookKey, 'isEink', isEink);
     if (isEink) {
       getView(bookKey)?.renderer.setAttribute('eink', '');
     } else {
@@ -180,33 +173,32 @@ const ControlPanel: React.FC<SettingsPanelPanelProp> = ({ bookKey, onRegisterRes
   }, [isEink]);
 
   useEffect(() => {
-    saveViewSettings(envConfig, bookKey, 'isColorEink', isColorEink);
+    saveViewSettings(bookKey, 'isColorEink', isColorEink);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isColorEink]);
 
   useEffect(() => {
     if (autoScreenBrightness === settings.autoScreenBrightness) return;
-    saveSysSettings(envConfig, 'autoScreenBrightness', autoScreenBrightness);
+    saveSysSettings('autoScreenBrightness', autoScreenBrightness);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [autoScreenBrightness]);
 
   useEffect(() => {
     if (screenWakeLock === settings.screenWakeLock) return;
-    saveSysSettings(envConfig, 'screenWakeLock', screenWakeLock);
+    saveSysSettings('screenWakeLock', screenWakeLock);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [screenWakeLock]);
 
   useEffect(() => {
     if (viewSettings.allowScript === allowScript) return;
-    saveViewSettings(envConfig, bookKey, 'allowScript', allowScript, true, false).then(() => {
-      recreateViewer(envConfig, bookKey);
+    saveViewSettings(bookKey, 'allowScript', allowScript, true, false).then(() => {
+      recreateViewer(bookKey);
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [allowScript]);
 
   useEffect(() => {
     saveViewSettings(
-      envConfig,
       bookKey,
       'enableAnnotationQuickActions',
       enableAnnotationQuickActions,
@@ -217,7 +209,7 @@ const ControlPanel: React.FC<SettingsPanelPanelProp> = ({ bookKey, onRegisterRes
   }, [enableAnnotationQuickActions]);
 
   useEffect(() => {
-    saveViewSettings(envConfig, bookKey, 'copyToNotebook', copyToNotebook, false, false);
+    saveViewSettings(bookKey, 'copyToNotebook', copyToNotebook, false, false);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [copyToNotebook]);
 
@@ -237,7 +229,7 @@ const ControlPanel: React.FC<SettingsPanelPanelProp> = ({ bookKey, onRegisterRes
   const handleSelectAnnotationQuickAction = (event: React.ChangeEvent<HTMLSelectElement>) => {
     const action = event.target.value as typeof annotationQuickAction;
     setAnnotationQuickAction(action);
-    saveViewSettings(envConfig, bookKey, 'annotationQuickAction', action, false, true);
+    saveViewSettings(bookKey, 'annotationQuickAction', action, false, true);
   };
 
   return (
@@ -277,31 +269,31 @@ const ControlPanel: React.FC<SettingsPanelPanelProp> = ({ bookKey, onRegisterRes
 
       <BoxedList title={_('Pagination')} data-setting-id='settings.control.clickToPaginate'>
         <SettingsSwitchRow
-          label={appService?.isMobileApp ? _('Tap to Paginate') : _('Click to Paginate')}
+          label={platformInfo.isMobileApp ? _('Tap to Paginate') : _('Click to Paginate')}
           checked={!isDisableClick}
           onChange={() => setIsDisableClick(!isDisableClick)}
         />
         <SettingsSwitchRow
-          label={appService?.isMobileApp ? _('Tap Both Sides') : _('Click Both Sides')}
+          label={platformInfo.isMobileApp ? _('Tap Both Sides') : _('Click Both Sides')}
           checked={fullscreenClickArea}
           disabled={isDisableClick}
           onChange={() => setFullscreenClickArea(!fullscreenClickArea)}
           data-setting-id='settings.control.clickBothSides'
         />
         <SettingsSwitchRow
-          label={appService?.isMobileApp ? _('Swap Tap Sides') : _('Swap Click Sides')}
+          label={platformInfo.isMobileApp ? _('Swap Tap Sides') : _('Swap Click Sides')}
           checked={swapClickArea}
           disabled={isDisableClick || fullscreenClickArea}
           onChange={() => setSwapClickArea(!swapClickArea)}
           data-setting-id='settings.control.swapClickSides'
         />
         <SettingsSwitchRow
-          label={appService?.isMobileApp ? _('Disable Double Tap') : _('Disable Double Click')}
+          label={platformInfo.isMobileApp ? _('Disable Double Tap') : _('Disable Double Click')}
           checked={isDisableDoubleClick}
           onChange={() => setIsDisableDoubleClick(!isDisableDoubleClick)}
           data-setting-id='settings.control.disableDoubleClick'
         />
-        {appService?.isMobileApp && (
+        {platformInfo.isMobileApp && (
           <SettingsSwitchRow
             label={_('Volume Keys for Page Flip')}
             checked={volumeKeysToFlip}
@@ -351,7 +343,7 @@ const ControlPanel: React.FC<SettingsPanelPanelProp> = ({ bookKey, onRegisterRes
       </BoxedList>
 
       <BoxedList title={_('Device')} data-setting-id='settings.control.device'>
-        {(appService?.isAndroidApp || appService?.appPlatform === 'web') && (
+        {(platformInfo.isAndroidApp || platformInfo.appPlatform === 'web') && (
           <SettingsSwitchRow
             label={_('E-Ink Mode')}
             checked={isEink}
@@ -359,7 +351,7 @@ const ControlPanel: React.FC<SettingsPanelPanelProp> = ({ bookKey, onRegisterRes
             data-setting-id='settings.control.einkMode'
           />
         )}
-        {(appService?.isAndroidApp || appService?.appPlatform === 'web') && (
+        {(platformInfo.isAndroidApp || platformInfo.appPlatform === 'web') && (
           <SettingsSwitchRow
             label={_('Color E-Ink Mode')}
             checked={isColorEink}
@@ -368,7 +360,7 @@ const ControlPanel: React.FC<SettingsPanelPanelProp> = ({ bookKey, onRegisterRes
             data-setting-id='settings.control.colorEinkMode'
           />
         )}
-        {appService?.isMobileApp && (
+        {platformInfo.isMobileApp && (
           <SettingsSwitchRow
             label={_('System Screen Brightness')}
             checked={autoScreenBrightness}

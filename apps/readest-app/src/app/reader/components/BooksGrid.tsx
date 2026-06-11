@@ -1,7 +1,7 @@
 import clsx from 'clsx';
 import React, { useEffect, useState } from 'react';
 
-import { useEnv } from '@/context/EnvContext';
+import { usePlatformInfo } from '@/context/EffectRuntimeProvider';
 import { useThemeStore } from '@/store/themeStore';
 import { useReaderStore } from '@/store/readerStore';
 import { useSidebarStore } from '@/store/sidebarStore';
@@ -40,7 +40,7 @@ const BooksGrid: React.FC<BooksGridProps> = ({
   onGoToLibrary,
 }) => {
   const _ = useTranslation();
-  const { appService } = useEnv();
+  const platformInfo = usePlatformInfo();
   const { getConfig, getBookData } = useBookDataStore();
   const { getProgress, getViewState, getViewSettings } = useReaderStore();
   const { setGridInsets, hoveredBookKey } = useReaderStore();
@@ -121,7 +121,7 @@ const BooksGrid: React.FC<BooksGridProps> = ({
             key={bookKey}
             className={clsx(
               'relative h-full w-full overflow-hidden',
-              appService?.hasRoundedWindow && 'rounded-window',
+              platformInfo.hasRoundedWindow && 'rounded-window',
             )}
           >
             {isBookmarked && !hoveredBookKey && <Ribbon width={`${horizontalGapPercent}%`} />}

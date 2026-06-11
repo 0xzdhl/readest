@@ -1,5 +1,5 @@
 import { describe, test, expect, vi, afterEach } from 'vitest';
-import type { FoliateView } from '@/types/view';
+import type { FoliateView } from '@/domain/view';
 import { handleA11yNavigation } from '@/utils/a11y';
 
 function createMockView() {

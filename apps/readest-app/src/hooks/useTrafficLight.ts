@@ -1,9 +1,9 @@
 import { useEffect } from 'react';
-import { useEnv } from '@/context/EnvContext';
+import { usePlatformInfo } from '@/context/EffectRuntimeProvider';
 import { useTrafficLightStore } from '@/store/trafficLightStore';
 
 export const useTrafficLight = () => {
-  const { appService } = useEnv();
+  const platformInfo = usePlatformInfo();
 
   const {
     isTrafficLightVisible,
@@ -14,16 +14,16 @@ export const useTrafficLight = () => {
   } = useTrafficLightStore();
 
   useEffect(() => {
-    if (!appService?.hasTrafficLight) return;
+    if (!platformInfo.hasTrafficLight) return;
 
-    initializeTrafficLightStore(appService);
+    initializeTrafficLightStore();
     initializeTrafficLightListeners();
     setTrafficLightVisibility(true, { x: 10, y: 20 });
     return () => {
       cleanupTrafficLightListeners();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [appService?.hasTrafficLight]);
+  }, [platformInfo.hasTrafficLight]);
 
   return { isTrafficLightVisible };
 };

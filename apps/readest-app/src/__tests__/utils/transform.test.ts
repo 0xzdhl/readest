@@ -5,7 +5,7 @@ import {
   transformBookConfigToDB,
   transformBookConfigFromDB,
 } from '@/utils/transform';
-import type { BookConfig, BookNote } from '@/types/book';
+import type { BookConfig, BookNote } from '@/domain/book';
 import type { DBBookConfig, DBBookNote } from '@/types/records';
 
 describe('transformBookNoteToDB with xpointer fields', () => {

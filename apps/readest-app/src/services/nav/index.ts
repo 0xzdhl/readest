@@ -1,5 +1,7 @@
-import type { ConvertChineseVariant } from '@/types/book';
-import type { BookDoc, SectionFragment, TOCItem } from '@/libs/document';
+import type { ConvertChineseVariant } from '@/domain/book';
+import type { BookDoc, SectionFragment, TOCItem } from '@/domain/document';
+import type { BookNav, BookNavSection } from '@/domain/nav';
+import { BOOK_NAV_VERSION } from '@/domain/nav';
 import { initSimpleCC, runSimpleCC } from '@/utils/simplecc';
 import {
   cloneSectionFragments,
@@ -14,29 +16,6 @@ import { enrichTocFromNavElements } from './enrichment';
 
 export { findParentPath, findTocItemBS } from './lookup';
 export type { SectionFragment };
-
-// -----------------------------------------------------------------------------
-// Book navigation artifact (persisted to Books/{hash}/nav.json).
-// Bump BOOK_NAV_VERSION whenever computeBookNav output semantics change
-// (TOC grouping heuristic, fragment CFI/size math, hierarchy rules).
-// v2: fragment CFIs are derived from the section DOM via CFI.joinIndir instead
-//     of inherited from the TOC item (ported from foliate-js 317051e).
-// v3: nav-enrichment fallback — when toc.ncx is sparse, scan section HTMLs for
-//     embedded <nav> elements and merge their links as top-level TOC items.
-// -----------------------------------------------------------------------------
-
-export const BOOK_NAV_VERSION = 3;
-
-export interface BookNavSection {
-  id: string;
-  fragments: SectionFragment[];
-}
-
-export interface BookNav {
-  version: number;
-  toc: TOCItem[];
-  sections: Record<string, BookNavSection>;
-}
 
 const convertTocLabels = (items: TOCItem[], convertChineseVariant: ConvertChineseVariant) => {
   items.forEach((item) => {

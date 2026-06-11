@@ -2,7 +2,7 @@ import React, { createContext, useContext, useState, useCallback, useEffect, use
 import { useTranslation } from '@/hooks/useTranslation';
 import { useSettingsStore } from '@/store/settingsStore';
 import { useThemeStore } from '@/store/themeStore';
-import { useEnv } from '@/context/EnvContext';
+import { usePlatformInfo } from '@/context/EffectRuntimeProvider';
 import { isTauriAppPlatform } from '@/services/environment';
 import { tauriHandleSetAlwaysOnTop, tauriHandleToggleFullScreen } from '@/utils/window';
 import { setAboutDialogVisible } from '@/components/AboutWindow';
@@ -49,14 +49,14 @@ interface CommandPaletteProviderProps {
 
 export const CommandPaletteProvider: React.FC<CommandPaletteProviderProps> = ({ children }) => {
   const _ = useTranslation();
-  const { envConfig, appService } = useEnv();
+  const platformInfo = usePlatformInfo();
   const { themeMode, setThemeMode } = useThemeStore();
   const { settings, setSettingsDialogOpen, setActiveSettingsItemId } = useSettingsStore();
 
   const [isOpen, setIsOpen] = useState(false);
   const [query, setQuery] = useState('');
 
-  const isDesktop = isTauriAppPlatform() && !appService?.isMobile;
+  const isDesktop = isTauriAppPlatform() && !platformInfo.isMobile;
 
   // action handlers
   const toggleTheme = useCallback(() => {
@@ -70,19 +70,19 @@ export const CommandPaletteProvider: React.FC<CommandPaletteProviderProps> = ({ 
 
   const toggleAlwaysOnTop = useCallback(() => {
     const newValue = !settings.alwaysOnTop;
-    saveSysSettings(envConfig, 'alwaysOnTop', newValue);
+    saveSysSettings('alwaysOnTop', newValue);
     tauriHandleSetAlwaysOnTop(newValue);
-  }, [envConfig, settings.alwaysOnTop]);
+  }, [settings.alwaysOnTop]);
 
   const toggleScreenWakeLock = useCallback(() => {
     const newValue = !settings.screenWakeLock;
-    saveSysSettings(envConfig, 'screenWakeLock', newValue);
-  }, [envConfig, settings.screenWakeLock]);
+    saveSysSettings('screenWakeLock', newValue);
+  }, [settings.screenWakeLock]);
 
   const toggleAutoUpload = useCallback(() => {
     const newValue = !settings.autoUpload;
-    saveSysSettings(envConfig, 'autoUpload', newValue);
-  }, [envConfig, settings.autoUpload]);
+    saveSysSettings('autoUpload', newValue);
+  }, [settings.autoUpload]);
 
   const reloadPage = useCallback(() => {
     window.location.reload();
@@ -90,8 +90,8 @@ export const CommandPaletteProvider: React.FC<CommandPaletteProviderProps> = ({ 
 
   const toggleOpenLastBooks = useCallback(() => {
     const newValue = !settings.openLastBooks;
-    saveSysSettings(envConfig, 'openLastBooks', newValue);
-  }, [envConfig, settings.openLastBooks]);
+    saveSysSettings('openLastBooks', newValue);
+  }, [settings.openLastBooks]);
 
   const showAbout = useCallback(() => {
     setAboutDialogVisible(true);
@@ -99,8 +99,8 @@ export const CommandPaletteProvider: React.FC<CommandPaletteProviderProps> = ({ 
 
   const toggleTelemetry = useCallback(() => {
     const newValue = !settings.telemetryEnabled;
-    saveSysSettings(envConfig, 'telemetryEnabled', newValue);
-  }, [envConfig, settings.telemetryEnabled]);
+    saveSysSettings('telemetryEnabled', newValue);
+  }, [settings.telemetryEnabled]);
 
   const openSettingsPanel = useCallback(
     (_panel: SettingsPanelType, itemId?: string) => {

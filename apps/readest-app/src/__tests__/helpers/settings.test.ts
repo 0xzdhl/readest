@@ -34,10 +34,7 @@ vi.mock('@/utils/style', () => ({
 
 import { saveViewSettings } from '@/helpers/settings';
 import { useSettingsStore } from '@/store/settingsStore';
-import type { EnvConfigType } from '@/services/environment';
-import type { SystemSettings } from '@/types/settings';
-
-const envConfig = {} as EnvConfigType;
+import type { SystemSettings } from '@/domain/settings';
 
 const makeSettings = (): SystemSettings =>
   ({
@@ -70,7 +67,7 @@ describe('saveViewSettings', () => {
     });
 
     try {
-      await saveViewSettings(envConfig, 'book-1', 'userStylesheet', 'body { color: red; }');
+      await saveViewSettings('book-1', 'userStylesheet', 'body { color: red; }');
     } finally {
       unsubscribe();
     }
@@ -81,14 +78,14 @@ describe('saveViewSettings', () => {
 
   test('global write persists with the same new reference passed to setSettings', async () => {
     let savedSettings: SystemSettings | null = null;
-    const saveSettingsMock = vi.fn(async (_env: EnvConfigType, s: SystemSettings) => {
+    const saveSettingsMock = vi.fn(async (s: SystemSettings) => {
       savedSettings = s;
     });
     useSettingsStore.setState({
       saveSettings: saveSettingsMock,
     } as unknown as ReturnType<typeof useSettingsStore.getState>);
 
-    await saveViewSettings(envConfig, 'book-1', 'userUIStylesheet', '.app { background: black; }');
+    await saveViewSettings('book-1', 'userUIStylesheet', '.app { background: black; }');
 
     expect(saveSettingsMock).toHaveBeenCalledTimes(1);
     expect(savedSettings!.globalViewSettings.userUIStylesheet).toBe('.app { background: black; }');
@@ -106,7 +103,7 @@ describe('saveViewSettings', () => {
     });
 
     try {
-      await saveViewSettings(envConfig, 'book-1', 'userStylesheet', 'body { color: blue; }');
+      await saveViewSettings('book-1', 'userStylesheet', 'body { color: blue; }');
     } finally {
       unsubscribe();
     }

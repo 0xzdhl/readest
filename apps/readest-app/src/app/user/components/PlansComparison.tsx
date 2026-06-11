@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { AvailablePlan, PlanType, UserPlan } from '@/types/quota';
-import { useEnv } from '@/context/EnvContext';
+import { usePlatformInfo } from '@/context/EffectRuntimeProvider';
 import { debounce } from '@/utils/debounce';
 import { getPlanDetails } from '../utils/plan';
 import PlanNavigation from './PlanNavigation';
@@ -18,7 +18,7 @@ const PlansComparison: React.FC<PlansComparisonProps> = ({
   userPlan,
   onSubscribe,
 }) => {
-  const { appService } = useEnv();
+  const platformInfo = usePlatformInfo();
   const [currentPlanIndex, setCurrentPlanIndex] = useState(0);
   const [userPlanIndex, setUserPlanIndex] = useState(0);
   const plansScrollRef = useRef<HTMLDivElement>(null);
@@ -144,7 +144,7 @@ const PlansComparison: React.FC<PlansComparisonProps> = ({
         className='plans-container scrollbar-hide flex items-start overflow-x-auto scroll-smooth sm:px-52'
         onTouchStart={handleTouchStart}
         style={{
-          scrollSnapType: appService?.isIOSApp ? 'x mandatory' : 'none',
+          scrollSnapType: platformInfo.isIOSApp ? 'x mandatory' : 'none',
           scrollbarWidth: 'none',
           msOverflowStyle: 'none',
         }}

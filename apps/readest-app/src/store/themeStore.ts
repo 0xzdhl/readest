@@ -1,12 +1,13 @@
 import { create } from 'zustand';
-import type { AppService } from '@/types/system';
+import { getClientRuntime, getPlatformInfo } from '@/runtime/clientRuntime';
+import { SaveSettings } from '@/application/usecases/settings/SaveSettings';
 import { getThemeCode, type ThemeCode } from '@/utils/style';
 import { getSystemColorScheme } from '@/utils/bridge';
 import { getCurrentWindow } from '@tauri-apps/api/window';
-import type { CustomTheme, Palette, ThemeMode } from '@/styles/themes';
-import { type EnvConfigType, isWebAppPlatform } from '@/services/environment';
-import type { SystemSettings } from '@/types/settings';
-import type { Insets } from '@/types/misc';
+import type { CustomTheme, Palette, ThemeMode } from '@/domain/themes';
+import { isWebAppPlatform } from '@/services/environment';
+import type { SystemSettings } from '@/domain/settings';
+import type { Insets } from '@/domain/misc';
 
 declare global {
   interface Window {
@@ -33,12 +34,7 @@ interface ThemeState {
   setThemeMode: (mode: ThemeMode) => void;
   setThemeColor: (color: string) => void;
   updateAppTheme: (color: keyof Palette) => void;
-  saveCustomTheme: (
-    envConfig: EnvConfigType,
-    settings: SystemSettings,
-    theme: CustomTheme,
-    isDelete?: boolean,
-  ) => void;
+  saveCustomTheme: (settings: SystemSettings, theme: CustomTheme, isDelete?: boolean) => void;
   handleSystemThemeChange: (isDark: boolean) => void;
   updateSafeAreaInsets: (insets: Insets) => void;
 }
@@ -112,7 +108,7 @@ export const useThemeStore = create<ThemeState>((set, get) => {
         document.querySelector('meta[name="theme-color"]')?.setAttribute('content', palette[color]);
       }
     },
-    saveCustomTheme: async (envConfig, settings, theme, isDelete) => {
+    saveCustomTheme: async (settings, theme, isDelete) => {
       const customThemes = settings.globalReadSettings.customThemes || [];
       const index = customThemes.findIndex((t) => t.name === theme.name);
       if (isDelete) {
@@ -128,8 +124,7 @@ export const useThemeStore = create<ThemeState>((set, get) => {
       }
       settings.globalReadSettings.customThemes = customThemes;
       localStorage.setItem('customThemes', JSON.stringify(customThemes));
-      const appService = await envConfig.getAppService();
-      await appService.saveSettings(settings);
+      await getClientRuntime().runPromise(SaveSettings(settings));
     },
     handleSystemThemeChange: (systemIsDarkMode) => {
       const mode = get().themeMode;
@@ -162,13 +157,14 @@ export const loadDataTheme = () => {
   }
 };
 
-export const initSystemThemeListener = (appService: AppService) => {
-  if (typeof window === 'undefined' || !appService) return;
+export const initSystemThemeListener = () => {
+  if (typeof window === 'undefined') return;
 
+  const platformInfo = getPlatformInfo();
   const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
   const updateColorTheme = async () => {
     let systemIsDarkMode;
-    if (appService.isIOSApp) {
+    if (platformInfo.isIOSApp) {
       const res = await getSystemColorScheme();
       systemIsDarkMode = res.colorScheme === 'dark';
     } else {
@@ -181,7 +177,7 @@ export const initSystemThemeListener = (appService: AppService) => {
   };
 
   const updateWindowTheme = async () => {
-    if (!appService.hasWindow || !appService.isLinuxApp) return;
+    if (!platformInfo.hasWindow || !platformInfo.isLinuxApp) return;
     const currentWindow = getCurrentWindow();
     const isFullscreen = await currentWindow.isFullscreen();
     const isMaximized = await currentWindow.isMaximized();

@@ -3,10 +3,12 @@ import { RiDeleteBinLine } from 'react-icons/ri';
 
 import * as CFI from 'foliate-js/epubcfi.js';
 import { Overlayer } from 'foliate-js/overlayer.js';
-import { useEnv } from '@/context/EnvContext';
-import type { BookNote, BooknoteGroup, HighlightColor, HighlightStyle } from '@/types/book';
+import { Effect, Option } from 'effect';
+import { usePlatformInfo, useRunEffect } from '@/context/EffectRuntimeProvider';
+import { Dialog } from '@/application/ports/Dialog';
+import type { BookNote, BooknoteGroup, HighlightColor, HighlightStyle } from '@/domain/book';
 import { NOTE_PREFIX } from '@/types/view';
-import type { NativeTouchEventType } from '@/types/system';
+import type { NativeTouchEventType } from '@/domain/system';
 import { getLocale, getOSPlatform, makeSafeFilename, uniqueId } from '@/utils/misc';
 import { useThemeStore } from '@/store/themeStore';
 import { useBookDataStore } from '@/store/bookDataStore';
@@ -22,7 +24,7 @@ import { useNotesSync } from '../../hooks/useNotesSync';
 import { useReadwiseSync } from '../../hooks/useReadwiseSync';
 import { useHardcoverSync } from '../../hooks/useHardcoverSync';
 import { useTextSelector } from '../../hooks/useTextSelector';
-import type { Point, Position, TextSelection } from '@/utils/sel';
+import type { Point, Position, TextSelection } from '@/domain/selection';
 import { getPopupPosition, getPosition, getTextFromRange } from '@/utils/sel';
 import { eventDispatcher } from '@/utils/event';
 import { findTocItemBS } from '@/services/nav';
@@ -52,7 +54,8 @@ import ExportMarkdownDialog from './ExportMarkdownDialog';
 
 const Annotator: React.FC<{ bookKey: string }> = ({ bookKey }) => {
   const _ = useTranslation();
-  const { envConfig, appService } = useEnv();
+  const platformInfo = usePlatformInfo();
+  const runEffect = useRunEffect();
   const { settings, setSettingsDialogBookKey, setSettingsDialogOpen, setActiveSettingsItemId } =
     useSettingsStore();
   const { isDarkMode } = useThemeStore();
@@ -67,7 +70,7 @@ const Annotator: React.FC<{ bookKey: string }> = ({ bookKey }) => {
   useHardcoverSync(bookKey);
 
   useEffect(() => {
-    void loadCustomDictionaries(envConfig).catch((error) => {
+    void loadCustomDictionaries().catch((error) => {
       console.warn('Failed to load custom dictionaries:', error);
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -284,7 +287,7 @@ const Annotator: React.FC<{ bookKey: string }> = ({ bookKey }) => {
       }
     };
 
-    if (appService?.isAndroidApp) {
+    if (platformInfo.isAndroidApp) {
       listenToNativeTouchEvents();
       eventDispatcher.on('native-touch', handleNativeTouch);
     }
@@ -390,8 +393,8 @@ const Annotator: React.FC<{ bookKey: string }> = ({ bookKey }) => {
       const fontSizeValue = parseFloat(fontSize) || viewSettings.defaultFontSize;
       const lineHeightValue = parseFloat(lineHeight) || viewSettings.lineHeight * fontSizeValue;
       const strokeWidth = 2;
-      const verticalCompensation = appService?.isMobile ? 0 : -1;
-      const horizontalCompensation = appService?.isMobile ? -1 : 0;
+      const verticalCompensation = platformInfo.isMobile ? 0 : -1;
+      const horizontalCompensation = platformInfo.isMobile ? -1 : 0;
       const padding = viewSettings.vertical
         ? (lineHeightValue - fontSizeValue) / 2 - strokeWidth + verticalCompensation
         : (lineHeightValue - fontSizeValue) / 2 - strokeWidth + horizontalCompensation;
@@ -499,7 +502,7 @@ const Annotator: React.FC<{ bookKey: string }> = ({ bookKey }) => {
       }
       const updatedConfig = updateBooknotes(bookKey, annotations);
       if (updatedConfig) {
-        saveConfig(envConfig, bookKey, updatedConfig, settings);
+        saveConfig(bookKey, updatedConfig, settings);
       }
     };
     setTimeout(updateBooknotesPage, 3000);
@@ -537,7 +540,7 @@ const Annotator: React.FC<{ bookKey: string }> = ({ bookKey }) => {
     // by the in-progress touch (closes #3935).
     runOrDeferAction(
       deferredQuickActionRef.current,
-      !!appService?.isAndroidApp && !androidTouchEndRef.current,
+      platformInfo.isAndroidApp && !androidTouchEndRef.current,
       runAction,
     );
   };
@@ -639,7 +642,7 @@ const Annotator: React.FC<{ bookKey: string }> = ({ bookKey }) => {
   }, [selection?.cfi, showAnnotationNotes, config.booknotes]);
 
   const handleShowAnnotPopup = () => {
-    if (!appService?.isMobile) {
+    if (!platformInfo.isMobile) {
       containerRef.current?.focus();
     }
     setShowAnnotPopup(true);
@@ -691,9 +694,9 @@ const Annotator: React.FC<{ bookKey: string }> = ({ bookKey }) => {
     }
     const updatedConfig = updateBooknotes(bookKey, annotations);
     if (updatedConfig) {
-      saveConfig(envConfig, bookKey, updatedConfig, settings);
+      saveConfig(bookKey, updatedConfig, settings);
     }
-    if (!appService?.isMobile) {
+    if (!platformInfo.isMobile) {
       setNotebookVisible(true);
     }
   };
@@ -746,7 +749,7 @@ const Annotator: React.FC<{ bookKey: string }> = ({ bookKey }) => {
 
     const updatedConfig = updateBooknotes(bookKey, annotations);
     if (updatedConfig) {
-      saveConfig(envConfig, bookKey, updatedConfig, settings);
+      saveConfig(bookKey, updatedConfig, settings);
     }
   };
 
@@ -908,13 +911,19 @@ const Annotator: React.FC<{ bookKey: string }> = ({ bookKey }) => {
     const ext = isPlainText ? 'txt' : 'md';
     const mimeType = isPlainText ? 'text/plain' : 'text/markdown';
     const filename = `${makeSafeFilename(book.title)}.${ext}`;
-    const saved = await appService?.saveFile(filename, content, {
-      mimeType,
-      share: true,
-      sharePosition,
-    });
+    const saved = await runEffect(
+      Effect.flatMap(Dialog, (dialog) =>
+        dialog
+          .saveFile(filename, content, {
+            mimeType,
+            share: true,
+            sharePosition,
+          })
+          .pipe(Effect.map(Option.isSome)),
+      ),
+    );
 
-    if (appService?.isMacOSApp) return;
+    if (platformInfo.isMacOSApp) return;
     eventDispatcher.dispatch('toast', {
       type: 'info',
       message: saved ? _('Exported successfully') : _('Copied to clipboard'),

@@ -1,21 +1,20 @@
-import type { EnvConfigType } from '@/services/environment';
-
 /**
- * Replica-side mutators (applyRemote*, softDelete*, markAvailable*)
- * fire from the boot-time pull / download-complete handlers, NOT the
- * settings UI. UI mutators couple their state writes with an explicit
- * saveCustomX(envConfig) call; the replica path has no such pairing,
- * so without auto-persist the next loadCustomX would read stale
- * settings and wipe the in-memory rows.
- *
- * EnvProvider registers envConfig once at boot; every replica-aware
- * store reads it via getReplicaPersistEnv() inside its replica-side
- * mutators and fire-and-forget saves through it.
+ * Replica-side mutators (applyRemote*, softDelete*, markAvailable*) fire from the
+ * boot-time pull / download-complete handlers, NOT the settings UI. The replica
+ * path has no UI saveCustomX pairing, so without auto-persist the next loadCustomX
+ * would read stale settings. EffectRuntimeProvider enables this once at boot; every
+ * replica-aware store checks isReplicaPersistEnabled() inside its replica-side
+ * mutators and fire-and-forget saves.
  */
-let replicaPersistEnv: EnvConfigType | null = null;
+let replicaPersistEnabled = false;
 
-export const enableReplicaAutoPersist = (envConfig: EnvConfigType | null): void => {
-  replicaPersistEnv = envConfig;
+export const enableReplicaAutoPersist = (): void => {
+  replicaPersistEnabled = true;
 };
 
-export const getReplicaPersistEnv = (): EnvConfigType | null => replicaPersistEnv;
+export const isReplicaPersistEnabled = (): boolean => replicaPersistEnabled;
+
+/** Test-only: reset the module flag back to disabled between cases. */
+export const __resetReplicaPersistForTests = (): void => {
+  replicaPersistEnabled = false;
+};

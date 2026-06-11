@@ -3,7 +3,7 @@ import { readFileSync } from 'fs';
 import { resolve, join } from 'path';
 import { parse, toRange, fromRange } from 'foliate-js/epubcfi.js';
 import { DocumentLoader } from '@/libs/document';
-import type { BookDoc } from '@/libs/document';
+import type { BookDoc } from '@/domain/document';
 
 const vendorDir = join(process.cwd(), 'public/vendor');
 

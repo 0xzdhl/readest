@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import Popup from '@/components/Popup';
-import type { Position } from '@/utils/sel';
+import type { Position } from '@/domain/selection';
 import { useAuth } from '@/context/AuthContext';
 import { useSettingsStore } from '@/store/settingsStore';
 import { useTranslation } from '@/hooks/useTranslation';

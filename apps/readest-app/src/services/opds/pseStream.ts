@@ -4,8 +4,8 @@ import { READEST_OPDS_USER_AGENT } from '@/services/constants';
 import { useSettingsStore } from '@/store/settingsStore';
 import { needsProxy, getProxiedURL, probeAuth } from '@/app/opds/utils/opdsReq';
 import { normalizeOPDSCustomHeaders } from '@/app/opds/utils/customHeaders';
-import type { BookFormat } from '@/types/book';
-import type { BookDoc, BookMetadata } from '@/libs/document';
+import type { BookFormat } from '@/domain/book';
+import type { BookDoc, BookMetadata } from '@/domain/document';
 
 export const PSE_SCHEME = 'pse://';
 

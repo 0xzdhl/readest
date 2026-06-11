@@ -1,5 +1,4 @@
 import { useRouter } from '@tanstack/react-router';
-import { useEnv } from '@/context/EnvContext';
 import { useAuth } from '@/context/AuthContext';
 import { deleteUser } from '@/libs/user';
 import { eventDispatcher } from '@/utils/event';
@@ -8,12 +7,11 @@ import { navigateToLibrary, navigateToResetPassword, navigateToUpdatePassword } 
 
 export const useUserActions = () => {
   const router = useRouter();
-  const { envConfig } = useEnv();
   const { signOut } = useAuth();
 
   const handleLogout = async () => {
     await signOut();
-    saveSysSettings(envConfig, 'keepLogin', false);
+    saveSysSettings('keepLogin', false);
     navigateToLibrary(router);
   };
 

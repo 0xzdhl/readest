@@ -1,4 +1,38 @@
 import { describe, test, expect, beforeEach, vi } from 'vitest';
+import { Effect, Layer } from 'effect';
+import { FileSystem, type FileSystemShape } from '@/application/ports/FileSystem';
+
+// migrateLegacyFonts now resolves on-disk ops through the FileSystem port via
+// the client runtime bridge (no injected AppService). The shared `fsSpies`
+// back a stub FileSystem layer; `runPromise` runs the real effect over it so
+// the migration's exists/openFile/createDir/copyFile/removeFile assertions
+// observe these spies.
+const fsSpies = vi.hoisted(() => ({
+  exists: null as null | ((path: string, base: string) => Promise<boolean>),
+  openFile: null as null | ((path: string, base: string) => Promise<File>),
+  createDir: null as null | ((path: string, base: string, r?: boolean) => Promise<void>),
+  copyFile: null as null | ((s: string, sb: string, d: string, db: string) => Promise<void>),
+  removeFile: null as null | ((path: string, base: string) => Promise<void>),
+}));
+
+vi.mock('@/runtime/clientRuntime', () => ({
+  getClientRuntime: () => ({
+    runPromise: <A, E>(effect: Effect.Effect<A, E, FileSystem>) => {
+      const stub: Pick<
+        FileSystemShape,
+        'exists' | 'openFile' | 'createDir' | 'copyFile' | 'removeFile'
+      > = {
+        exists: (p, b) => Effect.promise(() => fsSpies.exists!(p, b)),
+        openFile: (p, b) => Effect.promise(() => fsSpies.openFile!(p, b)),
+        createDir: (p, b, r) => Effect.promise(() => fsSpies.createDir!(p, b, r)),
+        copyFile: (s, sb, d, db) => Effect.promise(() => fsSpies.copyFile!(s, sb, d, db)),
+        removeFile: (p, b) => Effect.promise(() => fsSpies.removeFile!(p, b)),
+      };
+      const StubFs = Layer.succeed(FileSystem, stub as unknown as FileSystemShape);
+      return Effect.runPromise(Effect.provide(effect, StubFs));
+    },
+  }),
+}));
 
 vi.mock('@/services/sync/replicaPublish', () => ({
   publishReplicaDelete: vi.fn(),
@@ -21,9 +55,8 @@ vi.mock('@/utils/misc', async () => {
 
 import { useCustomFontStore, migrateLegacyFonts } from '@/store/customFontStore';
 import { useSettingsStore } from '@/store/settingsStore';
-import type { CustomFont } from '@/styles/fonts';
-import type { SystemSettings } from '@/types/settings';
-import type { EnvConfigType } from '@/services/environment';
+import type { CustomFont } from '@/domain/fonts';
+import type { SystemSettings } from '@/domain/settings';
 import { publishReplicaUpsert } from '@/services/sync/replicaPublish';
 
 const mockPublishReplicaUpsert = vi.mocked(publishReplicaUpsert);
@@ -33,12 +66,6 @@ function makeFont(overrides: Partial<CustomFont> & { id: string; name: string })
     path: `/fonts/${overrides.name}.ttf`,
     ...overrides,
   };
-}
-
-function createMockEnvConfig(): EnvConfigType {
-  return {
-    getAppService: vi.fn(),
-  } as unknown as EnvConfigType;
 }
 
 beforeEach(() => {
@@ -348,19 +375,15 @@ describe('customFontStore', () => {
   // 鈹€鈹€ loadFont 鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€
   describe('loadFont', () => {
     test('throws for non-existent font', async () => {
-      const envConfig = createMockEnvConfig();
-      await expect(
-        useCustomFontStore.getState().loadFont(envConfig, 'nonexistent'),
-      ).rejects.toThrow('not found');
+      await expect(useCustomFontStore.getState().loadFont('nonexistent')).rejects.toThrow(
+        'not found',
+      );
     });
 
     test('throws for deleted font', async () => {
       const font = useCustomFontStore.getState().addFont('/a.ttf');
       useCustomFontStore.getState().removeFont(font.id);
-      const envConfig = createMockEnvConfig();
-      await expect(useCustomFontStore.getState().loadFont(envConfig, font.id)).rejects.toThrow(
-        'deleted',
-      );
+      await expect(useCustomFontStore.getState().loadFont(font.id)).rejects.toThrow('deleted');
     });
 
     test('returns immediately if already loaded', async () => {
@@ -369,10 +392,8 @@ describe('customFontStore', () => {
         loaded: true,
         blobUrl: 'blob:existing',
       });
-      const envConfig = createMockEnvConfig();
-      const result = await useCustomFontStore.getState().loadFont(envConfig, font.id);
+      const result = await useCustomFontStore.getState().loadFont(font.id);
       expect(result.blobUrl).toBe('blob:existing');
-      expect(envConfig.getAppService).not.toHaveBeenCalled();
     });
   });
 
@@ -394,8 +415,7 @@ describe('customFontStore', () => {
         saveSettings: mockSaveSettings,
       });
 
-      const envConfig = createMockEnvConfig();
-      await useCustomFontStore.getState().saveCustomFonts(envConfig);
+      await useCustomFontStore.getState().saveCustomFonts();
 
       expect(mockSetSettings).toHaveBeenCalledTimes(1);
       expect(mockSaveSettings).toHaveBeenCalledTimes(1);
@@ -418,8 +438,20 @@ describe('customFontStore', () => {
       copyFile: ReturnType<typeof vi.fn>;
       deleteFile: ReturnType<typeof vi.fn>;
     }
-    const buildEnv = (svc: FakeAppService): EnvConfigType =>
-      ({ getAppService: vi.fn(async () => svc) }) as unknown as EnvConfigType;
+    // Register `svc`'s spies into the hoisted `fsSpies` consumed by the mocked
+    // client runtime; the FS ops now flow through the bridge.
+    const buildEnv = (svc: FakeAppService): void => {
+      fsSpies.exists = svc.exists as FakeAppService['exists'] &
+        ((p: string, b: string) => Promise<boolean>);
+      fsSpies.openFile = svc.openFile as FakeAppService['openFile'] &
+        ((p: string, b: string) => Promise<File>);
+      fsSpies.createDir = svc.createDir as FakeAppService['createDir'] &
+        ((p: string, b: string, r?: boolean) => Promise<void>);
+      fsSpies.copyFile = svc.copyFile as FakeAppService['copyFile'] &
+        ((s: string, sb: string, d: string, db: string) => Promise<void>);
+      fsSpies.removeFile = svc.deleteFile as FakeAppService['deleteFile'] &
+        ((p: string, b: string) => Promise<void>);
+    };
 
     const fakeService = (): FakeAppService => ({
       exists: vi.fn(async () => true),
@@ -450,7 +482,8 @@ describe('customFontStore', () => {
         loading: false,
       });
       const svc = fakeService();
-      await migrateLegacyFonts(buildEnv(svc));
+      buildEnv(svc);
+      await migrateLegacyFonts();
 
       const after = useCustomFontStore.getState().fonts.find((f) => f.id === 'legacy-1')!;
       expect(after.contentId).toBeDefined();
@@ -471,7 +504,8 @@ describe('customFontStore', () => {
         fonts: [{ id: 'legacy-2', name: 'Inter', path: 'Inter.ttf' }],
         loading: false,
       });
-      await migrateLegacyFonts(buildEnv(fakeService()));
+      buildEnv(fakeService());
+      await migrateLegacyFonts();
       expect(mockPublishReplicaUpsert).toHaveBeenCalledOnce();
       expect(mockPublishReplicaUpsert.mock.calls[0]![0]).toBe('font');
     });
@@ -490,7 +524,8 @@ describe('customFontStore', () => {
         loading: false,
       });
       const svc = fakeService();
-      await migrateLegacyFonts(buildEnv(svc));
+      buildEnv(svc);
+      await migrateLegacyFonts();
       expect(svc.copyFile).not.toHaveBeenCalled();
       expect(svc.deleteFile).not.toHaveBeenCalled();
       expect(mockPublishReplicaUpsert).not.toHaveBeenCalled();
@@ -503,7 +538,8 @@ describe('customFontStore', () => {
       });
       const svc = fakeService();
       svc.exists.mockResolvedValueOnce(false);
-      await migrateLegacyFonts(buildEnv(svc));
+      buildEnv(svc);
+      await migrateLegacyFonts();
       const after = useCustomFontStore.getState().fonts.find((f) => f.id === 'gone')!;
       expect(after.contentId).toBeUndefined();
       expect(svc.copyFile).not.toHaveBeenCalled();
@@ -515,7 +551,8 @@ describe('customFontStore', () => {
         loading: false,
       });
       const svc = fakeService();
-      await migrateLegacyFonts(buildEnv(svc));
+      buildEnv(svc);
+      await migrateLegacyFonts();
       expect(svc.copyFile).not.toHaveBeenCalled();
     });
 
@@ -530,7 +567,8 @@ describe('customFontStore', () => {
       });
       const svc = fakeService();
       svc.copyFile.mockRejectedValueOnce(new Error('disk full'));
-      await migrateLegacyFonts(buildEnv(svc));
+      buildEnv(svc);
+      await migrateLegacyFonts();
       const fonts = useCustomFontStore.getState().fonts;
       const aFont = fonts.find((f) => f.id === 'a')!;
       const bFont = fonts.find((f) => f.id === 'b')!;

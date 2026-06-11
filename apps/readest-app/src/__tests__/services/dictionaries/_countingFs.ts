@@ -9,7 +9,7 @@
  * Tracks reads per-file so individual assertions can target a specific
  * bundle file (e.g. the .dict.dz vs the .idx).
  */
-import type { BaseDir } from '@/types/system';
+import type { BaseDir } from '@/domain/system';
 import type { DictionaryFileOpener } from '@/services/dictionaries/providers/starDictProvider';
 
 export interface ReadCounter {

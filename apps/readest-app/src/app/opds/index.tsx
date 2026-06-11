@@ -4,7 +4,6 @@ import { createFileRoute, useRouter } from '@tanstack/react-router';
 import { z } from 'zod';
 import { isOPDSCatalog, getPublication, getFeed, getOpenSearch } from 'foliate-js/opds.js';
 import { openUrl } from '@tauri-apps/plugin-opener';
-import { useEnv } from '@/context/EnvContext';
 import { useAuth } from '@/context/AuthContext';
 import { isWebAppPlatform } from '@/services/environment';
 import { downloadFile } from '@/libs/storage';
@@ -21,7 +20,8 @@ import { useLibrary } from '@/hooks/useLibrary';
 import { eventDispatcher } from '@/utils/event';
 import { navigateToReader } from '@/utils/nav';
 import { getFileExtFromMimeType } from '@/libs/document';
-import type { OPDSFeed, OPDSPublication, OPDSSearch } from '@/types/opds';
+import type { OPDSFeed, OPDSPublication, OPDSSearch } from '@/domain/opds';
+import type { FileWriter, BaseDir } from '@/domain/system';
 import {
   getFileExtFromPath,
   isSearchLink,
@@ -39,6 +39,11 @@ import {
 import { ImportError } from '@/services/errors';
 import { READEST_OPDS_USER_AGENT } from '@/services/constants';
 import { buildPseStreamFileName } from '@/services/opds/pseStream';
+import { Effect } from 'effect';
+import { useRunEffect, usePlatformInfo, useBooted } from '@/context/EffectRuntimeProvider';
+import { FileSystem } from '@/application/ports/FileSystem';
+import { PathResolver } from '@/application/ports/PathResolver';
+import { importBooks } from '@/application/usecases/book';
 import { FeedView } from './components/FeedView';
 import { PublicationView } from './components/PublicationView';
 import { SearchView } from './components/SearchView';
@@ -78,7 +83,7 @@ interface HistoryEntry {
 function OPDSBrowserPage() {
   const _ = useTranslation();
   const router = useRouter();
-  const { appService } = useEnv();
+  const booted = useBooted();
   const { user } = useAuth();
   const { libraryLoaded } = useLibrary();
   const { safeAreaInsets, isRoundedWindow } = useThemeStore();
@@ -108,6 +113,20 @@ function OPDSBrowserPage() {
   const historyIndexRef = useRef(-1);
   const isNavigatingHistoryRef = useRef(false);
   const searchTermRef = useRef('');
+
+  const runEffect = useRunEffect();
+  const platformInfo = usePlatformInfo();
+
+  // downloadFile (libs/storage) reaches only appService.writeFile; back it by the
+  // Effect runtime so we can drop the appService god-object dependency here.
+  const fsWriter = useMemo(
+    () =>
+      ({
+        writeFile: (path: string, base: BaseDir, content: ArrayBuffer) =>
+          runEffect(Effect.flatMap(FileSystem, (fs) => fs.writeFile(path, base, content))),
+      }) as unknown as FileWriter,
+    [runEffect],
+  );
 
   useTheme({ systemUIVisible: false });
   useTransferQueue(libraryLoaded);
@@ -433,7 +452,7 @@ function OPDSBrowserPage() {
       type?: string,
       onProgress?: (progress: { progress: number; total: number }) => void,
     ) => {
-      if (!appService || !libraryLoaded) return;
+      if (!booted || !libraryLoaded) return;
       try {
         const url = resolveURL(href, state.baseURL);
         const parsed = parseMediaType(type);
@@ -469,11 +488,13 @@ function OPDSBrowserPage() {
           const ext = getFileExtFromMimeType(parsed?.mediaType) || getFileExtFromPath(pathname);
           const basename = pathname.replaceAll('/', '_');
           const filename = ext ? `${basename}.${ext}` : basename;
-          let dstFilePath = await appService?.resolveFilePath(filename, 'Cache');
+          let dstFilePath = await runEffect(
+            Effect.flatMap(PathResolver, (r) => r.absolute(filename, 'Cache')),
+          );
           console.log('Downloading to:', url, dstFilePath);
 
           const responseHeaders = await downloadFile({
-            appService,
+            appService: fsWriter,
             dst: dstFilePath,
             cfp: '',
             url: downloadUrl,
@@ -484,23 +505,38 @@ function OPDSBrowserPage() {
           });
           const probedFilename = await probeFilename(responseHeaders);
           if (probedFilename) {
-            const newFilePath = await appService?.resolveFilePath(probedFilename, 'Cache');
-            await appService?.copyFile(dstFilePath, 'None', newFilePath, 'None');
-            await appService?.deleteFile(dstFilePath, 'None');
+            const newFilePath = await runEffect(
+              Effect.flatMap(PathResolver, (r) => r.absolute(probedFilename, 'Cache')),
+            );
+            await runEffect(
+              Effect.flatMap(FileSystem, (fs) =>
+                fs.copyFile(dstFilePath, 'None', newFilePath, 'None'),
+              ),
+            );
+            await runEffect(Effect.flatMap(FileSystem, (fs) => fs.removeFile(dstFilePath, 'None')));
             console.log('Renamed downloaded file to:', newFilePath);
             dstFilePath = newFilePath;
           }
 
           const { library, setLibrary } = useLibraryStore.getState();
           try {
-            const book = await appService.importBook(dstFilePath, library);
+            const {
+              imported,
+              failed,
+              library: nextLibrary,
+            } = await runEffect(importBooks(library, [{ file: dstFilePath }]));
+            const book = imported[0] ?? null;
+            if (!book && failed.length > 0) {
+              // Surface the import failure like the legacy appService.importBook throw,
+              // so the caller's catch shows the "Import failed" toast instead of success.
+              throw failed[0]!.error;
+            }
             if (user && book && !book.uploadedAt && settings.autoUpload) {
               setTimeout(() => {
                 transferManager.queueUpload(book);
               }, 3000);
             }
-            setLibrary(library);
-            appService.saveLibraryBooks(library);
+            setLibrary(nextLibrary);
             return book;
           } catch (importError) {
             console.error('Import error:', importError);
@@ -513,19 +549,22 @@ function OPDSBrowserPage() {
       }
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [user, state.baseURL, appService, libraryLoaded],
+    [user, state.baseURL, booted, libraryLoaded, fsWriter, runEffect],
   );
 
   const handleStream = useCallback(
     async (href: string, count: number, title: string, author: string) => {
-      if (!appService || !libraryLoaded) return;
+      if (!booted || !libraryLoaded) return;
       try {
         const url = resolveURL(href, state.baseURL);
         const psePath = buildPseStreamFileName({ url, catalogId, count, title, author });
         const { library, setLibrary } = useLibraryStore.getState();
-        const book = await appService.importBook(psePath, library, { transient: true });
+        const { imported, library: nextLibrary } = await runEffect(
+          importBooks(library, [{ file: psePath }], { transient: true, persist: false }),
+        );
+        const book = imported[0];
         if (book) {
-          setLibrary(library);
+          setLibrary(nextLibrary);
           navigateToReader(router, [book.hash]);
         }
       } catch (e) {
@@ -536,12 +575,12 @@ function OPDSBrowserPage() {
         });
       }
     },
-    [state.baseURL, catalogId, appService, libraryLoaded, router, _],
+    [state.baseURL, catalogId, booted, libraryLoaded, router, _],
   );
 
   const handleGenerateCachedImageUrl = useCallback(
     async (url: string) => {
-      if (!appService) return url;
+      if (!booted) return url;
       const username = usernameRef.current || '';
       const password = passwordRef.current || '';
       const customHeaders = customHeadersRef.current;
@@ -550,10 +589,12 @@ function OPDSBrowserPage() {
       }
 
       const cachedKey = `img_${md5(url)}.png`;
-      const cachePrefix = await appService.resolveFilePath('', 'Cache');
+      const cachePrefix = await runEffect(
+        Effect.flatMap(PathResolver, (r) => r.absolute('', 'Cache')),
+      );
       const cachedPath = `${cachePrefix}/${cachedKey}`;
-      if (await appService.exists(cachedPath, 'None')) {
-        return await appService.getImageURL(cachedPath);
+      if (await runEffect(Effect.flatMap(FileSystem, (fs) => fs.exists(cachedPath, 'None')))) {
+        return await runEffect(Effect.flatMap(FileSystem, (fs) => fs.getUrl(cachedPath)));
       } else {
         const useProxy = needsProxy(url);
         let downloadUrl = useProxy ? getProxiedURL(url, '', true, customHeaders) : url;
@@ -570,7 +611,7 @@ function OPDSBrowserPage() {
           }
         }
         await downloadFile({
-          appService,
+          appService: fsWriter,
           dst: cachedPath,
           cfp: '',
           url: downloadUrl,
@@ -578,10 +619,10 @@ function OPDSBrowserPage() {
           skipSslVerification: true,
           headers,
         });
-        return await appService.getImageURL(cachedPath);
+        return await runEffect(Effect.flatMap(FileSystem, (fs) => fs.getUrl(cachedPath)));
       }
     },
-    [appService],
+    [booted, fsWriter, runEffect],
   );
 
   const handleBack = useCallback(() => {
@@ -655,7 +696,7 @@ function OPDSBrowserPage() {
     <div
       className={clsx(
         'bg-base-100 flex h-screen select-none flex-col',
-        appService?.hasRoundedWindow && isRoundedWindow && 'window-border rounded-window',
+        platformInfo.hasRoundedWindow && isRoundedWindow && 'window-border rounded-window',
       )}
     >
       <div

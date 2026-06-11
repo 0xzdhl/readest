@@ -14,8 +14,8 @@
  * `ctx.container` instead of a global `<main>` element so the renderer can
  * coexist with other tabs in the same popup.
  */
-import type { DictionaryProvider, DictionaryLookupOutcome } from '../types';
-import { BUILTIN_PROVIDER_IDS } from '../types';
+import type { DictionaryProvider, DictionaryLookupOutcome } from '@/domain/dictionaries';
+import { BUILTIN_PROVIDER_IDS } from '@/domain/dictionaries';
 import { fetchChineseDefinition } from '../chineseDict';
 import { normalizedLangCode } from '@/utils/lang';
 import { stubTranslation as _ } from '@/utils/misc';

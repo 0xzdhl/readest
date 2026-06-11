@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useReaderStore } from '@/store/readerStore';
-import { useEnv } from '@/context/EnvContext';
-import type { FoliateView } from '@/types/view';
+import type { FoliateView } from '@/domain/view';
 import { eventDispatcher } from '@/utils/event';
 import { saveViewSettings } from '@/helpers/settings';
 import { ParagraphIterator } from '@/utils/paragraph';
@@ -22,7 +21,6 @@ export interface ParagraphState {
 }
 
 export const useParagraphMode = ({ bookKey, viewRef }: UseParagraphModeProps) => {
-  const { envConfig } = useEnv();
   const { getViewSettings, setViewSettings, getProgress } = useReaderStore();
 
   const iteratorRef = useRef<ParagraphIterator | null>(null);
@@ -380,7 +378,7 @@ export const useParagraphMode = ({ bookKey, viewRef }: UseParagraphModeProps) =>
 
       if (newEnabled) {
         setViewSettings(bookKeyRef.current, { ...settings, paragraphMode: newConfig });
-        saveViewSettings(envConfig, bookKeyRef.current, 'paragraphMode', newConfig, true, false);
+        saveViewSettings(bookKeyRef.current, 'paragraphMode', newConfig, true, false);
 
         const success = await initIterator();
         if (success) {
@@ -388,7 +386,7 @@ export const useParagraphMode = ({ bookKey, viewRef }: UseParagraphModeProps) =>
         }
       } else {
         setViewSettings(bookKeyRef.current, { ...settings, paragraphMode: newConfig });
-        saveViewSettings(envConfig, bookKeyRef.current, 'paragraphMode', newConfig, true, false);
+        saveViewSettings(bookKeyRef.current, 'paragraphMode', newConfig, true, false);
 
         const view = viewRef.current;
         const iterator = iteratorRef.current;
@@ -419,7 +417,6 @@ export const useParagraphMode = ({ bookKey, viewRef }: UseParagraphModeProps) =>
     getViewSettings,
     setViewSettings,
     getProgress,
-    envConfig,
     initIterator,
     focusCurrentParagraph,
     viewRef,

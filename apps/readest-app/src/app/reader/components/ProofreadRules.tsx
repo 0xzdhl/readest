@@ -1,14 +1,13 @@
 import clsx from 'clsx';
 import React, { useEffect, useState } from 'react';
 import { RiEditLine, RiDeleteBin7Line } from 'react-icons/ri';
-import { useEnv } from '@/context/EnvContext';
 import { useTranslation } from '@/hooks/useTranslation';
 import { useSettingsStore } from '@/store/settingsStore';
 import { useReaderStore } from '@/store/readerStore';
 import { useSidebarStore } from '@/store/sidebarStore';
 import { useBookDataStore } from '@/store/bookDataStore';
 import { useProofreadStore } from '@/store/proofreadStore';
-import type { ProofreadRule, ProofreadScope } from '@/types/book';
+import type { ProofreadRule, ProofreadScope } from '@/domain/book';
 import { eventDispatcher } from '@/utils/event';
 import Dialog from '@/components/Dialog';
 
@@ -182,7 +181,6 @@ const useReplacementRules = (bookKey: string | null) => {
 
 export const ProofreadRulesManager: React.FC = () => {
   const _ = useTranslation();
-  const { envConfig } = useEnv();
   const { recreateViewer } = useReaderStore();
   const { sideBarBookKey } = useSidebarStore();
   const { updateRule, removeRule } = useProofreadStore();
@@ -232,7 +230,7 @@ export const ProofreadRulesManager: React.FC = () => {
   const saveEdit = async () => {
     if (!editing.id || !editing.scope || !sideBarBookKey) return;
 
-    await updateRule(envConfig, sideBarBookKey, editing.id, {
+    await updateRule(sideBarBookKey, editing.id, {
       scope: editing.scope,
       pattern: editing.pattern,
       replacement: editing.replacement,
@@ -243,15 +241,15 @@ export const ProofreadRulesManager: React.FC = () => {
     cancelEdit();
 
     if (!editing.onlyForTTS) {
-      recreateViewer(envConfig, sideBarBookKey);
+      recreateViewer(sideBarBookKey);
     }
   };
 
   const deleteRule = async (rule: ProofreadRule) => {
     if (!sideBarBookKey) return;
-    await removeRule(envConfig, sideBarBookKey, rule.id, rule.scope);
+    await removeRule(sideBarBookKey, rule.id, rule.scope);
     if (!rule.onlyForTTS) {
-      recreateViewer(envConfig, sideBarBookKey);
+      recreateViewer(sideBarBookKey);
     }
   };
 

@@ -11,7 +11,7 @@
  * pragmatically opens externally; a Tauri-native webview overlay is a
  * follow-up if there's demand.
  */
-import type { DictionaryProvider, WebSearchEntry } from '../types';
+import type { DictionaryProvider, WebSearchEntry } from '@/domain/dictionaries';
 import { substituteUrlTemplate } from '../webSearchTemplates';
 import { isTauriAppPlatform } from '@/services/environment';
 import { stubTranslation as _ } from '@/utils/misc';

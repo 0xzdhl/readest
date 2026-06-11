@@ -4,8 +4,7 @@ import React, { useRef, useState } from 'react';
 import { MdEdit, MdDelete } from 'react-icons/md';
 
 import { marked } from 'marked';
-import { useEnv } from '@/context/EnvContext';
-import type { BookNote, HighlightColor } from '@/types/book';
+import type { BookNote, HighlightColor } from '@/domain/book';
 import { useSettingsStore } from '@/store/settingsStore';
 import { useReaderStore } from '@/store/readerStore';
 import { useNotebookStore } from '@/store/notebookStore';
@@ -27,7 +26,6 @@ interface BooknoteItemProps {
 
 const BooknoteItem: React.FC<BooknoteItemProps> = ({ bookKey, item, isNearest, onClick }) => {
   const _ = useTranslation();
-  const { envConfig } = useEnv();
   const { settings } = useSettingsStore();
   const { getConfig, saveConfig, updateBooknotes } = useBookDataStore();
   const { getProgress, getView, getViewsById } = useReaderStore();
@@ -71,7 +69,7 @@ const BooknoteItem: React.FC<BooknoteItemProps> = ({ bookKey, item, isNearest, o
     });
     const updatedConfig = updateBooknotes(bookKey, booknotes);
     if (updatedConfig) {
-      saveConfig(envConfig, bookKey, updatedConfig, settings);
+      saveConfig(bookKey, updatedConfig, settings);
     }
   };
 
@@ -97,7 +95,7 @@ const BooknoteItem: React.FC<BooknoteItemProps> = ({ bookKey, item, isNearest, o
     annotations[existingIndex]!.text = editorDraft;
     const updatedConfig = updateBooknotes(bookKey, annotations);
     if (updatedConfig) {
-      saveConfig(envConfig, bookKey, updatedConfig, settings);
+      saveConfig(bookKey, updatedConfig, settings);
     }
   };
 

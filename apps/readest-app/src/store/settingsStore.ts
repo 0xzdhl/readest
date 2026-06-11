@@ -1,7 +1,8 @@
 import { create } from 'zustand';
 import i18n from '@/i18n/i18n';
-import type { EnvConfigType } from '@/services/environment';
-import type { SystemSettings } from '@/types/settings';
+import type { SystemSettings } from '@/domain/settings';
+import { getClientRuntime } from '@/runtime/clientRuntime';
+import { SaveSettings } from '@/application/usecases/settings/SaveSettings';
 import { initDayjs } from '@/utils/time';
 
 export type FontPanelView = 'main-fonts' | 'custom-fonts';
@@ -27,7 +28,7 @@ interface SettingsState {
    */
   requestedSubPage: string | null;
   setSettings: (settings: SystemSettings) => void;
-  saveSettings: (envConfig: EnvConfigType, settings: SystemSettings) => Promise<void>;
+  saveSettings: (settings: SystemSettings) => Promise<void>;
   setSettingsDialogBookKey: (bookKey: string) => void;
   setSettingsDialogOpen: (open: boolean) => void;
   setFontPanelView: (view: FontPanelView) => void;
@@ -47,9 +48,8 @@ export const useSettingsStore = create<SettingsState>((set) => ({
   requestedPanel: null,
   requestedSubPage: null,
   setSettings: (settings) => set({ settings }),
-  saveSettings: async (envConfig: EnvConfigType, settings: SystemSettings) => {
-    const appService = await envConfig.getAppService();
-    await appService.saveSettings(settings);
+  saveSettings: async (settings: SystemSettings) => {
+    await getClientRuntime().runPromise(SaveSettings(settings));
   },
   setSettingsDialogBookKey: (bookKey) => set({ settingsDialogBookKey: bookKey }),
   setSettingsDialogOpen: (open) => set({ isSettingsDialogOpen: open }),

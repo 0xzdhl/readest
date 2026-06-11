@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import type { BookMetadata } from '@/libs/document';
+import type { BookMetadata } from '@/domain/document';
 import {
   validateAndNormalizeDate,
   validateAndNormalizeLanguage,

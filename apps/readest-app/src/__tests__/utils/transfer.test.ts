@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
-import { webDownload, type ProgressPayload } from '@/utils/transfer';
+import { webDownload } from '@/utils/transfer';
+import type { ProgressPayload } from '@/domain/transfer';
 
 const buildResponse = (
   body: Uint8Array,

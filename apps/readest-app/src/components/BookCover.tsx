@@ -1,7 +1,7 @@
 import clsx from 'clsx';
 import { memo, useEffect, useRef, useState } from 'react';
-import type { Book } from '@/types/book';
-import type { LibraryCoverFitType, LibraryViewModeType } from '@/types/settings';
+import type { Book } from '@/domain/book';
+import type { LibraryCoverFitType, LibraryViewModeType } from '@/domain/settings';
 import { formatAuthors, formatTitle } from '@/utils/book';
 
 interface BookCoverProps {

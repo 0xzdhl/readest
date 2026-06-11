@@ -1,5 +1,5 @@
-import type { CustomFont, CustomFontInfo } from '@/styles/fonts';
-import type { FileSystem } from '@/types/system';
+import type { CustomFont, CustomFontInfo } from '@/domain/fonts';
+import type { FileSystem } from '@/domain/system';
 import { parseFontInfo } from '@/utils/font';
 import { md5, partialMd5 } from '@/utils/md5';
 import { uniqueId } from '@/utils/misc';

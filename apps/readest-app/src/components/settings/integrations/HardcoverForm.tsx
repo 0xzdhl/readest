@@ -1,6 +1,5 @@
 import clsx from 'clsx';
 import React, { useState } from 'react';
-import { useEnv } from '@/context/EnvContext';
 import { useTranslation } from '@/hooks/useTranslation';
 import { useSettingsStore } from '@/store/settingsStore';
 import { eventDispatcher } from '@/utils/event';
@@ -14,7 +13,6 @@ interface HardcoverFormProps {
 
 const HardcoverForm: React.FC<HardcoverFormProps> = ({ onBack }) => {
   const _ = useTranslation();
-  const { envConfig } = useEnv();
   const { settings, setSettings, saveSettings } = useSettingsStore();
 
   const [accessToken, setAccessToken] = useState('');
@@ -25,8 +23,7 @@ const HardcoverForm: React.FC<HardcoverFormProps> = ({ onBack }) => {
   const handleConnect = async () => {
     setIsConnecting(true);
     try {
-      const appService = await envConfig.getAppService();
-      const mapStore = new HardcoverSyncMapStore(appService);
+      const mapStore = new HardcoverSyncMapStore();
       const client = new HardcoverClient({ accessToken }, mapStore);
       const { valid, isNetworkError } = await client.validateToken();
       if (valid) {
@@ -39,7 +36,7 @@ const HardcoverForm: React.FC<HardcoverFormProps> = ({ onBack }) => {
           },
         };
         setSettings(newSettings);
-        await saveSettings(envConfig, newSettings);
+        await saveSettings(newSettings);
       } else if (isNetworkError) {
         eventDispatcher.dispatch('toast', {
           message: _('Unable to connect to Hardcover. Please check your network connection.'),
@@ -63,7 +60,7 @@ const HardcoverForm: React.FC<HardcoverFormProps> = ({ onBack }) => {
       hardcover: { enabled: false, accessToken: '', lastSyncedAt: 0 },
     };
     setSettings(newSettings);
-    await saveSettings(envConfig, newSettings);
+    await saveSettings(newSettings);
     eventDispatcher.dispatch('toast', { message: _('Disconnected from Hardcover'), type: 'info' });
   };
 
@@ -73,7 +70,7 @@ const HardcoverForm: React.FC<HardcoverFormProps> = ({ onBack }) => {
       hardcover: { ...settings.hardcover, enabled: !settings.hardcover?.enabled },
     };
     setSettings(newSettings);
-    await saveSettings(envConfig, newSettings);
+    await saveSettings(newSettings);
   };
 
   const lastSyncedAt = settings.hardcover?.lastSyncedAt ?? 0;

@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef } from 'react';
 import { useRouter } from '@tanstack/react-router';
 import { getCurrent } from '@tauri-apps/plugin-deep-link';
-import { useEnv } from '@/context/EnvContext';
+import { useBooted } from '@/context/EffectRuntimeProvider';
 import { useLibraryStore } from '@/store/libraryStore';
 import { useReaderStore } from '@/store/readerStore';
 import { isTauriAppPlatform } from '@/services/environment';
@@ -44,7 +44,7 @@ let coldStartConsumed = false;
 export function useOpenAnnotationLink() {
   const _ = useTranslation();
   const router = useRouter();
-  const { appService } = useEnv();
+  const booted = useBooted();
   const getBookByHash = useLibraryStore((s) => s.getBookByHash);
   const libraryLoaded = useLibraryStore((s) => s.libraryLoaded);
   const pending = useRef<AnnotationDeepLink | null>(null);
@@ -82,7 +82,7 @@ export function useOpenAnnotationLink() {
   );
 
   useEffect(() => {
-    if (!isTauriAppPlatform() || !appService) return;
+    if (!isTauriAppPlatform() || !booted) return;
 
     const handle = (url: string) => {
       const parsed = parseAnnotationDeepLink(url);
@@ -112,7 +112,7 @@ export function useOpenAnnotationLink() {
     return () => {
       eventDispatcher.off('app-incoming-url', onIncoming);
     };
-  }, [appService, resolveAndNavigate]);
+  }, [booted, resolveAndNavigate]);
 
   // Replay any deferred deep link once the library hydrates.
   useEffect(() => {

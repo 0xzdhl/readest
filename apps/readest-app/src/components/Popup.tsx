@@ -1,6 +1,6 @@
 import clsx from 'clsx';
 import { isPointInRect } from '@/utils/sel';
-import type { Position } from '@/utils/sel';
+import type { Position } from '@/domain/selection';
 import { useEffect, useRef, useState } from 'react';
 import { useResponsiveSize } from '@/hooks/useResponsiveSize';
 import { useKeyDownActions } from '@/hooks/useKeyDownActions';

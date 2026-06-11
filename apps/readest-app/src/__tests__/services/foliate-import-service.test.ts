@@ -9,7 +9,7 @@ import {
 } from '@/services/annotation/providers/foliate';
 import type { FoliateAnnotation, FoliateData } from '@/services/annotation/providers/foliate';
 import { mergeBookConfigs } from '@/services/backupService';
-import type { BookConfig, BookNote } from '@/types/book';
+import type { BookConfig, BookNote } from '@/domain/book';
 
 const BOOK_HASH = 'abc123';
 

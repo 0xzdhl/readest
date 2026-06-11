@@ -27,8 +27,7 @@ import {
   publishSettingsIfChanged,
 } from '@/services/sync/replicaSettingsSync';
 import { useSettingsStore } from '@/store/settingsStore';
-import type { SystemSettings } from '@/types/settings';
-import type { EnvConfigType } from '@/services/environment';
+import type { SystemSettings } from '@/domain/settings';
 
 const baseHighlight = {
   customThemes: [],
@@ -46,8 +45,6 @@ const makeSettings = (overrides: Partial<SystemSettings> = {}): SystemSettings =
     hardcover: { accessToken: '' },
     ...overrides,
   }) as unknown as SystemSettings;
-
-const makeEnvConfig = (): EnvConfigType => ({ getAppService: vi.fn() }) as unknown as EnvConfigType;
 
 /**
  * Opt the current test into credential sync. Most tests in this file
@@ -491,9 +488,8 @@ describe('publishSettingsIfChanged', () => {
 
 describe('applyRemoteSettings', () => {
   test('merges patch into useSettingsStore and persists', () => {
-    const env = makeEnvConfig();
     const userColors = [{ name: 'mint', color: '#a8e6cf' }];
-    applyRemoteSettings(env, {
+    applyRemoteSettings({
       name: 'singleton',
       patch: {
         globalReadSettings: { userHighlightColors: userColors },
@@ -511,10 +507,8 @@ describe('applyRemoteSettings', () => {
   test('applying remote does NOT echo the remote field back on the next publish', async () => {
     await publishSettingsIfChanged(useSettingsStore.getState().settings);
     publishMock.mockReset();
-
-    const env = makeEnvConfig();
     const userColors = [{ name: 'mint', color: '#a8e6cf' }];
-    applyRemoteSettings(env, {
+    applyRemoteSettings({
       name: 'singleton',
       patch: {
         globalReadSettings: { userHighlightColors: userColors },
@@ -527,9 +521,8 @@ describe('applyRemoteSettings', () => {
   });
 
   test('empty patch is a no-op', () => {
-    const env = makeEnvConfig();
     const before = useSettingsStore.getState().settings;
-    applyRemoteSettings(env, { name: 'singleton', patch: {} });
+    applyRemoteSettings({ name: 'singleton', patch: {} });
     expect(useSettingsStore.getState().settings).toBe(before);
     expect(useSettingsStore.getState().saveSettings).not.toHaveBeenCalled();
   });
@@ -545,8 +538,7 @@ describe('applyRemoteSettings', () => {
         webSearches: [],
       },
     });
-    const env = makeEnvConfig();
-    applyRemoteSettings(env, {
+    applyRemoteSettings({
       name: 'singleton',
       patch: {
         dictionarySettings: {
@@ -566,7 +558,6 @@ describe('applyRemoteSettings', () => {
   });
 
   test('deep-merges dictionarySettings without clobbering local fields', () => {
-    const env = makeEnvConfig();
     useSettingsStore.setState({
       ...useSettingsStore.getState(),
       settings: makeSettings({
@@ -578,7 +569,7 @@ describe('applyRemoteSettings', () => {
         },
       } as Partial<SystemSettings>),
     });
-    applyRemoteSettings(env, {
+    applyRemoteSettings({
       name: 'singleton',
       patch: {
         dictionarySettings: {

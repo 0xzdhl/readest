@@ -8,7 +8,7 @@ import { PiDotsThreeCircle } from 'react-icons/pi';
 import { MdOutlineMenu } from 'react-icons/md';
 import { IoMdCloseCircle } from 'react-icons/io';
 
-import { useEnv } from '@/context/EnvContext';
+import { usePlatformInfo } from '@/context/EffectRuntimeProvider';
 import { useThemeStore } from '@/store/themeStore';
 import { useTranslation } from '@/hooks/useTranslation';
 import { useLibraryStore } from '@/store/libraryStore';
@@ -50,7 +50,7 @@ const LibraryHeader: React.FC<LibraryHeaderProps> = ({
   const router = useRouter();
   const location = useLocation();
   const searchParams = new URLSearchParams(location.searchStr);
-  const { appService } = useEnv();
+  const platformInfo = usePlatformInfo();
   const { systemUIVisible, statusBarHeight } = useThemeStore();
   const { currentBookshelf } = useLibraryStore();
   const { isTrafficLightVisible } = useTrafficLight();
@@ -84,7 +84,7 @@ const LibraryHeader: React.FC<LibraryHeaderProps> = ({
     debouncedUpdateQueryParam(newQuery);
   };
 
-  const windowButtonVisible = appService?.hasWindowBar && !isTrafficLightVisible;
+  const windowButtonVisible = platformInfo.hasWindowBar && !isTrafficLightVisible;
   const currentBooksCount = currentBookshelf.reduce(
     (acc, item) => acc + ('books' in item ? item.books.length : 1),
     0,
@@ -92,7 +92,7 @@ const LibraryHeader: React.FC<LibraryHeaderProps> = ({
 
   if (!insets) return null;
 
-  const isMobile = appService?.isMobile || window.innerWidth <= 640;
+  const isMobile = platformInfo.isMobile || window.innerWidth <= 640;
 
   return (
     <div
@@ -103,9 +103,9 @@ const LibraryHeader: React.FC<LibraryHeaderProps> = ({
         isTrafficLightVisible ? 'pl-16' : 'pl-0 sm:pl-2',
       )}
       style={{
-        marginTop: appService?.hasSafeAreaInset
+        marginTop: platformInfo.hasSafeAreaInset
           ? `max(${insets.top}px, ${systemUIVisible ? statusBarHeight : 0}px)`
-          : appService?.hasTrafficLight
+          : platformInfo.hasTrafficLight
             ? '-2px'
             : '0px',
       }}
@@ -217,7 +217,7 @@ const LibraryHeader: React.FC<LibraryHeaderProps> = ({
             >
               <SettingsMenu onPullLibrary={onPullLibrary} />
             </Dropdown>
-            {appService?.hasWindowBar && (
+            {platformInfo.hasWindowBar && (
               <WindowButtons
                 headerRef={headerRef}
                 showMinimize={windowButtonVisible}

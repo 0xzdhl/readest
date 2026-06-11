@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { wiktionaryProvider } from '@/services/dictionaries/providers/wiktionaryProvider';
-import { BUILTIN_PROVIDER_IDS } from '@/services/dictionaries/types';
+import { BUILTIN_PROVIDER_IDS } from '@/domain/dictionaries';
 
 const sampleResponse = {
   en: [

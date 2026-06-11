@@ -1,4 +1,4 @@
-import type { FoliateView } from '@/types/view';
+import type { FoliateView } from '@/domain/view';
 import type { RsvpWord, RsvpState, RsvpPosition, RsvpStopPosition, RsvpStartChoice } from './types';
 import { containsCJK, splitTextIntoWords, getHyphenParts } from './utils';
 import { compare as compareCFI } from 'foliate-js/epubcfi.js';

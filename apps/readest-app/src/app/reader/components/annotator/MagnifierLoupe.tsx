@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 
-import type { Point } from '@/utils/sel';
+import type { Point } from '@/domain/selection';
 import { useReaderStore } from '@/store/readerStore';
 import { useResponsiveSize } from '@/hooks/useResponsiveSize';
 

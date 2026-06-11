@@ -1,7 +1,7 @@
 import clsx from 'clsx';
 import type React from 'react';
 
-import type { AnnotationToolType } from '@/types/annotator';
+import type { AnnotationToolType } from '@/domain/annotator';
 import { useTranslation } from '@/hooks/useTranslation';
 import { annotationToolQuickActions } from './AnnotationTools';
 import { eventDispatcher } from '@/utils/event';

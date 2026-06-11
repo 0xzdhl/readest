@@ -32,7 +32,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { cn } from '@/utils/tailwind';
-import type { ScoredChunk } from '@/services/ai/types';
+import type { ScoredChunk } from '@/domain/ai';
 
 interface ThreadProps {
   sources?: ScoredChunk[];

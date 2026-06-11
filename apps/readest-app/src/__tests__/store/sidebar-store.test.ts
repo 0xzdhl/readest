@@ -1,6 +1,6 @@
 import { describe, test, expect, beforeEach } from 'vitest';
 import { useSidebarStore } from '@/store/sidebarStore';
-import type { BookNote, BookNoteType, BookSearchResult } from '@/types/book';
+import type { BookNote, BookNoteType, BookSearchResult } from '@/domain/book';
 
 beforeEach(() => {
   useSidebarStore.setState({

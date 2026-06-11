@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react';
-import type { BookSearchMatch, BookSearchResult, SearchExcerpt } from '@/types/book';
+import type { BookSearchMatch, BookSearchResult, SearchExcerpt } from '@/domain/book';
 import { useReaderStore } from '@/store/readerStore';
 import { findNearestCfi } from '@/utils/cfi';
 import useScrollToItem from '../../hooks/useScrollToItem';

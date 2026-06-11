@@ -2,7 +2,6 @@ import clsx from 'clsx';
 import type React from 'react';
 import { useEffect, useState } from 'react';
 import { useAuth } from '@/context/AuthContext';
-import { useEnv } from '@/context/EnvContext';
 import { saveViewSettings } from '@/helpers/settings';
 import { useResetViewSettings } from '@/hooks/useResetSettings';
 import { useTranslation } from '@/hooks/useTranslation';
@@ -14,7 +13,7 @@ import {
 } from '@/services/translators';
 import { useReaderStore } from '@/store/readerStore';
 import { useSettingsStore } from '@/store/settingsStore';
-import type { ConvertChineseVariant } from '@/types/book';
+import type { ConvertChineseVariant } from '@/domain/book';
 import { isCJKEnv } from '@/utils/misc';
 import { getDirFromLanguage } from '@/utils/rtl';
 import CustomDictionaries from './CustomDictionaries';
@@ -35,7 +34,6 @@ const LangPanel: React.FC<SettingsPanelPanelProp> = ({ bookKey, onRegisterReset 
   // synchronous token.
   const { user } = useAuth();
   const hasAuth = !!user;
-  const { envConfig } = useEnv();
   const { settings, applyUILanguage, activeSettingsItemId, setActiveSettingsItemId } =
     useSettingsStore();
   const { getView, getViewSettings, setViewSettings, recreateViewer } = useReaderStore();
@@ -133,7 +131,7 @@ const LangPanel: React.FC<SettingsPanelPanelProp> = ({ bookKey, onRegisterReset 
   const handleSelectTranslationProvider = (event: React.ChangeEvent<HTMLSelectElement>) => {
     const option = event.target.value;
     setTranslationProvider(option);
-    saveViewSettings(envConfig, bookKey, 'translationProvider', option, false, false);
+    saveViewSettings(bookKey, 'translationProvider', option, false, false);
     viewSettings.translationProvider = option;
     setViewSettings(bookKey, { ...viewSettings });
   };
@@ -147,7 +145,7 @@ const LangPanel: React.FC<SettingsPanelPanelProp> = ({ bookKey, onRegisterReset 
   const handleSelectTargetLang = (event: React.ChangeEvent<HTMLSelectElement>) => {
     const option = event.target.value;
     setTranslateTargetLang(option);
-    saveViewSettings(envConfig, bookKey, 'translateTargetLang', option, false, false);
+    saveViewSettings(bookKey, 'translateTargetLang', option, false, false);
     viewSettings.translateTargetLang = option;
     setViewSettings(bookKey, { ...viewSettings });
   };
@@ -155,7 +153,7 @@ const LangPanel: React.FC<SettingsPanelPanelProp> = ({ bookKey, onRegisterReset 
   const handleSelectTTSText = (event: React.ChangeEvent<HTMLSelectElement>) => {
     const option = event.target.value;
     setTtsReadAloudText(option);
-    saveViewSettings(envConfig, bookKey, 'ttsReadAloudText', option, false, false);
+    saveViewSettings(bookKey, 'ttsReadAloudText', option, false, false);
   };
 
   const getTTSTextOptions = () => {
@@ -170,7 +168,7 @@ const LangPanel: React.FC<SettingsPanelPanelProp> = ({ bookKey, onRegisterReset 
     if (uiLanguage === viewSettings.uiLanguage) return;
     const sameDir = getDirFromLanguage(uiLanguage) === getDirFromLanguage(viewSettings.uiLanguage);
     applyUILanguage(uiLanguage);
-    saveViewSettings(envConfig, bookKey, 'uiLanguage', uiLanguage, false, false).then(() => {
+    saveViewSettings(bookKey, 'uiLanguage', uiLanguage, false, false).then(() => {
       if (!sameDir) window.location.reload();
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -178,16 +176,9 @@ const LangPanel: React.FC<SettingsPanelPanelProp> = ({ bookKey, onRegisterReset 
 
   useEffect(() => {
     if (translationEnabled === viewSettings.translationEnabled) return;
-    saveViewSettings(
-      envConfig,
-      bookKey,
-      'translationEnabled',
-      translationEnabled,
-      true,
-      false,
-    ).then(() => {
+    saveViewSettings(bookKey, 'translationEnabled', translationEnabled, true, false).then(() => {
       if (!showTranslateSource && translationEnabled) {
-        recreateViewer(envConfig, bookKey);
+        recreateViewer(bookKey);
       }
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -195,37 +186,25 @@ const LangPanel: React.FC<SettingsPanelPanelProp> = ({ bookKey, onRegisterReset 
 
   useEffect(() => {
     if (showTranslateSource === viewSettings.showTranslateSource) return;
-    saveViewSettings(
-      envConfig,
-      bookKey,
-      'showTranslateSource',
-      showTranslateSource,
-      false,
-      false,
-    ).then(() => {
-      recreateViewer(envConfig, bookKey);
+    saveViewSettings(bookKey, 'showTranslateSource', showTranslateSource, false, false).then(() => {
+      recreateViewer(bookKey);
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [showTranslateSource]);
 
   useEffect(() => {
     if (ttsReadAloudText === viewSettings.ttsReadAloudText) return;
-    saveViewSettings(envConfig, bookKey, 'ttsReadAloudText', ttsReadAloudText, false, false);
+    saveViewSettings(bookKey, 'ttsReadAloudText', ttsReadAloudText, false, false);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [ttsReadAloudText]);
 
   useEffect(() => {
     if (replaceQuotationMarks === viewSettings.replaceQuotationMarks) return;
-    saveViewSettings(
-      envConfig,
-      bookKey,
-      'replaceQuotationMarks',
-      replaceQuotationMarks,
-      false,
-      false,
-    ).then(() => {
-      recreateViewer(envConfig, bookKey);
-    });
+    saveViewSettings(bookKey, 'replaceQuotationMarks', replaceQuotationMarks, false, false).then(
+      () => {
+        recreateViewer(bookKey);
+      },
+    );
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [replaceQuotationMarks]);
 
@@ -256,16 +235,11 @@ const LangPanel: React.FC<SettingsPanelPanelProp> = ({ bookKey, onRegisterReset 
 
   useEffect(() => {
     if (convertChineseVariant === viewSettings.convertChineseVariant) return;
-    saveViewSettings(
-      envConfig,
-      bookKey,
-      'convertChineseVariant',
-      convertChineseVariant,
-      false,
-      false,
-    ).then(() => {
-      recreateViewer(envConfig, bookKey);
-    });
+    saveViewSettings(bookKey, 'convertChineseVariant', convertChineseVariant, false, false).then(
+      () => {
+        recreateViewer(bookKey);
+      },
+    );
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [convertChineseVariant]);
 

@@ -2,7 +2,7 @@ import { describe, it, expect, beforeAll, vi } from 'vitest';
 import { readFileSync } from 'fs';
 import { resolve } from 'path';
 import { DocumentLoader, CFI } from '@/libs/document';
-import type { BookDoc, TOCItem } from '@/libs/document';
+import type { BookDoc, TOCItem } from '@/domain/document';
 import { computeBookNav, hydrateBookNav, updateToc, findTocItemBS } from '@/services/nav';
 
 // Simulates an annotation deep inside a section, past the chapter heading.

@@ -1,4 +1,4 @@
-import type { MigrationEntry, SchemaType } from '../migrate';
+import type { MigrationEntry, SchemaType } from '@/domain/migration';
 
 /**
  * Migration definitions for each schema type.

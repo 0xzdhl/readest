@@ -1,5 +1,5 @@
-import type { SystemSettings } from '@/types/settings';
-import type { FileSystem, AppPlatform, BaseDir } from '@/types/system';
+import type { SystemSettings } from '@/domain/settings';
+import type { FileSystem, AppPlatform, BaseDir } from '@/domain/system';
 import {
   type Book,
   type BookConfig,
@@ -9,7 +9,7 @@ import {
   type BookNote,
   FIXED_LAYOUT_FORMATS,
   type ImportBookOptions,
-} from '@/types/book';
+} from '@/domain/book';
 import {
   getDir,
   getLocalBookFilename,
@@ -22,10 +22,12 @@ import {
   getPrimaryLanguage,
   getMetadataHash,
 } from '@/utils/book';
-import type { BookNav } from '@/services/nav';
+import type { BookNav } from '@/domain/nav';
 import { partialMd5, md5 } from '@/utils/md5';
 import { getBaseFilename, getFilename } from '@/utils/path';
-import { type BookDoc, DocumentLoader, EXTS } from '@/libs/document';
+import { DocumentLoader } from '@/libs/document';
+import { EXTS } from '@/domain/document';
+import type { BookDoc } from '@/domain/document';
 import { isPseStreamFileName, openPseStreamBook, parsePseStreamFileName } from './opds/pseStream';
 import { DEFAULT_BOOK_SEARCH_CONFIG, DEFAULT_FIXED_LAYOUT_VIEW_SETTINGS } from './constants';
 import { isContentURI, isValidURL, makeSafeFilename } from '@/utils/misc';
@@ -210,8 +212,8 @@ export async function mergeBooks(
 
 /**
  * Options consumed by bookService.importBook. Extends the user-facing
- * ImportBookOptions with the required AppService callbacks that are bound by
- * the AppService wrapper.
+ * ImportBookOptions with the required callbacks that are bound by
+ * the service wrapper.
  */
 export interface ImportBookInternalOptions extends ImportBookOptions {
   saveBookConfig: (book: Book, config: BookConfig) => Promise<void>;

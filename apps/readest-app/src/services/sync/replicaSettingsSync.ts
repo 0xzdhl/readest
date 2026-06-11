@@ -23,8 +23,7 @@
  * encrypted path's snapshot is empty / matches "" so the diff doesn't
  * include them.
  */
-import type { SystemSettings } from '@/types/settings';
-import type { EnvConfigType } from '@/services/environment';
+import type { SystemSettings } from '@/domain/settings';
 import { useSettingsStore } from '@/store/settingsStore';
 import { publishReplicaUpsert } from '@/services/sync/replicaPublish';
 import {
@@ -308,10 +307,7 @@ export const publishSettingsIfChanged = async (settings: SystemSettings): Promis
  * cipher fingerprint the orchestrator captured so the next pull
  * doesn't re-prompt for unchanged ciphers.
  */
-export const applyRemoteSettings = (
-  envConfig: EnvConfigType,
-  record: SettingsRemoteRecord,
-): void => {
+export const applyRemoteSettings = (record: SettingsRemoteRecord): void => {
   const { settings, setSettings, saveSettings } = useSettingsStore.getState();
 
   // Persist cipher fingerprint regardless of patch content — the
@@ -338,7 +334,7 @@ export const applyRemoteSettings = (
 
   const merged: SystemSettings = mergeSettings(settings, record.patch);
   setSettings(merged);
-  saveSettings(envConfig, merged);
+  saveSettings(merged);
 
   // Mirror dictionarySettings into the customDictionaryStore so the
   // dictionary panel + reader popup re-render with the remote values

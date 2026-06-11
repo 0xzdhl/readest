@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { Effect } from 'effect';
 import {
   RiCheckboxCircleFill,
   RiErrorWarningFill,
@@ -6,11 +7,14 @@ import {
   RiUploadCloud2Line,
   RiDownloadCloud2Line,
 } from 'react-icons/ri';
-import { useEnv } from '@/context/EnvContext';
+import { usePlatformInfo, useBooted } from '@/context/EffectRuntimeProvider';
+import { useRunEffect } from '@/context/EffectRuntimeProvider';
 import { useTranslation } from '@/hooks/useTranslation';
 import { useFileSelector } from '@/hooks/useFileSelector';
 import { restoreFromBackupZip, saveBackupFile } from '@/services/backupService';
 import { useLibraryStore } from '@/store/libraryStore';
+import { LibraryRepository } from '@/application/repositories/LibraryRepository';
+import { FileSystem } from '@/application/ports/FileSystem';
 import Dialog from '@/components/Dialog';
 import { BACKUP_DIALOG_EVENT } from './backupDialog';
 
@@ -38,9 +42,11 @@ export const BackupWindow: React.FC<BackupWindowProps> = ({
   initialVisible = false,
 }) => {
   const _ = useTranslation();
-  const { appService } = useEnv();
+  const booted = useBooted();
+  const platformInfo = usePlatformInfo();
+  const runEffect = useRunEffect();
   const { setLibrary } = useLibraryStore();
-  const { selectFiles } = useFileSelector(appService, _);
+  const { selectFiles } = useFileSelector(_);
   const [isOpen, setIsOpen] = useState(initialVisible);
   const [status, setStatus] = useState<BackupStatus>('idle');
   const [progress, setProgress] = useState<BackupProgress>({ current: 0, total: 0 });
@@ -70,7 +76,7 @@ export const BackupWindow: React.FC<BackupWindowProps> = ({
   }, []);
 
   const handleBackup = async () => {
-    if (!appService) return;
+    if (!booted) return;
 
     setStatus('backing-up');
     setErrorMessage('');
@@ -79,7 +85,7 @@ export const BackupWindow: React.FC<BackupWindowProps> = ({
     try {
       const timestamp = new Date().toISOString().slice(0, 10);
       const filename = `readest-backup-${timestamp}.zip`;
-      const saved = await saveBackupFile(appService, filename, (current, total, currentFile) => {
+      const saved = await saveBackupFile(filename, (current, total, currentFile) => {
         setProgress({ current, total, currentFile });
       });
       if (saved) {
@@ -96,7 +102,7 @@ export const BackupWindow: React.FC<BackupWindowProps> = ({
   };
 
   const handleRestore = async () => {
-    if (!appService) return;
+    if (!booted) return;
 
     try {
       const result = await selectFiles({
@@ -113,17 +119,18 @@ export const BackupWindow: React.FC<BackupWindowProps> = ({
 
       const zipFile = result.files[0]?.file
         ? result.files[0].file
-        : await appService.openFile(result.files[0]!.path!, 'None');
+        : await runEffect(
+            Effect.flatMap(FileSystem, (fs) => fs.openFile(result.files[0]!.path!, 'None')),
+          );
 
       const { booksAdded, booksUpdated } = await restoreFromBackupZip(
-        appService,
         zipFile,
         (current, total, currentFile) => {
           setProgress({ current, total, currentFile });
         },
       );
 
-      const newLibrary = await appService.loadLibraryBooks();
+      const newLibrary = await runEffect(Effect.flatMap(LibraryRepository, (r) => r.load));
       const booksCount = newLibrary.reduce((sum, book) => sum + (book.deletedAt ? 0 : 1), 0);
       setLibrary(newLibrary);
       setResult({
@@ -159,7 +166,7 @@ export const BackupWindow: React.FC<BackupWindowProps> = ({
       isOpen={isOpen}
       title={_('Backup & Restore')}
       onClose={handleClose}
-      snapHeight={appService?.isMobile ? 0.45 : undefined}
+      snapHeight={platformInfo.isMobile ? 0.45 : undefined}
       dismissible={!isProcessing}
       boxClassName='sm:!w-[520px] sm:!max-w-screen-sm sm:h-auto'
     >

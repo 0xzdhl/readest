@@ -1,5 +1,5 @@
 import { it, expect } from 'vitest';
-import type { DatabaseService } from '@/types/database';
+import type { DatabaseService } from '@/domain/database';
 
 /**
  * Shared full-text search test cases for Turso's native FTS (Tantivy-based).

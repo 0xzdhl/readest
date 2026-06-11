@@ -1,13 +1,13 @@
 import clsx from 'clsx';
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { type as osType } from '@tauri-apps/plugin-os';
-import { useEnv } from '@/context/EnvContext';
+import { usePlatformInfo } from '@/context/EffectRuntimeProvider';
 import { useTranslation } from '@/hooks/useTranslation';
 import { useSettingsStore } from '@/store/settingsStore';
 import { eventDispatcher } from '@/utils/event';
 import { md5 } from '@/utils/md5';
 import { KOSyncClient } from '@/services/sync/KOSyncClient';
-import type { KOSyncChecksumMethod, KOSyncStrategy } from '@/types/settings';
+import type { KOSyncChecksumMethod, KOSyncStrategy } from '@/domain/settings';
 import { debounce } from '@/utils/debounce';
 import { getOSPlatform } from '@/utils/misc';
 import SubPageHeader from '../SubPageHeader';
@@ -20,7 +20,7 @@ interface KOSyncFormProps {
 const KOSyncForm: React.FC<KOSyncFormProps> = ({ onBack }) => {
   const _ = useTranslation();
   const { settings, setSettings, saveSettings } = useSettingsStore();
-  const { envConfig, appService } = useEnv();
+  const platformInfo = usePlatformInfo();
 
   const [url, setUrl] = useState(settings.kosync.serverUrl || '');
   const [username, setUsername] = useState(settings.kosync.username || '');
@@ -39,7 +39,7 @@ const KOSyncForm: React.FC<KOSyncFormProps> = ({ onBack }) => {
 
     const getOsName = async () => {
       let name = '';
-      if (appService?.appPlatform === 'tauri') {
+      if (platformInfo.appPlatform === 'tauri') {
         name = await osType();
       } else {
         const platform = getOSPlatform();
@@ -50,7 +50,8 @@ const KOSyncForm: React.FC<KOSyncFormProps> = ({ onBack }) => {
       setOsName(formatOsName(name));
     };
     getOsName();
-  }, [appService]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   useEffect(() => {
     const defaultName = osName ? `Readest (${osName})` : 'Readest';
@@ -67,9 +68,9 @@ const KOSyncForm: React.FC<KOSyncFormProps> = ({ onBack }) => {
         kosync: { ...settings.kosync, deviceName: newDeviceName },
       };
       setSettings(newSettings);
-      saveSettings(envConfig, newSettings);
+      saveSettings(newSettings);
     }, 500),
-    [settings, setSettings, saveSettings, envConfig],
+    [settings, setSettings, saveSettings],
   );
 
   const handleDeviceNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -95,7 +96,7 @@ const KOSyncForm: React.FC<KOSyncFormProps> = ({ onBack }) => {
     if (result.success) {
       const newSettings = { ...settings, kosync: config };
       setSettings(newSettings);
-      await saveSettings(envConfig, newSettings);
+      await saveSettings(newSettings);
     } else {
       eventDispatcher.dispatch('toast', {
         message: `${_('Failed to connect')}: ${_(result.message || 'Connection error')}`,
@@ -110,7 +111,7 @@ const KOSyncForm: React.FC<KOSyncFormProps> = ({ onBack }) => {
     const kosync = { ...settings.kosync, userkey: '', enabled: false };
     const newSettings = { ...settings, kosync };
     setSettings(newSettings);
-    await saveSettings(envConfig, newSettings);
+    await saveSettings(newSettings);
     setUsername('');
     eventDispatcher.dispatch('toast', { message: _('Disconnected'), type: 'info' });
   };
@@ -119,14 +120,14 @@ const KOSyncForm: React.FC<KOSyncFormProps> = ({ onBack }) => {
     const kosync = { ...settings.kosync, enabled: !settings.kosync.enabled };
     const newSettings = { ...settings, kosync };
     setSettings(newSettings);
-    await saveSettings(envConfig, newSettings);
+    await saveSettings(newSettings);
   };
 
   const handleStrategyChange = async (e: React.ChangeEvent<HTMLSelectElement>) => {
     const kosync = { ...settings.kosync, strategy: e.target.value as KOSyncStrategy };
     const newSettings = { ...settings, kosync };
     setSettings(newSettings);
-    await saveSettings(envConfig, newSettings);
+    await saveSettings(newSettings);
   };
 
   const handleChecksumMethodChange = async (e: React.ChangeEvent<HTMLSelectElement>) => {
@@ -136,7 +137,7 @@ const KOSyncForm: React.FC<KOSyncFormProps> = ({ onBack }) => {
     };
     const newSettings = { ...settings, kosync };
     setSettings(newSettings);
-    await saveSettings(envConfig, newSettings);
+    await saveSettings(newSettings);
   };
 
   const description: string = isConfigured

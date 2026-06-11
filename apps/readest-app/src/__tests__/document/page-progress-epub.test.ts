@@ -2,8 +2,8 @@ import { describe, it, expect, beforeAll, vi } from 'vitest';
 import { readFileSync } from 'fs';
 import { resolve } from 'path';
 import { DocumentLoader } from '@/libs/document';
-import type { BookDoc } from '@/libs/document';
-import type { FoliateView } from '@/types/view';
+import type { BookDoc } from '@/domain/document';
+import type { FoliateView } from '@/domain/view';
 import { wrappedFoliateView } from '@/types/view';
 
 // Register a stub paginator custom element so View.open() doesn't fail in jsdom

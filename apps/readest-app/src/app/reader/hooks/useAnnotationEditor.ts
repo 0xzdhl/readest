@@ -1,7 +1,7 @@
 import { useCallback, useRef, useState } from 'react';
-import type { BookNote } from '@/types/book';
-import { type Point, type TextSelection, snapRangeToWords } from '@/utils/sel';
-import { useEnv } from '@/context/EnvContext';
+import type { BookNote } from '@/domain/book';
+import { snapRangeToWords } from '@/utils/sel';
+import type { Point, TextSelection } from '@/domain/selection';
 import { useReaderStore } from '@/store/readerStore';
 import { useSettingsStore } from '@/store/settingsStore';
 import { useBookDataStore } from '@/store/bookDataStore';
@@ -24,7 +24,6 @@ export const useAnnotationEditor = ({
   getAnnotationText,
   setSelection,
 }: UseAnnotationEditorProps) => {
-  const { envConfig } = useEnv();
   const { settings } = useSettingsStore();
   const { getConfig, saveConfig, updateBooknotes } = useBookDataStore();
   const { getView, getProgress, getViewsById } = useReaderStore();
@@ -168,7 +167,7 @@ export const useAnnotationEditor = ({
             annotations[existingIndex] = updatedAnnotation;
             const updatedConfig = updateBooknotes(bookKey, annotations);
             if (updatedConfig) {
-              saveConfig(envConfig, bookKey, updatedConfig, settings);
+              saveConfig(bookKey, updatedConfig, settings);
             }
 
             setSelection({

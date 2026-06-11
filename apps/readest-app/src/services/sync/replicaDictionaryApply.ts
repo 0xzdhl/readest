@@ -1,5 +1,5 @@
 import type { FieldEnvelope, FieldsObject, Manifest, ReplicaRow } from '@/types/replica';
-import type { ImportedDictionary } from '@/services/dictionaries/types';
+import type { ImportedDictionary } from '@/domain/dictionaries';
 
 export interface UnwrappedDictionaryFields {
   name?: string;

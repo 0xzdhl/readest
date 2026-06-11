@@ -2,7 +2,7 @@ import type React from 'react';
 import { IoClose, IoExpand, IoAdd, IoRemove } from 'react-icons/io5';
 import { useTranslation } from '@/hooks/useTranslation';
 import { useThemeStore } from '@/store/themeStore';
-import type { Insets } from '@/types/misc';
+import type { Insets } from '@/domain/misc';
 
 interface ZoomControlsProps {
   gridInsets: Insets;

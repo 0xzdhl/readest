@@ -1,14 +1,10 @@
 import { cleanup, fireEvent, render, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import ReadingRuler from '@/app/reader/components/ReadingRuler';
-import type { ViewSettings } from '@/types/book';
+import type { ViewSettings } from '@/domain/book';
 import { eventDispatcher } from '@/utils/event';
 
 const saveViewSettings = vi.fn();
-
-vi.mock('@/context/EnvContext', () => ({
-  useEnv: () => ({ envConfig: {} }),
-}));
 
 vi.mock('@/store/readerStore', () => ({
   useReaderStore: () => ({

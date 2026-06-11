@@ -1,39 +1,33 @@
 import { useCallback, useEffect } from 'react';
-import { useEnv } from '@/context/EnvContext';
 import { useSettingsStore } from '@/store/settingsStore';
 import { useBookDataStore } from '@/store/bookDataStore';
 import { useTranslation } from '@/hooks/useTranslation';
 import { eventDispatcher } from '@/utils/event';
 import { HardcoverClient, HardcoverSyncMapStore } from '@/services/hardcover';
-import type { BookNote } from '@/types/book';
+import type { BookNote } from '@/domain/book';
 
 export const useHardcoverSync = (bookKey: string) => {
   const _ = useTranslation();
-  const { envConfig } = useEnv();
   const { getConfig, getBookData } = useBookDataStore();
 
-  const updateLastSyncedAt = useCallback(
-    async (timestamp: number) => {
-      const { settings, setSettings, saveSettings } = useSettingsStore.getState();
-      const newSettings = {
-        ...settings,
-        hardcover: { ...settings.hardcover, lastSyncedAt: timestamp },
-      };
-      setSettings(newSettings);
-      await saveSettings(envConfig, newSettings);
-    },
-    [envConfig],
-  );
+  const updateLastSyncedAt = useCallback(async (timestamp: number) => {
+    const { settings, setSettings, saveSettings } = useSettingsStore.getState();
+    const newSettings = {
+      ...settings,
+      hardcover: { ...settings.hardcover, lastSyncedAt: timestamp },
+    };
+    setSettings(newSettings);
+    await saveSettings(newSettings);
+  }, []);
 
   const getClient = useCallback(async () => {
     const { settings } = useSettingsStore.getState();
     if (!settings.hardcover?.enabled || !settings.hardcover?.accessToken) {
       return null;
     }
-    const appService = await envConfig.getAppService();
-    const mapStore = new HardcoverSyncMapStore(appService);
+    const mapStore = new HardcoverSyncMapStore();
     return new HardcoverClient(settings.hardcover, mapStore);
-  }, [envConfig]);
+  }, []);
 
   const pushNotes = useCallback(async () => {
     const config = getConfig(bookKey);

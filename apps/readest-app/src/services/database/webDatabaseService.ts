@@ -3,7 +3,7 @@ import type {
   DatabaseOpts,
   DatabaseRow,
   DatabaseService,
-} from '@/types/database';
+} from '@/domain/database';
 
 interface WasmRunResult {
   changes: number;

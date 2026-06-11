@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { migrateHighlightColorPrefs } from '@/services/settingsService';
-import type { ReadSettings } from '@/types/settings';
+import type { ReadSettings } from '@/domain/settings';
 
 const baseRead = (): ReadSettings =>
   ({

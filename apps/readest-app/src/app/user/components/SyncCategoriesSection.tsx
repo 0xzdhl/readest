@@ -1,5 +1,4 @@
 import clsx from 'clsx';
-import { useEnv } from '@/context/EnvContext';
 import { useTranslation } from '@/hooks/useTranslation';
 import { useSettingsStore } from '@/store/settingsStore';
 import {
@@ -7,7 +6,7 @@ import {
   isSyncCategoryLocked,
   type SyncCategory,
 } from '@/services/sync/syncCategories';
-import type { SystemSettings } from '@/types/settings';
+import type { SystemSettings } from '@/domain/settings';
 
 interface CategoryCopy {
   title: string;
@@ -62,7 +61,6 @@ const useCategoryCopy = (): Record<SyncCategory, CategoryCopy> => {
 
 export function SyncCategoriesSection() {
   const _ = useTranslation();
-  const { envConfig } = useEnv();
   const { settings, setSettings, saveSettings } = useSettingsStore();
   const copy = useCategoryCopy();
 
@@ -86,7 +84,7 @@ export function SyncCategoriesSection() {
       },
     };
     setSettings(updated);
-    void saveSettings(envConfig, updated);
+    void saveSettings(updated);
   };
 
   return (

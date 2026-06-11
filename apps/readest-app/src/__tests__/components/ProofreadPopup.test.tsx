@@ -1,27 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, fireEvent, waitFor, cleanup } from '@testing-library/react';
-import { EnvProvider } from '@/context/EnvContext';
 import ProofreadPopup from '@/app/reader/components/annotator/ProofreadPopup';
-
-vi.mock('@/services/environment', async () => {
-  const actual = await vi.importActual('@/services/environment');
-
-  const mockAppService = {
-    init: vi.fn().mockResolvedValue(undefined),
-    // EnvProvider's mount effect calls appService.loadSettings() to seed
-    // replica sync. Returning a settings object without replicaDeviceId
-    // makes init early-exit cleanly (no warn, no real network).
-    loadSettings: vi.fn().mockResolvedValue({}),
-    // Add any other methods from AppService interface
-  };
-
-  return {
-    ...actual,
-    default: {
-      getAppService: vi.fn().mockResolvedValue(mockAppService),
-    },
-  };
-});
 
 global.ResizeObserver = class ResizeObserver {
   observe() {}
@@ -30,7 +9,7 @@ global.ResizeObserver = class ResizeObserver {
 };
 
 function renderWithProviders(ui: React.ReactNode) {
-  return render(<EnvProvider>{ui}</EnvProvider>);
+  return render(<>{ui}</>);
 }
 
 describe('ProofreadPopup Component', () => {

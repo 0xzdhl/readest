@@ -1,12 +1,12 @@
 import { useCallback, useRef, useEffect } from 'react';
-import { useEnv } from '@/context/EnvContext';
+import { usePlatformInfo } from '@/context/EffectRuntimeProvider';
 import { useThemeStore } from '@/store/themeStore';
-import type { Insets } from '@/types/misc';
+import type { Insets } from '@/domain/misc';
 import { getSafeAreaInsets } from '@/utils/bridge';
 import { getOSPlatform } from '@/utils/misc';
 
 export const useSafeAreaInsets = () => {
-  const { appService } = useEnv();
+  const platformInfo = usePlatformInfo();
   const currentInsets = useRef({ top: 0, right: 0, bottom: 0, left: 0 });
 
   const { updateSafeAreaInsets } = useThemeStore();
@@ -25,19 +25,17 @@ export const useSafeAreaInsets = () => {
   };
 
   const onUpdateInsets = useCallback(() => {
-    if (!appService) return;
-
-    if (!appService.hasSafeAreaInset) {
+    if (!platformInfo.hasSafeAreaInset) {
       updateInsets(currentInsets.current);
       return;
     }
 
     const rootStyles = getComputedStyle(document.documentElement);
     const hasCustomProperties = rootStyles.getPropertyValue('--safe-area-inset-top');
-    if (appService.isIOSApp && getOSPlatform() === 'macos') {
+    if (platformInfo.isIOSApp && getOSPlatform() === 'macos') {
       // for iPadOS use zero insets
       updateInsets({ top: 0, right: 0, bottom: 0, left: 0 });
-    } else if (appService.isAndroidApp || appService.isIOSApp) {
+    } else if (platformInfo.isAndroidApp || platformInfo.isIOSApp) {
       // safe-area-inset-* values in css are always 0px in some versions of webview 139
       // due to https://issues.chromium.org/issues/40699457
       getSafeAreaInsets().then((response) => {
@@ -68,7 +66,7 @@ export const useSafeAreaInsets = () => {
       updateInsets(insets);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [appService]);
+  }, [platformInfo]);
 
   useEffect(() => {
     onUpdateInsets();

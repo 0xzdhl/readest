@@ -5,12 +5,13 @@ import type { ScrollBarStyle } from '@tauri-apps/api/window';
 import { WebviewWindow } from '@tauri-apps/api/webviewWindow';
 import { isTauriAppPlatform } from '@/services/environment';
 import { BOOK_IDS_SEPARATOR } from '@/services/constants';
-import type { AppService } from '@/types/system';
+import { getPlatformInfo } from '@/runtime/clientRuntime';
 
 let readerWindowsCount = 0;
 
 type AppNavigator = Pick<AppRouter, 'navigate'>;
-const createReaderWindow = (appService: AppService, url: string) => {
+const createReaderWindow = (url: string) => {
+  const { isMacOSApp, osPlatform } = getPlatformInfo();
   const currentWindow = getCurrentWindow();
   const label = currentWindow.label;
   const newLabelPrefix = label === 'main' ? 'reader' : label;
@@ -20,12 +21,12 @@ const createReaderWindow = (appService: AppService, url: string) => {
     height: 600,
     center: true,
     resizable: true,
-    title: appService.isMacOSApp ? '' : 'Readest',
-    decorations: !!appService.isMacOSApp,
-    transparent: !appService.isMacOSApp,
-    shadow: appService.isMacOSApp ? undefined : true,
-    titleBarStyle: appService.isMacOSApp ? 'overlay' : undefined,
-    scrollBarStyle: (appService.osPlatform === 'windows'
+    title: isMacOSApp ? '' : 'Readest',
+    decorations: !!isMacOSApp,
+    transparent: !isMacOSApp,
+    shadow: isMacOSApp ? undefined : true,
+    titleBarStyle: isMacOSApp ? 'overlay' : undefined,
+    scrollBarStyle: (osPlatform === 'windows'
       ? 'fluentOverlay'
       : 'default') as unknown as ScrollBarStyle,
   });
@@ -41,20 +42,20 @@ const createReaderWindow = (appService: AppService, url: string) => {
   });
 };
 
-export const showReaderWindow = (appService: AppService, bookIds: string[]) => {
+export const showReaderWindow = (bookIds: string[]) => {
   const ids = bookIds.join(BOOK_IDS_SEPARATOR);
   const url = `/reader/${ids}`;
-  createReaderWindow(appService, url);
+  createReaderWindow(url);
 };
 
-export const showLibraryWindow = (appService: AppService, filenames: string[]) => {
+export const showLibraryWindow = (filenames: string[]) => {
   const params = new URLSearchParams();
   filenames.forEach((filename) => params.append('file', filename));
   const url = `/library?${params.toString()}`;
-  createReaderWindow(appService, url);
+  createReaderWindow(url);
 };
 
-export const ensureMainLibraryWindow = async (appService: AppService) => {
+export const ensureMainLibraryWindow = async () => {
   const existing = await WebviewWindow.getByLabel('main');
   if (existing) {
     await existing.show();
@@ -62,18 +63,19 @@ export const ensureMainLibraryWindow = async (appService: AppService) => {
     await existing.setFocus();
     return;
   }
+  const { isMacOSApp, osPlatform } = getPlatformInfo();
   const win = new WebviewWindow('main', {
     url: '/library',
     width: 800,
     height: 600,
     center: true,
     resizable: true,
-    title: appService.isMacOSApp ? '' : 'Readest',
-    decorations: !!appService.isMacOSApp,
-    transparent: !appService.isMacOSApp,
-    shadow: appService.isMacOSApp ? undefined : true,
-    titleBarStyle: appService.isMacOSApp ? 'overlay' : undefined,
-    scrollBarStyle: (appService.osPlatform === 'windows'
+    title: isMacOSApp ? '' : 'Readest',
+    decorations: !!isMacOSApp,
+    transparent: !isMacOSApp,
+    shadow: isMacOSApp ? undefined : true,
+    titleBarStyle: isMacOSApp ? 'overlay' : undefined,
+    scrollBarStyle: (osPlatform === 'windows'
       ? 'fluentOverlay'
       : 'default') as unknown as ScrollBarStyle,
   });
@@ -127,14 +129,11 @@ export const navigateToLibrary = (
   });
 };
 
-export const closeReaderWindowOrGoToLibrary = async (
-  appService: AppService | null,
-  router: AppNavigator,
-) => {
-  if (isTauriAppPlatform() && appService?.hasWindow) {
+export const closeReaderWindowOrGoToLibrary = async (router: AppNavigator) => {
+  if (isTauriAppPlatform() && getPlatformInfo().hasWindow) {
     const currentWindow = getCurrentWindow();
     if (currentWindow.label !== 'main') {
-      await ensureMainLibraryWindow(appService);
+      await ensureMainLibraryWindow();
       await currentWindow.close();
       return;
     }

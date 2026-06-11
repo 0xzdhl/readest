@@ -1,5 +1,5 @@
-import type { AppService, FileSystem, BaseDir, DeleteAction } from '@/types/system';
-import type { Book } from '@/types/book';
+import type { FileWriter, FileSystem, BaseDir, DeleteAction } from '@/domain/system';
+import type { Book } from '@/domain/book';
 import {
   getDir,
   getLocalBookFilename,
@@ -15,7 +15,7 @@ import {
   batchGetDownloadUrls,
 } from '@/libs/storage';
 import type { ClosableFile } from '@/utils/file';
-import type { ProgressHandler } from '@/utils/transfer';
+import type { ProgressHandler } from '@/domain/transfer';
 import { CLOUD_BOOKS_SUBDIR, CLOUD_REPLICAS_SUBDIR } from './constants';
 
 export async function deleteBook(
@@ -108,7 +108,7 @@ export const replicaCloudKey = (kind: string, replicaId: string, filename: strin
   `${CLOUD_REPLICAS_SUBDIR}/${kind}/${replicaId}/${filename}`;
 
 export async function downloadReplicaFileFromCloud(
-  appService: AppService,
+  appService: FileWriter,
   opts: {
     kind: string;
     replicaId: string;
@@ -194,7 +194,7 @@ export async function uploadBook(
 }
 
 export async function downloadCloudFile(
-  appService: AppService,
+  appService: FileWriter,
   localBooksDir: string,
   lfp: string,
   cfp: string,
@@ -206,7 +206,7 @@ export async function downloadCloudFile(
 }
 
 export async function downloadBookCovers(
-  appService: AppService,
+  appService: FileWriter,
   fs: FileSystem,
   localBooksDir: string,
   books: Book[],
@@ -247,7 +247,7 @@ export async function downloadBookCovers(
 }
 
 export async function downloadBook(
-  appService: AppService,
+  appService: FileWriter,
   fs: FileSystem,
   localBooksDir: string,
   book: Book,

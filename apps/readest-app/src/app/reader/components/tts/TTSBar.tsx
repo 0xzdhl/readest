@@ -7,8 +7,8 @@ import {
   MdSkipPrevious,
   MdSkipNext,
 } from 'react-icons/md';
-import type { Insets } from '@/types/misc';
-import { useEnv } from '@/context/EnvContext';
+import type { Insets } from '@/domain/misc';
+import { usePlatformInfo } from '@/context/EffectRuntimeProvider';
 import { useReaderStore } from '@/store/readerStore';
 import { useResponsiveSize } from '@/hooks/useResponsiveSize';
 import { useTranslation } from '@/hooks/useTranslation';
@@ -31,7 +31,7 @@ const TTSBar = ({
   gridInsets,
 }: TTSBarProps) => {
   const _ = useTranslation();
-  const { appService } = useEnv();
+  const platformInfo = usePlatformInfo();
   const { hoveredBookKey, setHoveredBookKey } = useReaderStore();
   const iconSize32 = useResponsiveSize(30);
   const iconSize48 = useResponsiveSize(36);
@@ -46,9 +46,9 @@ const TTSBar = ({
         'transition-opacity duration-300',
         isVisible ? `pointer-events-auto opacity-100` : `pointer-events-none opacity-0`,
       )}
-      style={{ paddingBottom: appService?.hasSafeAreaInset ? `${gridInsets.bottom * 0.33}px` : 0 }}
-      onMouseEnter={() => !appService?.isMobile && setHoveredBookKey('')}
-      onTouchStart={() => !appService?.isMobile && setHoveredBookKey('')}
+      style={{ paddingBottom: platformInfo.hasSafeAreaInset ? `${gridInsets.bottom * 0.33}px` : 0 }}
+      onMouseEnter={() => !platformInfo.isMobile && setHoveredBookKey('')}
+      onTouchStart={() => !platformInfo.isMobile && setHoveredBookKey('')}
     >
       <div className='text-base-content flex h-[52px] items-center space-x-2 px-2'>
         <button

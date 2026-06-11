@@ -1,4 +1,4 @@
-import type { TTSVoice } from './types';
+import type { TTSVoice } from '@/domain/tts';
 
 export class TTSUtils {
   private static readonly LOCAL_STORAGE_KEY = 'ttsPreferredVoices';

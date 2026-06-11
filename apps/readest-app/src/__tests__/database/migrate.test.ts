@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { migrate } from '@/services/database/migrate';
-import type { MigrationEntry } from '@/services/database/migrate';
-import type { DatabaseService, DatabaseExecResult, DatabaseRow } from '@/types/database';
+import type { MigrationEntry } from '@/domain/migration';
+import type { DatabaseService, DatabaseExecResult, DatabaseRow } from '@/domain/database';
 
 /**
  * In-memory DatabaseService for testing the migration runner.

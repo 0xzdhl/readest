@@ -8,7 +8,7 @@ import { useSidebarStore } from '@/store/sidebarStore';
 import { useTranslation } from '@/hooks/useTranslation';
 import { eventDispatcher } from '@/utils/event';
 import { getBookDirFromLanguage } from '@/utils/book';
-import { useEnv } from '@/context/EnvContext';
+import { usePlatformInfo } from '@/context/EffectRuntimeProvider';
 import { useSwipeToDismiss } from '@/hooks/useSwipeToDismiss';
 import { usePanelResize } from '@/hooks/usePanelResize';
 import { useThemeStore } from '@/store/themeStore';
@@ -26,7 +26,7 @@ const MAX_SIDEBAR_WIDTH = 0.45;
 
 const SideBar = ({}) => {
   const _ = useTranslation();
-  const { appService } = useEnv();
+  const platformInfo = usePlatformInfo();
   const { settings } = useSettingsStore();
   const { updateAppTheme, safeAreaInsets, systemUIVisible, statusBarHeight } = useThemeStore();
   const { sideBarBookKey, setSideBarBookKey, getSearchNavState, setSearchTerm, clearSearch } =
@@ -186,7 +186,7 @@ const SideBar = ({}) => {
           'sidebar-container flex min-w-60 select-none flex-col',
           'full-height transition-[padding-top] duration-300',
           viewSettings?.isEink ? 'bg-base-100' : 'bg-base-200',
-          appService?.hasRoundedWindow && 'rounded-window-top-left rounded-window-bottom-left',
+          platformInfo.hasRoundedWindow && 'rounded-window-top-left rounded-window-bottom-left',
           isSideBarPinned ? 'z-20' : 'z-[45] shadow-2xl',
           !isSideBarPinned && viewSettings?.isEink && 'border-base-content border-e',
         )}

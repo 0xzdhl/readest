@@ -1,7 +1,9 @@
 import clsx from 'clsx';
 import type React from 'react';
 import { useEffect, useState } from 'react';
-import { useEnv } from '@/context/EnvContext';
+import { Effect } from 'effect';
+import { useRunEffect, useBooted } from '@/context/EffectRuntimeProvider';
+import { ImageService } from '@/application/services/ImageService';
 import { saveViewSettings } from '@/helpers/settings';
 import { useFileSelector } from '@/hooks/useFileSelector';
 import { useResetViewSettings } from '@/hooks/useResetSettings';
@@ -16,13 +18,12 @@ import { useThemeStore } from '@/store/themeStore';
 import { PREDEFINED_TEXTURES } from '@/styles/textures';
 import {
   applyCustomTheme,
-  type CustomTheme,
   generateDarkPalette,
   generateLightPalette,
-  type Theme,
   themes,
 } from '@/styles/themes';
-import type { DefaultHighlightColor, HighlightColor, UserHighlightColor } from '@/types/book';
+import type { CustomTheme, Theme } from '@/domain/themes';
+import type { DefaultHighlightColor, HighlightColor, UserHighlightColor } from '@/domain/book';
 import { manageSyntaxHighlighting } from '@/utils/highlightjs';
 import BackgroundTextureSelector from './color/BackgroundTextureSelector';
 import CodeHighlightingSettings from './color/CodeHighlightingSettings';
@@ -38,7 +39,8 @@ const ColorPanel: React.FC<SettingsPanelPanelProp> = ({ bookKey, onRegisterReset
   const _ = useTranslation();
   const { themeMode, themeColor, isDarkMode, setThemeMode, setThemeColor, saveCustomTheme } =
     useThemeStore();
-  const { envConfig, appService } = useEnv();
+  const booted = useBooted();
+  const runEffect = useRunEffect();
   const { settings, setSettings, saveSettings } = useSettingsStore();
   const { getView, getViewSettings } = useReaderStore();
   const viewSettings = getViewSettings(bookKey) || settings.globalViewSettings;
@@ -81,7 +83,7 @@ const ColorPanel: React.FC<SettingsPanelPanelProp> = ({ bookKey, onRegisterReset
     saveCustomTextures,
   } = useCustomTextureStore();
   const resetToDefaults = useResetViewSettings();
-  const { selectFiles } = useFileSelector(appService, _);
+  const { selectFiles } = useFileSelector(_);
   const { activate: activateAtmosphere, deactivate: deactivateAtmosphere } = useAtmosphereStore();
 
   const handleReset = () => {
@@ -122,35 +124,35 @@ const ColorPanel: React.FC<SettingsPanelPanelProp> = ({ bookKey, onRegisterReset
   }, []);
 
   useEffect(() => {
-    loadCustomTextures(envConfig);
-  }, [loadCustomTextures, envConfig]);
+    loadCustomTextures();
+  }, [loadCustomTextures]);
 
   useEffect(() => {
     if (invertImgColorInDark === viewSettings.invertImgColorInDark) return;
-    saveViewSettings(envConfig, bookKey, 'invertImgColorInDark', invertImgColorInDark);
+    saveViewSettings(bookKey, 'invertImgColorInDark', invertImgColorInDark);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [invertImgColorInDark]);
 
   useEffect(() => {
     if (overrideColor === viewSettings.overrideColor) return;
-    saveViewSettings(envConfig, bookKey, 'overrideColor', overrideColor);
+    saveViewSettings(bookKey, 'overrideColor', overrideColor);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [overrideColor]);
 
   useEffect(() => {
     if (highlightOpacity === viewSettings.highlightOpacity) return;
-    saveViewSettings(envConfig, bookKey, 'highlightOpacity', highlightOpacity);
+    saveViewSettings(bookKey, 'highlightOpacity', highlightOpacity);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [highlightOpacity]);
 
   useEffect(() => {
     let update = false;
     if (codeHighlighting !== viewSettings.codeHighlighting) {
-      saveViewSettings(envConfig, bookKey, 'codeHighlighting', codeHighlighting);
+      saveViewSettings(bookKey, 'codeHighlighting', codeHighlighting);
       update = true;
     }
     if (codeLanguage !== viewSettings.codeLanguage) {
-      saveViewSettings(envConfig, bookKey, 'codeLanguage', codeLanguage);
+      saveViewSettings(bookKey, 'codeLanguage', codeLanguage);
       update = true;
     }
     if (!update) return;
@@ -163,47 +165,47 @@ const ColorPanel: React.FC<SettingsPanelPanelProp> = ({ bookKey, onRegisterReset
 
   useEffect(() => {
     if (selectedTextureId === viewSettings.backgroundTextureId) return;
-    saveViewSettings(envConfig, bookKey, 'backgroundTextureId', selectedTextureId);
+    saveViewSettings(bookKey, 'backgroundTextureId', selectedTextureId);
     applyBackgroundTexture();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedTextureId]);
 
   useEffect(() => {
     if (backgroundOpacity === viewSettings.backgroundOpacity) return;
-    saveViewSettings(envConfig, bookKey, 'backgroundOpacity', backgroundOpacity);
+    saveViewSettings(bookKey, 'backgroundOpacity', backgroundOpacity);
     applyBackgroundTexture();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [backgroundOpacity]);
 
   useEffect(() => {
     if (backgroundSize === viewSettings.backgroundSize) return;
-    saveViewSettings(envConfig, bookKey, 'backgroundSize', backgroundSize);
+    saveViewSettings(bookKey, 'backgroundSize', backgroundSize);
     applyBackgroundTexture();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [backgroundSize]);
 
   useEffect(() => {
-    saveViewSettings(envConfig, bookKey, 'readingRulerEnabled', readingRulerEnabled, false, false);
+    saveViewSettings(bookKey, 'readingRulerEnabled', readingRulerEnabled, false, false);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [readingRulerEnabled]);
 
   useEffect(() => {
-    saveViewSettings(envConfig, bookKey, 'readingRulerLines', readingRulerLines, false, false);
+    saveViewSettings(bookKey, 'readingRulerLines', readingRulerLines, false, false);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [readingRulerLines]);
 
   useEffect(() => {
-    saveViewSettings(envConfig, bookKey, 'readingRulerOpacity', readingRulerOpacity, false, false);
+    saveViewSettings(bookKey, 'readingRulerOpacity', readingRulerOpacity, false, false);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [readingRulerOpacity]);
 
   useEffect(() => {
-    saveViewSettings(envConfig, bookKey, 'readingRulerColor', readingRulerColor, false, false);
+    saveViewSettings(bookKey, 'readingRulerColor', readingRulerColor, false, false);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [readingRulerColor]);
 
   const applyBackgroundTexture = () => {
-    applyTexture(envConfig, selectedTextureId);
+    applyTexture(selectedTextureId);
     document.documentElement.style.setProperty('--bg-texture-opacity', `${backgroundOpacity}`);
     document.documentElement.style.setProperty('--bg-texture-size', backgroundSize);
   };
@@ -225,14 +227,14 @@ const ColorPanel: React.FC<SettingsPanelPanelProp> = ({ bookKey, onRegisterReset
 
   const handleSaveCustomTheme = (customTheme: CustomTheme) => {
     applyCustomTheme(customTheme);
-    saveCustomTheme(envConfig, settings, customTheme);
+    saveCustomTheme(settings, customTheme);
     setSettings({ ...settings });
     setThemeColor(customTheme.name);
     setShowCustomThemeEditor(false);
   };
 
   const handleDeleteCustomTheme = (customTheme: CustomTheme) => {
-    saveCustomTheme(envConfig, settings, customTheme, true);
+    saveCustomTheme(settings, customTheme, true);
     setSettings({ ...settings });
     setThemeColor('default');
     setShowCustomThemeEditor(false);
@@ -250,7 +252,11 @@ const ColorPanel: React.FC<SettingsPanelPanelProp> = ({ bookKey, onRegisterReset
     selectFiles({ type: 'images', multiple: true }).then(async (result) => {
       if (result.error || result.files.length === 0) return;
       for (const selectedFile of result.files) {
-        const textureInfo = await appService?.importImage(selectedFile.path || selectedFile.file);
+        const textureInfo = await runEffect(
+          Effect.flatMap(ImageService, (s) =>
+            s.importImage(selectedFile.path || selectedFile.file),
+          ),
+        );
         if (!textureInfo) continue;
 
         const customTexture = addTexture(textureInfo.path, {
@@ -260,11 +266,11 @@ const ColorPanel: React.FC<SettingsPanelPanelProp> = ({ bookKey, onRegisterReset
           byteSize: textureInfo.byteSize,
         });
         if (customTexture && !customTexture.error) {
-          await loadTexture(envConfig, customTexture.id);
-          if (appService) void queueReplicaBinaryUpload('texture', customTexture, appService);
+          await loadTexture(customTexture.id);
+          if (booted) void queueReplicaBinaryUpload('texture', customTexture);
         }
       }
-      saveCustomTextures(envConfig);
+      saveCustomTextures();
     });
   };
 
@@ -278,21 +284,21 @@ const ColorPanel: React.FC<SettingsPanelPanelProp> = ({ bookKey, onRegisterReset
     if (selectedTextureId === textureId) {
       setSelectedTextureId('none');
     }
-    saveCustomTextures(envConfig);
+    saveCustomTextures();
   };
 
   const handleCustomHighlightColorsChange = (colors: Record<HighlightColor, string>) => {
     setCustomHighlightColors(colors);
     settings.globalReadSettings.customHighlightColors = colors;
     setSettings(settings);
-    saveSettings(envConfig, settings);
+    saveSettings(settings);
   };
 
   const handleUserHighlightColorsChange = (colors: UserHighlightColor[]) => {
     setUserHighlightColors(colors);
     settings.globalReadSettings.userHighlightColors = colors;
     setSettings(settings);
-    saveSettings(envConfig, settings);
+    saveSettings(settings);
   };
 
   const handleDefaultHighlightLabelsChange = (
@@ -301,7 +307,7 @@ const ColorPanel: React.FC<SettingsPanelPanelProp> = ({ bookKey, onRegisterReset
     setDefaultHighlightLabels(labels);
     settings.globalReadSettings.defaultHighlightLabels = labels;
     setSettings(settings);
-    saveSettings(envConfig, settings);
+    saveSettings(settings);
   };
 
   return (

@@ -4,7 +4,7 @@ import {
   mergeBookMetadata,
   validateBackupStructure,
 } from '@/services/backupService';
-import type { Book, BookConfig, BookNote } from '@/types/book';
+import type { Book, BookConfig, BookNote } from '@/domain/book';
 
 /**
  * Extended tests for backupService covering:

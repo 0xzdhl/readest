@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import type { BookNote, BookNoteType, BookSearchMatch, BookSearchResult } from '@/types/book';
+import type { BookNote, BookNoteType, BookSearchMatch, BookSearchResult } from '@/domain/book';
 
 type SearchStatus = 'searching' | 'completed' | 'terminated';
 
