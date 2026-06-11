@@ -12,6 +12,12 @@ import { type ClientServices, getClientRuntime, getPlatformInfo } from '@/runtim
 import type { PlatformInfo } from '@/application/ports/Platform';
 import type { SystemSettings } from '@/domain/settings';
 import { BootApp } from '@/application/usecases/boot/BootApp';
+import env from '@/services/environment';
+import { bootstrapReplicaAdapters } from '@/services/sync/replicaBootstrap';
+import { enableReplicaAutoPersist } from '@/services/sync/replicaPersist';
+import { createSettingsCursorStore } from '@/services/sync/replicaCursorStore';
+import { initReplicaSync } from '@/services/sync/replicaSync';
+import { startReplicaTransferIntegration } from '@/services/sync/replicaTransferIntegration';
 
 // The provided runtime is a `ManagedRuntime<ClientServices, never>`, so it can run any effect
 // whose requirements are satisfied by those port/usecase services. Accept that requirement set
@@ -45,6 +51,20 @@ export function EffectRuntimeProvider({ children }: { children: ReactNode }) {
       .then((r) => {
         setBootSettings(r.settings);
         setBooted(true);
+        bootstrapReplicaAdapters();
+        enableReplicaAutoPersist(env);
+        try {
+          if (r.settings.replicaDeviceId) {
+            const ctx = initReplicaSync({
+              deviceId: r.settings.replicaDeviceId,
+              cursorStore: createSettingsCursorStore(),
+            });
+            ctx.manager.startAutoSync();
+            startReplicaTransferIntegration();
+          }
+        } catch (err) {
+          console.warn('replica sync init failed', err);
+        }
       })
       .catch((err) => console.warn('[EffectBoot] failed (non-fatal)', err));
   }, []);

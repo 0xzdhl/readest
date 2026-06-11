@@ -8,11 +8,10 @@ vi.mock('@/services/environment', async () => {
 
   const mockAppService = {
     init: vi.fn().mockResolvedValue(undefined),
-    // EnvProvider's mount effect calls appService.loadSettings() to seed
-    // replica sync. Returning a settings object without replicaDeviceId
-    // makes init early-exit cleanly (no warn, no real network).
+    // EnvProvider is now thin and no longer boots replica sync (that moved to
+    // EffectRuntimeProvider, which this test doesn't render), so loadSettings
+    // is never called here. Kept as a harmless default-export stub.
     loadSettings: vi.fn().mockResolvedValue({}),
-    // Add any other methods from AppService interface
   };
 
   return {

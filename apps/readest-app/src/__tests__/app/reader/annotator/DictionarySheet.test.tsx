@@ -93,13 +93,10 @@ vi.mock('@/services/dictionaries/registry', () => ({
   evictProvider: vi.fn(),
 }));
 
-// EnvProvider needs an appService; provide one with the file API the
-// (unmocked) StarDict provider uses for fixture reads.
+// EnvContext is now thin ({ envConfig }); the dictionary registry is mocked
+// above so the FileSystem-backed opener (useRunEffect) isn't exercised here.
 vi.mock('@/context/EnvContext', () => ({
-  useEnv: () => ({
-    envConfig: { getAppService: vi.fn().mockResolvedValue(null) },
-    appService: { openFile: vi.fn() },
-  }),
+  useEnv: () => ({ envConfig: {} }),
 }));
 
 // ---------------------------------------------------------------------------

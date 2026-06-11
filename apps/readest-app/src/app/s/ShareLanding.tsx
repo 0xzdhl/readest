@@ -9,7 +9,7 @@ import {
 import { getWebsiteUrl } from '@/services/environment';
 import { useTranslation, type TranslationFunc } from '@/hooks/useTranslation';
 import { useAuth } from '@/context/AuthContext';
-import { useEnv } from '@/context/EnvContext';
+import { useBooted } from '@/context/EffectRuntimeProvider';
 import { BrandHeader } from '@/components/landing/BrandHeader';
 import { Card } from '@/components/landing/Card';
 import { PageFooter } from '@/components/landing/PageFooter';
@@ -33,7 +33,7 @@ const ShareLanding = () => {
   const { pathname, searchStr } = useLocation();
   const searchParams = new URLSearchParams(searchStr);
   const { user } = useAuth();
-  const { appService } = useEnv();
+  const booted = useBooted();
 
   // Resolve the token from either the query fallback (?token=) or the pretty
   // path (/s/{token}). The pathname fallback still matters for static Tauri
@@ -80,7 +80,7 @@ const ShareLanding = () => {
   const appHref = `readest://share/${encodeURIComponent(token)}`;
 
   const handleAddToLibrary = async () => {
-    if (!token || importing || !appService) return;
+    if (!token || importing || !booted) return;
     setImporting(true);
     setImportProgress(null);
     setImportError(null);

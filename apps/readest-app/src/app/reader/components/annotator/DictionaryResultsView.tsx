@@ -3,8 +3,12 @@ import { MdArrowBack, MdChevronRight, MdSettings } from 'react-icons/md';
 import clsx from 'clsx';
 import { openUrl } from '@tauri-apps/plugin-opener';
 
+import { Effect } from 'effect';
 import { useTranslation } from '@/hooks/useTranslation';
-import { useEnv } from '@/context/EnvContext';
+import { useRunEffect } from '@/context/EffectRuntimeProvider';
+import { FileSystem } from '@/application/ports/FileSystem';
+import type { BaseDir } from '@/domain/system';
+import type { DictionaryFileOpener } from '@/services/dictionaries/providers/starDictProvider';
 import { useThemeStore } from '@/store/themeStore';
 import { useCustomDictionaryStore } from '@/store/customDictionaryStore';
 import { getEnabledProviders } from '@/services/dictionaries/registry';
@@ -65,15 +69,26 @@ export function useDictionaryResults({
   word,
   lang,
 }: UseDictionaryResultsArgs): DictionaryResultsState {
-  const { appService } = useEnv();
+  const runEffect = useRunEffect();
   const { dictionaries, settings } = useCustomDictionaryStore();
   const isDarkMode = useThemeStore((s) => s.isDarkMode);
   const themeCode = useThemeStore((s) => s.themeCode);
 
+  // Dictionary providers only reach the filesystem to open bundle files. Back a
+  // minimal DictionaryFileOpener with the Effect runtime's FileSystem port so we
+  // can drop the appService god-object dependency here (mirrors opds/index).
+  const fs = useMemo<DictionaryFileOpener>(
+    () => ({
+      openFile: (path: string, base: BaseDir) =>
+        runEffect(Effect.flatMap(FileSystem, (fileSystem) => fileSystem.openFile(path, base))),
+    }),
+    [runEffect],
+  );
+
   const computedProviders = getEnabledProviders({
     settings,
     dictionaries,
-    fs: appService ?? undefined,
+    fs,
   });
   const providersSignature = computedProviders.map((p) => p.id).join('|');
   // eslint-disable-next-line react-hooks/exhaustive-deps

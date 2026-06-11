@@ -1,8 +1,7 @@
 import { useEffect } from 'react';
 import { useRouter } from '@tanstack/react-router';
 import { getAllWindows, getCurrentWindow } from '@tauri-apps/api/window';
-import { useEnv } from '@/context/EnvContext';
-import { usePlatformInfo } from '@/context/EffectRuntimeProvider';
+import { usePlatformInfo, useBooted } from '@/context/EffectRuntimeProvider';
 import { useLibraryStore } from '@/store/libraryStore';
 import { useSettingsStore } from '@/store/settingsStore';
 import { isTauriAppPlatform } from '@/services/environment';
@@ -22,12 +21,12 @@ import { eventDispatcher } from '@/utils/event';
  */
 export function useOpenWithBooks() {
   const router = useRouter();
-  const { appService } = useEnv();
+  const booted = useBooted();
   const platformInfo = usePlatformInfo();
   const { setCheckOpenWithBooks } = useLibraryStore();
 
   useEffect(() => {
-    if (!isTauriAppPlatform() || !appService) return;
+    if (!isTauriAppPlatform() || !booted) return;
 
     const isFirstWindow = async () => {
       const allWindows = await getAllWindows();
@@ -70,5 +69,5 @@ export function useOpenWithBooks() {
       eventDispatcher.off('app-incoming-url', onIncoming);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [appService]);
+  }, [booted]);
 }

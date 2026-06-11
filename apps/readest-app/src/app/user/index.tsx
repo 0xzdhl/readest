@@ -2,8 +2,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { createFileRoute, useRouter } from '@tanstack/react-router';
 import { z } from 'zod';
-import { useEnv } from '@/context/EnvContext';
-import { usePlatformInfo } from '@/context/EffectRuntimeProvider';
+import { usePlatformInfo, useBooted } from '@/context/EffectRuntimeProvider';
 import { useAuth } from '@/context/AuthContext';
 import { useTheme } from '@/hooks/useTheme';
 import { useThemeStore } from '@/store/themeStore';
@@ -63,7 +62,7 @@ type CheckoutState = {
 function ProfilePage() {
   const _ = useTranslation();
   const router = useRouter();
-  const { appService } = useEnv();
+  const booted = useBooted();
   const platformInfo = usePlatformInfo();
   const { user, refresh } = useAuth();
   const { safeAreaInsets, isRoundedWindow } = useThemeStore();
@@ -86,7 +85,7 @@ function ProfilePage() {
   useEffect(() => {
     if (!mounted) return;
 
-    const isAuthenticated = user && appService;
+    const isAuthenticated = user && booted;
     if (isAuthenticated) return;
 
     const timer = setTimeout(() => {
@@ -94,7 +93,7 @@ function ProfilePage() {
     }, 1000);
 
     return () => clearTimeout(timer);
-  }, [mounted, user, appService, router]);
+  }, [mounted, user, booted, router]);
 
   useTheme({ systemUIVisible: false });
 
@@ -261,7 +260,7 @@ function ProfilePage() {
     return null;
   }
 
-  if (!user || !appService) {
+  if (!user || !booted) {
     return (
       <div className='mx-auto max-w-4xl px-4 py-8'>
         <div className='overflow-hidden rounded-lg shadow-md'>
