@@ -31,7 +31,7 @@ export const saveViewSettings = async <K extends keyof ViewSettings>(
       }
       const config = getConfig(bookKey);
       if (viewState?.isPrimary && config) {
-        await saveConfig(envConfig, bookKey, config, settings);
+        await saveConfig(bookKey, config, settings);
       }
     }
   };
@@ -53,7 +53,7 @@ export const saveViewSettings = async <K extends keyof ViewSettings>(
     for (const bookKey of bookKeys) {
       await applyViewSettings(bookKey);
     }
-    await saveSettings(envConfig, nextSettings);
+    await saveSettings(nextSettings);
   } else if (bookKey) {
     await applyViewSettings(bookKey);
   }
@@ -68,6 +68,6 @@ export const saveSysSettings = async <K extends keyof SystemSettings>(
   if (settings[key] !== value) {
     settings[key] = value;
     setSettings(settings);
-    await saveSettings(envConfig, settings);
+    await saveSettings(settings);
   }
 };

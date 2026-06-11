@@ -38,7 +38,7 @@ const HardcoverForm: React.FC<HardcoverFormProps> = ({ onBack }) => {
           },
         };
         setSettings(newSettings);
-        await saveSettings(envConfig, newSettings);
+        await saveSettings(newSettings);
       } else if (isNetworkError) {
         eventDispatcher.dispatch('toast', {
           message: _('Unable to connect to Hardcover. Please check your network connection.'),
@@ -62,7 +62,7 @@ const HardcoverForm: React.FC<HardcoverFormProps> = ({ onBack }) => {
       hardcover: { enabled: false, accessToken: '', lastSyncedAt: 0 },
     };
     setSettings(newSettings);
-    await saveSettings(envConfig, newSettings);
+    await saveSettings(newSettings);
     eventDispatcher.dispatch('toast', { message: _('Disconnected from Hardcover'), type: 'info' });
   };
 
@@ -72,7 +72,7 @@ const HardcoverForm: React.FC<HardcoverFormProps> = ({ onBack }) => {
       hardcover: { ...settings.hardcover, enabled: !settings.hardcover?.enabled },
     };
     setSettings(newSettings);
-    await saveSettings(envConfig, newSettings);
+    await saveSettings(newSettings);
   };
 
   const lastSyncedAt = settings.hardcover?.lastSyncedAt ?? 0;

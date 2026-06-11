@@ -37,7 +37,7 @@ const ReadwiseForm: React.FC<ReadwiseFormProps> = ({ onBack }) => {
           },
         };
         setSettings(newSettings);
-        await saveSettings(envConfig, newSettings);
+        await saveSettings(newSettings);
       } else if (isNetworkError) {
         eventDispatcher.dispatch('toast', {
           message: _('Unable to connect to Readwise. Please check your network connection.'),
@@ -61,7 +61,7 @@ const ReadwiseForm: React.FC<ReadwiseFormProps> = ({ onBack }) => {
       readwise: { enabled: false, accessToken: '', lastSyncedAt: 0 },
     };
     setSettings(newSettings);
-    await saveSettings(envConfig, newSettings);
+    await saveSettings(newSettings);
     eventDispatcher.dispatch('toast', { message: _('Disconnected from Readwise'), type: 'info' });
   };
 
@@ -71,7 +71,7 @@ const ReadwiseForm: React.FC<ReadwiseFormProps> = ({ onBack }) => {
       readwise: { ...settings.readwise, enabled: !settings.readwise?.enabled },
     };
     setSettings(newSettings);
-    await saveSettings(envConfig, newSettings);
+    await saveSettings(newSettings);
   };
 
   const lastSyncedAt = settings.readwise?.lastSyncedAt ?? 0;

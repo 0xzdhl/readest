@@ -140,7 +140,7 @@ const ReaderContent: React.FC<{ ids: string; cfi?: string; settings: SystemSetti
       const lastOpenBooks = bookKeys.map((key) => key.split('-')[0]!);
       if (settings.lastOpenBooks?.toString() !== lastOpenBooks.toString()) {
         settings.lastOpenBooks = lastOpenBooks;
-        saveSettings(envConfig, settings);
+        saveSettings(settings);
       }
     }
 
@@ -170,7 +170,7 @@ const ReaderContent: React.FC<{ ids: string; cfi?: string; settings: SystemSetti
       const settings = useSettingsStore.getState().settings;
       eventDispatcher.dispatch('sync-book-progress', { bookKey });
       eventDispatcher.dispatch('flush-kosync', { bookKey });
-      await saveConfig(envConfig, bookKey, config, settings);
+      await saveConfig(bookKey, config, settings);
     }
   };
 
@@ -198,14 +198,14 @@ const ReaderContent: React.FC<{ ids: string; cfi?: string; settings: SystemSetti
   };
 
   const saveSettingsAndGoToLibrary = () => {
-    saveSettings(envConfig, settings);
+    saveSettings(settings);
     navigateBackToLibrary();
   };
 
   const handleCloseBooks = throttle(async () => {
     const settings = useSettingsStore.getState().settings;
     await Promise.all(bookKeys.map(async (key) => await saveConfigAndCloseBook(key)));
-    await saveSettings(envConfig, settings);
+    await saveSettings(settings);
   }, 200);
 
   const handleCloseBooksToLibrary = async () => {

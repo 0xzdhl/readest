@@ -86,7 +86,7 @@ export function SyncCategoriesSection() {
       },
     };
     setSettings(updated);
-    void saveSettings(envConfig, updated);
+    void saveSettings(updated);
   };
 
   return (

@@ -167,7 +167,7 @@ const Notebook: React.FC = ({}) => {
     annotations.push(annotation);
     const updatedConfig = updateBooknotes(sideBarBookKey, annotations);
     if (updatedConfig) {
-      saveConfig(envConfig, sideBarBookKey, updatedConfig, settings);
+      saveConfig(sideBarBookKey, updatedConfig, settings);
     }
     setNotebookNewAnnotation(null);
   };
@@ -190,7 +190,7 @@ const Notebook: React.FC = ({}) => {
     view?.addAnnotation({ ...note, value: `${NOTE_PREFIX}${note.cfi}` }, true);
     const updatedConfig = updateBooknotes(sideBarBookKey, annotations);
     if (updatedConfig) {
-      saveConfig(envConfig, sideBarBookKey, updatedConfig, settings);
+      saveConfig(sideBarBookKey, updatedConfig, settings);
     }
     setNotebookEditAnnotation(null);
   };

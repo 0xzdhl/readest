@@ -23,7 +23,7 @@ export const useReadwiseSync = (bookKey: string) => {
         readwise: { ...settings.readwise, lastSyncedAt: timestamp },
       };
       setSettings(newSettings);
-      await saveSettings(envConfig, newSettings);
+      await saveSettings(newSettings);
     },
     [envConfig],
   );

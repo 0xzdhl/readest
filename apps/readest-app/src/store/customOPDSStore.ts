@@ -238,7 +238,7 @@ export const useCustomOPDSStore = create<OPDSStoreState>((set, get) => ({
       // tombstones back into memory if the row is still deleted.
       settings.opdsCatalogs = catalogs.filter((c) => !c.deletedAt);
       setSettings(settings);
-      saveSettings(_envConfig, settings);
+      saveSettings(settings);
     } catch (error) {
       console.error('Failed to save OPDS catalogs:', error);
       throw error;

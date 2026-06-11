@@ -157,7 +157,7 @@ export function useSync(bookKey?: string) {
       return 0;
     } finally {
       setSyncing(false);
-      saveSettings(envConfig, settings);
+      saveSettings(settings);
     }
   };
 

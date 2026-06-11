@@ -142,7 +142,7 @@ const BookshelfItem: React.FC<BookshelfItemProps> = ({
         if (!book.downloadedAt || !book.coverDownloadedAt) {
           book.downloadedAt = Date.now();
           book.coverDownloadedAt = Date.now();
-          await updateBook(envConfig, book);
+          await updateBook(book);
         }
         return true;
       }
@@ -150,7 +150,7 @@ const BookshelfItem: React.FC<BookshelfItemProps> = ({
       const loadingTimeout = setTimeout(() => setLoading(true), 200);
       try {
         available = await handleBookDownload(book, { queued: false });
-        await updateBook(envConfig, book);
+        await updateBook(book);
       } finally {
         if (loadingTimeout) clearTimeout(loadingTimeout);
         setLoading(false);

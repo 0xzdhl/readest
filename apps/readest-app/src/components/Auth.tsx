@@ -326,7 +326,7 @@ export function AuthComponent() {
   const handleGoBack = () => {
     settings.keepLogin = false;
     setSettings(settings);
-    saveSettings(envConfig, settings);
+    saveSettings(settings);
     const redirectTo = new URLSearchParams(window.location.search).get('redirect');
     if (redirectTo) {
       router.navigate({ to: redirectTo });

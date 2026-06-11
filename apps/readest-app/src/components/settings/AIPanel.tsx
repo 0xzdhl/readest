@@ -115,7 +115,7 @@ const AIPanel: React.FC = () => {
       const newSettings = { ...currentSettings, aiSettings: newAiSettings };
 
       setSettings(newSettings);
-      await saveSettings(envConfig, newSettings);
+      await saveSettings(newSettings);
     },
     [envConfig, setSettings, saveSettings],
   );

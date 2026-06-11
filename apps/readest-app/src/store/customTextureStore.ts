@@ -413,7 +413,7 @@ export const useCustomTextureStore = create<TextureStoreState>((set, get) => ({
       settings.customTextures = textures.map(toSettingsTexture);
 
       setSettings(settings);
-      saveSettings(envConfig, settings);
+      saveSettings(settings);
     } catch (error) {
       console.error('Failed to save custom textures settings:', error);
       throw error;

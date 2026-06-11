@@ -147,7 +147,7 @@ const TTSPanel = ({
     settings.globalViewSettings.ttsRate = newRate;
     setViewSettings(bookKey, viewSettings);
     setSettings(settings);
-    saveSettings(envConfig, settings);
+    saveSettings(settings);
   };
 
   const handleSelectVoice = (voice: string, lang: string) => {

@@ -169,7 +169,7 @@ export const useAnnotationEditor = ({
             annotations[existingIndex] = updatedAnnotation;
             const updatedConfig = updateBooknotes(bookKey, annotations);
             if (updatedConfig) {
-              saveConfig(envConfig, bookKey, updatedConfig, settings);
+              saveConfig(bookKey, updatedConfig, settings);
             }
 
             setSelection({

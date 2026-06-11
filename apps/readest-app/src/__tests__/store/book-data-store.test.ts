@@ -347,7 +347,7 @@ describe('bookDataStore', () => {
       const data = makeBookData('h1', { progress: [10, 100] });
       useBookDataStore.setState({ booksData: { h1: data } });
 
-      await useBookDataStore.getState().saveConfig(envConfig, 'h1', data.config!, FAKE_SETTINGS);
+      await useBookDataStore.getState().saveConfig('h1', data.config!, FAKE_SETTINGS);
 
       const after = useLibraryStore.getState().library;
       expect(after).not.toBe(before);
@@ -369,7 +369,7 @@ describe('bookDataStore', () => {
       const data = makeBookData('c', { progress: [5, 100] });
       useBookDataStore.setState({ booksData: { c: data } });
 
-      await useBookDataStore.getState().saveConfig(envConfig, 'c', data.config!, FAKE_SETTINGS);
+      await useBookDataStore.getState().saveConfig('c', data.config!, FAKE_SETTINGS);
 
       const library = useLibraryStore.getState().library;
       expect(library.map((b) => b.hash)).toEqual(['c', 'a', 'b']);
@@ -395,7 +395,7 @@ describe('bookDataStore', () => {
       const data = makeBookData('c', { progress: [5, 100] });
       useBookDataStore.setState({ booksData: { c: data } });
 
-      await useBookDataStore.getState().saveConfig(envConfig, 'c', data.config!, FAKE_SETTINGS);
+      await useBookDataStore.getState().saveConfig('c', data.config!, FAKE_SETTINGS);
 
       const visible = useLibraryStore.getState().getVisibleLibrary();
       expect(visible.map((b) => b.hash)).toEqual(['c', 'a']);
@@ -411,7 +411,7 @@ describe('bookDataStore', () => {
       const data = makeBookData('h1', { progress: [42, 100] });
       useBookDataStore.setState({ booksData: { h1: data } });
 
-      await useBookDataStore.getState().saveConfig(envConfig, 'h1', data.config!, FAKE_SETTINGS);
+      await useBookDataStore.getState().saveConfig('h1', data.config!, FAKE_SETTINGS);
 
       const stored = useLibraryStore.getState().getBookByHash('h1');
       expect(stored?.progress).toEqual([42, 100]);
@@ -429,9 +429,7 @@ describe('bookDataStore', () => {
       const data = makeBookData('nonexistent', { progress: [1, 100] });
       useBookDataStore.setState({ booksData: { nonexistent: data } });
 
-      await useBookDataStore
-        .getState()
-        .saveConfig(envConfig, 'nonexistent', data.config!, FAKE_SETTINGS);
+      await useBookDataStore.getState().saveConfig('nonexistent', data.config!, FAKE_SETTINGS);
 
       expect(bookSaveConfigSpy).not.toHaveBeenCalled();
       expect(librarySaveSpy).not.toHaveBeenCalled();

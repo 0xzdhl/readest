@@ -21,7 +21,7 @@ export const useProgressAutoSave = (bookKey: string) => {
         const config = getConfig(bookKey);
         if (!config) return;
         const settings = useSettingsStore.getState().settings;
-        await saveConfig(envConfig, bookKey, config, settings);
+        await saveConfig(bookKey, config, settings);
       }, 500);
     }, 1000),
     [],

@@ -196,7 +196,7 @@ describe('libraryStore', () => {
       const saveLibraryBooks = vi.fn().mockResolvedValue(undefined);
       const envConfig = makeEnvConfig({ saveLibraryBooks });
 
-      await useLibraryStore.getState().updateBooks(envConfig, [makeBook({ hash: 'a' })]);
+      await useLibraryStore.getState().updateBooks([makeBook({ hash: 'a' })]);
 
       expect(librarySaveSpy).toHaveBeenCalledTimes(1);
     });
@@ -205,9 +205,7 @@ describe('libraryStore', () => {
       const saveLibraryBooks = vi.fn().mockResolvedValue(undefined);
       const envConfig = makeEnvConfig({ saveLibraryBooks });
 
-      await useLibraryStore
-        .getState()
-        .updateBooks(envConfig, [makeBook({ hash: 'a' })], { skipSave: true });
+      await useLibraryStore.getState().updateBooks([makeBook({ hash: 'a' })], { skipSave: true });
 
       expect(librarySaveSpy).not.toHaveBeenCalled();
     });
@@ -216,9 +214,7 @@ describe('libraryStore', () => {
       const saveLibraryBooks = vi.fn().mockResolvedValue(undefined);
       const envConfig = makeEnvConfig({ saveLibraryBooks });
 
-      await useLibraryStore
-        .getState()
-        .updateBooks(envConfig, [makeBook({ hash: 'a' })], { skipSave: true });
+      await useLibraryStore.getState().updateBooks([makeBook({ hash: 'a' })], { skipSave: true });
 
       expect(useLibraryStore.getState().library).toHaveLength(1);
       expect(useLibraryStore.getState().getBookByHash('a')).toBeDefined();

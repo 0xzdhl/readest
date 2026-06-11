@@ -293,14 +293,14 @@ const ColorPanel: React.FC<SettingsPanelPanelProp> = ({ bookKey, onRegisterReset
     setCustomHighlightColors(colors);
     settings.globalReadSettings.customHighlightColors = colors;
     setSettings(settings);
-    saveSettings(envConfig, settings);
+    saveSettings(settings);
   };
 
   const handleUserHighlightColorsChange = (colors: UserHighlightColor[]) => {
     setUserHighlightColors(colors);
     settings.globalReadSettings.userHighlightColors = colors;
     setSettings(settings);
-    saveSettings(envConfig, settings);
+    saveSettings(settings);
   };
 
   const handleDefaultHighlightLabelsChange = (
@@ -309,7 +309,7 @@ const ColorPanel: React.FC<SettingsPanelPanelProp> = ({ bookKey, onRegisterReset
     setDefaultHighlightLabels(labels);
     settings.globalReadSettings.defaultHighlightLabels = labels;
     setSettings(settings);
-    saveSettings(envConfig, settings);
+    saveSettings(settings);
   };
 
   return (

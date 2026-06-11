@@ -70,7 +70,7 @@ const TTSPanel: React.FC<SettingsPanelPanelProp> = ({ bookKey, onRegisterReset }
     setCustomTtsHighlightColors(colors);
     settings.globalReadSettings.customTtsHighlightColors = colors;
     setSettings(settings);
-    saveSettings(envConfig, settings);
+    saveSettings(settings);
   };
 
   const handleMediaMetadataChange = (event: React.ChangeEvent<HTMLSelectElement>) => {

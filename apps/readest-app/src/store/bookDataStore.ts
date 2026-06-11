@@ -2,7 +2,6 @@ import { Effect } from 'effect';
 import { create } from 'zustand';
 import type { SystemSettings } from '@/domain/settings';
 import type { Book, BookConfig, BookNote } from '@/domain/book';
-import type { EnvConfigType } from '@/services/environment';
 import type { BookDoc } from '@/domain/document';
 import { BookRepository } from '@/application/repositories/BookRepository';
 import { LibraryRepository } from '@/application/repositories/LibraryRepository';
@@ -23,12 +22,7 @@ interface BookDataState {
   booksData: { [id: string]: BookData };
   getConfig: (key: string | null) => BookConfig | null;
   setConfig: (key: string, partialConfig: Partial<BookConfig>) => void;
-  saveConfig: (
-    envConfig: EnvConfigType,
-    bookKey: string,
-    config: BookConfig,
-    settings: SystemSettings,
-  ) => Promise<void>;
+  saveConfig: (bookKey: string, config: BookConfig, settings: SystemSettings) => Promise<void>;
   updateBooknotes: (key: string, booknotes: BookNote[]) => BookConfig | undefined;
   getBookData: (keyOrId: string) => BookData | null;
   clearBookData: (keyOrId: string) => void;
@@ -74,12 +68,7 @@ export const useBookDataStore = create<BookDataState>((set, get) => ({
       };
     });
   },
-  saveConfig: async (
-    _envConfig: EnvConfigType,
-    bookKey: string,
-    config: BookConfig,
-    settings: SystemSettings,
-  ) => {
+  saveConfig: async (bookKey: string, config: BookConfig, settings: SystemSettings) => {
     const { library, hashIndex, setLibrary } = useLibraryStore.getState();
     const hash = bookKey.split('-')[0]!;
     const idx = hashIndex.get(hash);

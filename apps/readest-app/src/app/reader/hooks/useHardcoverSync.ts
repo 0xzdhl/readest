@@ -20,7 +20,7 @@ export const useHardcoverSync = (bookKey: string) => {
         hardcover: { ...settings.hardcover, lastSyncedAt: timestamp },
       };
       setSettings(newSettings);
-      await saveSettings(envConfig, newSettings);
+      await saveSettings(newSettings);
     },
     [envConfig],
   );

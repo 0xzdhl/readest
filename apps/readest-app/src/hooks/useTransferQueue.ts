@@ -21,7 +21,7 @@ export function useTransferQueue(libraryLoaded = true, delayInit = 0) {
       if (booted) {
         const getLibrary = () => useLibraryStore.getState().library;
         const updateBookFn = async (book: Book) => {
-          await useLibraryStore.getState().updateBook(envConfig, book);
+          await useLibraryStore.getState().updateBook(book);
         };
         const translationFn = _;
         await transferManager.initialize(getLibrary, updateBookFn, translationFn);

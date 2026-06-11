@@ -423,7 +423,7 @@ const RSVPControl: React.FC<RSVPControlProps> = ({ bookKey, gridInsets }) => {
       if (config) {
         const update = buildRsvpExitConfigUpdate(rsvpPosition);
         setConfig(bookKey, update);
-        saveConfig(envConfig, bookKey, { ...config, ...update }, settings);
+        saveConfig(bookKey, { ...config, ...update }, settings);
       }
     }
 

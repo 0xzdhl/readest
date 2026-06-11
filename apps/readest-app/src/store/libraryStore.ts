@@ -1,7 +1,7 @@
 import { Effect } from 'effect';
 import { create } from 'zustand';
 import type { Book, BookGroupType, BooksGroup, ReadingStatus } from '@/domain/book';
-import { type EnvConfigType, isTauriAppPlatform } from '@/services/environment';
+import { isTauriAppPlatform } from '@/services/environment';
 import { BOOK_UNGROUPED_NAME } from '@/services/constants';
 import { md5Fingerprint } from '@/utils/md5';
 import { LibraryRepository } from '@/application/repositories/LibraryRepository';
@@ -38,12 +38,8 @@ interface LibraryState {
     progress: [number, number],
     readingStatus: ReadingStatus | undefined,
   ) => void;
-  updateBook: (envConfig: EnvConfigType, book: Book) => Promise<void>;
-  updateBooks: (
-    envConfig: EnvConfigType,
-    books: Book[],
-    options?: { skipSave?: boolean },
-  ) => Promise<void>;
+  updateBook: (book: Book) => Promise<void>;
+  updateBooks: (books: Book[], options?: { skipSave?: boolean }) => Promise<void>;
   setCurrentBookshelf: (bookshelf: (Book | BooksGroup)[]) => void;
   refreshGroups: () => void;
   rebuildHashIndex: () => void;
@@ -128,7 +124,7 @@ export const useLibraryStore = create<LibraryState>((set, get) => ({
     set({ hashIndex: buildHashIndex(get().library) });
   },
 
-  updateBook: async (_envConfig: EnvConfigType, book: Book) => {
+  updateBook: async (book: Book) => {
     const { library, hashIndex } = get();
     const idx = hashIndex.get(book.hash);
     // Build the new library immutably — never mutate the previous-state array.
@@ -145,11 +141,7 @@ export const useLibraryStore = create<LibraryState>((set, get) => ({
       Effect.flatMap(LibraryRepository, (r) => r.save(newLibrary)),
     );
   },
-  updateBooks: async (
-    _envConfig: EnvConfigType,
-    books: Book[],
-    options?: { skipSave?: boolean },
-  ) => {
+  updateBooks: async (books: Book[], options?: { skipSave?: boolean }) => {
     if (!books?.length) return;
 
     const { library, refreshGroups } = get();

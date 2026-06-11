@@ -233,7 +233,7 @@ export const MigrateDataWindow = () => {
         Effect.flatMap(PathResolver, (resolver) => resolver.absolute('', 'Books')),
       );
       setSettings({ ...settings });
-      await saveSettings(envConfig, settings);
+      await saveSettings(settings);
 
       // Finalize migration
       setMigrationStatus('completed');

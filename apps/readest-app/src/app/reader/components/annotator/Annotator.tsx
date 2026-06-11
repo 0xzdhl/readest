@@ -504,7 +504,7 @@ const Annotator: React.FC<{ bookKey: string }> = ({ bookKey }) => {
       }
       const updatedConfig = updateBooknotes(bookKey, annotations);
       if (updatedConfig) {
-        saveConfig(envConfig, bookKey, updatedConfig, settings);
+        saveConfig(bookKey, updatedConfig, settings);
       }
     };
     setTimeout(updateBooknotesPage, 3000);
@@ -696,7 +696,7 @@ const Annotator: React.FC<{ bookKey: string }> = ({ bookKey }) => {
     }
     const updatedConfig = updateBooknotes(bookKey, annotations);
     if (updatedConfig) {
-      saveConfig(envConfig, bookKey, updatedConfig, settings);
+      saveConfig(bookKey, updatedConfig, settings);
     }
     if (!platformInfo.isMobile) {
       setNotebookVisible(true);
@@ -751,7 +751,7 @@ const Annotator: React.FC<{ bookKey: string }> = ({ bookKey }) => {
 
     const updatedConfig = updateBooknotes(bookKey, annotations);
     if (updatedConfig) {
-      saveConfig(envConfig, bookKey, updatedConfig, settings);
+      saveConfig(bookKey, updatedConfig, settings);
     }
   };
 

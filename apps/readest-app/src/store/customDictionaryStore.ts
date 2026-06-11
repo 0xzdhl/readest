@@ -596,7 +596,7 @@ export const useCustomDictionaryStore = create<DictionaryStoreState>((set, get) 
         markExplicitProviderOrderPublish();
       }
       setSettings(next);
-      saveSettings(envConfig, next);
+      saveSettings(next);
     } catch (error) {
       console.error('Failed to save custom dictionaries settings:', error);
       throw error;

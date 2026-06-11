@@ -231,7 +231,7 @@ const SearchBar: React.FC<SearchBarProps> = ({ isVisible, bookKey, onHideSearchB
 
   const handleSearchConfigChange = (searchConfig: BookSearchConfig) => {
     setConfig(bookKey, { searchConfig: { ...searchConfig } });
-    saveConfig(envConfig, bookKey, config, settings);
+    saveConfig(bookKey, config, settings);
     handleSearchTermChange(searchTerm);
   };
 

@@ -57,7 +57,7 @@ export const useBookCoverAutoSave = (bookKey: string) => {
               }
               settings.savedBookCoverForLockScreen = book.hash;
               useSettingsStore.getState().setSettings(settings);
-              useSettingsStore.getState().saveSettings(envConfig, settings);
+              useSettingsStore.getState().saveSettings(settings);
             } catch (error) {
               eventDispatcher.dispatch('toast', {
                 type: 'error',

@@ -338,7 +338,7 @@ export const applyRemoteSettings = (
 
   const merged: SystemSettings = mergeSettings(settings, record.patch);
   setSettings(merged);
-  saveSettings(envConfig, merged);
+  saveSettings(merged);
 
   // Mirror dictionarySettings into the customDictionaryStore so the
   // dictionary panel + reader popup re-render with the remote values

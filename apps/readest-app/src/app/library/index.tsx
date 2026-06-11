@@ -475,7 +475,7 @@ const LibraryPageContent = () => {
         if (!settings.keepLogin) {
           settings.keepLogin = true;
           setSettings(settings);
-          saveSettings(envConfig, settings);
+          saveSettings(settings);
         }
       } else if (settings.keepLogin) {
         router.navigate({ to: '/auth' });
@@ -627,7 +627,7 @@ const LibraryPageContent = () => {
           successfulImports.push(book.title);
         },
         onBatch: (batch) => {
-          void updateBooks(envConfig, batch, { skipSave: true });
+          void updateBooks(batch, { skipSave: true });
         },
       }),
     );
@@ -714,7 +714,7 @@ const LibraryPageContent = () => {
               }),
             ),
           );
-          await updateBook(envConfig, book);
+          await updateBook(book);
           eventDispatcher.dispatch('toast', {
             type: 'info',
             timeout: 2000,
@@ -774,7 +774,7 @@ const LibraryPageContent = () => {
             book.downloadedAt = null;
             book.coverDownloadedAt = null;
           }
-          await updateBook(envConfig, book);
+          await updateBook(book);
           clearBookData(book.hash);
           if (syncBooks) pushLibrary();
         }
@@ -835,7 +835,7 @@ const LibraryPageContent = () => {
     }
     metadata.coverImageBlobUrl = undefined;
     metadata.coverImageFile = undefined;
-    await updateBook(envConfig, book);
+    await updateBook(book);
   };
 
   const handleImportBooksFromFiles = async () => {

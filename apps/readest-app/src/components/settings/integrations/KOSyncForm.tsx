@@ -70,7 +70,7 @@ const KOSyncForm: React.FC<KOSyncFormProps> = ({ onBack }) => {
         kosync: { ...settings.kosync, deviceName: newDeviceName },
       };
       setSettings(newSettings);
-      saveSettings(envConfig, newSettings);
+      saveSettings(newSettings);
     }, 500),
     [settings, setSettings, saveSettings, envConfig],
   );
@@ -98,7 +98,7 @@ const KOSyncForm: React.FC<KOSyncFormProps> = ({ onBack }) => {
     if (result.success) {
       const newSettings = { ...settings, kosync: config };
       setSettings(newSettings);
-      await saveSettings(envConfig, newSettings);
+      await saveSettings(newSettings);
     } else {
       eventDispatcher.dispatch('toast', {
         message: `${_('Failed to connect')}: ${_(result.message || 'Connection error')}`,
@@ -113,7 +113,7 @@ const KOSyncForm: React.FC<KOSyncFormProps> = ({ onBack }) => {
     const kosync = { ...settings.kosync, userkey: '', enabled: false };
     const newSettings = { ...settings, kosync };
     setSettings(newSettings);
-    await saveSettings(envConfig, newSettings);
+    await saveSettings(newSettings);
     setUsername('');
     eventDispatcher.dispatch('toast', { message: _('Disconnected'), type: 'info' });
   };
@@ -122,14 +122,14 @@ const KOSyncForm: React.FC<KOSyncFormProps> = ({ onBack }) => {
     const kosync = { ...settings.kosync, enabled: !settings.kosync.enabled };
     const newSettings = { ...settings, kosync };
     setSettings(newSettings);
-    await saveSettings(envConfig, newSettings);
+    await saveSettings(newSettings);
   };
 
   const handleStrategyChange = async (e: React.ChangeEvent<HTMLSelectElement>) => {
     const kosync = { ...settings.kosync, strategy: e.target.value as KOSyncStrategy };
     const newSettings = { ...settings, kosync };
     setSettings(newSettings);
-    await saveSettings(envConfig, newSettings);
+    await saveSettings(newSettings);
   };
 
   const handleChecksumMethodChange = async (e: React.ChangeEvent<HTMLSelectElement>) => {
@@ -139,7 +139,7 @@ const KOSyncForm: React.FC<KOSyncFormProps> = ({ onBack }) => {
     };
     const newSettings = { ...settings, kosync };
     setSettings(newSettings);
-    await saveSettings(envConfig, newSettings);
+    await saveSettings(newSettings);
   };
 
   const description: string = isConfigured

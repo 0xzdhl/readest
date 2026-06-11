@@ -234,7 +234,6 @@ async function updateBookViewSettings(
   const config = getConfig(bookKey);
   if (config) {
     await saveConfig(
-      envConfig,
       bookKey,
       { ...config, viewSettings: updatedViewSettings, updatedAt: Date.now() },
       settings,
@@ -300,7 +299,7 @@ async function updateGlobalSettings(
   };
 
   setSettings(updatedSettings);
-  await saveSettings(envConfig, updatedSettings);
+  await saveSettings(updatedSettings);
 }
 
 export function validateReplacementRulePattern(

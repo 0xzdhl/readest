@@ -425,7 +425,7 @@ const Bookshelf: React.FC<BookshelfProps> = ({
     }
 
     if (booksToUpdate.length > 0) {
-      await updateBooks(envConfig, booksToUpdate);
+      await updateBooks(booksToUpdate);
     }
 
     setSelectedBooks([]);
@@ -436,7 +436,7 @@ const Bookshelf: React.FC<BookshelfProps> = ({
   const handleUpdateReadingStatus = useCallback(
     async (book: Book, status: ReadingStatus | undefined) => {
       const updatedBook = { ...book, readingStatus: status, updatedAt: Date.now() };
-      await updateBooks(envConfig, [updatedBook]);
+      await updateBooks([updatedBook]);
     },
     [envConfig, updateBooks],
   );
