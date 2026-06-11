@@ -9,7 +9,7 @@ import Spinner from '@/components/Spinner';
 import SettingsDialog from '@/components/settings/SettingsDialog';
 import { useAuth } from '@/context/AuthContext';
 import { useEnv } from '@/context/EnvContext';
-import { usePlatformInfo } from '@/context/EffectRuntimeProvider';
+import { usePlatformInfo, useBooted } from '@/context/EffectRuntimeProvider';
 import { parseOpenWithFiles } from '@/helpers/openWith';
 import { useGamepad } from '@/hooks/useGamepad';
 import { useTranslation } from '@/hooks/useTranslation';
@@ -44,7 +44,8 @@ const ReaderContent: React.FC<{ ids: string; cfi?: string; settings: SystemSetti
 }) => {
   const _ = useTranslation();
   const router = useRouter();
-  const { envConfig, appService } = useEnv();
+  const { envConfig } = useEnv();
+  const booted = useBooted();
   const platformInfo = usePlatformInfo();
   const { bookKeys, dismissBook, getNextBookKey } = useBooksManager(cfi);
   const { sideBarBookKey, setSideBarBookKey } = useSidebarStore();
@@ -214,7 +215,7 @@ const ReaderContent: React.FC<{ ids: string; cfi?: string; settings: SystemSetti
       if (currentWindow.label === 'main') {
         navigateBackToLibrary();
       } else {
-        if (appService) {
+        if (booted) {
           await ensureMainLibraryWindow();
         }
         currentWindow.close();

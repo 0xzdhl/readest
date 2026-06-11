@@ -7,8 +7,7 @@ import {
   RiUploadCloud2Line,
   RiDownloadCloud2Line,
 } from 'react-icons/ri';
-import { useEnv } from '@/context/EnvContext';
-import { usePlatformInfo } from '@/context/EffectRuntimeProvider';
+import { usePlatformInfo, useBooted } from '@/context/EffectRuntimeProvider';
 import { useRunEffect } from '@/context/EffectRuntimeProvider';
 import { useTranslation } from '@/hooks/useTranslation';
 import { useFileSelector } from '@/hooks/useFileSelector';
@@ -43,7 +42,7 @@ export const BackupWindow: React.FC<BackupWindowProps> = ({
   initialVisible = false,
 }) => {
   const _ = useTranslation();
-  const { appService } = useEnv();
+  const booted = useBooted();
   const platformInfo = usePlatformInfo();
   const runEffect = useRunEffect();
   const { setLibrary } = useLibraryStore();
@@ -77,7 +76,7 @@ export const BackupWindow: React.FC<BackupWindowProps> = ({
   }, []);
 
   const handleBackup = async () => {
-    if (!appService) return;
+    if (!booted) return;
 
     setStatus('backing-up');
     setErrorMessage('');
@@ -103,7 +102,7 @@ export const BackupWindow: React.FC<BackupWindowProps> = ({
   };
 
   const handleRestore = async () => {
-    if (!appService) return;
+    if (!booted) return;
 
     try {
       const result = await selectFiles({

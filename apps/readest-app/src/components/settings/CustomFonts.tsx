@@ -4,7 +4,7 @@ import { MdAdd, MdDelete } from 'react-icons/md';
 import { IoMdCloseCircleOutline } from 'react-icons/io';
 import { useEnv } from '@/context/EnvContext';
 import { Effect } from 'effect';
-import { useRunEffect } from '@/context/EffectRuntimeProvider';
+import { useRunEffect, useBooted } from '@/context/EffectRuntimeProvider';
 import { FontService } from '@/application/services/FontService';
 import { useReaderStore } from '@/store/readerStore';
 import { useTranslation } from '@/hooks/useTranslation';
@@ -29,7 +29,8 @@ type FontFamily = {
 
 const CustomFonts: React.FC<CustomFontsProps> = ({ bookKey, onBack }) => {
   const _ = useTranslation();
-  const { appService, envConfig } = useEnv();
+  const { envConfig } = useEnv();
+  const booted = useBooted();
   const runEffect = useRunEffect();
   const { settings } = useSettingsStore();
   const {
@@ -75,7 +76,7 @@ const CustomFonts: React.FC<CustomFontsProps> = ({ bookKey, onBack }) => {
         if (customFont && !customFont.error) {
           const loadedFont = await loadFont(envConfig, customFont.id);
           mountCustomFont(document, loadedFont);
-          if (appService) void queueReplicaBinaryUpload('font', customFont);
+          if (booted) void queueReplicaBinaryUpload('font', customFont);
         }
       }
       saveCustomFonts(envConfig);

@@ -1,8 +1,7 @@
 import { useCallback, useEffect, useRef } from 'react';
 import { Effect } from 'effect';
 import { useAuth } from '@/context/AuthContext';
-import { useEnv } from '@/context/EnvContext';
-import { useRunEffect } from '@/context/EffectRuntimeProvider';
+import { useRunEffect, useBooted } from '@/context/EffectRuntimeProvider';
 import { useLibraryStore } from '@/store/libraryStore';
 import { useSettingsStore } from '@/store/settingsStore';
 import { useTranslation } from '@/hooks/useTranslation';
@@ -14,7 +13,7 @@ import { eventDispatcher } from '@/utils/event';
 
 export function useOPDSSubscriptions() {
   const _ = useTranslation();
-  const { appService } = useEnv();
+  const booted = useBooted();
   const runEffect = useRunEffect();
   const { user } = useAuth();
   const { libraryLoaded } = useLibraryStore();
@@ -22,7 +21,7 @@ export function useOPDSSubscriptions() {
 
   const checkOPDSSubscriptions = useCallback(
     async (verbose = false) => {
-      if (!appService || !libraryLoaded) return;
+      if (!booted || !libraryLoaded) return;
       if (isSyncingRef.current) return;
 
       const { settings } = useSettingsStore.getState();
@@ -91,7 +90,7 @@ export function useOPDSSubscriptions() {
         eventDispatcher.dispatch('opds-sync-complete');
       }
     },
-    [_, appService, libraryLoaded, user],
+    [_, booted, libraryLoaded, user],
   );
 
   // Auto-trigger on startup after library is loaded

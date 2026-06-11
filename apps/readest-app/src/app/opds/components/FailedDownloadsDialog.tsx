@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react';
 import { IoClose, IoRefresh } from 'react-icons/io5';
 
 import ModalPortal from '@/components/ModalPortal';
-import { useEnv } from '@/context/EnvContext';
+import { useBooted } from '@/context/EffectRuntimeProvider';
 import { useTranslation } from '@/hooks/useTranslation';
 import { loadSubscriptionState, saveSubscriptionState } from '@/services/opds';
 import type { FailedEntry, OPDSSubscriptionState } from '@/services/opds/types';
@@ -17,11 +17,11 @@ interface Props {
 
 export function FailedDownloadsDialog({ catalogId, catalogName, onClose }: Props) {
   const _ = useTranslation();
-  const { appService } = useEnv();
+  const booted = useBooted();
   const [state, setState] = useState<OPDSSubscriptionState | null>(null);
 
   useEffect(() => {
-    if (!appService) return;
+    if (!booted) return;
     let cancelled = false;
     const refresh = async () => {
       const next = await loadSubscriptionState(catalogId);
@@ -36,9 +36,9 @@ export function FailedDownloadsDialog({ catalogId, catalogName, onClose }: Props
       cancelled = true;
       eventDispatcher.off('opds-sync-complete', handler);
     };
-  }, [appService, catalogId]);
+  }, [booted, catalogId]);
 
-  if (!appService || !state) return null;
+  if (!booted || !state) return null;
 
   const persist = async (next: OPDSSubscriptionState) => {
     setState(next);

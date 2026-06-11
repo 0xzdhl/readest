@@ -33,7 +33,7 @@ import { getCurrentWebview } from '@tauri-apps/api/webview';
 
 import { useEnv } from '@/context/EnvContext';
 import { useAuth } from '@/context/AuthContext';
-import { useRunEffect, usePlatformInfo } from '@/context/EffectRuntimeProvider';
+import { useRunEffect, usePlatformInfo, useBooted } from '@/context/EffectRuntimeProvider';
 import { useThemeStore } from '@/store/themeStore';
 import { useTranslation } from '@/hooks/useTranslation';
 import { useLibraryStore } from '@/store/libraryStore';
@@ -123,7 +123,8 @@ export const Route = createFileRoute('/library/')({
 const LibraryPageContent = () => {
   const searchParams = Route.useSearch();
   const router = useAppRouter();
-  const { envConfig, appService } = useEnv();
+  const { envConfig } = useEnv();
+  const booted = useBooted();
   const { user } = useAuth();
   const {
     library: libraryBooks,
@@ -917,7 +918,7 @@ const LibraryPageContent = () => {
     handleLibraryNavigation(group);
   };
 
-  if (!appService || !insets || checkOpenWithBooks || checkLastOpenBooks) {
+  if (!booted || !insets || checkOpenWithBooks || checkLastOpenBooks) {
     return <div className={clsx('full-height', !platformInfo.isLinuxApp && 'bg-base-200')} />;
   }
 

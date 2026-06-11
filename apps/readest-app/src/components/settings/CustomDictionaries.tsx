@@ -25,7 +25,7 @@ import { CSS } from '@dnd-kit/utilities';
 
 import { useEnv } from '@/context/EnvContext';
 import { Effect } from 'effect';
-import { useRunEffect } from '@/context/EffectRuntimeProvider';
+import { useRunEffect, useBooted } from '@/context/EffectRuntimeProvider';
 import { DictionaryService } from '@/application/services/DictionaryService';
 import { useTranslation } from '@/hooks/useTranslation';
 import { useFileSelector } from '@/hooks/useFileSelector';
@@ -230,7 +230,8 @@ const SortableRow: React.FC<SortableRowProps> = ({
 
 const CustomDictionaries: React.FC<CustomDictionariesProps> = ({ onBack }) => {
   const _ = useTranslation();
-  const { appService, envConfig } = useEnv();
+  const { envConfig } = useEnv();
+  const booted = useBooted();
   const runEffect = useRunEffect();
   const {
     dictionaries,
@@ -434,13 +435,13 @@ const CustomDictionaries: React.FC<CustomDictionariesProps> = ({ onBack }) => {
       let added = 0;
       for (const dict of importResult.imported) {
         addDictionary(dict);
-        if (appService) void queueDictionaryBinaryUpload(dict);
+        if (booted) void queueDictionaryBinaryUpload(dict);
         added += 1;
       }
       let replaced = 0;
       for (const { oldIds, newDict } of importResult.replacements) {
         replaceDictionaries(oldIds, newDict);
-        if (appService) void queueDictionaryBinaryUpload(newDict);
+        if (booted) void queueDictionaryBinaryUpload(newDict);
         // Invalidate any cached provider instances for the replaced ids so
         // their next lookup picks up the new bundle's files.
         for (const oldId of oldIds) evictProvider(oldId);

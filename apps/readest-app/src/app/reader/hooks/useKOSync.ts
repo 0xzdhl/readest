@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
-import { useEnv } from '@/context/EnvContext';
+import { useBooted } from '@/context/EffectRuntimeProvider';
 import { useSettingsStore } from '@/store/settingsStore';
 import { useReaderStore } from '@/store/readerStore';
 import { useBookDataStore } from '@/store/bookDataStore';
@@ -29,7 +29,7 @@ export interface SyncDetails {
 
 export const useKOSync = (bookKey: string) => {
   const _ = useTranslation();
-  const { appService } = useEnv();
+  const booted = useBooted();
   const { settings } = useSettingsStore();
   const { getProgress, getView } = useReaderStore();
   const { getBookData, getConfig, setConfig } = useBookDataStore();
@@ -199,7 +199,7 @@ export const useKOSync = (bookKey: string) => {
   const pushProgress = useMemo(
     () =>
       debounce(async () => {
-        if (!bookKey || !appService || !kosyncClient || !hasPulledOnce.current) return;
+        if (!bookKey || !booted || !kosyncClient || !hasPulledOnce.current) return;
         const { settings } = useSettingsStore.getState();
         if (['receive', 'disable'].includes(settings.kosync.strategy)) return;
 
@@ -210,12 +210,12 @@ export const useKOSync = (bookKey: string) => {
         await kosyncClient.updateProgress(currentBook, progress.koProgress, progress.percentage);
       }, 5000),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [bookKey, appService, kosyncClient],
+    [bookKey, booted, kosyncClient],
   );
 
   const pullProgress = useCallback(
     async () => {
-      if (!progress?.location || !appService || !kosyncClient) return;
+      if (!progress?.location || !booted || !kosyncClient) return;
 
       const bookData = getBookData(bookKey);
       const book = bookData?.book;
@@ -254,7 +254,7 @@ export const useKOSync = (bookKey: string) => {
       }
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [bookKey, appService, kosyncClient, settings.kosync, progress],
+    [bookKey, booted, kosyncClient, settings.kosync, progress],
   );
 
   // use a ref to track the current push/pull functions so they can change without triggering effects
@@ -299,11 +299,11 @@ export const useKOSync = (bookKey: string) => {
 
   // Pull: pull progress once when the book is opened
   useEffect(() => {
-    if (!appService || !kosyncClient || !progress?.location) return;
+    if (!booted || !kosyncClient || !progress?.location) return;
     if (hasPulledOnce.current) return;
 
     syncRefs.current.pullProgress();
-  }, [appService, kosyncClient, progress?.location]);
+  }, [booted, kosyncClient, progress?.location]);
 
   // Push: auto-push progress when progress changes with a debounce
   useEffect(() => {

@@ -3,7 +3,7 @@ import type React from 'react';
 import { useEffect, useState } from 'react';
 import { useEnv } from '@/context/EnvContext';
 import { Effect } from 'effect';
-import { useRunEffect } from '@/context/EffectRuntimeProvider';
+import { useRunEffect, useBooted } from '@/context/EffectRuntimeProvider';
 import { ImageService } from '@/application/services/ImageService';
 import { saveViewSettings } from '@/helpers/settings';
 import { useFileSelector } from '@/hooks/useFileSelector';
@@ -40,7 +40,8 @@ const ColorPanel: React.FC<SettingsPanelPanelProp> = ({ bookKey, onRegisterReset
   const _ = useTranslation();
   const { themeMode, themeColor, isDarkMode, setThemeMode, setThemeColor, saveCustomTheme } =
     useThemeStore();
-  const { envConfig, appService } = useEnv();
+  const { envConfig } = useEnv();
+  const booted = useBooted();
   const runEffect = useRunEffect();
   const { settings, setSettings, saveSettings } = useSettingsStore();
   const { getView, getViewSettings } = useReaderStore();
@@ -268,7 +269,7 @@ const ColorPanel: React.FC<SettingsPanelPanelProp> = ({ bookKey, onRegisterReset
         });
         if (customTexture && !customTexture.error) {
           await loadTexture(envConfig, customTexture.id);
-          if (appService) void queueReplicaBinaryUpload('texture', customTexture);
+          if (booted) void queueReplicaBinaryUpload('texture', customTexture);
         }
       }
       saveCustomTextures(envConfig);

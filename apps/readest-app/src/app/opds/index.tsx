@@ -4,7 +4,6 @@ import { createFileRoute, useRouter } from '@tanstack/react-router';
 import { z } from 'zod';
 import { isOPDSCatalog, getPublication, getFeed, getOpenSearch } from 'foliate-js/opds.js';
 import { openUrl } from '@tauri-apps/plugin-opener';
-import { useEnv } from '@/context/EnvContext';
 import { useAuth } from '@/context/AuthContext';
 import { isWebAppPlatform } from '@/services/environment';
 import { downloadFile } from '@/libs/storage';
@@ -41,7 +40,7 @@ import { ImportError } from '@/services/errors';
 import { READEST_OPDS_USER_AGENT } from '@/services/constants';
 import { buildPseStreamFileName } from '@/services/opds/pseStream';
 import { Effect } from 'effect';
-import { useRunEffect, usePlatformInfo } from '@/context/EffectRuntimeProvider';
+import { useRunEffect, usePlatformInfo, useBooted } from '@/context/EffectRuntimeProvider';
 import { FileSystem } from '@/application/ports/FileSystem';
 import { PathResolver } from '@/application/ports/PathResolver';
 import { importBooks } from '@/application/usecases/book';
@@ -84,7 +83,7 @@ interface HistoryEntry {
 function OPDSBrowserPage() {
   const _ = useTranslation();
   const router = useRouter();
-  const { appService } = useEnv();
+  const booted = useBooted();
   const { user } = useAuth();
   const { libraryLoaded } = useLibrary();
   const { safeAreaInsets, isRoundedWindow } = useThemeStore();
@@ -453,7 +452,7 @@ function OPDSBrowserPage() {
       type?: string,
       onProgress?: (progress: { progress: number; total: number }) => void,
     ) => {
-      if (!appService || !libraryLoaded) return;
+      if (!booted || !libraryLoaded) return;
       try {
         const url = resolveURL(href, state.baseURL);
         const parsed = parseMediaType(type);
@@ -550,12 +549,12 @@ function OPDSBrowserPage() {
       }
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [user, state.baseURL, appService, libraryLoaded, fsWriter, runEffect],
+    [user, state.baseURL, booted, libraryLoaded, fsWriter, runEffect],
   );
 
   const handleStream = useCallback(
     async (href: string, count: number, title: string, author: string) => {
-      if (!appService || !libraryLoaded) return;
+      if (!booted || !libraryLoaded) return;
       try {
         const url = resolveURL(href, state.baseURL);
         const psePath = buildPseStreamFileName({ url, catalogId, count, title, author });
@@ -576,12 +575,12 @@ function OPDSBrowserPage() {
         });
       }
     },
-    [state.baseURL, catalogId, appService, libraryLoaded, router, _],
+    [state.baseURL, catalogId, booted, libraryLoaded, router, _],
   );
 
   const handleGenerateCachedImageUrl = useCallback(
     async (url: string) => {
-      if (!appService) return url;
+      if (!booted) return url;
       const username = usernameRef.current || '';
       const password = passwordRef.current || '';
       const customHeaders = customHeadersRef.current;
@@ -623,7 +622,7 @@ function OPDSBrowserPage() {
         return await runEffect(Effect.flatMap(FileSystem, (fs) => fs.getUrl(cachedPath)));
       }
     },
-    [appService, fsWriter, runEffect],
+    [booted, fsWriter, runEffect],
   );
 
   const handleBack = useCallback(() => {

@@ -13,7 +13,7 @@ import { isTauriAppPlatform, isWebAppPlatform, getWebsiteUrl } from '@/services/
 import { setBackupDialogVisible } from '@/app/library/components/backupDialog';
 import { useAuth } from '@/context/AuthContext';
 import { useEnv } from '@/context/EnvContext';
-import { useRunEffect, usePlatformInfo } from '@/context/EffectRuntimeProvider';
+import { useRunEffect, usePlatformInfo, useBooted } from '@/context/EffectRuntimeProvider';
 import { LibraryRepository } from '@/application/repositories/LibraryRepository';
 import { BookRepository } from '@/application/repositories/BookRepository';
 import { useThemeStore } from '@/store/themeStore';
@@ -51,7 +51,8 @@ interface Permissions {
 const SettingsMenu: React.FC<SettingsMenuProps> = ({ onPullLibrary, setIsDropdownOpen }) => {
   const _ = useTranslation();
   const router = useRouter();
-  const { envConfig, appService } = useEnv();
+  const { envConfig } = useEnv();
+  const booted = useBooted();
   const platformInfo = usePlatformInfo();
   const runEffect = useRunEffect();
   const { user } = useAuth();
@@ -199,7 +200,7 @@ const SettingsMenu: React.FC<SettingsMenuProps> = ({ onPullLibrary, setIsDropdow
   };
 
   const handleRefreshMetadata = async () => {
-    if (!appService || isRefreshingMetadata) return;
+    if (!booted || isRefreshingMetadata) return;
     setIsRefreshingMetadata(true);
     setRefreshMetadataProgress(_('Loading library...'));
     try {

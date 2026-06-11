@@ -3,6 +3,7 @@ import { useEffect } from 'react';
 import { FileSystem } from '@/application/ports/FileSystem';
 import { useAuth } from '@/context/AuthContext';
 import { useEnv } from '@/context/EnvContext';
+import { useBooted } from '@/context/EffectRuntimeProvider';
 import type { ImportedDictionary } from '@/domain/dictionaries';
 import type { EnvConfigType } from '@/services/environment';
 import { dictionaryAdapter } from '@/services/sync/adapters/dictionary';
@@ -505,7 +506,8 @@ export const useReplicaPull = ({
   kinds,
   delayMs = REPLICA_PULL_DEFAULT_DELAY_MS,
 }: UseReplicaPullOpts): void => {
-  const { envConfig, appService } = useEnv();
+  const { envConfig } = useEnv();
+  const booted = useBooted();
   const { user } = useAuth();
   // Stable cache key so the effect doesn't re-run when the caller
   // passes a freshly-allocated array literal each render.
@@ -520,7 +522,7 @@ export const useReplicaPull = ({
   }, [user]);
 
   useEffect(() => {
-    if (!appService) return;
+    if (!booted) return;
     if (!user) return;
 
     for (const kind of kinds) registeredKinds.add(kind);
@@ -608,9 +610,9 @@ export const useReplicaPull = ({
     if (getReplicaSync()) {
       schedule();
     } else {
-      // Hard-refresh race: appService resolved before
+      // Hard-refresh race: boot resolved before
       // EnvContext.initReplicaSync finished (loadSettings is async,
-      // setAppService runs first). Wait for the ready signal so the
+      // the booted flag flips first). Wait for the ready signal so the
       // pull still fires once the singleton lands.
       unsubscribe = subscribeReplicaSyncReady(schedule);
     }
@@ -620,7 +622,7 @@ export const useReplicaPull = ({
       if (unsubscribe) unsubscribe();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [kindsKey, appService, envConfig, delayMs, user]);
+  }, [kindsKey, booted, envConfig, delayMs, user]);
 };
 
 /** Test seam — clear all module-level state and tear down listeners. */

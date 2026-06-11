@@ -16,7 +16,7 @@ import MenuItem from '@/components/MenuItem';
 import { useRouter } from '@tanstack/react-router';
 import { clientEnv } from '@/clientEnv';
 import { useEnv } from '@/context/EnvContext';
-import { usePlatformInfo } from '@/context/EffectRuntimeProvider';
+import { usePlatformInfo, useBooted } from '@/context/EffectRuntimeProvider';
 import { useTranslation } from '@/hooks/useTranslation';
 import { isWebAppPlatform } from '@/services/environment';
 import { useCustomOPDSStore } from '@/store/customOPDSStore';
@@ -111,7 +111,8 @@ interface CatalogManagerProps {
 export function CatalogManager({ inSubPage = false }: CatalogManagerProps = {}) {
   const _ = useTranslation();
   const router = useRouter();
-  const { envConfig, appService } = useEnv();
+  const { envConfig } = useEnv();
+  const booted = useBooted();
   const platformInfo = usePlatformInfo();
   // Hydrate the store from settings on mount; all CRUD goes through it
   // so the replica-sync push fires automatically. The local `catalogs`
@@ -137,13 +138,13 @@ export function CatalogManager({ inSubPage = false }: CatalogManagerProps = {}) 
   const [failedDialogCatalogId, setFailedDialogCatalogId] = useState<string | null>(null);
 
   const reloadSubscriptionStates = useCallback(async () => {
-    if (!appService) return;
+    if (!booted) return;
     const eligible = catalogs.filter((c) => c.autoDownload);
     const entries = await Promise.all(
       eligible.map(async (c) => [c.id, await loadSubscriptionState(c.id)] as const),
     );
     setSubscriptionStates(Object.fromEntries(entries));
-  }, [appService, catalogs]);
+  }, [booted, catalogs]);
 
   useEffect(() => {
     reloadSubscriptionStates();
@@ -317,7 +318,7 @@ export function CatalogManager({ inSubPage = false }: CatalogManagerProps = {}) 
   const handleRemoveCatalog = (id: string) => {
     useCustomOPDSStore.getState().removeCatalog(id);
     persistMutation();
-    if (appService) {
+    if (booted) {
       // Don't await — leftover state files are harmless and we don't want to
       // block UI removal if the filesystem call fails.
       void deleteSubscriptionState(id);
