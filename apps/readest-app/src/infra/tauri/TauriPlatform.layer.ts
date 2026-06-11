@@ -6,6 +6,15 @@ import type { DistChannel } from '@/domain/system';
 import { Platform } from '@/application/ports/Platform';
 import type { PlatformInfo } from '@/application/ports/Platform';
 
+// Window globals set by the Tauri shell (relocated here from the deleted legacy
+// native service). `__READEST_IS_EINK` is declared in store/themeStore.
+declare global {
+  interface Window {
+    __READEST_IS_APPIMAGE?: boolean;
+    __READEST_UPDATER_DISABLED?: boolean;
+  }
+}
+
 // DIST_CHANNEL comes from env (safe to read at import). OS_TYPE calls a Tauri API,
 // so it is computed lazily inside computeInfo() — importing this module must be
 // side-effect-free, because the client-runtime singleton statically pulls in this
@@ -14,7 +23,7 @@ const DIST_CHANNEL = clientEnv.VITE_DIST_CHANNEL as DistChannel;
 
 /**
  * Compute PlatformInfo from the current Tauri runtime context.
- * Mirrors NativeAppService field-by-field (nativeAppService.ts:423–461).
+ * Mirrors the legacy native platform-flag computation field-by-field.
  * Window globals are guarded for SSR safety.
  */
 function computeInfo(): PlatformInfo {

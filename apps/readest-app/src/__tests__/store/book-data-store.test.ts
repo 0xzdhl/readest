@@ -49,13 +49,11 @@ import type { BookData } from '@/store/bookDataStore';
 import type { BookConfig, BookNote, Book } from '@/domain/book';
 import { useLibraryStore } from '@/store/libraryStore';
 import type { EnvConfigType } from '@/services/environment';
-import type { AppService } from '@/domain/system';
 import type { SystemSettings } from '@/domain/settings';
 
-function makeEnvConfig(appService: Partial<AppService>): EnvConfigType {
-  return {
-    getAppService: vi.fn().mockResolvedValue(appService as AppService),
-  };
+// EnvConfigType is now empty (god-objects deleted); stores ignore envConfig.
+function makeEnvConfig(_appService?: unknown): EnvConfigType {
+  return {};
 }
 
 const FAKE_SETTINGS = {} as unknown as SystemSettings;

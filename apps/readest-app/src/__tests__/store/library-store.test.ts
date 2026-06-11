@@ -38,12 +38,10 @@ vi.mock('@/runtime/clientRuntime', async () => {
 import { useLibraryStore } from '@/store/libraryStore';
 import type { Book, BooksGroup } from '@/domain/book';
 import type { EnvConfigType } from '@/services/environment';
-import type { AppService } from '@/domain/system';
 
-function makeEnvConfig(appService: Partial<AppService>): EnvConfigType {
-  return {
-    getAppService: vi.fn().mockResolvedValue(appService as AppService),
-  };
+// EnvConfigType is now empty (god-objects deleted); stores ignore envConfig.
+function makeEnvConfig(_appService?: unknown): EnvConfigType {
+  return {};
 }
 
 function makeBook(overrides: Partial<Book> = {}): Book {
