@@ -150,7 +150,7 @@ function toSettingsDict(dict: ImportedDictionary): ImportedDictionary {
 // fire-and-forget saves through it so the next loadCustomDictionaries
 // reads up-to-date settings.customDictionaries instead of wiping the
 // in-memory rows.
-import { getReplicaPersistEnv } from '@/services/sync/replicaPersist';
+import { isReplicaPersistEnabled } from '@/services/sync/replicaPersist';
 
 /**
  * Look up a dict by its cross-device contentId, falling back to the
@@ -227,8 +227,7 @@ export const useCustomDictionaryStore = create<DictionaryStoreState>((set, get) 
         settings: { ...state.settings, providerOrder: order, providerEnabled: enabled },
       };
     });
-    const env = getReplicaPersistEnv();
-    if (env) void get().saveCustomDictionaries();
+    if (isReplicaPersistEnabled()) void get().saveCustomDictionaries();
   },
 
   findByContentId: (contentId) =>
@@ -240,8 +239,7 @@ export const useCustomDictionaryStore = create<DictionaryStoreState>((set, get) 
         d.contentId === contentId ? { ...d, unavailable: undefined } : d,
       ),
     }));
-    const env = getReplicaPersistEnv();
-    if (env) void get().saveCustomDictionaries();
+    if (isReplicaPersistEnabled()) void get().saveCustomDictionaries();
   },
 
   softDeleteByContentId: (contentId) => {
@@ -278,8 +276,7 @@ export const useCustomDictionaryStore = create<DictionaryStoreState>((set, get) 
         ),
       },
     }));
-    const env = getReplicaPersistEnv();
-    if (env) void get().saveCustomDictionaries();
+    if (isReplicaPersistEnabled()) void get().saveCustomDictionaries();
   },
 
   updateDictionary: (id, patch) => {

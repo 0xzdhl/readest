@@ -12,7 +12,6 @@ import { type ClientServices, getClientRuntime, getPlatformInfo } from '@/runtim
 import type { PlatformInfo } from '@/application/ports/Platform';
 import type { SystemSettings } from '@/domain/settings';
 import { BootApp } from '@/application/usecases/boot/BootApp';
-import env from '@/services/environment';
 import { bootstrapReplicaAdapters } from '@/services/sync/replicaBootstrap';
 import { enableReplicaAutoPersist } from '@/services/sync/replicaPersist';
 import { createSettingsCursorStore } from '@/services/sync/replicaCursorStore';
@@ -52,7 +51,7 @@ export function EffectRuntimeProvider({ children }: { children: ReactNode }) {
         setBootSettings(r.settings);
         setBooted(true);
         bootstrapReplicaAdapters();
-        enableReplicaAutoPersist(env);
+        enableReplicaAutoPersist();
         try {
           if (r.settings.replicaDeviceId) {
             const ctx = initReplicaSync({

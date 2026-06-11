@@ -6,11 +6,13 @@ vi.mock('@/services/sync/replicaPublish', () => ({
 }));
 
 import { useCustomDictionaryStore, findDictionaryByContentId } from '@/store/customDictionaryStore';
-import { enableReplicaAutoPersist } from '@/services/sync/replicaPersist';
+import {
+  enableReplicaAutoPersist,
+  __resetReplicaPersistForTests,
+} from '@/services/sync/replicaPersist';
 import { BUILTIN_WEB_SEARCH_IDS } from '@/domain/dictionaries';
 import { publishReplicaUpsert } from '@/services/sync/replicaPublish';
 import { useSettingsStore } from '@/store/settingsStore';
-import type { EnvConfigType } from '@/services/environment';
 import type { ImportedDictionary } from '@/domain/dictionaries';
 
 const ZERO = (s: string) => s.startsWith('web:builtin:');
@@ -231,9 +233,8 @@ describe('customDictionaryStore — web search CRUD', () => {
       const saveSettings = vi
         .spyOn(useSettingsStore.getState(), 'saveSettings')
         .mockResolvedValue(undefined);
-      const fakeEnv = { name: 'test-env' } as unknown as EnvConfigType;
-      enableReplicaAutoPersist(fakeEnv);
-      return { setSettings, saveSettings, fakeEnv };
+      enableReplicaAutoPersist();
+      return { setSettings, saveSettings };
     };
 
     it('applyRemoteDictionary persists state via saveCustomDictionaries when env is registered', async () => {
@@ -332,10 +333,10 @@ describe('customDictionaryStore — web search CRUD', () => {
       expect('phantom-imp' in after.providerEnabled).toBe(false);
     });
 
-    it('does not persist when env has not been registered', async () => {
-      // Wipe the registry by re-enabling with null-equivalent. We expose
-      // enableReplicaAutoPersist with a nullable arg for test isolation.
-      enableReplicaAutoPersist(null);
+    it('does not persist when auto-persist has not been enabled', async () => {
+      // Reset the module flag back to disabled for test isolation; the
+      // public boot-time API is enable-only, so tests use the reset helper.
+      __resetReplicaPersistForTests();
       const setSettings = vi.spyOn(useSettingsStore.getState(), 'setSettings');
       const saveSettings = vi
         .spyOn(useSettingsStore.getState(), 'saveSettings')

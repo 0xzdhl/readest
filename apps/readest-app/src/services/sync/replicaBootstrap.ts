@@ -6,7 +6,7 @@ import { fontAdapter, FONT_KIND } from './adapters/font';
 import { textureAdapter, TEXTURE_KIND } from './adapters/texture';
 import { opdsCatalogAdapter } from './adapters/opdsCatalog';
 import { settingsAdapter } from './adapters/settings';
-import { getReplicaPersistEnv } from './replicaPersist';
+import { isReplicaPersistEnabled } from './replicaPersist';
 import { getReplicaAdapter, registerReplicaAdapter } from './replicaRegistry';
 import { registerReplicaDownloadHandler } from './replicaTransferIntegration';
 import type { ReplicaAdapter } from './replicaRegistry';
@@ -43,8 +43,7 @@ export const bootstrapReplicaAdapters = (): void => {
   // fallback face. Falls back to flag-only when persist env hasn't
   // landed yet (extremely early boot).
   registerReplicaDownloadHandler(FONT_KIND, (replicaId) => {
-    const env = getReplicaPersistEnv();
-    if (!env) {
+    if (!isReplicaPersistEnabled()) {
       useCustomFontStore.getState().markAvailableByContentId(replicaId);
       return;
     }
@@ -56,8 +55,7 @@ export const bootstrapReplicaAdapters = (): void => {
   // selects the texture (via applyTexture), so no automatic mount
   // here. Falls back to flag-only when persist env hasn't landed yet.
   registerReplicaDownloadHandler(TEXTURE_KIND, (replicaId) => {
-    const env = getReplicaPersistEnv();
-    if (!env) {
+    if (!isReplicaPersistEnabled()) {
       useCustomTextureStore.getState().markAvailableByContentId(replicaId);
       return;
     }

@@ -5,7 +5,7 @@ import { FileSystem } from '@/application/ports/FileSystem';
 import { createCustomFont, getFontFormat, getMimeType, mountCustomFont } from '@/styles/fonts';
 import type { CustomFont } from '@/domain/fonts';
 import { useSettingsStore } from './settingsStore';
-import { getReplicaPersistEnv } from '@/services/sync/replicaPersist';
+import { isReplicaPersistEnabled } from '@/services/sync/replicaPersist';
 import { publishReplicaDelete, publishReplicaUpsert } from '@/services/sync/replicaPublish';
 import { FONT_KIND } from '@/services/sync/adapters/font';
 import { computeFontContentId } from '@/services/fontService';
@@ -162,8 +162,7 @@ export const useCustomFontStore = create<FontStoreState>((set, get) => ({
           : [...state.fonts, font];
       return { fonts };
     });
-    const env = getReplicaPersistEnv();
-    if (env) void get().saveCustomFonts();
+    if (isReplicaPersistEnabled()) void get().saveCustomFonts();
   },
 
   softDeleteByContentId: (contentId) => {
@@ -175,8 +174,7 @@ export const useCustomFontStore = create<FontStoreState>((set, get) => ({
       ),
     }));
     if (target.blobUrl) URL.revokeObjectURL(target.blobUrl);
-    const env = getReplicaPersistEnv();
-    if (env) void get().saveCustomFonts();
+    if (isReplicaPersistEnabled()) void get().saveCustomFonts();
   },
 
   markAvailableByContentId: (contentId) => {
@@ -185,8 +183,7 @@ export const useCustomFontStore = create<FontStoreState>((set, get) => ({
         f.contentId === contentId ? { ...f, unavailable: undefined } : f,
       ),
     }));
-    const env = getReplicaPersistEnv();
-    if (env) void get().saveCustomFonts();
+    if (isReplicaPersistEnabled()) void get().saveCustomFonts();
   },
 
   activateFontByContentId: async (contentId) => {
@@ -198,8 +195,7 @@ export const useCustomFontStore = create<FontStoreState>((set, get) => ({
       if (typeof document !== 'undefined') {
         mountCustomFont(document, loaded);
       }
-      const env = getReplicaPersistEnv();
-      if (env) await get().saveCustomFonts();
+      if (isReplicaPersistEnabled()) await get().saveCustomFonts();
     } catch (err) {
       console.warn('activateFontByContentId failed', contentId, err);
     }

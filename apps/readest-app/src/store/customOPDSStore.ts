@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import type { OPDSCatalog } from '@/domain/opds';
 import { useSettingsStore } from './settingsStore';
-import { getReplicaPersistEnv } from '@/services/sync/replicaPersist';
+import { isReplicaPersistEnabled } from '@/services/sync/replicaPersist';
 import { publishReplicaDelete, publishReplicaUpsert } from '@/services/sync/replicaPublish';
 import {
   computeOpdsCatalogContentId,
@@ -192,8 +192,7 @@ export const useCustomOPDSStore = create<OPDSStoreState>((set, get) => ({
       }
       return { catalogs: [...state.catalogs, catalog] };
     });
-    const env = getReplicaPersistEnv();
-    if (env) void get().saveCustomOPDSCatalogs();
+    if (isReplicaPersistEnabled()) void get().saveCustomOPDSCatalogs();
   },
 
   softDeleteByContentId: (contentId) => {
@@ -204,8 +203,7 @@ export const useCustomOPDSStore = create<OPDSStoreState>((set, get) => ({
         c.id === target.id ? { ...c, deletedAt: Date.now() } : c,
       ),
     }));
-    const env = getReplicaPersistEnv();
-    if (env) void get().saveCustomOPDSCatalogs();
+    if (isReplicaPersistEnabled()) void get().saveCustomOPDSCatalogs();
   },
 
   loadCustomOPDSCatalogs: async () => {

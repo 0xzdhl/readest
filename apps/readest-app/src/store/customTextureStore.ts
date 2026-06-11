@@ -10,7 +10,7 @@ import {
 } from '@/styles/textures';
 import type { CustomTexture } from '@/domain/textures';
 import { useSettingsStore } from './settingsStore';
-import { getReplicaPersistEnv } from '@/services/sync/replicaPersist';
+import { isReplicaPersistEnabled } from '@/services/sync/replicaPersist';
 import { publishReplicaDelete, publishReplicaUpsert } from '@/services/sync/replicaPublish';
 import { TEXTURE_KIND } from '@/services/sync/adapters/texture';
 import { computeTextureContentId } from '@/services/imageService';
@@ -174,8 +174,7 @@ export const useCustomTextureStore = create<TextureStoreState>((set, get) => ({
           : [...state.textures, texture];
       return { textures };
     });
-    const env = getReplicaPersistEnv();
-    if (env) void get().saveCustomTextures();
+    if (isReplicaPersistEnabled()) void get().saveCustomTextures();
   },
 
   softDeleteByContentId: (contentId) => {
@@ -187,8 +186,7 @@ export const useCustomTextureStore = create<TextureStoreState>((set, get) => ({
       ),
     }));
     if (target.blobUrl) URL.revokeObjectURL(target.blobUrl);
-    const env = getReplicaPersistEnv();
-    if (env) void get().saveCustomTextures();
+    if (isReplicaPersistEnabled()) void get().saveCustomTextures();
   },
 
   markAvailableByContentId: (contentId) => {
@@ -197,8 +195,7 @@ export const useCustomTextureStore = create<TextureStoreState>((set, get) => ({
         t.contentId === contentId ? { ...t, unavailable: undefined } : t,
       ),
     }));
-    const env = getReplicaPersistEnv();
-    if (env) void get().saveCustomTextures();
+    if (isReplicaPersistEnabled()) void get().saveCustomTextures();
   },
 
   activateTextureByContentId: async (contentId) => {
@@ -207,8 +204,7 @@ export const useCustomTextureStore = create<TextureStoreState>((set, get) => ({
     if (!target) return;
     try {
       await get().loadTexture(target.id);
-      const env = getReplicaPersistEnv();
-      if (env) await get().saveCustomTextures();
+      if (isReplicaPersistEnabled()) await get().saveCustomTextures();
     } catch (err) {
       console.warn('activateTextureByContentId failed', contentId, err);
     }
