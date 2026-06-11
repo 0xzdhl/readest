@@ -97,13 +97,13 @@ const ProofreadPopup: React.FC<ProofreadPopupProps> = ({
       };
       onConfirm?.(options);
 
-      await addRule(envConfig, bookKey, options);
+      await addRule(bookKey, options);
 
       onDismiss();
 
       if (scope !== 'selection' && !onlyForTTS) {
         if (getView(bookKey)) {
-          recreateViewer(envConfig, bookKey);
+          recreateViewer(bookKey);
         }
       }
     }

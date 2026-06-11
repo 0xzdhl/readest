@@ -1,7 +1,6 @@
 import { create } from 'zustand';
 import type { ProofreadRule, ProofreadScope, ViewSettings } from '@/domain/book';
 import type { SystemSettings } from '@/domain/settings';
-import type { EnvConfigType } from '@/services/environment';
 import { useReaderStore } from '@/store/readerStore';
 import { useSettingsStore } from '@/store/settingsStore';
 import { useBookDataStore } from '@/store/bookDataStore';
@@ -26,24 +25,14 @@ interface ProofreadStoreState {
   getGlobalRules: () => ProofreadRule[];
   getMergedRules: (bookKey: string) => ProofreadRule[];
 
-  addRule: (
-    envConfig: EnvConfigType,
-    bookKey: string,
-    options: CreateProofreadRuleOptions,
-  ) => Promise<ProofreadRule>;
+  addRule: (bookKey: string, options: CreateProofreadRuleOptions) => Promise<ProofreadRule>;
   updateRule: (
-    envConfig: EnvConfigType,
     bookKey: string,
     ruleId: string,
     updates: Partial<Omit<ProofreadRule, 'id'>>,
   ) => Promise<void>;
-  removeRule: (
-    envConfig: EnvConfigType,
-    bookKey: string,
-    ruleId: string,
-    scope: ProofreadScope,
-  ) => Promise<void>;
-  toggleRule: (envConfig: EnvConfigType, bookKey: string, ruleId: string) => Promise<void>;
+  removeRule: (bookKey: string, ruleId: string, scope: ProofreadScope) => Promise<void>;
+  toggleRule: (bookKey: string, ruleId: string) => Promise<void>;
 }
 
 function createProofreadRule(opts: CreateProofreadRuleOptions): ProofreadRule {
@@ -95,35 +84,35 @@ export const useProofreadStore = create<ProofreadStoreState>(() => ({
     return mergeRules(settings.globalViewSettings.proofreadRules, viewSettings?.proofreadRules);
   },
 
-  addRule: async (envConfig, bookKey, options) => {
+  addRule: async (bookKey, options) => {
     const rule = createProofreadRule(options);
 
     if (options.scope === 'library') {
-      await addGlobalRule(envConfig, rule);
+      await addGlobalRule(rule);
     } else {
-      await addBookRule(envConfig, bookKey, rule, options.scope);
+      await addBookRule(bookKey, rule, options.scope);
     }
 
     return rule;
   },
 
-  updateRule: async (envConfig, bookKey, ruleId, updates) => {
+  updateRule: async (bookKey, ruleId, updates) => {
     if (updates.scope === 'library') {
-      await updateGlobalRule(envConfig, ruleId, updates);
+      await updateGlobalRule(ruleId, updates);
     } else {
-      await updateBookRule(envConfig, bookKey, ruleId, updates);
+      await updateBookRule(bookKey, ruleId, updates);
     }
   },
 
-  removeRule: async (envConfig, bookKey, ruleId, scope) => {
+  removeRule: async (bookKey, ruleId, scope) => {
     if (scope === 'library') {
-      await removeGlobalRule(envConfig, ruleId);
+      await removeGlobalRule(ruleId);
     } else {
-      await removeBookRule(envConfig, bookKey, ruleId);
+      await removeBookRule(bookKey, ruleId);
     }
   },
 
-  toggleRule: async (envConfig, bookKey, ruleId) => {
+  toggleRule: async (bookKey, ruleId) => {
     const { getMergedRules } = useProofreadStore.getState();
     const mergedRules = getMergedRules(bookKey);
     const rule = mergedRules.find((r) => r.id === ruleId);
@@ -133,12 +122,11 @@ export const useProofreadStore = create<ProofreadStoreState>(() => ({
     }
 
     const { updateRule } = useProofreadStore.getState();
-    await updateRule(envConfig, bookKey, ruleId, { enabled: !rule.enabled });
+    await updateRule(bookKey, ruleId, { enabled: !rule.enabled });
   },
 }));
 
 async function addBookRule(
-  envConfig: EnvConfigType,
   bookKey: string,
   rule: ProofreadRule,
   scope: ProofreadScope,
@@ -170,11 +158,10 @@ async function addBookRule(
     }
   }
 
-  await updateBookViewSettings(envConfig, bookKey, existingRules);
+  await updateBookViewSettings(bookKey, existingRules);
 }
 
 async function updateBookRule(
-  envConfig: EnvConfigType,
   bookKey: string,
   ruleId: string,
   updates: Partial<Omit<ProofreadRule, 'id'>>,
@@ -189,14 +176,10 @@ async function updateBookRule(
   const existingRules = viewSettings.proofreadRules || [];
   const updatedRules = existingRules.map((r) => (r.id === ruleId ? { ...r, ...updates } : r));
 
-  await updateBookViewSettings(envConfig, bookKey, updatedRules);
+  await updateBookViewSettings(bookKey, updatedRules);
 }
 
-async function removeBookRule(
-  envConfig: EnvConfigType,
-  bookKey: string,
-  ruleId: string,
-): Promise<void> {
+async function removeBookRule(bookKey: string, ruleId: string): Promise<void> {
   const { getViewSettings } = useReaderStore.getState();
 
   const viewSettings = getViewSettings(bookKey);
@@ -207,14 +190,10 @@ async function removeBookRule(
   const existingRules = viewSettings.proofreadRules || [];
   const filteredRules = existingRules.filter((r) => r.id !== ruleId);
 
-  await updateBookViewSettings(envConfig, bookKey, filteredRules);
+  await updateBookViewSettings(bookKey, filteredRules);
 }
 
-async function updateBookViewSettings(
-  envConfig: EnvConfigType,
-  bookKey: string,
-  rules: ProofreadRule[],
-): Promise<void> {
+async function updateBookViewSettings(bookKey: string, rules: ProofreadRule[]): Promise<void> {
   const { getViewSettings, setViewSettings } = useReaderStore.getState();
   const { getConfig, saveConfig } = useBookDataStore.getState();
   const { settings } = useSettingsStore.getState();
@@ -241,7 +220,7 @@ async function updateBookViewSettings(
   }
 }
 
-async function addGlobalRule(envConfig: EnvConfigType, rule: ProofreadRule): Promise<void> {
+async function addGlobalRule(rule: ProofreadRule): Promise<void> {
   const { settings } = useSettingsStore.getState();
   if (!settings || !settings.globalViewSettings) return;
 
@@ -257,14 +236,13 @@ async function addGlobalRule(envConfig: EnvConfigType, rule: ProofreadRule): Pro
       enabled: rule.enabled,
       order: rule.order,
     });
-    await updateGlobalSettings(envConfig, globalRules);
+    await updateGlobalSettings(globalRules);
   } else {
-    await updateGlobalSettings(envConfig, [...globalRules, rule]);
+    await updateGlobalSettings([...globalRules, rule]);
   }
 }
 
 async function updateGlobalRule(
-  envConfig: EnvConfigType,
   ruleId: string,
   updates: Partial<Omit<ProofreadRule, 'id'>>,
 ): Promise<void> {
@@ -273,21 +251,18 @@ async function updateGlobalRule(
 
   const updatedRules = globalRules.map((r) => (r.id === ruleId ? { ...r, ...updates } : r));
 
-  await updateGlobalSettings(envConfig, updatedRules);
+  await updateGlobalSettings(updatedRules);
 }
 
-async function removeGlobalRule(envConfig: EnvConfigType, ruleId: string): Promise<void> {
+async function removeGlobalRule(ruleId: string): Promise<void> {
   const { settings } = useSettingsStore.getState();
   const globalRules = settings.globalViewSettings.proofreadRules || [];
 
   const filteredRules = globalRules.filter((r) => r.id !== ruleId);
-  await updateGlobalSettings(envConfig, filteredRules);
+  await updateGlobalSettings(filteredRules);
 }
 
-async function updateGlobalSettings(
-  envConfig: EnvConfigType,
-  rules: ProofreadRule[],
-): Promise<void> {
+async function updateGlobalSettings(rules: ProofreadRule[]): Promise<void> {
   const { settings, setSettings, saveSettings } = useSettingsStore.getState();
 
   const updatedSettings: SystemSettings = {

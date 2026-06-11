@@ -201,7 +201,7 @@ const ControlPanel: React.FC<SettingsPanelPanelProp> = ({ bookKey, onRegisterRes
   useEffect(() => {
     if (viewSettings.allowScript === allowScript) return;
     saveViewSettings(envConfig, bookKey, 'allowScript', allowScript, true, false).then(() => {
-      recreateViewer(envConfig, bookKey);
+      recreateViewer(bookKey);
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [allowScript]);

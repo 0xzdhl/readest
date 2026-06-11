@@ -10,7 +10,6 @@ import {
   FIXED_LAYOUT_FORMATS,
 } from '@/domain/book';
 import type { Insets } from '@/domain/misc';
-import type { EnvConfigType } from '@/services/environment';
 import { clientEnv } from '@/clientEnv';
 import type { FoliateView } from '@/domain/view';
 import { DocumentLoader } from '@/libs/document';
@@ -86,20 +85,14 @@ interface ReaderStore {
   setViewSettings: (key: string, viewSettings: ViewSettings) => void;
   getViewSettings: (key: string) => ViewSettings | null;
 
-  initViewState: (
-    envConfig: EnvConfigType,
-    id: string,
-    key: string,
-    isPrimary?: boolean,
-    reload?: boolean,
-  ) => Promise<void>;
+  initViewState: (id: string, key: string, isPrimary?: boolean, reload?: boolean) => Promise<void>;
   clearViewState: (key: string) => void;
   getViewState: (key: string) => ViewState | null;
   getGridInsets: (key: string) => Insets | null;
   setGridInsets: (key: string, insets: Insets | null) => void;
   setViewInited: (key: string, inited: boolean) => void;
   setPreviewMode: (key: string, previewMode: boolean) => void;
-  recreateViewer: (envConfig: EnvConfigType, key: string) => void;
+  recreateViewer: (key: string) => void;
 }
 
 export const useReaderStore = create<ReaderStore>((set, get) => ({
@@ -132,13 +125,7 @@ export const useReaderStore = create<ReaderStore>((set, get) => ({
     });
   },
   getViewState: (key: string) => get().viewStates[key] || null,
-  initViewState: async (
-    _envConfig: EnvConfigType,
-    id: string,
-    key: string,
-    isPrimary = true,
-    reload = false,
-  ) => {
+  initViewState: async (id: string, key: string, isPrimary = true, reload = false) => {
     const booksData = useBookDataStore.getState().booksData;
     const bookData = booksData[id];
     set((state) => ({
@@ -508,10 +495,10 @@ export const useReaderStore = create<ReaderStore>((set, get) => ({
       },
     })),
 
-  recreateViewer: (envConfig: EnvConfigType, key: string) => {
+  recreateViewer: (key: string) => {
     const id = key.split('-')[0]!;
     get()
-      .initViewState(envConfig, id, key, true, true)
+      .initViewState(id, key, true, true)
       .then(() => {
         set((state) => ({
           viewStates: {

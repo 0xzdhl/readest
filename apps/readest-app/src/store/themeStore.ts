@@ -5,7 +5,7 @@ import { getThemeCode, type ThemeCode } from '@/utils/style';
 import { getSystemColorScheme } from '@/utils/bridge';
 import { getCurrentWindow } from '@tauri-apps/api/window';
 import type { CustomTheme, Palette, ThemeMode } from '@/domain/themes';
-import { type EnvConfigType, isWebAppPlatform } from '@/services/environment';
+import { isWebAppPlatform } from '@/services/environment';
 import type { SystemSettings } from '@/domain/settings';
 import type { Insets } from '@/domain/misc';
 
@@ -34,12 +34,7 @@ interface ThemeState {
   setThemeMode: (mode: ThemeMode) => void;
   setThemeColor: (color: string) => void;
   updateAppTheme: (color: keyof Palette) => void;
-  saveCustomTheme: (
-    envConfig: EnvConfigType,
-    settings: SystemSettings,
-    theme: CustomTheme,
-    isDelete?: boolean,
-  ) => void;
+  saveCustomTheme: (settings: SystemSettings, theme: CustomTheme, isDelete?: boolean) => void;
   handleSystemThemeChange: (isDark: boolean) => void;
   updateSafeAreaInsets: (insets: Insets) => void;
 }
@@ -113,7 +108,7 @@ export const useThemeStore = create<ThemeState>((set, get) => {
         document.querySelector('meta[name="theme-color"]')?.setAttribute('content', palette[color]);
       }
     },
-    saveCustomTheme: async (_envConfig, settings, theme, isDelete) => {
+    saveCustomTheme: async (settings, theme, isDelete) => {
       const customThemes = settings.globalReadSettings.customThemes || [];
       const index = customThemes.findIndex((t) => t.name === theme.name);
       if (isDelete) {

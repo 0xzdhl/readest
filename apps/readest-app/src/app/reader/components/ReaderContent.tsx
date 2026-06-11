@@ -81,7 +81,7 @@ const ReaderContent: React.FC<{ ids: string; cfi?: string; settings: SystemSetti
       const isPrimary = !uniqueIds.has(id);
       uniqueIds.add(id);
       if (!getViewState(key)) {
-        initViewState(envConfig, id, key, isPrimary).catch((error) => {
+        initViewState(id, key, isPrimary).catch((error) => {
           console.log('Error initializing book', key, error);
           setErrorLoading(true);
           eventDispatcher.dispatch('toast', {

@@ -187,7 +187,7 @@ const LangPanel: React.FC<SettingsPanelPanelProp> = ({ bookKey, onRegisterReset 
       false,
     ).then(() => {
       if (!showTranslateSource && translationEnabled) {
-        recreateViewer(envConfig, bookKey);
+        recreateViewer(bookKey);
       }
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -203,7 +203,7 @@ const LangPanel: React.FC<SettingsPanelPanelProp> = ({ bookKey, onRegisterReset 
       false,
       false,
     ).then(() => {
-      recreateViewer(envConfig, bookKey);
+      recreateViewer(bookKey);
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [showTranslateSource]);
@@ -224,7 +224,7 @@ const LangPanel: React.FC<SettingsPanelPanelProp> = ({ bookKey, onRegisterReset 
       false,
       false,
     ).then(() => {
-      recreateViewer(envConfig, bookKey);
+      recreateViewer(bookKey);
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [replaceQuotationMarks]);
@@ -264,7 +264,7 @@ const LangPanel: React.FC<SettingsPanelPanelProp> = ({ bookKey, onRegisterReset 
       false,
       false,
     ).then(() => {
-      recreateViewer(envConfig, bookKey);
+      recreateViewer(bookKey);
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [convertChineseVariant]);

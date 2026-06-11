@@ -188,7 +188,7 @@ describe('proofreadStore', () => {
     test('creates rule with correct defaults', async () => {
       mockViewSettingsMap['book1'] = emptyViewSettings();
 
-      const rule = await useProofreadStore.getState().addRule(envConfig, 'book1', {
+      const rule = await useProofreadStore.getState().addRule('book1', {
         scope: 'book',
         pattern: 'teh',
         replacement: 'the',
@@ -209,7 +209,7 @@ describe('proofreadStore', () => {
     test('handles all optional fields', async () => {
       mockViewSettingsMap['book1'] = emptyViewSettings();
 
-      const rule = await useProofreadStore.getState().addRule(envConfig, 'book1', {
+      const rule = await useProofreadStore.getState().addRule('book1', {
         scope: 'book',
         pattern: 'foo',
         replacement: 'bar',
@@ -236,7 +236,7 @@ describe('proofreadStore', () => {
     test('persists via saveConfig', async () => {
       mockViewSettingsMap['book1'] = emptyViewSettings();
 
-      await useProofreadStore.getState().addRule(envConfig, 'book1', {
+      await useProofreadStore.getState().addRule('book1', {
         scope: 'book',
         pattern: 'x',
         replacement: 'y',
@@ -251,7 +251,7 @@ describe('proofreadStore', () => {
   // -----------------------------------------------------------------------
   describe('addRule (library / global scope)', () => {
     test('creates global rule and saves settings', async () => {
-      const rule = await useProofreadStore.getState().addRule(envConfig, 'book1', {
+      const rule = await useProofreadStore.getState().addRule('book1', {
         scope: 'library',
         pattern: 'teh',
         replacement: 'the',
@@ -270,7 +270,7 @@ describe('proofreadStore', () => {
       const existingRule = makeRule({ id: 'existing', scope: 'selection', pattern: 'dup' });
       mockViewSettingsMap['book1'] = emptyViewSettings({ proofreadRules: [existingRule] });
 
-      await useProofreadStore.getState().addRule(envConfig, 'book1', {
+      await useProofreadStore.getState().addRule('book1', {
         scope: 'selection',
         pattern: 'dup',
         replacement: 'new',
@@ -290,7 +290,7 @@ describe('proofreadStore', () => {
       const rule = makeRule({ id: 'r1' });
       mockViewSettingsMap['book1'] = emptyViewSettings({ proofreadRules: [rule] });
 
-      await useProofreadStore.getState().updateRule(envConfig, 'book1', 'r1', {
+      await useProofreadStore.getState().updateRule('book1', 'r1', {
         replacement: 'baz',
         enabled: false,
       });
@@ -316,7 +316,7 @@ describe('proofreadStore', () => {
         proofreadRules: [globalRule],
       });
 
-      await useProofreadStore.getState().updateRule(envConfig, 'book1', 'g1', {
+      await useProofreadStore.getState().updateRule('book1', 'g1', {
         scope: 'library',
         replacement: 'updated',
       });
@@ -333,7 +333,7 @@ describe('proofreadStore', () => {
       const rule = makeRule({ id: 'r1' });
       mockViewSettingsMap['book1'] = emptyViewSettings({ proofreadRules: [rule] });
 
-      await useProofreadStore.getState().removeRule(envConfig, 'book1', 'r1', 'book');
+      await useProofreadStore.getState().removeRule('book1', 'r1', 'book');
 
       const rules = mockViewSettingsMap['book1']!.proofreadRules!;
       expect(rules.length).toBe(0);
@@ -343,7 +343,7 @@ describe('proofreadStore', () => {
       const rule = makeRule({ id: 'r1' });
       mockViewSettingsMap['book1'] = emptyViewSettings({ proofreadRules: [rule] });
 
-      await useProofreadStore.getState().removeRule(envConfig, 'book1', 'no-match', 'book');
+      await useProofreadStore.getState().removeRule('book1', 'no-match', 'book');
 
       const rules = mockViewSettingsMap['book1']!.proofreadRules!;
       expect(rules.length).toBe(1);
@@ -360,7 +360,7 @@ describe('proofreadStore', () => {
         proofreadRules: [globalRule],
       });
 
-      await useProofreadStore.getState().removeRule(envConfig, 'book1', 'g1', 'library');
+      await useProofreadStore.getState().removeRule('book1', 'g1', 'library');
 
       expect(mockSaveSettings).toHaveBeenCalledTimes(1);
     });
@@ -486,7 +486,7 @@ describe('proofreadStore', () => {
       const rule = makeRule({ id: 'r1', enabled: true });
       mockViewSettingsMap['book1'] = emptyViewSettings({ proofreadRules: [rule] });
 
-      await useProofreadStore.getState().toggleRule(envConfig, 'book1', 'r1');
+      await useProofreadStore.getState().toggleRule('book1', 'r1');
 
       const updated = mockViewSettingsMap['book1']!.proofreadRules!.find((r) => r.id === 'r1');
       expect(updated!.enabled).toBe(false);
@@ -496,9 +496,9 @@ describe('proofreadStore', () => {
       mockViewSettingsMap['book1'] = emptyViewSettings({ proofreadRules: [] });
       mockGlobalViewSettingsHolder.current = emptyViewSettings({ proofreadRules: [] });
 
-      await expect(
-        useProofreadStore.getState().toggleRule(envConfig, 'book1', 'no-exist'),
-      ).rejects.toThrow('Rule not found: no-exist');
+      await expect(useProofreadStore.getState().toggleRule('book1', 'no-exist')).rejects.toThrow(
+        'Rule not found: no-exist',
+      );
     });
   });
 });

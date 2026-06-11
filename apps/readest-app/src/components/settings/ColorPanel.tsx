@@ -229,14 +229,14 @@ const ColorPanel: React.FC<SettingsPanelPanelProp> = ({ bookKey, onRegisterReset
 
   const handleSaveCustomTheme = (customTheme: CustomTheme) => {
     applyCustomTheme(customTheme);
-    saveCustomTheme(envConfig, settings, customTheme);
+    saveCustomTheme(settings, customTheme);
     setSettings({ ...settings });
     setThemeColor(customTheme.name);
     setShowCustomThemeEditor(false);
   };
 
   const handleDeleteCustomTheme = (customTheme: CustomTheme) => {
-    saveCustomTheme(envConfig, settings, customTheme, true);
+    saveCustomTheme(settings, customTheme, true);
     setSettings({ ...settings });
     setThemeColor('default');
     setShowCustomThemeEditor(false);

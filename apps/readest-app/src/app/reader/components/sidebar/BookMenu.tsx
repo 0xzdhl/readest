@@ -70,7 +70,7 @@ const BookMenu: React.FC<BookMenuProps> = ({ menuClassName, setIsDropdownOpen })
     if (sideBarBookKey) {
       saveViewSettings(envConfig, sideBarBookKey, 'sortedTOC', !isSortedTOC, true, false).then(
         () => {
-          recreateViewer(envConfig, sideBarBookKey);
+          recreateViewer(sideBarBookKey);
         },
       );
     }

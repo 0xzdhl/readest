@@ -313,7 +313,7 @@ const LayoutPanel: React.FC<SettingsPanelPanelProp> = ({ bookKey, onRegisterRese
         (['horizontal-rl', 'vertical-rl'].includes(writingMode) ||
           ['horizontal-rl', 'vertical-rl'].includes(prevWritingMode))
       ) {
-        recreateViewer(envConfig, bookKey);
+        recreateViewer(bookKey);
       }
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
