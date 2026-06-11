@@ -167,7 +167,7 @@ export function CatalogManager({ inSubPage = false }: CatalogManagerProps = {}) 
   // happens once per mount; the store handles backfilling contentId
   // for legacy entries.
   useEffect(() => {
-    void useCustomOPDSStore.getState().loadCustomOPDSCatalogs(envConfig);
+    void useCustomOPDSStore.getState().loadCustomOPDSCatalogs();
   }, [envConfig]);
 
   // Surface the latest store state into the local mirror used by
@@ -179,7 +179,7 @@ export function CatalogManager({ inSubPage = false }: CatalogManagerProps = {}) 
   // Persist via the store (settings + replica push), then update local
   // mirror. Replica sync fan-out happens inside the store mutators.
   const persistMutation = () => {
-    void useCustomOPDSStore.getState().saveCustomOPDSCatalogs(envConfig);
+    void useCustomOPDSStore.getState().saveCustomOPDSCatalogs();
   };
 
   const handleAddCatalog = async () => {

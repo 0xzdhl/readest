@@ -1,6 +1,5 @@
 import { create } from 'zustand';
 import { Effect } from 'effect';
-import type { EnvConfigType } from '@/services/environment';
 import { getClientRuntime } from '@/runtime/clientRuntime';
 import { FileSystem } from '@/application/ports/FileSystem';
 import type { DictionarySettings, ImportedDictionary, WebSearchEntry } from '@/domain/dictionaries';
@@ -123,7 +122,7 @@ interface DictionaryStoreState {
   applyRemoteDictionarySettings(patch: Partial<DictionarySettings>): void;
 
   /** Hydrate from `settings.customDictionaries` + `settings.dictionarySettings` + check on-disk availability. */
-  loadCustomDictionaries(envConfig: EnvConfigType): Promise<void>;
+  loadCustomDictionaries(): Promise<void>;
   /**
    * Persist current state back into settings (which then syncs to
    * cloud). Pass `{ publishOrderChange: true }` from explicit user
@@ -133,10 +132,7 @@ interface DictionaryStoreState {
    * callers (replica pull, download-complete) leave it false so
    * automatic local order changes never publish back to the server.
    */
-  saveCustomDictionaries(
-    envConfig: EnvConfigType,
-    opts?: { publishOrderChange?: boolean },
-  ): Promise<void>;
+  saveCustomDictionaries(opts?: { publishOrderChange?: boolean }): Promise<void>;
 }
 
 function toSettingsDict(dict: ImportedDictionary): ImportedDictionary {
@@ -232,7 +228,7 @@ export const useCustomDictionaryStore = create<DictionaryStoreState>((set, get) 
       };
     });
     const env = getReplicaPersistEnv();
-    if (env) void get().saveCustomDictionaries(env);
+    if (env) void get().saveCustomDictionaries();
   },
 
   findByContentId: (contentId) =>
@@ -245,7 +241,7 @@ export const useCustomDictionaryStore = create<DictionaryStoreState>((set, get) 
       ),
     }));
     const env = getReplicaPersistEnv();
-    if (env) void get().saveCustomDictionaries(env);
+    if (env) void get().saveCustomDictionaries();
   },
 
   softDeleteByContentId: (contentId) => {
@@ -283,7 +279,7 @@ export const useCustomDictionaryStore = create<DictionaryStoreState>((set, get) 
       },
     }));
     const env = getReplicaPersistEnv();
-    if (env) void get().saveCustomDictionaries(env);
+    if (env) void get().saveCustomDictionaries();
   },
 
   updateDictionary: (id, patch) => {
@@ -484,7 +480,7 @@ export const useCustomDictionaryStore = create<DictionaryStoreState>((set, get) 
     }));
   },
 
-  loadCustomDictionaries: async (_envConfig) => {
+  loadCustomDictionaries: async () => {
     try {
       const { settings } = useSettingsStore.getState();
       const persisted = settings?.customDictionaries ?? [];
@@ -574,7 +570,7 @@ export const useCustomDictionaryStore = create<DictionaryStoreState>((set, get) 
     }
   },
 
-  saveCustomDictionaries: async (envConfig, opts) => {
+  saveCustomDictionaries: async (opts) => {
     try {
       const { settings, setSettings, saveSettings } = useSettingsStore.getState();
       const { dictionaries, settings: dictSettings } = get();

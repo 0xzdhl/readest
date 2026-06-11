@@ -72,7 +72,7 @@ const Annotator: React.FC<{ bookKey: string }> = ({ bookKey }) => {
   useHardcoverSync(bookKey);
 
   useEffect(() => {
-    void loadCustomDictionaries(envConfig).catch((error) => {
+    void loadCustomDictionaries().catch((error) => {
       console.warn('Failed to load custom dictionaries:', error);
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps

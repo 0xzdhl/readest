@@ -217,8 +217,7 @@ const dictionaryPullConfig: ReplicaPullConfig<ImportedDictionary> = {
   // would write back only the just-applied rows and clobber every
   // persisted dict that hadn't been hydrated by an Annotator/Settings
   // mount. Library-page refreshes were the visible victim.
-  hydrateLocalStore: (envConfig) =>
-    useCustomDictionaryStore.getState().loadCustomDictionaries(envConfig),
+  hydrateLocalStore: (envConfig) => useCustomDictionaryStore.getState().loadCustomDictionaries(),
   applyRemote: (dict) => useCustomDictionaryStore.getState().applyRemoteDictionary(dict),
   softDeleteByContentId: (id) => useCustomDictionaryStore.getState().softDeleteByContentId(id),
 };
@@ -258,7 +257,7 @@ const opdsCatalogPullConfig: ReplicaPullConfig<OPDSCatalog> = {
   // metadata-only — no baseDir
   adapter: opdsCatalogAdapter,
   findByContentId: findOPDSCatalogByContentId,
-  hydrateLocalStore: (envConfig) => useCustomOPDSStore.getState().loadCustomOPDSCatalogs(envConfig),
+  hydrateLocalStore: (envConfig) => useCustomOPDSStore.getState().loadCustomOPDSCatalogs(),
   applyRemote: (catalog) => useCustomOPDSStore.getState().applyRemoteCatalog(catalog),
   softDeleteByContentId: (id) => useCustomOPDSStore.getState().softDeleteByContentId(id),
 };

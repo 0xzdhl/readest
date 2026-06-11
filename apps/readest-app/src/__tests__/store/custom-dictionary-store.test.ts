@@ -237,7 +237,7 @@ describe('customDictionaryStore — web search CRUD', () => {
     };
 
     it('applyRemoteDictionary persists state via saveCustomDictionaries when env is registered', async () => {
-      const { setSettings, saveSettings, fakeEnv } = setupSpyEnv();
+      const { setSettings, saveSettings } = setupSpyEnv();
       useCustomDictionaryStore.getState().applyRemoteDictionary(baseDict());
 
       // setSettings runs synchronously inside saveCustomDictionaries; the
@@ -245,7 +245,7 @@ describe('customDictionaryStore — web search CRUD', () => {
       await Promise.resolve();
       await Promise.resolve();
       expect(setSettings).toHaveBeenCalled();
-      expect(saveSettings).toHaveBeenCalledWith(fakeEnv, expect.any(Object));
+      expect(saveSettings).toHaveBeenCalledWith(expect.any(Object));
       const persisted = setSettings.mock.calls.at(-1)![0];
       expect(persisted.customDictionaries?.some((d) => d.id === 'remote-bundle-1')).toBe(true);
     });
@@ -467,9 +467,7 @@ describe('customDictionaryStore — saveCustomDictionaries reference identity (P
     });
 
     const before = useSettingsStore.getState().settings;
-    await useCustomDictionaryStore
-      .getState()
-      .saveCustomDictionaries({ name: 'env' } as unknown as EnvConfigType);
+    await useCustomDictionaryStore.getState().saveCustomDictionaries();
     const after = useSettingsStore.getState().settings;
 
     // The whole point: the post-save settings reference must be NEW
@@ -557,9 +555,7 @@ describe('customDictionaryStore — loadCustomDictionaries reconciliation', () =
       } as unknown as SettingsState['settings'],
     } as unknown as SettingsState);
 
-    const fakeEnv = {} as EnvConfigType;
-
-    await useCustomDictionaryStore.getState().loadCustomDictionaries(fakeEnv);
+    await useCustomDictionaryStore.getState().loadCustomDictionaries();
 
     const after = useCustomDictionaryStore.getState().settings;
     expect(after.providerOrder.includes('imp1')).toBe(false);
@@ -584,9 +580,7 @@ describe('customDictionaryStore — loadCustomDictionaries reconciliation', () =
       } as unknown as SettingsState['settings'],
     } as unknown as SettingsState);
 
-    const fakeEnv = {} as EnvConfigType;
-
-    await useCustomDictionaryStore.getState().loadCustomDictionaries(fakeEnv);
+    await useCustomDictionaryStore.getState().loadCustomDictionaries();
 
     const after = useCustomDictionaryStore.getState().settings;
     expect(after.providerOrder.includes('pending-import')).toBe(true);
@@ -619,9 +613,7 @@ describe('customDictionaryStore — loadCustomDictionaries reconciliation', () =
       } as unknown as SettingsState['settings'],
     } as unknown as SettingsState);
 
-    const fakeEnv = {} as EnvConfigType;
-
-    await useCustomDictionaryStore.getState().loadCustomDictionaries(fakeEnv);
+    await useCustomDictionaryStore.getState().loadCustomDictionaries();
 
     const after = useCustomDictionaryStore.getState().settings;
     // Existing order is preserved; default-builtin backfill runs first.
@@ -669,9 +661,7 @@ describe('customDictionaryStore — loadCustomDictionaries reconciliation', () =
       } as unknown as SettingsState['settings'],
     } as unknown as SettingsState);
 
-    const fakeEnv = {} as EnvConfigType;
-
-    await useCustomDictionaryStore.getState().loadCustomDictionaries(fakeEnv);
+    await useCustomDictionaryStore.getState().loadCustomDictionaries();
 
     const after = useCustomDictionaryStore.getState().settings;
     expect(after.providerOrder.includes('imp-tombstoned')).toBe(false);

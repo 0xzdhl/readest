@@ -15,7 +15,7 @@ vi.mock('@/services/sync/replicaPublish', () => ({
 
 import { publishReplicaUpsert, publishReplicaDelete } from '@/services/sync/replicaPublish';
 
-const makeEnvConfig = (): EnvConfigType => ({}) as EnvConfigType;
+const _makeEnvConfig = (): EnvConfigType => ({}) as EnvConfigType;
 
 const makeSettings = (overrides: Partial<SystemSettings> = {}): SystemSettings =>
   ({
@@ -204,7 +204,7 @@ describe('customOPDSStore', () => {
         url: 'https://other.example/opds',
       });
       useCustomOPDSStore.getState().removeCatalog(dead.id);
-      await useCustomOPDSStore.getState().saveCustomOPDSCatalogs(makeEnvConfig());
+      await useCustomOPDSStore.getState().saveCustomOPDSCatalogs();
       const persisted = useSettingsStore.getState().settings.opdsCatalogs!;
       expect(persisted).toHaveLength(1);
       expect(persisted[0]!.id).toBe(live.id);
@@ -221,7 +221,7 @@ describe('customOPDSStore', () => {
       useSettingsStore.setState({
         settings: makeSettings({ opdsCatalogs: [legacy] }),
       } as unknown as ReturnType<typeof useSettingsStore.getState>);
-      await useCustomOPDSStore.getState().loadCustomOPDSCatalogs(makeEnvConfig());
+      await useCustomOPDSStore.getState().loadCustomOPDSCatalogs();
       const inMemory = useCustomOPDSStore.getState().getCatalog('legacy-1')!;
       expect(inMemory.contentId).toBe(computeOpdsCatalogContentId('https://legacy.example/opds'));
       expect(publishReplicaUpsert).toHaveBeenCalledTimes(1);
@@ -236,7 +236,7 @@ describe('customOPDSStore', () => {
       useSettingsStore.setState({
         settings: makeSettings({ opdsCatalogs: legacy }),
       } as unknown as ReturnType<typeof useSettingsStore.getState>);
-      await useCustomOPDSStore.getState().loadCustomOPDSCatalogs(makeEnvConfig());
+      await useCustomOPDSStore.getState().loadCustomOPDSCatalogs();
       const ordered = useCustomOPDSStore.getState().getAvailableCatalogs();
       expect(ordered.map((c) => c.id)).toEqual(['a', 'b', 'c']);
       // Strict descending — first entry strictly newer than next.
@@ -258,7 +258,7 @@ describe('customOPDSStore', () => {
           ],
         }),
       } as unknown as ReturnType<typeof useSettingsStore.getState>);
-      await useCustomOPDSStore.getState().loadCustomOPDSCatalogs(makeEnvConfig());
+      await useCustomOPDSStore.getState().loadCustomOPDSCatalogs();
       expect(publishReplicaUpsert).not.toHaveBeenCalled();
       expect(useCustomOPDSStore.getState().catalogs).toHaveLength(1);
     });
