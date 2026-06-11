@@ -10,11 +10,10 @@ import {
   MdExpandLess,
 } from 'react-icons/md';
 
-import type { Book } from '@/types/book';
-import type { BookMetadata } from '@/libs/document';
+import type { Book } from '@/domain/book';
+import type { BookMetadata } from '@/domain/document';
 import { useTranslation } from '@/hooks/useTranslation';
 import { useSettingsStore } from '@/store/settingsStore';
-import { useEnv } from '@/context/EnvContext';
 import {
   formatAuthors,
   formatDate,
@@ -54,23 +53,18 @@ const BookDetailView: React.FC<BookDetailViewProps> = ({
   onExport,
 }) => {
   const _ = useTranslation();
-  const { envConfig } = useEnv();
   const { settings } = useSettingsStore();
 
   const toggleSeriesCollapse = () => {
-    saveSysSettings(envConfig, 'metadataSeriesCollapsed', !settings.metadataSeriesCollapsed);
+    saveSysSettings('metadataSeriesCollapsed', !settings.metadataSeriesCollapsed);
   };
 
   const toggleOthersCollapse = () => {
-    saveSysSettings(envConfig, 'metadataOthersCollapsed', !settings.metadataOthersCollapsed);
+    saveSysSettings('metadataOthersCollapsed', !settings.metadataOthersCollapsed);
   };
 
   const toggleDescriptionCollapse = () => {
-    saveSysSettings(
-      envConfig,
-      'metadataDescriptionCollapsed',
-      !settings.metadataDescriptionCollapsed,
-    );
+    saveSysSettings('metadataDescriptionCollapsed', !settings.metadataDescriptionCollapsed);
   };
 
   return (

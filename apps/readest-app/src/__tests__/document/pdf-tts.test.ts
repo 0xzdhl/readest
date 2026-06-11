@@ -5,7 +5,7 @@ import { textWalker } from 'foliate-js/text-walker.js';
 import { TTS } from 'foliate-js/tts.js';
 import { createRejectFilter } from '@/utils/node';
 import { DocumentLoader } from '@/libs/document';
-import type { BookDoc } from '@/libs/document';
+import type { BookDoc } from '@/domain/document';
 
 // The @pdfjs alias in vitest.config.mts resolves to public/vendor/pdfjs,
 // mirroring how foliate-js/pdf.js does `import '@pdfjs/pdf.min.mjs'`.

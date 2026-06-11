@@ -7,7 +7,7 @@ import type {
   HighlightColor,
   HighlightStyle,
   ReadingStatus,
-} from '@/types/book';
+} from '@/domain/book';
 import type { DBBookConfig, DBBook, DBBookNote } from '@/types/records';
 import { sanitizeString } from './sanitize';
 

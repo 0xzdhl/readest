@@ -1,4 +1,4 @@
-import type { BookDoc, SectionFragment, TOCItem } from '@/libs/document';
+import type { BookDoc, SectionFragment, TOCItem } from '@/domain/document';
 
 export const cloneTocItems = (items: TOCItem[]): TOCItem[] =>
   items.map((item) => ({

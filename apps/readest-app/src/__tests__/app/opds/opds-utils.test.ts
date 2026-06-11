@@ -10,7 +10,7 @@ vi.mock('foliate-js/opds.js', () => ({
   }),
 }));
 
-vi.mock('@/libs/document', () => ({
+vi.mock('@/domain/document', () => ({
   EXTS: {
     EPUB: 'epub',
     PDF: 'pdf',
@@ -52,7 +52,7 @@ import {
   MIME,
   validateOPDSURL,
 } from '@/app/opds/utils/opdsUtils';
-import type { OPDSBaseLink } from '@/types/opds';
+import type { OPDSBaseLink } from '@/domain/opds';
 import { fetchWithAuth } from '@/app/opds/utils/opdsReq';
 
 const mockFetchWithAuth = vi.mocked(fetchWithAuth);

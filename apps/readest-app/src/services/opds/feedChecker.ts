@@ -8,9 +8,9 @@ import type {
   OPDSNavigationItem,
   OPDSPublication,
   OPDSStreamLink,
-} from '@/types/opds';
-import { REL } from '@/types/opds';
-import { MIMETYPES } from '@/libs/document';
+} from '@/domain/opds';
+import { REL } from '@/domain/opds';
+import { MIMETYPES } from '@/domain/document';
 import { isWebAppPlatform } from '@/services/environment';
 import { fetchWithAuth } from '@/app/opds/utils/opdsReq';
 import { resolveURL, parseMediaType } from '@/app/opds/utils/opdsUtils';

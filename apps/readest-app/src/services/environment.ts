@@ -1,5 +1,4 @@
 import { clientEnv } from '@/clientEnv';
-import type { AppService } from '@/types/system';
 
 declare global {
   interface Window {
@@ -39,39 +38,3 @@ export const getAPIBaseUrl = () => (isWebDevMode() ? '/api' : `${getBaseUrl()}/a
 
 // For Node.js API that currently not supported in some edge runtimes
 export const getNodeAPIBaseUrl = () => (isWebDevMode() ? '/api' : `${getNodeBaseUrl()}/api`);
-
-export interface EnvConfigType {
-  getAppService: () => Promise<AppService>;
-}
-
-let nativeAppService: AppService | null = null;
-const getNativeAppService = async () => {
-  if (!nativeAppService) {
-    const { NativeAppService } = await import('@/services/nativeAppService');
-    nativeAppService = new NativeAppService();
-    await nativeAppService.init();
-  }
-  return nativeAppService;
-};
-
-let webAppService: AppService | null = null;
-const getWebAppService = async () => {
-  if (!webAppService) {
-    const { WebAppService } = await import('@/services/webAppService');
-    webAppService = new WebAppService();
-    await webAppService.init();
-  }
-  return webAppService;
-};
-
-const environmentConfig: EnvConfigType = {
-  getAppService: async () => {
-    if (isTauriAppPlatform()) {
-      return getNativeAppService();
-    } else {
-      return getWebAppService();
-    }
-  },
-};
-
-export default environmentConfig;

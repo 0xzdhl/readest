@@ -1,5 +1,5 @@
-import { FIXED_LAYOUT_FORMATS } from '@/types/book';
-import type { BookFormat, ViewSettings } from '@/types/book';
+import { FIXED_LAYOUT_FORMATS } from '@/domain/book';
+import type { BookFormat, ViewSettings } from '@/domain/book';
 
 export const FIXED_LAYOUT_READING_RULER_LINE_HEIGHT = 28;
 

@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { mergeBookConfigs, mergeBookMetadata } from '@/services/backupService';
-import type { Book, BookConfig, BookNote } from '@/types/book';
+import type { Book, BookConfig, BookNote } from '@/domain/book';
 
 function makeBook(overrides: Partial<Book> = {}): Book {
   return {

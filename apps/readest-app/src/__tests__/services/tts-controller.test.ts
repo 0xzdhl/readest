@@ -1,12 +1,19 @@
 import { describe, test, expect, vi, beforeEach, afterEach } from 'vitest';
 import { TTSController } from '@/services/tts/TTSController';
 import type { TTSClient, TTSMessageEvent } from '@/services/tts/TTSClient';
-import type { TTSGranularity, TTSVoicesGroup } from '@/services/tts/types';
+import type { TTSGranularity, TTSVoicesGroup } from '@/domain/tts';
 import { TTSUtils } from '@/services/tts/TTSUtils';
-import type { FoliateView } from '@/types/view';
-import type { AppService } from '@/types/system';
+import type { FoliateView } from '@/domain/view';
 
 // --- Mock all heavy dependencies so we never import real TTS clients ---
+
+// Platform flags now come from getPlatformInfo() instead of an injected appService.
+// TTSController reads isAndroidApp to decide whether to create the native client;
+// `mockIsAndroidApp` lets individual tests flip that flag.
+let mockIsAndroidApp = false;
+vi.mock('@/runtime/clientRuntime', () => ({
+  getPlatformInfo: () => ({ isAndroidApp: mockIsAndroidApp }),
+}));
 
 vi.mock('@/services/tts/WebSpeechClient', () => ({
   WebSpeechClient: vi.fn().mockImplementation(function (this: Record<string, unknown>) {
@@ -139,12 +146,10 @@ function createMockView(): FoliateView {
   } as unknown as FoliateView;
 }
 
-// --- Helper: create mock AppService ---
+// --- Helper: flip the platform's isAndroidApp flag for the next constructor ---
 
-function createMockAppService(isAndroid = false): AppService {
-  return {
-    isAndroidApp: isAndroid,
-  } as unknown as AppService;
+function setAndroidApp(isAndroid: boolean) {
+  mockIsAndroidApp = isAndroid;
 }
 
 // --- Tests ---
@@ -152,13 +157,12 @@ function createMockAppService(isAndroid = false): AppService {
 describe('TTSController', () => {
   let controller: TTSController;
   let mockView: FoliateView;
-  let mockAppService: AppService;
 
   beforeEach(() => {
     vi.clearAllMocks();
+    setAndroidApp(false);
     mockView = createMockView();
-    mockAppService = createMockAppService();
-    controller = new TTSController(mockAppService, mockView, false);
+    controller = new TTSController(mockView, false);
     vi.spyOn(console, 'log').mockImplementation(() => {});
     vi.spyOn(console, 'error').mockImplementation(() => {});
   });
@@ -182,13 +186,9 @@ describe('TTSController', () => {
       expect(controller.view).toBe(mockView);
     });
 
-    test('stores appService', () => {
-      expect(controller.appService).toBe(mockAppService);
-    });
-
     test('sets isAuthenticated', () => {
       expect(controller.isAuthenticated).toBe(false);
-      const authed = new TTSController(mockAppService, mockView, true);
+      const authed = new TTSController(mockView, true);
       expect(authed.isAuthenticated).toBe(true);
     });
 
@@ -209,8 +209,8 @@ describe('TTSController', () => {
     });
 
     test('creates native client when isAndroidApp', () => {
-      const androidService = createMockAppService(true);
-      const c = new TTSController(androidService, mockView);
+      setAndroidApp(true);
+      const c = new TTSController(mockView);
       expect(c.ttsNativeClient).not.toBeNull();
     });
 
@@ -220,13 +220,13 @@ describe('TTSController', () => {
 
     test('stores preprocessCallback', () => {
       const cb = vi.fn();
-      const c = new TTSController(mockAppService, mockView, false, cb);
+      const c = new TTSController(mockView, false, cb);
       expect(c.preprocessCallback).toBe(cb);
     });
 
     test('stores onSectionChange callback', () => {
       const cb = vi.fn();
-      const c = new TTSController(mockAppService, mockView, false, undefined, cb);
+      const c = new TTSController(mockView, false, undefined, cb);
       expect(c.onSectionChange).toBe(cb);
     });
   });
@@ -266,8 +266,8 @@ describe('TTSController', () => {
     });
 
     test('also initializes native client on Android', async () => {
-      const androidService = createMockAppService(true);
-      const c = new TTSController(androidService, mockView);
+      setAndroidApp(true);
+      const c = new TTSController(mockView);
       await c.init();
       expect(c.ttsNativeClient!.init).toHaveBeenCalled();
       expect(c.ttsNativeClient!.getAllVoices).toHaveBeenCalled();
@@ -306,8 +306,8 @@ describe('TTSController', () => {
     });
 
     test('switches to native client when voice found in native voices', async () => {
-      const androidService = createMockAppService(true);
-      const c = new TTSController(androidService, mockView);
+      setAndroidApp(true);
+      const c = new TTSController(mockView);
       await c.init();
       c.ttsNativeVoices = [{ id: 'native-v', name: 'Native', lang: 'en-US' }];
       await c.setVoice('native-v', 'en');
@@ -364,8 +364,8 @@ describe('TTSController', () => {
     });
 
     test('includes native voices when available', async () => {
-      const androidService = createMockAppService(true);
-      const c = new TTSController(androidService, mockView);
+      setAndroidApp(true);
+      const c = new TTSController(mockView);
       await c.init();
 
       const nativeVoices: TTSVoicesGroup[] = [
@@ -568,8 +568,8 @@ describe('TTSController', () => {
     });
 
     test('shuts down native client when initialized', async () => {
-      const androidService = createMockAppService(true);
-      const c = new TTSController(androidService, mockView);
+      setAndroidApp(true);
+      const c = new TTSController(mockView);
       await c.init();
       c.ttsNativeClient!.initialized = true;
 

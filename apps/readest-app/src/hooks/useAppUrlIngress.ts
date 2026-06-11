@@ -2,7 +2,7 @@ import { useEffect, useRef } from 'react';
 import { addPluginListener, PluginListener } from '@tauri-apps/api/core';
 import { onOpenUrl } from '@tauri-apps/plugin-deep-link';
 import { getCurrentWindow } from '@tauri-apps/api/window';
-import { useEnv } from '@/context/EnvContext';
+import { usePlatformInfo, useBooted } from '@/context/EffectRuntimeProvider';
 import { isTauriAppPlatform } from '@/services/environment';
 import { eventDispatcher } from '@/utils/event';
 
@@ -45,11 +45,12 @@ interface SharedIntentPayload {
  * reads `getCurrent()` itself when it needs to.
  */
 export function useAppUrlIngress() {
-  const { appService } = useEnv();
+  const booted = useBooted();
+  const platformInfo = usePlatformInfo();
   const listened = useRef(false);
 
   useEffect(() => {
-    if (!isTauriAppPlatform() || !appService) return;
+    if (!isTauriAppPlatform() || !booted) return;
     if (listened.current) return;
     listened.current = true;
 
@@ -78,7 +79,7 @@ export function useAppUrlIngress() {
     // on iOS in the past, so it's gated to Android. The Tauri v2 onOpenUrl
     // listener below covers iOS.
     let unlistenSharedIntent: Promise<PluginListener> | null = null;
-    if (appService?.isAndroidApp) {
+    if (platformInfo.isAndroidApp) {
       unlistenSharedIntent = addPluginListener<SharedIntentPayload>(
         'native-bridge',
         'shared-intent',
@@ -99,5 +100,5 @@ export function useAppUrlIngress() {
       unlistenSharedIntent?.then((f) => f.unregister());
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [appService]);
+  }, [booted]);
 }

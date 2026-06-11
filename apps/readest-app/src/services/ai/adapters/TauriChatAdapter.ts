@@ -4,7 +4,7 @@ import { getAIProvider } from '../providers';
 import { hybridSearch, isBookIndexed } from '../ragService';
 import { aiLogger } from '../logger';
 import { buildSystemPrompt } from '../prompts';
-import type { AISettings, ScoredChunk } from '../types';
+import type { AISettings, ScoredChunk } from '@/domain/ai';
 import { getErrorMessage, getJsonErrorMessage } from '@/utils/unknown';
 
 let lastSources: ScoredChunk[] = [];

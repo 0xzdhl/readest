@@ -12,7 +12,7 @@ import { useSettingsStore } from '@/store/settingsStore';
 import { useReaderStore } from '@/store/readerStore';
 import { useSidebarStore } from '@/store/sidebarStore';
 import { useBookDataStore } from '@/store/bookDataStore';
-import type { ProofreadRule } from '@/types/book';
+import type { ProofreadRule } from '@/domain/book';
 
 // ------------------------------
 // TANSTACK ROUTER MOCK
@@ -35,47 +35,11 @@ vi.mock('@/services/translators/cache', () => ({
   pruneCache: vi.fn(),
 }));
 
-// ------------------------------
-// ENV PROVIDER WRAPPER
-// ------------------------------
-// mock environment module so EnvProvider uses fake values
-vi.mock('@/services/environment', async (importOriginal) => {
-  const actual = await importOriginal();
-
-  return {
-    ...(typeof actual === 'object' && actual !== null ? actual : {}), // keep all real exports (e.g., isTauriAppPlatform)
-
-    default: {
-      ...(typeof actual === 'object' &&
-      actual !== null &&
-      'default' in actual &&
-      typeof actual.default === 'object' &&
-      actual.default !== null
-        ? actual.default
-        : {}), // keep all real default fields
-      API_BASE: 'http://localhost',
-      ENABLE_TRANSLATOR: false,
-      // EnvProvider's mount effect calls appService.loadSettings() to seed
-      // replica sync. Stubbing with loadSettings returning {} (no
-      // replicaDeviceId) makes init early-exit cleanly. Returning null
-      // would crash on `service.loadSettings()` and spam stderr.
-      getAppService: vi.fn().mockResolvedValue({
-        loadSettings: vi.fn().mockResolvedValue({}),
-      }),
-    },
-  };
-});
-
-import { EnvProvider } from '@/context/EnvContext';
 import { AuthProvider } from '@/context/AuthContext';
 import { DEFAULT_SYSTEM_SETTINGS } from '@/services/constants';
 
 function renderWithProviders(ui: React.ReactNode) {
-  return render(
-    <EnvProvider>
-      <AuthProvider>{ui}</AuthProvider>
-    </EnvProvider>,
-  );
+  return render(<AuthProvider>{ui}</AuthProvider>);
 }
 
 describe('ProofreadRulesManager', () => {

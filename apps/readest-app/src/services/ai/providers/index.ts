@@ -1,6 +1,6 @@
 import { OllamaProvider } from './OllamaProvider';
 import { AIGatewayProvider } from './AIGatewayProvider';
-import type { AIProvider, AISettings } from '../types';
+import type { AIProvider, AISettings } from '@/domain/ai';
 
 export { OllamaProvider, AIGatewayProvider };
 

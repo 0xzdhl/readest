@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import type { DatabaseService, DatabaseExecResult, DatabaseRow } from '@/types/database';
+import type { DatabaseService, DatabaseExecResult, DatabaseRow } from '@/domain/database';
 
 // ---------------------------------------------------------------------------
 // Mock: NativeDatabaseService

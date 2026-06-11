@@ -1,11 +1,11 @@
 import clsx from 'clsx';
 import { useEffect, useRef, useState } from 'react';
 import { MdCheckCircle, MdCheckCircleOutline, MdChevronRight, MdChevronLeft } from 'react-icons/md';
-import { useEnv } from '@/context/EnvContext';
+import { usePlatformInfo } from '@/context/EffectRuntimeProvider';
 import { useTranslation } from '@/hooks/useTranslation';
 import { useResponsiveSize } from '@/hooks/useResponsiveSize';
-import type { BooksGroup } from '@/types/book';
-import type { LibraryViewModeType } from '@/types/settings';
+import type { BooksGroup } from '@/domain/book';
+import type { LibraryViewModeType } from '@/domain/settings';
 import BookCover from '@/components/BookCover';
 
 interface GroupItemProps {
@@ -17,7 +17,7 @@ interface GroupItemProps {
 
 const GroupItem: React.FC<GroupItemProps> = ({ mode, group, isSelectMode, groupSelected }) => {
   const _ = useTranslation();
-  const { appService } = useEnv();
+  const platformInfo = usePlatformInfo();
   const iconSize15 = useResponsiveSize(15);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const [showLeftArrow, setShowLeftArrow] = useState(false);
@@ -98,7 +98,7 @@ const GroupItem: React.FC<GroupItemProps> = ({ mode, group, isSelectMode, groupS
   };
 
   return (
-    <div className={clsx('group-item', appService?.hasContextMenu ? 'cursor-pointer' : '')}>
+    <div className={clsx('group-item', platformInfo.hasContextMenu ? 'cursor-pointer' : '')}>
       <div
         className={clsx(
           'groupitem-main relative flex overflow-hidden rounded',

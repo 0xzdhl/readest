@@ -24,7 +24,7 @@
  * helper applies a cascade. See `CATEGORY_DEPENDENTS` below.
  */
 import { useSettingsStore } from '@/store/settingsStore';
-import { SYNC_CATEGORIES, type SyncCategory } from '@/types/settings';
+import { SYNC_CATEGORIES, type SyncCategory } from '@/domain/settings';
 
 export { SYNC_CATEGORIES };
 export type { SyncCategory };

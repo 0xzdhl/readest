@@ -20,9 +20,8 @@ import {
   createCustomFont,
   mountAdditionalFonts,
   mountCustomFont,
-  type FontFormat,
-  type CustomFont,
 } from '@/styles/fonts';
+import type { FontFormat, CustomFont } from '@/domain/fonts';
 
 describe('getFontName', () => {
   it('should strip .ttf extension', () => {

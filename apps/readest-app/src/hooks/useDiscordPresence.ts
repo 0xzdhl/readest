@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react';
-import type { Book } from '@/types/book';
-import { useEnv } from '@/context/EnvContext';
+import type { Book } from '@/domain/book';
+import { usePlatformInfo } from '@/context/EffectRuntimeProvider';
 import { updateDiscordPresence, clearDiscordPresence } from '@/utils/discord';
 
 /**
@@ -9,7 +9,7 @@ import { updateDiscordPresence, clearDiscordPresence } from '@/utils/discord';
  * @param isPrimary - Whether this is the primary book (for multi-book scenarios)
  */
 export const useDiscordPresence = (book: Book | null, isPrimary: boolean, enabled: boolean) => {
-  const { appService } = useEnv();
+  const platformInfo = usePlatformInfo();
 
   const sessionStartRef = useRef<number>(Date.now());
   const updateIntervalRef = useRef<NodeJS.Timeout | null>(null);
@@ -18,7 +18,7 @@ export const useDiscordPresence = (book: Book | null, isPrimary: boolean, enable
 
   useEffect(() => {
     if (!isPrimary || !book) return;
-    if (!appService?.isDesktopApp) return;
+    if (!platformInfo.isDesktopApp) return;
 
     const stopUpdates = () => {
       if (updateIntervalRef.current) {
@@ -30,7 +30,7 @@ export const useDiscordPresence = (book: Book | null, isPrimary: boolean, enable
 
     if (!enabled) {
       stopUpdates();
-      clearDiscordPresence(appService);
+      clearDiscordPresence();
       currentBookHashRef.current = null;
       return;
     }
@@ -45,7 +45,7 @@ export const useDiscordPresence = (book: Book | null, isPrimary: boolean, enable
 
       isUpdatingRef.current = true;
       try {
-        await updateDiscordPresence(book, sessionStartRef.current, appService);
+        await updateDiscordPresence(book, sessionStartRef.current);
       } catch (err) {
         console.error('Discord presence update failed:', err);
       } finally {
@@ -61,8 +61,8 @@ export const useDiscordPresence = (book: Book | null, isPrimary: boolean, enable
 
     return () => {
       stopUpdates();
-      clearDiscordPresence(appService);
+      clearDiscordPresence();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [book?.hash, isPrimary, enabled, appService]);
+  }, [book?.hash, isPrimary, enabled]);
 };

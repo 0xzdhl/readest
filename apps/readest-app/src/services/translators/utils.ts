@@ -1,4 +1,4 @@
-import type { Book } from '@/types/book';
+import type { Book } from '@/domain/book';
 import { isSameLang } from '@/utils/lang';
 import { getLocale } from '@/utils/misc';
 

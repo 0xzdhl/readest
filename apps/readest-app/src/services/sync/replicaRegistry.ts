@@ -1,5 +1,5 @@
 import type { ReplicaRow } from '@/types/replica';
-import type { BaseDir, FileSystem } from '@/types/system';
+import type { BaseDir, FileSystem } from '@/domain/system';
 
 export interface BinaryCapability<T> {
   localBaseDir: BaseDir;

@@ -1,7 +1,7 @@
 import { getUserLocale } from '@/utils/misc';
 import type { TTSClient, TTSMessageEvent } from './TTSClient';
 import { parseSSMLMarks } from '@/utils/ssml';
-import type { TTSGranularity, TTSMark, TTSVoice, TTSVoicesGroup } from './types';
+import type { TTSGranularity, TTSMark, TTSVoice, TTSVoicesGroup } from '@/domain/tts';
 import { WEB_SPEECH_BLACKLISTED_VOICES } from './TTSData';
 import { TTSController } from './TTSController';
 import { TTSUtils } from './TTSUtils';

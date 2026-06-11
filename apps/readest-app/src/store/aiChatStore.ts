@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import type { AIConversation, AIMessage } from '@/services/ai/types';
+import type { AIConversation, AIMessage } from '@/domain/ai';
 import { aiStore } from '@/services/ai/storage/aiStore';
 
 interface AIChatState {

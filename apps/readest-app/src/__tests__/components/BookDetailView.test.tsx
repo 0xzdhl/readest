@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, afterEach } from 'vitest';
 import { render, cleanup, fireEvent } from '@testing-library/react';
 
-import type { Book } from '@/types/book';
+import type { Book } from '@/domain/book';
 import BookDetailView from '@/components/metadata/BookDetailView';
 import { DropdownProvider } from '@/context/DropdownContext';
 
@@ -17,10 +17,6 @@ vi.mock('@/store/settingsStore', () => ({
       metadataDescriptionCollapsed: true,
     },
   }),
-}));
-
-vi.mock('@/context/EnvContext', () => ({
-  useEnv: () => ({ envConfig: {}, appService: null }),
 }));
 
 vi.mock('@/helpers/settings', () => ({

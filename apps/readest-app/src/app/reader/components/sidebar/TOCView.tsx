@@ -3,7 +3,7 @@ import { Virtuoso, type VirtuosoHandle } from 'react-virtuoso';
 import { useOverlayScrollbars } from 'overlayscrollbars-react';
 import 'overlayscrollbars/overlayscrollbars.css';
 
-import type { TOCItem } from '@/libs/document';
+import type { TOCItem } from '@/domain/document';
 import { useReaderStore } from '@/store/readerStore';
 import { useSidebarStore } from '@/store/sidebarStore';
 import { findParentPath } from '@/services/nav';

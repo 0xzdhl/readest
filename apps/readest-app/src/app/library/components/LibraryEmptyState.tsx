@@ -2,7 +2,7 @@ import * as React from 'react';
 import clsx from 'clsx';
 import { PiBooks } from 'react-icons/pi';
 
-import { useEnv } from '@/context/EnvContext';
+import { usePlatformInfo } from '@/context/EffectRuntimeProvider';
 import { useAuth } from '@/context/AuthContext';
 import { useTranslation } from '@/hooks/useTranslation';
 import { useAppRouter } from '@/hooks/useAppRouter';
@@ -14,10 +14,10 @@ interface LibraryEmptyStateProps {
 
 const LibraryEmptyState: React.FC<LibraryEmptyStateProps> = ({ onImport }) => {
   const _ = useTranslation();
-  const { appService } = useEnv();
+  const platformInfo = usePlatformInfo();
   const { user } = useAuth();
   const router = useAppRouter();
-  const isMobile = appService?.isMobile ?? false;
+  const isMobile = platformInfo.isMobile;
 
   return (
     <div className='hero-content text-neutral-content text-center'>

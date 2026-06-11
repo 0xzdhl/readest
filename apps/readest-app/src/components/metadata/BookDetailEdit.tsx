@@ -1,13 +1,15 @@
 import clsx from 'clsx';
 import React, { useState } from 'react';
+import { Effect } from 'effect';
 import { MdEdit, MdDelete, MdLock, MdLockOpen, MdOutlineSearch } from 'react-icons/md';
 
-import type { Book } from '@/types/book';
-import type { BookMetadata } from '@/libs/document';
-import { useEnv } from '@/context/EnvContext';
+import type { Book } from '@/domain/book';
+import type { BookMetadata } from '@/domain/document';
+import { useRunEffect } from '@/context/EffectRuntimeProvider';
 import { useTranslation } from '@/hooks/useTranslation';
 import { flattenContributors, formatAuthors, formatPublisher, formatTitle } from '@/utils/book';
 import { useFileSelector } from '@/hooks/useFileSelector';
+import { CoverService } from '@/application/services/CoverService';
 import { FormField } from './FormField';
 import BookCover from '@/components/BookCover';
 
@@ -47,8 +49,8 @@ const BookDetailEdit: React.FC<BookDetailEditProps> = ({
   onSave,
 }) => {
   const _ = useTranslation();
-  const { appService } = useEnv();
-  const { selectFiles } = useFileSelector(appService, _);
+  const runEffect = useRunEffect();
+  const { selectFiles } = useFileSelector(_);
 
   const hasLockedFields = Object.values(lockedFields).some((locked) => locked);
   const allFieldsLocked = Object.values(lockedFields).every((locked) => locked);
@@ -155,9 +157,11 @@ const BookDetailEdit: React.FC<BookDetailEditProps> = ({
     selectFiles({ type: 'covers', multiple: false }).then(async (result) => {
       if (result.error || result.files.length === 0) return;
       const selectedFile = result.files[0]!;
-      if (selectedFile.path && appService) {
+      if (selectedFile.path) {
         const filePath = selectedFile.path;
-        const imageUrl = await appService.getCachedImageUrl(filePath);
+        const imageUrl = await runEffect(
+          Effect.flatMap(CoverService, (c) => c.getCachedImageUrl(filePath)),
+        );
         onFieldChange('coverImageFile', filePath);
         onFieldChange('coverImageUrl', imageUrl);
         setNewCoverImageUrl(imageUrl);

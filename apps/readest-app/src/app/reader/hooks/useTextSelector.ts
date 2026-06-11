@@ -1,11 +1,12 @@
 import { useEffect, useRef } from 'react';
-import type { BookNote } from '@/types/book';
-import { useEnv } from '@/context/EnvContext';
+import type { BookNote } from '@/domain/book';
+import { usePlatformInfo } from '@/context/EffectRuntimeProvider';
 import { useReaderStore } from '@/store/readerStore';
 import { useBookDataStore } from '@/store/bookDataStore';
 import { getOSPlatform } from '@/utils/misc';
 import { eventDispatcher } from '@/utils/event';
-import { isPointerInsideSelection, type Point, type TextSelection } from '@/utils/sel';
+import { isPointerInsideSelection } from '@/utils/sel';
+import type { Point, TextSelection } from '@/domain/selection';
 import { useInstantAnnotation } from './useInstantAnnotation';
 
 export const useTextSelector = (
@@ -16,7 +17,7 @@ export const useTextSelector = (
   getAnnotationText: (range: Range) => Promise<string>,
   handleDismissPopup: () => void,
 ) => {
-  const { appService } = useEnv();
+  const platformInfo = usePlatformInfo();
   const { getBookData } = useBookDataStore();
   const { getView, getViewSettings, getProgress } = useReaderStore();
   const view = getView(bookKey);
@@ -175,14 +176,14 @@ export const useTextSelector = (
     const sel = doc.getSelection() as Selection;
     if (isValidSelection(sel)) {
       const isPointerInside = ev && isPointerInsideSelection(sel, ev);
-      const isIOS = osPlatform === 'ios' || appService?.isIOSApp;
+      const isIOS = osPlatform === 'ios' || platformInfo.isIOSApp;
 
       if (isPointerInside && isIOS) {
         makeSelectionOnIOS(sel, index);
       } else if (isPointerInside) {
         isUpToPopup.current = true;
         makeSelection(sel, index, true);
-      } else if (appService?.isAndroidApp) {
+      } else if (platformInfo.isAndroidApp) {
         isUpToPopup.current = false;
       }
     }
@@ -204,7 +205,7 @@ export const useTextSelector = (
     // On web with touch/pen in scroll mode, pointerup never fires (pointercancel
     // fires instead when browser takes over for scrolling), so we also handle
     // selectionchange for touch/pen input to pick up native text selections.
-    const isAndroid = osPlatform === 'android' && appService?.isAndroidApp;
+    const isAndroid = osPlatform === 'android' && platformInfo.isAndroidApp;
     const isTouchInput = lastPointerType.current === 'touch' || lastPointerType.current === 'pen';
     if (!isAndroid && !isTouchInput) return;
 
@@ -222,7 +223,7 @@ export const useTextSelector = (
     // Prevent the container from scrolling when text is selected in paginated mode
     // FIXME: this is a workaround for issue #873
     // TODO: support text selection across pages
-    if (osPlatform !== 'android' || !appService?.isAndroidApp) return;
+    if (osPlatform !== 'android' || !platformInfo.isAndroidApp) return;
 
     const viewSettings = getViewSettings(bookKey);
     if (viewSettings?.scrolled) return;
@@ -247,7 +248,7 @@ export const useTextSelector = (
   };
 
   const handleContextmenu = (event: Event) => {
-    if (appService?.isMobile) {
+    if (platformInfo.isMobile) {
       event.preventDefault();
       event.stopPropagation();
       return false;

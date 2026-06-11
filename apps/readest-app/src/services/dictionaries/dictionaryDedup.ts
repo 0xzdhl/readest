@@ -1,4 +1,4 @@
-import type { ImportedDictionary } from './types';
+import type { ImportedDictionary } from '@/domain/dictionaries';
 
 /**
  * Resolve which existing (non-deleted) entries the incoming bundle should

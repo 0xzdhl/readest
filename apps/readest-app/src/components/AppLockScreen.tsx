@@ -2,16 +2,16 @@ import clsx from 'clsx';
 import { useEffect, useRef, useState } from 'react';
 
 import PinInput from '@/components/PinInput';
-import { useEnv } from '@/context/EnvContext';
+import { usePlatformInfo } from '@/context/EffectRuntimeProvider';
 import { PIN_LENGTH, verifyPin } from '@/libs/crypto/applock';
 import { useAppLockStore } from '@/store/appLockStore';
 import { useTranslation } from '@/hooks/useTranslation';
 
 export default function AppLockScreen() {
   const _ = useTranslation();
-  const { appService } = useEnv();
+  const platformInfo = usePlatformInfo();
   const { pinHash, pinSalt, unlock } = useAppLockStore();
-  const autoFocusEnabled = !appService?.isMobile;
+  const autoFocusEnabled = !platformInfo.isMobile;
   const [pin, setPin] = useState('');
   const [error, setError] = useState('');
   const [shaking, setShaking] = useState(false);

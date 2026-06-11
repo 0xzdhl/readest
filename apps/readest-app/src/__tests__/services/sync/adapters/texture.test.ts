@@ -1,7 +1,7 @@
 import { describe, expect, test } from 'vitest';
 import { computeTextureContentId, textureAdapter } from '@/services/sync/adapters/texture';
 import { hlcPack } from '@/libs/crdt';
-import type { CustomTexture } from '@/styles/textures';
+import type { CustomTexture } from '@/domain/textures';
 import type { Hlc, ReplicaRow } from '@/types/replica';
 
 const NOW = 1_700_000_000_000;

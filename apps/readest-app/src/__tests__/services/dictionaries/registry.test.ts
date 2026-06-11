@@ -1,11 +1,7 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { getEnabledProviders, __resetRegistryForTests } from '@/services/dictionaries/registry';
-import { BUILTIN_PROVIDER_IDS, BUILTIN_WEB_SEARCH_IDS } from '@/services/dictionaries/types';
-import type {
-  DictionarySettings,
-  ImportedDictionary,
-  WebSearchEntry,
-} from '@/services/dictionaries/types';
+import { BUILTIN_PROVIDER_IDS, BUILTIN_WEB_SEARCH_IDS } from '@/domain/dictionaries';
+import type { DictionarySettings, ImportedDictionary, WebSearchEntry } from '@/domain/dictionaries';
 
 const baseSettings: DictionarySettings = {
   providerOrder: [BUILTIN_PROVIDER_IDS.wiktionary, BUILTIN_PROVIDER_IDS.wikipedia],

@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react';
 import { ArrowLeft, House, LifeBuoy, RefreshCw, TriangleAlert } from 'lucide-react';
 import { createFileRoute, useRouter } from '@tanstack/react-router';
-import { useEnv } from '@/context/EnvContext';
 import { useTranslation } from '@/hooks/useTranslation';
+import { usePlatformInfo } from '@/context/EffectRuntimeProvider';
 import { StatusPage } from '@/components/status/StatusPage';
 import { parseWebViewInfo } from '@/utils/ua';
 import { handleGlobalError } from '@/utils/error';
@@ -48,17 +48,17 @@ export function DefaultRouterErrorComponent(props: ErrorComponentProps) {
 
 export function ErrorPageUI({ error, reset, info: _info }: ErrorComponentProps) {
   const _ = useTranslation();
-  const { appService } = useEnv();
+  const platformInfo = usePlatformInfo();
   const [browserInfo, setBrowserInfo] = useState('');
 
   useEffect(() => {
-    setBrowserInfo(parseWebViewInfo(appService));
-  }, [appService]);
+    setBrowserInfo(parseWebViewInfo(platformInfo));
+  }, [platformInfo]);
 
   useEffect(() => {
     captureException(error);
     handleGlobalError(error);
-  }, [appService, error]);
+  }, [error]);
 
   const handleGoHome = () => {
     window.location.href = '/library';

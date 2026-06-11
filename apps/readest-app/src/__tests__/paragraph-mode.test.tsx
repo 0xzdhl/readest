@@ -4,7 +4,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import ParagraphOverlay from '@/app/reader/components/paragraph/ParagraphOverlay';
 import { useParagraphMode } from '@/app/reader/hooks/useParagraphMode';
-import type { FoliateView } from '@/types/view';
+import type { FoliateView } from '@/domain/view';
 import { eventDispatcher } from '@/utils/event';
 import {
   getParagraphActionForKey,
@@ -22,10 +22,6 @@ const currentViewSettings = {
 const mockGetViewSettings = vi.fn(() => currentViewSettings);
 const mockSetViewSettings = vi.fn();
 const mockGetProgress = vi.fn(() => null);
-
-vi.mock('@/context/EnvContext', () => ({
-  useEnv: () => ({ envConfig: {}, appService: { hasSafeAreaInset: false } }),
-}));
 
 vi.mock('@/helpers/settings', () => ({
   saveViewSettings: vi.fn(),

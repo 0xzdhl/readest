@@ -6,7 +6,7 @@ import { useEffect, useRef, useState } from 'react';
 import 'overlayscrollbars/overlayscrollbars.css';
 import { impactFeedback } from '@tauri-apps/plugin-haptics';
 import { MdArrowBackIosNew, MdArrowForwardIos } from 'react-icons/md';
-import { useEnv } from '@/context/EnvContext';
+import { usePlatformInfo } from '@/context/EffectRuntimeProvider';
 import { useDrag } from '@/hooks/useDrag';
 import { useResponsiveSize } from '@/hooks/useResponsiveSize';
 import { useTranslation } from '@/hooks/useTranslation';
@@ -59,7 +59,7 @@ const Dialog: React.FC<DialogProps> = ({
   onClose,
 }) => {
   const _ = useTranslation();
-  const { appService } = useEnv();
+  const platformInfo = usePlatformInfo();
   const { systemUIVisible, statusBarHeight, safeAreaInsets } = useThemeStore();
   const { acquireBackKeyInterception, releaseBackKeyInterception } = useDeviceControlStore();
   const [isFullHeightInMobile, setIsFullHeightInMobile] = useState(!snapHeight);
@@ -100,7 +100,7 @@ const Dialog: React.FC<DialogProps> = ({
     if (dialogRef.current) {
       dialogRef.current.addEventListener('keydown', handleKeyDown);
     }
-    if (appService?.isAndroidApp) {
+    if (platformInfo.isAndroidApp) {
       acquireBackKeyInterception();
       eventDispatcher.onSync('native-key-down', handleKeyDown);
     }
@@ -113,7 +113,7 @@ const Dialog: React.FC<DialogProps> = ({
     return () => {
       clearTimeout(timer);
       window.removeEventListener('keydown', handleKeyDown);
-      if (appService?.isAndroidApp) {
+      if (platformInfo.isAndroidApp) {
         releaseBackKeyInterception();
         eventDispatcher.offSync('native-key-down', handleKeyDown);
       }
@@ -183,7 +183,7 @@ const Dialog: React.FC<DialogProps> = ({
       modal.style.transform = `translateY(0%)`;
       overlay.style.opacity = '0';
     }
-    if (appService?.hasHaptics) {
+    if (platformInfo.hasHaptics) {
       impactFeedback('medium');
     }
   };
@@ -209,7 +209,7 @@ const Dialog: React.FC<DialogProps> = ({
       <Overlay
         className={clsx(
           'dialog-overlay z-10 bg-black/50 sm:bg-black/50',
-          appService?.hasRoundedWindow && 'rounded-window',
+          platformInfo.hasRoundedWindow && 'rounded-window',
           bgClassName,
         )}
         onDismiss={onClose}
@@ -225,7 +225,7 @@ const Dialog: React.FC<DialogProps> = ({
         )}
         style={{
           paddingTop:
-            appService?.hasSafeAreaInset && isFullHeightInMobile
+            platformInfo.hasSafeAreaInset && isFullHeightInMobile
               ? `${Math.max(safeAreaInsets?.top || 0, systemUIVisible ? statusBarHeight : 0)}px`
               : '0px',
           ...(isMobile

@@ -1,4 +1,4 @@
-import type { SectionFragment, SectionItem, TOCItem } from '@/libs/document';
+import type { SectionFragment, SectionItem, TOCItem } from '@/domain/document';
 import { SIZE_PER_LOC } from '@/services/constants';
 
 export type SplitTOCHref = (href: string) => Array<string | number>;

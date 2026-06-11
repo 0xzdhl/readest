@@ -1,15 +1,9 @@
 import { getAPIBaseUrl, isWebAppPlatform } from '@/services/environment';
-import type { AppService } from '@/types/system';
+import type { FileWriter } from '@/domain/system';
 import { getUserID } from '@/utils/access';
 import { fetchWithAuth } from '@/utils/fetch';
-import {
-  tauriUpload,
-  tauriDownload,
-  webUpload,
-  webDownload,
-  type ProgressHandler,
-  type ProgressPayload,
-} from '@/utils/transfer';
+import { tauriUpload, tauriDownload, webUpload, webDownload } from '@/utils/transfer';
+import type { ProgressHandler, ProgressPayload } from '@/domain/transfer';
 
 const API_ENDPOINTS = {
   upload: getAPIBaseUrl() + '/storage/upload',
@@ -182,7 +176,7 @@ export const batchGetDownloadUrls = async (files: { lfp: string; cfp: string }[]
 };
 
 type DownloadFileParams = {
-  appService: AppService;
+  appService: FileWriter;
   dst: string;
   cfp: string;
   url?: string;

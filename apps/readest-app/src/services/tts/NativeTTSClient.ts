@@ -4,7 +4,7 @@ import { getUserLocale } from '@/utils/misc';
 import { parseSSMLMarks } from '@/utils/ssml';
 import { stubTranslation as _ } from '@/utils/misc';
 import type { TTSClient, TTSMessageEvent } from './TTSClient';
-import type { TTSGranularity, TTSMark, TTSVoice, TTSVoicesGroup } from './types';
+import type { TTSGranularity, TTSMark, TTSVoice, TTSVoicesGroup } from '@/domain/tts';
 import { TTSUtils } from './TTSUtils';
 import { TTSController } from './TTSController';
 

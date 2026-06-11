@@ -1,8 +1,8 @@
 import clsx from 'clsx';
 import React, { useEffect, useState, useCallback, useRef, useMemo } from 'react';
-import type { ViewSettings } from '@/types/book';
-import type { Insets } from '@/types/misc';
-import { useEnv } from '@/context/EnvContext';
+import type { ViewSettings } from '@/domain/book';
+import type { Insets } from '@/domain/misc';
+import { usePlatformInfo } from '@/context/EffectRuntimeProvider';
 import { eventDispatcher } from '@/utils/event';
 import {
   getParagraphActionForKey,
@@ -119,7 +119,7 @@ const ParagraphOverlay: React.FC<ParagraphOverlayProps> = ({
   gridInsets = { top: 0, right: 0, bottom: 0, left: 0 },
   onClose,
 }) => {
-  const { appService } = useEnv();
+  const platformInfo = usePlatformInfo();
   const [paragraphs, setParagraphs] = useState<ParagraphContent[]>([]);
   const [isVisible, setIsVisible] = useState(false);
   const [isOverlayMounted, setIsOverlayMounted] = useState(false);
@@ -161,8 +161,8 @@ const ParagraphOverlay: React.FC<ParagraphOverlayProps> = ({
     [activePresentation, viewSettings],
   );
   const frameStyle = useMemo(() => {
-    const topInset = appService?.hasSafeAreaInset ? gridInsets.top : 0;
-    const bottomInset = appService?.hasSafeAreaInset ? gridInsets.bottom * 0.33 : 0;
+    const topInset = platformInfo.hasSafeAreaInset ? gridInsets.top : 0;
+    const bottomInset = platformInfo.hasSafeAreaInset ? gridInsets.bottom * 0.33 : 0;
     const viewportPadding = `clamp(1rem, 4vw, 2.5rem)`;
 
     return {
@@ -186,7 +186,7 @@ const ParagraphOverlay: React.FC<ParagraphOverlayProps> = ({
         : `min(calc(100dvh - ${topInset + bottomInset + 132}px), 38rem)`,
       marginInline: 'auto',
     } as React.CSSProperties;
-  }, [appService?.hasSafeAreaInset, gridInsets.bottom, gridInsets.top, layoutContext.vertical]);
+  }, [gridInsets.bottom, gridInsets.top, layoutContext.vertical]);
   const surfaceStyle = useMemo(
     () =>
       ({
@@ -446,8 +446,8 @@ const ParagraphOverlay: React.FC<ParagraphOverlayProps> = ({
         backgroundColor: `oklch(var(--b1) / ${Math.min(dimOpacity + 0.4, 0.92)})`,
         backdropFilter: 'blur(20px)',
         WebkitBackdropFilter: 'blur(20px)',
-        paddingTop: appService?.hasSafeAreaInset ? `${gridInsets.top}px` : undefined,
-        paddingBottom: appService?.hasSafeAreaInset ? `${gridInsets.bottom * 0.33}px` : undefined,
+        paddingTop: platformInfo.hasSafeAreaInset ? `${gridInsets.top}px` : undefined,
+        paddingBottom: platformInfo.hasSafeAreaInset ? `${gridInsets.bottom * 0.33}px` : undefined,
       }}
       onClick={handleBackdropClick}
       onTouchStart={handleTouchStart}

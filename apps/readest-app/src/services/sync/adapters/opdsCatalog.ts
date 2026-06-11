@@ -1,5 +1,5 @@
 import { md5 } from '@/utils/md5';
-import type { OPDSCatalog } from '@/types/opds';
+import type { OPDSCatalog } from '@/domain/opds';
 import type { ReplicaAdapter } from '@/services/sync/replicaRegistry';
 import type { FieldsObject, ReplicaRow } from '@/types/replica';
 import { defaultComputeId, unwrap } from './helpers';

@@ -1,5 +1,6 @@
-import { type CustomTextureInfo, getTextureName } from '@/styles/textures';
-import type { FileSystem } from '@/types/system';
+import { getTextureName } from '@/styles/textures';
+import type { CustomTextureInfo } from '@/domain/textures';
+import type { FileSystem } from '@/domain/system';
 import { md5, partialMd5 } from '@/utils/md5';
 import { uniqueId } from '@/utils/misc';
 import { getFilename } from '@/utils/path';

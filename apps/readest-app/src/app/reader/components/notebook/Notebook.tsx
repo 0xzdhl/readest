@@ -9,11 +9,11 @@ import { useNotebookStore } from '@/store/notebookStore';
 import { useAIChatStore } from '@/store/aiChatStore';
 import { useTranslation } from '@/hooks/useTranslation';
 import { useThemeStore } from '@/store/themeStore';
-import { useEnv } from '@/context/EnvContext';
+import { usePlatformInfo } from '@/context/EffectRuntimeProvider';
 import { useSwipeToDismiss } from '@/hooks/useSwipeToDismiss';
 import { usePanelResize } from '@/hooks/usePanelResize';
-import type { TextSelection } from '@/utils/sel';
-import type { BookNote } from '@/types/book';
+import type { TextSelection } from '@/domain/selection';
+import type { BookNote } from '@/domain/book';
 import { uniqueId } from '@/utils/misc';
 import { eventDispatcher } from '@/utils/event';
 import { getBookDirFromLanguage } from '@/utils/book';
@@ -33,7 +33,7 @@ const MAX_NOTEBOOK_WIDTH = 0.45;
 
 const Notebook: React.FC = ({}) => {
   const _ = useTranslation();
-  const { envConfig, appService } = useEnv();
+  const platformInfo = usePlatformInfo();
   const { settings } = useSettingsStore();
   const { updateAppTheme, safeAreaInsets, systemUIVisible, statusBarHeight } = useThemeStore();
   const { sideBarBookKey } = useSidebarStore();
@@ -126,14 +126,14 @@ const Notebook: React.FC = ({}) => {
     toggleNotebookPin();
     const globalReadSettings = settings.globalReadSettings;
     const newGlobalReadSettings = { ...globalReadSettings, isNotebookPinned: !isNotebookPinned };
-    saveSysSettings(envConfig, 'globalReadSettings', newGlobalReadSettings);
+    saveSysSettings('globalReadSettings', newGlobalReadSettings);
   };
 
   const handleTabChange = (tab: 'notes' | 'ai') => {
     setNotebookActiveTab(tab);
     const globalReadSettings = settings.globalReadSettings;
     const newGlobalReadSettings = { ...globalReadSettings, notebookActiveTab: tab };
-    saveSysSettings(envConfig, 'globalReadSettings', newGlobalReadSettings);
+    saveSysSettings('globalReadSettings', newGlobalReadSettings);
   };
 
   const handleClickOverlay = () => {
@@ -165,7 +165,7 @@ const Notebook: React.FC = ({}) => {
     annotations.push(annotation);
     const updatedConfig = updateBooknotes(sideBarBookKey, annotations);
     if (updatedConfig) {
-      saveConfig(envConfig, sideBarBookKey, updatedConfig, settings);
+      saveConfig(sideBarBookKey, updatedConfig, settings);
     }
     setNotebookNewAnnotation(null);
   };
@@ -188,7 +188,7 @@ const Notebook: React.FC = ({}) => {
     view?.addAnnotation({ ...note, value: `${NOTE_PREFIX}${note.cfi}` }, true);
     const updatedConfig = updateBooknotes(sideBarBookKey, annotations);
     if (updatedConfig) {
-      saveConfig(envConfig, sideBarBookKey, updatedConfig, settings);
+      saveConfig(sideBarBookKey, updatedConfig, settings);
     }
     setNotebookEditAnnotation(null);
   };
@@ -262,7 +262,7 @@ const Notebook: React.FC = ({}) => {
           'notebook-container right-0 flex min-w-60 select-none flex-col',
           'full-height font-sans text-base font-normal transition-[padding-top] duration-300 sm:text-sm',
           viewSettings?.isEink ? 'bg-base-100' : 'bg-base-200',
-          appService?.hasRoundedWindow && 'rounded-window-top-right rounded-window-bottom-right',
+          platformInfo.hasRoundedWindow && 'rounded-window-top-right rounded-window-bottom-right',
           isNotebookPinned ? 'z-20' : 'z-[45] shadow-2xl',
           !isNotebookPinned && viewSettings?.isEink && 'border-base-content border-s',
         )}

@@ -1,7 +1,7 @@
 import { describe, expect, test } from 'vitest';
 import { computeFontContentId, fontAdapter } from '@/services/sync/adapters/font';
 import { hlcPack } from '@/libs/crdt';
-import type { CustomFont } from '@/styles/fonts';
+import type { CustomFont } from '@/domain/fonts';
 import type { Hlc, ReplicaRow } from '@/types/replica';
 
 const NOW = 1_700_000_000_000;

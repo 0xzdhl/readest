@@ -13,7 +13,7 @@ import type React from 'react';
 import { describe, it, expect, vi, beforeAll, beforeEach, afterEach } from 'vitest';
 import { render, cleanup } from '@testing-library/react';
 import { page } from 'vitest/browser';
-import type { UserHighlightColor } from '@/types/book';
+import type { UserHighlightColor } from '@/domain/book';
 
 // ── Tailwind / DaisyUI styles ───────────────────────────────────────────
 import '@/styles/globals.css';
@@ -22,10 +22,6 @@ import '@/styles/globals.css';
 let mockUserColors: UserHighlightColor[] = [];
 
 // ── Mocks (must be before component imports) ────────────────────────────
-
-vi.mock('@/context/EnvContext', () => ({
-  useEnv: () => ({ envConfig: {}, appService: null }),
-}));
 
 vi.mock('@/store/themeStore', () => ({
   useThemeStore: () => ({ isDarkMode: false }),

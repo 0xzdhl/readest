@@ -1,12 +1,15 @@
-import type { Book } from '@/types/book';
-import type { AppService, BaseDir } from '@/types/system';
+import { Effect } from 'effect';
+import { getClientRuntime } from '@/runtime/clientRuntime';
+import { CloudService } from '@/application/services/CloudService';
+import type { Book } from '@/domain/book';
+import type { BaseDir } from '@/domain/system';
 import {
   useTransferStore,
   type TransferItem,
   type ReplicaTransferFile,
 } from '@/store/transferStore';
 import type { TranslationFunc } from '@/hooks/useTranslation';
-import type { ProgressHandler, ProgressPayload } from '@/utils/transfer';
+import type { ProgressHandler, ProgressPayload } from '@/domain/transfer';
 import { eventDispatcher } from '@/utils/event';
 import { getTransferMessages } from './transferMessages';
 
@@ -20,7 +23,6 @@ interface PersistedQueueData {
 
 class TransferManager {
   private static instance: TransferManager;
-  private appService: AppService | null = null;
   private isProcessing = false;
   private abortControllers: Map<string, AbortController> = new Map();
   private isInitialized = false;
@@ -42,14 +44,12 @@ class TransferManager {
   }
 
   async initialize(
-    appService: AppService,
     getLibrary: () => Book[],
     updateBook: (book: Book) => Promise<void>,
     translationFn: TranslationFunc,
   ): Promise<void> {
     if (this.isInitialized) return;
 
-    this.appService = appService;
     this.getLibrary = getLibrary;
     this.updateBook = updateBook;
     this._ = translationFn;
@@ -62,7 +62,7 @@ class TransferManager {
   }
 
   isReady(): boolean {
-    return this.isInitialized && this.appService !== null;
+    return this.isInitialized;
   }
 
   /**
@@ -300,7 +300,7 @@ class TransferManager {
   }
 
   private async executeTransfer(transfer: TransferItem): Promise<void> {
-    if (!this.appService || !this.getLibrary || !this.updateBook) {
+    if (!this.getLibrary || !this.updateBook) {
       console.error('TransferManager not properly initialized');
       return;
     }
@@ -418,15 +418,21 @@ class TransferManager {
     }
 
     if (transfer.type === 'upload') {
-      await this.appService!.uploadBook(book, progressHandler);
+      await getClientRuntime().runPromise(
+        Effect.flatMap(CloudService, (c) => c.uploadBook(book, progressHandler)),
+      );
       book.uploadedAt = Date.now();
       await this.updateBook!(book);
     } else if (transfer.type === 'download') {
-      await this.appService!.downloadBook(book, false, false, progressHandler);
+      await getClientRuntime().runPromise(
+        Effect.flatMap(CloudService, (c) => c.downloadBook(book, false, false, progressHandler)),
+      );
       book.downloadedAt = Date.now();
       await this.updateBook!(book);
     } else if (transfer.type === 'delete') {
-      await this.appService!.deleteBook(book, 'cloud');
+      await getClientRuntime().runPromise(
+        Effect.flatMap(CloudService, (c) => c.deleteBook(book, 'cloud')),
+      );
       await this.updateBook!(book);
     }
   }
@@ -441,10 +447,14 @@ class TransferManager {
     const files = transfer.replicaFiles ?? [];
 
     if (transfer.type === 'delete') {
-      await this.appService!.deleteReplicaBundle(
-        kind,
-        replicaId,
-        files.map((f) => f.logical),
+      await getClientRuntime().runPromise(
+        Effect.flatMap(CloudService, (c) =>
+          c.deleteReplicaBundle(
+            kind,
+            replicaId,
+            files.map((f) => f.logical),
+          ),
+        ),
       );
       eventDispatcher.dispatch('replica-transfer-complete', {
         kind,
@@ -476,13 +486,17 @@ class TransferManager {
     if (transfer.type === 'upload') {
       const base = transfer.replicaBase!;
       for (const file of files) {
-        await this.appService!.uploadReplicaFile(
-          kind,
-          replicaId,
-          file.logical,
-          file.lfp,
-          base,
-          fileProgressHandler(file.byteSize),
+        await getClientRuntime().runPromise(
+          Effect.flatMap(CloudService, (c) =>
+            c.uploadReplicaFile({
+              kind,
+              replicaId,
+              filename: file.logical,
+              lfp: file.lfp,
+              base,
+              onProgress: fileProgressHandler(file.byteSize),
+            }),
+          ),
         );
         bytesAlreadyDone += file.byteSize;
       }
@@ -499,13 +513,17 @@ class TransferManager {
     if (transfer.type === 'download') {
       const base = transfer.replicaBase!;
       for (const file of files) {
-        await this.appService!.downloadReplicaFile(
-          kind,
-          replicaId,
-          file.logical,
-          file.lfp,
-          base,
-          fileProgressHandler(file.byteSize),
+        await getClientRuntime().runPromise(
+          Effect.flatMap(CloudService, (c) =>
+            c.downloadReplicaFile({
+              kind,
+              replicaId,
+              filename: file.logical,
+              lfp: file.lfp,
+              base,
+              onProgress: fileProgressHandler(file.byteSize),
+            }),
+          ),
         );
         bytesAlreadyDone += file.byteSize;
       }

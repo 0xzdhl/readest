@@ -6,12 +6,15 @@ import { PiSun, PiMoon } from 'react-icons/pi';
 import { TbSunMoon } from 'react-icons/tb';
 import { MdCloudSync, MdSync, MdSyncProblem } from 'react-icons/md';
 
+import { Effect } from 'effect';
 import { invoke } from '@tauri-apps/api/core';
 import type { PermissionState } from '@tauri-apps/api/core';
 import { isTauriAppPlatform, isWebAppPlatform, getWebsiteUrl } from '@/services/environment';
 import { setBackupDialogVisible } from '@/app/library/components/backupDialog';
 import { useAuth } from '@/context/AuthContext';
-import { useEnv } from '@/context/EnvContext';
+import { useRunEffect, usePlatformInfo, useBooted } from '@/context/EffectRuntimeProvider';
+import { LibraryRepository } from '@/application/repositories/LibraryRepository';
+import { BookRepository } from '@/application/repositories/BookRepository';
 import { useThemeStore } from '@/store/themeStore';
 import { useQuotaStats } from '@/hooks/useQuotaStats';
 import { useLibraryStore } from '@/store/libraryStore';
@@ -47,7 +50,9 @@ interface Permissions {
 const SettingsMenu: React.FC<SettingsMenuProps> = ({ onPullLibrary, setIsDropdownOpen }) => {
   const _ = useTranslation();
   const router = useRouter();
-  const { envConfig, appService } = useEnv();
+  const booted = useBooted();
+  const platformInfo = usePlatformInfo();
+  const runEffect = useRunEffect();
   const { user } = useAuth();
   const { userProfilePlan, quotas } = useQuotaStats(true);
   const { themeMode, setThemeMode } = useThemeStore();
@@ -120,13 +125,13 @@ const SettingsMenu: React.FC<SettingsMenuProps> = ({ onPullLibrary, setIsDropdow
   };
 
   const toggleOpenInNewWindow = () => {
-    saveSysSettings(envConfig, 'openBookInNewWindow', !settings.openBookInNewWindow);
+    saveSysSettings('openBookInNewWindow', !settings.openBookInNewWindow);
     setIsDropdownOpen?.(false);
   };
 
   const toggleAlwaysOnTop = () => {
     const newValue = !settings.alwaysOnTop;
-    saveSysSettings(envConfig, 'alwaysOnTop', newValue);
+    saveSysSettings('alwaysOnTop', newValue);
     setIsAlwaysOnTop(newValue);
     tauriHandleSetAlwaysOnTop(newValue);
     setIsDropdownOpen?.(false);
@@ -134,13 +139,13 @@ const SettingsMenu: React.FC<SettingsMenuProps> = ({ onPullLibrary, setIsDropdow
 
   const toggleAlwaysShowStatusBar = () => {
     const newValue = !settings.alwaysShowStatusBar;
-    saveSysSettings(envConfig, 'alwaysShowStatusBar', newValue);
+    saveSysSettings('alwaysShowStatusBar', newValue);
     setIsAlwaysShowStatusBar(newValue);
   };
 
   const toggleAutoUploadBooks = () => {
     const newValue = !settings.autoUpload;
-    saveSysSettings(envConfig, 'autoUpload', newValue);
+    saveSysSettings('autoUpload', newValue);
     setIsAutoUpload(newValue);
 
     if (newValue && !user) {
@@ -150,25 +155,25 @@ const SettingsMenu: React.FC<SettingsMenuProps> = ({ onPullLibrary, setIsDropdow
 
   const toggleAutoImportBooksOnOpen = () => {
     const newValue = !settings.autoImportBooksOnOpen;
-    saveSysSettings(envConfig, 'autoImportBooksOnOpen', newValue);
+    saveSysSettings('autoImportBooksOnOpen', newValue);
     setIsAutoImportBooksOnOpen(newValue);
   };
 
   const toggleAutoCheckUpdates = () => {
     const newValue = !settings.autoCheckUpdates;
-    saveSysSettings(envConfig, 'autoCheckUpdates', newValue);
+    saveSysSettings('autoCheckUpdates', newValue);
     setIsAutoCheckUpdates(newValue);
   };
 
   const toggleOpenLastBooks = () => {
     const newValue = !settings.openLastBooks;
-    saveSysSettings(envConfig, 'openLastBooks', newValue);
+    saveSysSettings('openLastBooks', newValue);
     setIsOpenLastBooks(newValue);
   };
 
   const toggleTelemetry = () => {
     const newValue = !settings.telemetryEnabled;
-    saveSysSettings(envConfig, 'telemetryEnabled', newValue);
+    saveSysSettings('telemetryEnabled', newValue);
     setIsTelemetryEnabled(newValue);
     if (newValue) {
       optInTelemetry();
@@ -193,17 +198,21 @@ const SettingsMenu: React.FC<SettingsMenuProps> = ({ onPullLibrary, setIsDropdow
   };
 
   const handleRefreshMetadata = async () => {
-    if (!appService || isRefreshingMetadata) return;
+    if (!booted || isRefreshingMetadata) return;
     setIsRefreshingMetadata(true);
     setRefreshMetadataProgress(_('Loading library...'));
     try {
-      const books = await appService.loadLibraryBooks();
+      const books = await runEffect(Effect.flatMap(LibraryRepository, (r) => r.load));
       const activeBooks = books.filter((b) => !b.deletedAt);
       let refreshed = 0;
       for (let i = 0; i < activeBooks.length; i++) {
         setRefreshMetadataProgress(`${i + 1} / ${activeBooks.length}`);
         try {
-          if (await appService.refreshBookMetadata(activeBooks[i]!)) {
+          if (
+            await runEffect(
+              Effect.flatMap(BookRepository, (r) => r.refreshMetadata(activeBooks[i]!)),
+            )
+          ) {
             refreshed++;
           }
         } catch {
@@ -211,7 +220,7 @@ const SettingsMenu: React.FC<SettingsMenuProps> = ({ onPullLibrary, setIsDropdow
         }
       }
       setLibrary(books);
-      await appService.saveLibraryBooks(books);
+      await runEffect(Effect.flatMap(LibraryRepository, (r) => r.save(books)));
       setRefreshMetadataProgress(_('{{count}} books refreshed', { count: refreshed }));
       onPullLibrary(true);
       setTimeout(() => {
@@ -234,16 +243,16 @@ const SettingsMenu: React.FC<SettingsMenuProps> = ({ onPullLibrary, setIsDropdow
   };
 
   const handleSetSavedBookCoverForLockScreen = async () => {
-    if (!(await requestStoragePermission()) && appService?.distChannel === 'readest') return;
+    if (!(await requestStoragePermission()) && platformInfo.distChannel === 'readest') return;
 
     const newValue = settings.savedBookCoverForLockScreen ? '' : 'default';
     if (newValue) {
       const response = await selectDirectory();
       if (response.path) {
-        saveSysSettings(envConfig, 'savedBookCoverForLockScreenPath', response.path);
+        saveSysSettings('savedBookCoverForLockScreenPath', response.path);
       }
     }
-    saveSysSettings(envConfig, 'savedBookCoverForLockScreen', newValue);
+    saveSysSettings('savedBookCoverForLockScreen', newValue);
     setSavedBookCoverForLockScreen(newValue);
   };
 
@@ -260,7 +269,7 @@ const SettingsMenu: React.FC<SettingsMenuProps> = ({ onPullLibrary, setIsDropdow
       if (permission.postNotification !== 'granted') return;
     }
 
-    saveSysSettings(envConfig, 'alwaysInForeground', requestAlwaysInForeground);
+    saveSysSettings('alwaysInForeground', requestAlwaysInForeground);
     setAlwaysInForeground(requestAlwaysInForeground);
   };
 
@@ -362,7 +371,7 @@ const SettingsMenu: React.FC<SettingsMenuProps> = ({ onPullLibrary, setIsDropdow
         onClick={toggleAutoUploadBooks}
       />
 
-      {isTauriAppPlatform() && !appService?.isMobile && (
+      {isTauriAppPlatform() && !platformInfo.isMobile && (
         <MenuItem
           label={_('Auto Import on File Open')}
           toggled={isAutoImportBooksOnOpen}
@@ -376,7 +385,7 @@ const SettingsMenu: React.FC<SettingsMenuProps> = ({ onPullLibrary, setIsDropdow
           onClick={toggleOpenLastBooks}
         />
       )}
-      {appService?.hasUpdater && (
+      {platformInfo.hasUpdater && (
         <MenuItem
           label={_('Check Updates on Start')}
           toggled={isAutoCheckUpdates}
@@ -384,25 +393,25 @@ const SettingsMenu: React.FC<SettingsMenuProps> = ({ onPullLibrary, setIsDropdow
         />
       )}
       <hr aria-hidden='true' className='border-base-200 my-1' />
-      {appService?.hasWindow && (
+      {platformInfo.hasWindow && (
         <MenuItem
           label={_('Open Book in New Window')}
           toggled={settings.openBookInNewWindow}
           onClick={toggleOpenInNewWindow}
         />
       )}
-      {appService?.hasWindow && <MenuItem label={_('Fullscreen')} onClick={handleFullScreen} />}
-      {appService?.hasWindow && (
+      {platformInfo.hasWindow && <MenuItem label={_('Fullscreen')} onClick={handleFullScreen} />}
+      {platformInfo.hasWindow && (
         <MenuItem label={_('Always on Top')} toggled={isAlwaysOnTop} onClick={toggleAlwaysOnTop} />
       )}
-      {appService?.isMobileApp && (
+      {platformInfo.isMobileApp && (
         <MenuItem
           label={_('Always Show Status Bar')}
           toggled={isAlwaysShowStatusBar}
           onClick={toggleAlwaysShowStatusBar}
         />
       )}
-      {appService?.isAndroidApp && (
+      {platformInfo.isAndroidApp && (
         <MenuItem
           label={_(_('Background Read Aloud'))}
           toggled={alwaysInForeground}
@@ -419,7 +428,7 @@ const SettingsMenu: React.FC<SettingsMenuProps> = ({ onPullLibrary, setIsDropdow
       <MenuItem label={_('Advanced Settings')}>
         <ul className='ms-0 flex flex-col ps-0 before:hidden'>
           <MenuItem label={_('Backup & Restore')} onClick={handleBackupRestore} />
-          {appService?.canCustomizeRootDir && (
+          {platformInfo.canCustomizeRootDir && (
             <MenuItem label={_('Change Data Location')} onClick={handleSetRootDir} />
           )}
           {user && <MenuItem label={_('Data Sync')} onClick={handleManageSync} />}
@@ -442,7 +451,7 @@ const SettingsMenu: React.FC<SettingsMenuProps> = ({ onPullLibrary, setIsDropdow
           {isPinEnabled && (
             <MenuItem label={_('Disable PIN…')} onClick={() => openAppLockDialog('disable')} />
           )}
-          {appService?.isAndroidApp && appService?.distChannel !== 'playstore' && (
+          {platformInfo.isAndroidApp && platformInfo.distChannel !== 'playstore' && (
             <MenuItem
               label={_('Save Book Cover')}
               tooltip={_('Auto-save last book cover')}

@@ -1,13 +1,17 @@
-import type { Book } from '@/types/book';
-import type { AppService } from '@/types/system';
+import { Effect } from 'effect';
+import type { Book } from '@/domain/book';
 import { useLibraryStore } from '@/store/libraryStore';
 import { getAPIBaseUrl } from '@/services/environment';
+import { getClientRuntime } from '@/runtime/clientRuntime';
+import { LibraryRepository } from '@/application/repositories/LibraryRepository';
+import { BookRepository } from '@/application/repositories/BookRepository';
+import { CloudService } from '@/application/services/CloudService';
+import { importBooks as importBooksUsecase } from '@/application/usecases/book';
 import { ShareApiError, getShare, type ImportShareResponse, type ShareMetadata } from './share';
 
 interface EnsureSharedBookLocalArgs {
   token: string;
   importResult: ImportShareResponse;
-  appService: AppService;
   /** Optional cached share metadata to avoid an extra GET on the new-import branch. */
   meta?: ShareMetadata;
   /** Progress callback for byte transfers (0-100). */
@@ -23,10 +27,10 @@ interface EnsureSharedBookLocalArgs {
  * Three branches:
  *  - Book is in library and bytes are present on fs → no-op, return book.
  *  - Book is in library but bytes are missing locally (e.g. previously deleted
- *    or imported from another device) → `appService.downloadBook` pulls from
+ *    or imported from another device) → `CloudService.downloadBook` pulls from
  *    the recipient's R2 namespace, which the import endpoint just populated.
  *  - Book is NOT in the local library → fetch bytes via the public share
- *    download endpoint, then run `appService.importBook` so a proper local
+ *    download endpoint, then run the `importBooks` usecase so a proper local
  *    Book entry is created (metadata, cover extraction, dir layout). Mark
  *    `uploadedAt` + `coverDownloadedAt` so transferManager doesn't re-upload
  *    bytes the server already has, and so the cover-pull doesn't redo what
@@ -35,10 +39,10 @@ interface EnsureSharedBookLocalArgs {
 export const ensureSharedBookLocal = async ({
   token,
   importResult,
-  appService,
   meta,
   onProgress,
 }: EnsureSharedBookLocalArgs): Promise<Book> => {
+  const rt = getClientRuntime();
   const storeState = useLibraryStore.getState();
   const { setLibrary } = storeState;
   // When the share landing runs this helper, `libraryLoaded` is false because
@@ -52,13 +56,15 @@ export const ensureSharedBookLocal = async ({
   // (`libraryLoaded && settings.globalReadSettings`) renders the empty
   // fallback — exactly the blank-page symptom.
   const wasLibraryLoaded = storeState.libraryLoaded;
-  const library = wasLibraryLoaded ? storeState.library : await appService.loadLibraryBooks();
+  const library = wasLibraryLoaded
+    ? storeState.library
+    : await rt.runPromise(Effect.flatMap(LibraryRepository, (r) => r.load));
   const findByHash = (hash: string): Book | undefined =>
     wasLibraryLoaded ? storeState.getBookByHash(hash) : library.find((b) => b.hash === hash);
   const existing = findByHash(importResult.bookHash);
 
   const persistLibrary = async () => {
-    await appService.saveLibraryBooks(library);
+    await rt.runPromise(Effect.flatMap(LibraryRepository, (r) => r.save(library)));
     if (wasLibraryLoaded) setLibrary(library);
   };
 
@@ -69,20 +75,24 @@ export const ensureSharedBookLocal = async ({
     : undefined;
 
   if (existing) {
-    const bytesPresent = !!existing.downloadedAt && (await appService.isBookAvailable(existing));
+    const bytesPresent =
+      !!existing.downloadedAt &&
+      (await rt.runPromise(Effect.flatMap(BookRepository, (r) => r.isAvailable(existing))));
     if (bytesPresent) return existing;
 
     // Pull from recipient's namespace — the import endpoint already byte-copied
     // both the book and the cover there. downloadBook handles missing-cover
     // gracefully (covers may not exist) and sets downloadedAt internally.
-    await appService.downloadBook(existing, false, false, reportProgress);
+    await rt.runPromise(
+      Effect.flatMap(CloudService, (c) => c.downloadBook(existing, false, false, reportProgress)),
+    );
     // cloudService.downloadBook is silent on failure: if the cloud path
     // mismatches the local Book's filename (e.g. share-import wrote bytes at
     // the sharer's title, recipient's local Book has a different title) the
     // function resolves without touching downloadedAt and the bytes are still
     // absent. Verify before claiming success — otherwise the recipient
     // navigates into the reader and hits "Book file not found".
-    if (!(await appService.isBookAvailable(existing))) {
+    if (!(await rt.runPromise(Effect.flatMap(BookRepository, (r) => r.isAvailable(existing))))) {
       throw new Error('Could not download shared book');
     }
     if (!existing.downloadedAt) existing.downloadedAt = Date.now();
@@ -108,9 +118,14 @@ export const ensureSharedBookLocal = async ({
   const filename = `${shareMeta.title}.${shareMeta.format.toLowerCase()}`;
   const file = new File([blob], filename, { type: blob.type || 'application/octet-stream' });
 
-  const imported = await appService.importBook(file, library);
+  const { imported: importedBooks, failed } = await rt.runPromise(
+    importBooksUsecase(library, [{ file }], { persist: false }),
+  );
+  const imported = importedBooks[0];
   if (!imported) {
-    throw new Error('Could not import shared book');
+    throw new Error(
+      (failed[0]?.error as Error | undefined)?.message ?? 'Could not import shared book',
+    );
   }
 
   // The server already holds the book + cover bytes (R2 byte-copy in the

@@ -1,5 +1,5 @@
 import { getAPIBaseUrl } from '@/services/environment';
-import type { Book, BookConfig, BookDataRecord, BookNote } from '@/types/book';
+import type { Book, BookConfig, BookDataRecord, BookNote } from '@/domain/book';
 import { buildAuthFetchOptions, fetchWithTimeout } from '@/utils/fetch';
 import { getJsonErrorMessage } from '@/utils/unknown';
 

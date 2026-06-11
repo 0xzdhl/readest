@@ -1,5 +1,5 @@
 import { describe, test, expect, vi, beforeEach, afterEach } from 'vitest';
-import type { ViewSettings } from '@/types/book';
+import type { ViewSettings } from '@/domain/book';
 import type { TransformContext } from '@/services/transformers/types';
 
 // --- Mocks ---

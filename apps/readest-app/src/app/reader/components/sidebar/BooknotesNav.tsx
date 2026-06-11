@@ -1,7 +1,7 @@
 import type React from 'react';
 
-import type { Insets } from '@/types/misc';
-import type { TOCItem } from '@/libs/document';
+import type { Insets } from '@/domain/misc';
+import type { TOCItem } from '@/domain/document';
 import { useTranslation } from '@/hooks/useTranslation';
 import { useReaderStore } from '@/store/readerStore';
 import { useBooknotesNav } from '../../hooks/useBooknotesNav';

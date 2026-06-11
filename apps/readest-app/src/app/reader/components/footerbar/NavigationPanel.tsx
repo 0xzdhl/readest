@@ -3,7 +3,7 @@ import React, { useCallback, useEffect } from 'react';
 import { RiArrowLeftSLine, RiArrowRightSLine } from 'react-icons/ri';
 import { RiArrowGoBackLine, RiArrowGoForwardLine } from 'react-icons/ri';
 import { RiArrowLeftDoubleLine, RiArrowRightDoubleLine } from 'react-icons/ri';
-import { useEnv } from '@/context/EnvContext';
+import { usePlatformInfo } from '@/context/EffectRuntimeProvider';
 import { useReaderStore } from '@/store/readerStore';
 import { useTranslation } from '@/hooks/useTranslation';
 import type { NavigationHandlers } from './types';
@@ -33,7 +33,7 @@ export const NavigationPanel: React.FC<NavigationPanelProps> = ({
   forceMobileLayout,
 }) => {
   const _ = useTranslation();
-  const { appService } = useEnv();
+  const platformInfo = usePlatformInfo();
   const { getView, getViewSettings } = useReaderStore();
   const view = getView(bookKey);
   const viewSettings = getViewSettings(bookKey);
@@ -70,7 +70,7 @@ export const NavigationPanel: React.FC<NavigationPanelProps> = ({
     <div
       className={classes}
       style={{
-        bottom: appService?.isAndroidApp
+        bottom: platformInfo.isAndroidApp
           ? `calc(env(safe-area-inset-bottom) + 64px)`
           : bottomOffset,
       }}

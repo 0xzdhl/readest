@@ -1,7 +1,7 @@
 import clsx from 'clsx';
 import React, { useEffect, useRef } from 'react';
-import type { Insets } from '@/types/misc';
-import { useEnv } from '@/context/EnvContext';
+import type { Insets } from '@/domain/misc';
+import { usePlatformInfo } from '@/context/EffectRuntimeProvider';
 import { useThemeStore } from '@/store/themeStore';
 import { eventDispatcher } from '@/utils/event';
 
@@ -26,11 +26,11 @@ const HintInfo: React.FC<SectionInfoProps> = ({
   contentInsets,
   gridInsets,
 }) => {
-  const { appService } = useEnv();
+  const platformInfo = usePlatformInfo();
   const { systemUIVisible, statusBarHeight } = useThemeStore();
   const topInset = Math.max(
     gridInsets.top,
-    appService?.isAndroidApp && systemUIVisible ? statusBarHeight / 2 : 0,
+    platformInfo.isAndroidApp && systemUIVisible ? statusBarHeight / 2 : 0,
   );
 
   const [hintMessage, setHintMessage] = React.useState<string | null>(null);

@@ -2,8 +2,8 @@ import { describe, it, expect, beforeEach } from 'vitest';
 import { gzipSync } from 'node:zlib';
 
 import { createStarDictProvider } from '@/services/dictionaries/providers/starDictProvider';
-import type { ImportedDictionary } from '@/services/dictionaries/types';
-import type { BaseDir } from '@/types/system';
+import type { ImportedDictionary } from '@/domain/dictionaries';
+import type { BaseDir } from '@/domain/system';
 
 // ---------------------------------------------------------------------------
 // Minimal StarDict fixture builder for edge-case tests.

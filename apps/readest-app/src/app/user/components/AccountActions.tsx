@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useEnv } from '@/context/EnvContext';
+import { usePlatformInfo } from '@/context/EffectRuntimeProvider';
 import { useTranslation } from '@/hooks/useTranslation';
 import type { UserPlan } from '@/types/quota';
 
@@ -73,7 +73,7 @@ const AccountActions: React.FC<AccountActionsProps> = ({
   onManageSync,
 }) => {
   const _ = useTranslation();
-  const { appService } = useEnv();
+  const platformInfo = usePlatformInfo();
   const [showConfirmDelete, setShowConfirmDelete] = useState(false);
 
   const handleDeleteRequest = () => {
@@ -95,7 +95,7 @@ const AccountActions: React.FC<AccountActionsProps> = ({
         }}
       />
       <div className='flex flex-col gap-4 md:grid md:grid-cols-2 lg:grid-cols-3'>
-        {appService?.hasIAP && iapAvailable ? (
+        {platformInfo.hasIAP && iapAvailable ? (
           <button
             onClick={onRestorePurchase}
             className='w-full rounded-lg bg-blue-100 px-6 py-3 font-medium text-blue-600 transition-colors hover:bg-blue-200 md:w-auto'

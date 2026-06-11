@@ -1,8 +1,10 @@
+import { Effect } from 'effect';
 import { partialMd5 } from '@/utils/md5';
 import { uniqueId } from '@/utils/misc';
 import { queueReplicaBinaryUpload } from '@/services/sync/replicaBinaryUpload';
-import type { EnvConfigType } from '@/services/environment';
-import type { BaseDir } from '@/types/system';
+import { FileSystem } from '@/application/ports/FileSystem';
+import { getClientRuntime } from '@/runtime/clientRuntime';
+import type { BaseDir } from '@/domain/system';
 
 /**
  * Shared shape for legacy flat-path records that predate replica sync:
@@ -40,7 +42,7 @@ export interface MigrateLegacyReplicasDeps<T extends LegacyReplicaRecord> {
   /** Patch the in-memory record with the migrated fields. */
   updateRecord: (id: string, next: T) => void;
   /** Persist the kind's settings entry post-migration. */
-  saveStore: (envConfig: EnvConfigType) => Promise<void>;
+  saveStore: () => Promise<void>;
   /** Publish the now-syncable record to the replica row. */
   publishUpsert: (record: T) => void;
 }
@@ -65,21 +67,24 @@ export interface MigrateLegacyReplicasDeps<T extends LegacyReplicaRecord> {
  * logged and don't block the rest.
  */
 export const migrateLegacyReplicas = async <T extends LegacyReplicaRecord>(
-  envConfig: EnvConfigType,
   deps: MigrateLegacyReplicasDeps<T>,
 ): Promise<void> => {
   const candidates = deps.getCandidates();
   if (candidates.length === 0) return;
 
-  const appService = await envConfig.getAppService();
+  const runtime = getClientRuntime();
   const migrated: T[] = [];
 
   for (const legacy of candidates) {
     try {
-      const exists = await appService.exists(legacy.path, deps.baseDir);
+      const exists = await runtime.runPromise(
+        Effect.flatMap(FileSystem, (fs) => fs.exists(legacy.path, deps.baseDir)),
+      );
       if (!exists) continue;
 
-      const file = await appService.openFile(legacy.path, deps.baseDir);
+      const file = await runtime.runPromise(
+        Effect.flatMap(FileSystem, (fs) => fs.openFile(legacy.path, deps.baseDir)),
+      );
       const bytes = await file.arrayBuffer();
       const partialMD5 = await partialMd5(file);
       const byteSize = bytes.byteLength;
@@ -88,9 +93,17 @@ export const migrateLegacyReplicas = async <T extends LegacyReplicaRecord>(
       const bundleDir = uniqueId();
       const newPath = `${bundleDir}/${filename}`;
 
-      await appService.createDir(bundleDir, deps.baseDir, true);
-      await appService.copyFile(legacy.path, deps.baseDir, newPath, deps.baseDir);
-      await appService.deleteFile(legacy.path, deps.baseDir);
+      await runtime.runPromise(
+        Effect.flatMap(FileSystem, (fs) => fs.createDir(bundleDir, deps.baseDir, true)),
+      );
+      await runtime.runPromise(
+        Effect.flatMap(FileSystem, (fs) =>
+          fs.copyFile(legacy.path, deps.baseDir, newPath, deps.baseDir),
+        ),
+      );
+      await runtime.runPromise(
+        Effect.flatMap(FileSystem, (fs) => fs.removeFile(legacy.path, deps.baseDir)),
+      );
 
       const next: T = {
         ...legacy,
@@ -114,12 +127,12 @@ export const migrateLegacyReplicas = async <T extends LegacyReplicaRecord>(
   if (migrated.length === 0) return;
 
   try {
-    await deps.saveStore(envConfig);
+    await deps.saveStore();
   } catch (err) {
     console.warn(`migrateLegacyReplicas[${deps.kind}]: save failed`, err);
   }
   for (const record of migrated) {
     deps.publishUpsert(record);
-    void queueReplicaBinaryUpload(deps.kind, record, appService);
+    void queueReplicaBinaryUpload(deps.kind, record);
   }
 };

@@ -18,10 +18,7 @@ const fireReplicaSyncReady = () => {
   for (const l of [...readyListeners]) l();
   readyListeners.clear();
 };
-let envValue: { envConfig: unknown; appService: unknown } = {
-  envConfig: { name: 'env' },
-  appService: null,
-};
+let bootedValue = false;
 
 let authValue: { user: { id: string } | null } = { user: { id: 'test-user' } };
 
@@ -38,8 +35,8 @@ vi.mock('@/services/sync/replicaSync', () => ({
   subscribeReplicaSyncReady: (listener: () => void) => subscribeReplicaSyncReadySpy(listener),
 }));
 
-vi.mock('@/context/EnvContext', () => ({
-  useEnv: () => envValue,
+vi.mock('@/context/EffectRuntimeProvider', () => ({
+  useBooted: () => bootedValue,
 }));
 
 vi.mock('@/context/AuthContext', () => ({
@@ -107,8 +104,6 @@ vi.mock('@/utils/misc', () => ({
 
 import { useReplicaPull, __resetReplicaPullForTests } from '@/hooks/useReplicaPull';
 
-const fakeService = { createDir: vi.fn(), name: 'fake' };
-
 // Mock manager exposing both per-kind `pull` (used by the boot path) and
 // the batched `pullMany` (used by the incremental triggers). Each test
 // recreates these so individual call counts don't bleed across cases.
@@ -143,7 +138,7 @@ beforeEach(() => {
   subscribeReplicaSyncReadySpy.mockClear();
   readyListeners.clear();
   __resetReplicaPullForTests();
-  envValue = { envConfig: { name: 'env' }, appService: fakeService };
+  bootedValue = true;
   authValue = { user: { id: 'test-user' } };
 });
 
@@ -206,8 +201,8 @@ describe('useReplicaPull', () => {
     expect(pullSpy).toHaveBeenCalledTimes(4);
   });
 
-  test('skips when appService is null', () => {
-    envValue = { envConfig: { name: 'env' }, appService: null };
+  test('skips when not booted', () => {
+    bootedValue = false;
     getReplicaSyncSpy.mockReturnValue({ manager: makeManagerMock() });
     renderHook(() => useReplicaPull({ kinds: ['dictionary'], delayMs: 100 }));
 
@@ -225,7 +220,7 @@ describe('useReplicaPull', () => {
   });
 
   test('hard-refresh race: schedules pull once initReplicaSync finishes (deferred subscriber fires)', async () => {
-    // Hard refresh: appService landed first, replica-sync singleton
+    // Hard refresh: boot resolved first, replica-sync singleton
     // arrives after a microtask. The hook must catch up via the
     // ready-signal subscription rather than silently dropping the pull.
     getReplicaSyncSpy.mockReturnValue(null);

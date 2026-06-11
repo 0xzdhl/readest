@@ -4,7 +4,7 @@ import { MdArrowBack } from 'react-icons/md';
 import { useTranslation } from '@/hooks/useTranslation';
 import { useResponsiveSize } from '@/hooks/useResponsiveSize';
 import { navigateToLibrary } from '@/utils/nav';
-import { LibraryGroupByType } from '@/types/settings';
+import { LibraryGroupByType } from '@/domain/settings';
 
 interface GroupHeaderProps {
   groupBy: LibraryGroupByType;

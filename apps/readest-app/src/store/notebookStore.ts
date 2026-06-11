@@ -1,8 +1,7 @@
 import { create } from 'zustand';
-import type { BookNote } from '@/types/book';
-import type { TextSelection } from '@/utils/sel';
-
-export type NotebookTab = 'notes' | 'ai';
+import type { BookNote } from '@/domain/book';
+import type { TextSelection } from '@/domain/selection';
+import type { NotebookTab } from '@/domain/notebook';
 
 interface NotebookState {
   notebookWidth: string;

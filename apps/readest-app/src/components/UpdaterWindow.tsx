@@ -1,6 +1,8 @@
 import clsx from 'clsx';
 import semver from 'semver';
-import { useEnv } from '@/context/EnvContext';
+import { Effect } from 'effect';
+import { usePlatformInfo, useRunEffect } from '@/context/EffectRuntimeProvider';
+import { PathResolver } from '@/application/ports/PathResolver';
 import { useEffect, useState } from 'react';
 import { type as osType, arch as osArch } from '@tauri-apps/plugin-os';
 import { check, Update } from '@tauri-apps/plugin-updater';
@@ -81,7 +83,8 @@ export const UpdaterContent = ({
     sourceLang: 'AUTO',
     targetLang,
   });
-  const { appService } = useEnv();
+  const platformInfo = usePlatformInfo();
+  const runEffect = useRunEffect();
   const searchParams =
     typeof window === 'undefined'
       ? new URLSearchParams()
@@ -113,7 +116,7 @@ export const UpdaterContent = ({
       }
     };
     const checkAndroidUpdate = async () => {
-      if (!appService) return;
+      if (!platformInfo.hasUpdater) return;
       const fetch = isTauriAppPlatform() ? tauriFetch : window.fetch;
       const response = await fetch(getUpdaterFileUrl());
       const data = await getUpdaterManifest(response);
@@ -123,9 +126,10 @@ export const UpdaterContent = ({
         const arch = OS_ARCH === 'aarch64' ? 'arm64' : 'universal';
         const downloadUrl = data.platforms[platformKey]?.url;
         if (!downloadUrl) return;
-        const apkFilePath = await appService.resolveFilePath(
-          `Readest_${data.version}_${arch}.apk`,
-          'Cache',
+        const apkFilePath = await runEffect(
+          Effect.flatMap(PathResolver, (r) =>
+            r.absolute(`Readest_${data.version}_${arch}.apk`, 'Cache'),
+          ),
         );
         setUpdate({
           currentVersion,
@@ -211,7 +215,7 @@ export const UpdaterContent = ({
       });
     };
     const checkWindowsPortableUpdate = async () => {
-      if (!appService) return;
+      if (!platformInfo.hasUpdater) return;
       const fetch = isTauriAppPlatform() ? tauriFetch : window.fetch;
       const response = await fetch(getUpdaterFileUrl());
       const data = await getUpdaterManifest(response);
@@ -248,7 +252,7 @@ export const UpdaterContent = ({
       }
     };
     const checkAppImageUpdate = async () => {
-      if (!appService) return;
+      if (!platformInfo.hasUpdater) return;
       const fetch = isTauriAppPlatform() ? tauriFetch : window.fetch;
       const response = await fetch(getUpdaterFileUrl());
       const data = await getUpdaterManifest(response);
@@ -291,9 +295,9 @@ export const UpdaterContent = ({
     };
     const checkForUpdates = async () => {
       const OS_TYPE = osType();
-      if (appService?.isPortableApp && OS_TYPE === 'windows') {
+      if (platformInfo.isPortableApp && OS_TYPE === 'windows') {
         checkWindowsPortableUpdate();
-      } else if (appService?.isAppImage) {
+      } else if (platformInfo.isAppImage) {
         checkAppImageUpdate();
       } else if (['macos', 'windows', 'linux'].includes(OS_TYPE)) {
         checkDesktopUpdate();
@@ -301,11 +305,11 @@ export const UpdaterContent = ({
         checkAndroidUpdate();
       }
     };
-    if (appService?.hasUpdater && checkUpdate) {
+    if (platformInfo.hasUpdater && checkUpdate) {
       checkForUpdates();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [appService?.hasUpdater]);
+  }, [platformInfo.hasUpdater]);
 
   useEffect(() => {
     if (latestVersion) {
@@ -420,7 +424,7 @@ export const UpdaterContent = ({
       }
     });
     console.log('package installed');
-    if (!appService?.isAndroidApp && clientEnv.NODE_ENV === 'production') {
+    if (!platformInfo.isAndroidApp && clientEnv.NODE_ENV === 'production') {
       await relaunch();
     }
   };
@@ -502,7 +506,7 @@ export const UpdaterContent = ({
 
                 {changelogs.length > 0 && semver.gt(changelogs[0]!.version, currentVersion) ? (
                   <div className='flex gap-2'>
-                    {(appService?.isIOSApp || appService?.isMacOSApp) && (
+                    {(platformInfo.isIOSApp || platformInfo.isMacOSApp) && (
                       <Link
                         href='https://apps.apple.com/app/id6738622779'
                         target='_blank'
@@ -513,7 +517,7 @@ export const UpdaterContent = ({
                       </Link>
                     )}
 
-                    {appService?.isAndroidApp && (
+                    {platformInfo.isAndroidApp && (
                       <Link
                         href='https://play.google.com/store/apps/details?id=com.bilingify.readest'
                         target='_blank'

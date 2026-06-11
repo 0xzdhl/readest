@@ -1,10 +1,12 @@
-import { type BookMetadata, EXTS } from '@/libs/document';
-import type { Book, BookConfig, BookProgress, WritingMode } from '@/types/book';
+import { EXTS } from '@/domain/document';
+import type { BookMetadata } from '@/domain/document';
+import type { Book, BookConfig, BookProgress, WritingMode } from '@/domain/book';
 import { SUPPORTED_LANGS } from '@/services/constants';
 import { getLocale, getUserLang, makeSafeFilename } from './misc';
 import { getDirFromLanguage } from './rtl';
 import { code6392to6391, isValidLang, normalizedLangCode } from './lang';
 import { md5 } from '@/utils/md5';
+import type { LanguageMap, Identifier, Contributor } from '@/domain/metadata';
 
 export const getDir = (book: Book) => {
   return `${book.hash}`;
@@ -40,24 +42,6 @@ export const isBookFile = (filename: string) => {
 export const INIT_BOOK_CONFIG: BookConfig = {
   updatedAt: 0,
 };
-
-export interface LanguageMap {
-  [key: string]: string;
-}
-
-export interface Identifier {
-  scheme: string;
-  value: string;
-}
-
-export interface Contributor {
-  name: LanguageMap;
-}
-
-export interface Collection {
-  name: string;
-  position?: string;
-}
 
 const formatLanguageMap = (x: string | LanguageMap, defaultLang = false): string => {
   const userLang = getUserLang();

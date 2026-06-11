@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react';
 import type { RefObject } from 'react';
-import { useEnv } from '@/context/EnvContext';
+import { usePlatformInfo } from '@/context/EffectRuntimeProvider';
 import { useDeviceControlStore } from '@/store/deviceStore';
 import { eventDispatcher } from '@/utils/event';
 
@@ -17,7 +17,7 @@ export const useKeyDownActions = ({
   enabled = true,
   elementRef: providedRef,
 }: UseKeyDownOptions) => {
-  const { appService } = useEnv();
+  const platformInfo = usePlatformInfo();
   const { acquireBackKeyInterception, releaseBackKeyInterception } = useDeviceControlStore();
   const internalRef = useRef<HTMLDivElement | null>(null);
   const elementRef = providedRef || internalRef;
@@ -48,7 +48,7 @@ export const useKeyDownActions = ({
       elementRef.current.addEventListener('keydown', handleKeyDown);
     }
 
-    if (appService?.isAndroidApp) {
+    if (platformInfo.isAndroidApp) {
       acquireBackKeyInterception?.();
       eventDispatcher.onSync('native-key-down', handleKeyDown);
     }
@@ -56,13 +56,13 @@ export const useKeyDownActions = ({
     return () => {
       window.removeEventListener('keydown', handleKeyDown);
 
-      if (appService?.isAndroidApp) {
+      if (platformInfo.isAndroidApp) {
         releaseBackKeyInterception?.();
         eventDispatcher.offSync('native-key-down', handleKeyDown);
       }
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [enabled, appService?.isAndroidApp]);
+  }, [enabled, platformInfo.isAndroidApp]);
 
   return internalRef;
 };

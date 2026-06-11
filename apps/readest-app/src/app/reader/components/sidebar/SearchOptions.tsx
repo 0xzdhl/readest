@@ -1,7 +1,7 @@
 import clsx from 'clsx';
 import type React from 'react';
 import { MdCheck } from 'react-icons/md';
-import type { BookSearchConfig } from '@/types/book';
+import type { BookSearchConfig } from '@/domain/book';
 import { useTranslation } from '@/hooks/useTranslation';
 import { useDefaultIconSize } from '@/hooks/useResponsiveSize';
 

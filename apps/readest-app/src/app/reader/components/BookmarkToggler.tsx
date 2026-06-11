@@ -5,8 +5,7 @@ import { useSettingsStore } from '@/store/settingsStore';
 import { useBookDataStore } from '@/store/bookDataStore';
 import { useReaderStore } from '@/store/readerStore';
 import { useTranslation } from '@/hooks/useTranslation';
-import { useEnv } from '@/context/EnvContext';
-import type { BookNote } from '@/types/book';
+import type { BookNote } from '@/domain/book';
 import { uniqueId } from '@/utils/misc';
 import Button from '@/components/Button';
 import { getCurrentPage } from '@/utils/book';
@@ -19,7 +18,6 @@ interface BookmarkTogglerProps {
 
 const BookmarkToggler: React.FC<BookmarkTogglerProps> = ({ bookKey }) => {
   const _ = useTranslation();
-  const { envConfig } = useEnv();
   const { settings } = useSettingsStore();
   const { getConfig, saveConfig, getBookData, updateBooknotes } = useBookDataStore();
   const { getProgress, getViewState, setBookmarkRibbonVisibility } = useReaderStore();
@@ -64,7 +62,7 @@ const BookmarkToggler: React.FC<BookmarkTogglerProps> = ({ bookKey }) => {
       }
       const updatedConfig = updateBooknotes(bookKey, bookmarks);
       if (updatedConfig) {
-        saveConfig(envConfig, bookKey, updatedConfig, settings);
+        saveConfig(bookKey, updatedConfig, settings);
       }
     } else {
       setIsBookmarked(false);
@@ -75,7 +73,7 @@ const BookmarkToggler: React.FC<BookmarkTogglerProps> = ({ bookKey }) => {
       });
       const updatedConfig = updateBooknotes(bookKey, bookmarks);
       if (updatedConfig) {
-        saveConfig(envConfig, bookKey, updatedConfig, settings);
+        saveConfig(bookKey, updatedConfig, settings);
       }
     }
   };

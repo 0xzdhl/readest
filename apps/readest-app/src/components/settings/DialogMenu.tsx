@@ -3,7 +3,9 @@ import type React from 'react';
 import { MdCheck } from 'react-icons/md';
 import Menu from '@/components/Menu';
 import MenuItem from '@/components/MenuItem';
-import { useEnv } from '@/context/EnvContext';
+import { Effect } from 'effect';
+import { useRunEffect } from '@/context/EffectRuntimeProvider';
+import { FontService } from '@/application/services/FontService';
 import { saveViewSettings } from '@/helpers/settings';
 import { useTranslation } from '@/hooks/useTranslation';
 import { useCustomFontStore } from '@/store/customFontStore';
@@ -27,7 +29,7 @@ const DialogMenu: React.FC<DialogMenuProps> = ({
   resetLabel,
 }) => {
   const _ = useTranslation();
-  const { envConfig, appService } = useEnv();
+  const runEffect = useRunEffect();
   const { setFontPanelView } = useSettingsStore();
   const { getViewSettings } = useReaderStore();
   const { getAllFonts, removeFont, saveCustomFonts } = useCustomFontStore();
@@ -35,7 +37,7 @@ const DialogMenu: React.FC<DialogMenuProps> = ({
   const isSettingsGlobal = viewSettings?.isGlobal ?? true;
 
   const handleToggleGlobal = () => {
-    saveViewSettings(envConfig, bookKey, 'isGlobal', !isSettingsGlobal, true, false);
+    saveViewSettings(bookKey, 'isGlobal', !isSettingsGlobal, true, false);
     setIsDropdownOpen?.(false);
   };
 
@@ -52,10 +54,10 @@ const DialogMenu: React.FC<DialogMenuProps> = ({
   const handleClearCustomFont = () => {
     getAllFonts().forEach((font) => {
       if (removeFont(font.id)) {
-        appService!.deleteFont(font);
+        void runEffect(Effect.flatMap(FontService, (s) => s.deleteFont(font)));
       }
     });
-    saveCustomFonts(envConfig);
+    saveCustomFonts();
     setIsDropdownOpen?.(false);
   };
 

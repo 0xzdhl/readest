@@ -1,8 +1,8 @@
 import { getUserLocale } from '@/utils/misc';
 import type { TTSClient, TTSMessageEvent } from './TTSClient';
 import { EdgeSpeechTTS, type EdgeTTSPayload, type EDGE_TTS_PROTOCOL } from '@/libs/edgeTTS';
-import type { TTSGranularity, TTSVoice, TTSVoicesGroup } from './types';
-import type { AppService } from '@/types/system';
+import type { TTSGranularity, TTSVoice, TTSVoicesGroup } from '@/domain/tts';
+import { getPlatformInfo } from '@/runtime/clientRuntime';
 import { parseSSMLMarks } from '@/utils/ssml';
 import { TTSController } from './TTSController';
 import { TTSUtils } from './TTSUtils';
@@ -11,7 +11,6 @@ export class EdgeTTSClient implements TTSClient {
   name = 'edge-tts';
   initialized = false;
   controller?: TTSController;
-  appService?: AppService | null;
 
   #voices: TTSVoice[] = [];
   #primaryLang = 'en';
@@ -27,9 +26,8 @@ export class EdgeTTSClient implements TTSClient {
   #startedAt = 0;
   #fadeCompensation: number | null = null;
 
-  constructor(controller?: TTSController, appService?: AppService | null) {
+  constructor(controller?: TTSController) {
     this.controller = controller;
-    this.appService = appService;
   }
 
   async init(protocol: EDGE_TTS_PROTOCOL = 'wss') {
@@ -206,13 +204,13 @@ export class EdgeTTSClient implements TTSClient {
           };
           this.#isPlaying = true;
           audio.src = audioUrl || '';
-          if (!this.appService?.isLinuxApp) {
+          if (!getPlatformInfo().isLinuxApp) {
             audio.playbackRate = this.#rate;
           }
           audio
             .play()
             .then(() => {
-              if (this.appService?.isLinuxApp) {
+              if (getPlatformInfo().isLinuxApp) {
                 audio.playbackRate = this.#rate;
               }
             })

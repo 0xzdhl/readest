@@ -2,7 +2,9 @@ import clsx from 'clsx';
 import React, { useState } from 'react';
 import { MdAdd, MdDelete } from 'react-icons/md';
 import { IoMdCloseCircleOutline } from 'react-icons/io';
-import { useEnv } from '@/context/EnvContext';
+import { Effect } from 'effect';
+import { useRunEffect, useBooted } from '@/context/EffectRuntimeProvider';
+import { FontService } from '@/application/services/FontService';
 import { useReaderStore } from '@/store/readerStore';
 import { useTranslation } from '@/hooks/useTranslation';
 import { useSettingsStore } from '@/store/settingsStore';
@@ -10,7 +12,7 @@ import { useCustomFontStore } from '@/store/customFontStore';
 import { useFileSelector } from '@/hooks/useFileSelector';
 import { saveViewSettings } from '@/helpers/settings';
 import { mountCustomFont } from '@/styles/fonts';
-import type { CustomFont } from '@/styles/fonts';
+import type { CustomFont } from '@/domain/fonts';
 import { queueReplicaBinaryUpload } from '@/services/sync/replicaBinaryUpload';
 import { Tips } from './primitives';
 
@@ -26,7 +28,8 @@ type FontFamily = {
 
 const CustomFonts: React.FC<CustomFontsProps> = ({ bookKey, onBack }) => {
   const _ = useTranslation();
-  const { appService, envConfig } = useEnv();
+  const booted = useBooted();
+  const runEffect = useRunEffect();
   const { settings } = useSettingsStore();
   const {
     fonts: customFonts,
@@ -40,7 +43,7 @@ const CustomFonts: React.FC<CustomFontsProps> = ({ bookKey, onBack }) => {
   const viewSettings = getViewSettings(bookKey) || settings.globalViewSettings;
   const [isDeleteMode, setIsDeleteMode] = useState(false);
 
-  const { selectFiles } = useFileSelector(appService, _);
+  const { selectFiles } = useFileSelector(_);
 
   const currentDefaultFont =
     viewSettings.defaultFont.toLowerCase() === 'serif' ? 'serif' : 'sans-serif';
@@ -52,7 +55,9 @@ const CustomFonts: React.FC<CustomFontsProps> = ({ bookKey, onBack }) => {
     selectFiles({ type: 'fonts', multiple: true }).then(async (result) => {
       if (result.error || result.files.length === 0) return;
       for (const selectedFile of result.files) {
-        const fontInfo = await appService?.importFont(selectedFile.path || selectedFile.file);
+        const fontInfo = await runEffect(
+          Effect.flatMap(FontService, (s) => s.importFont(selectedFile.path || selectedFile.file)),
+        );
         if (!fontInfo) continue;
 
         const customFont = addFont(fontInfo.path, {
@@ -67,12 +72,12 @@ const CustomFonts: React.FC<CustomFontsProps> = ({ bookKey, onBack }) => {
         });
         console.log('Added custom font:', customFont);
         if (customFont && !customFont.error) {
-          const loadedFont = await loadFont(envConfig, customFont.id);
+          const loadedFont = await loadFont(customFont.id);
           mountCustomFont(document, loadedFont);
-          if (appService) void queueReplicaBinaryUpload('font', customFont, appService);
+          if (booted) void queueReplicaBinaryUpload('font', customFont);
         }
       }
-      saveCustomFonts(envConfig);
+      saveCustomFonts();
     });
   };
 
@@ -80,8 +85,8 @@ const CustomFonts: React.FC<CustomFontsProps> = ({ bookKey, onBack }) => {
     for (const font of family.fonts) {
       if (font) {
         if (removeFont(font.id)) {
-          appService?.deleteFont(font);
-          saveCustomFonts(envConfig);
+          void runEffect(Effect.flatMap(FontService, (s) => s.deleteFont(font)));
+          saveCustomFonts();
           if (getAvailableFonts().length === 0) {
             setIsDeleteMode(false);
           }
@@ -92,9 +97,9 @@ const CustomFonts: React.FC<CustomFontsProps> = ({ bookKey, onBack }) => {
 
   const handleSelectFamily = (family: FontFamily) => {
     if (currentDefaultFont === 'serif') {
-      saveViewSettings(envConfig, bookKey, 'serifFont', family.name);
+      saveViewSettings(bookKey, 'serifFont', family.name);
     } else {
-      saveViewSettings(envConfig, bookKey, 'sansSerifFont', family.name);
+      saveViewSettings(bookKey, 'sansSerifFont', family.name);
     }
   };
 

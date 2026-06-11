@@ -2,7 +2,7 @@ import clsx from 'clsx';
 import React, { useCallback } from 'react';
 import { TbBoxMargin } from 'react-icons/tb';
 import { RxLineHeight } from 'react-icons/rx';
-import { useEnv } from '@/context/EnvContext';
+import { usePlatformInfo } from '@/context/EffectRuntimeProvider';
 import { useReaderStore } from '@/store/readerStore';
 import { useTranslation } from '@/hooks/useTranslation';
 import { saveViewSettings } from '@/helpers/settings';
@@ -43,16 +43,16 @@ export const FontLayoutPanel: React.FC<FontLayoutPanelProps> = ({
   forceMobileLayout,
 }) => {
   const _ = useTranslation();
-  const { envConfig, appService } = useEnv();
+  const platformInfo = usePlatformInfo();
   const { getView, getViewSettings } = useReaderStore();
   const viewSettings = getViewSettings(bookKey);
   const view = getView(bookKey);
 
   const handleFontSizeChange = useCallback(
     (value: number) => {
-      saveViewSettings(envConfig, bookKey, 'defaultFontSize', value);
+      saveViewSettings(bookKey, 'defaultFontSize', value);
     },
-    [envConfig, bookKey],
+    [bookKey],
   );
 
   const handleMarginChange = useCallback(
@@ -69,7 +69,7 @@ export const FontLayoutPanel: React.FC<FontLayoutPanelProps> = ({
       currentViewSettings.marginLeftPx = marginPx / 2;
       currentViewSettings.marginRightPx = marginPx / 2;
 
-      saveViewSettings(envConfig, bookKey, 'gapPercent', gapPercent, false, false);
+      saveViewSettings(bookKey, 'gapPercent', gapPercent, false, false);
       view?.renderer.setAttribute('margin', `${marginPx}px`);
       view?.renderer.setAttribute('gap', `${gapPercent}%`);
 
@@ -77,14 +77,14 @@ export const FontLayoutPanel: React.FC<FontLayoutPanelProps> = ({
         view?.renderer.setAttribute('flow', 'scrolled');
       }
     },
-    [envConfig, bookKey, view, getViewSettings],
+    [bookKey, view, getViewSettings],
   );
 
   const handleLineHeightChange = useCallback(
     (value: number) => {
-      saveViewSettings(envConfig, bookKey, 'lineHeight', value / LINE_HEIGHT_LIMITS.MULTIPLIER);
+      saveViewSettings(bookKey, 'lineHeight', value / LINE_HEIGHT_LIMITS.MULTIPLIER);
     },
-    [envConfig, bookKey],
+    [bookKey],
   );
 
   const getMarginProgressValue = useCallback((marginPx: number, gapPercent: number) => {
@@ -105,7 +105,7 @@ export const FontLayoutPanel: React.FC<FontLayoutPanelProps> = ({
     <div
       className={classes}
       style={{
-        bottom: appService?.isAndroidApp
+        bottom: platformInfo.isAndroidApp
           ? `calc(env(safe-area-inset-bottom) + 64px)`
           : bottomOffset,
       }}

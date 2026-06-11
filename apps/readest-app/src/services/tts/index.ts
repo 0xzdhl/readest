@@ -1,4 +1,4 @@
-export * from './types';
+export * from '@/domain/tts';
 export * from './TTSClient';
 export * from './WebSpeechClient';
 export * from './EdgeTTSClient';

@@ -3,7 +3,7 @@ import React from 'react';
 
 import { MdCheck } from 'react-icons/md';
 import { useRouter } from '@tanstack/react-router';
-import { useEnv } from '@/context/EnvContext';
+import { usePlatformInfo } from '@/context/EffectRuntimeProvider';
 import { useAuth } from '@/context/AuthContext';
 import { useReaderStore } from '@/store/readerStore';
 import { useLibraryStore } from '@/store/libraryStore';
@@ -13,7 +13,7 @@ import { useSettingsStore } from '@/store/settingsStore';
 import { useParallelViewStore } from '@/store/parallelViewStore';
 import { isWebAppPlatform, getWebsiteUrl } from '@/services/environment';
 import { eventDispatcher } from '@/utils/event';
-import { FIXED_LAYOUT_FORMATS } from '@/types/book';
+import { FIXED_LAYOUT_FORMATS } from '@/domain/book';
 import { navigateToLogin } from '@/utils/nav';
 import { saveSysSettings, saveViewSettings } from '@/helpers/settings';
 import { setProofreadRulesVisibility } from '@/app/reader/components/ProofreadRules';
@@ -30,7 +30,7 @@ interface BookMenuProps {
 const BookMenu: React.FC<BookMenuProps> = ({ menuClassName, setIsDropdownOpen }) => {
   const _ = useTranslation();
   const router = useRouter();
-  const { envConfig, appService } = useEnv();
+  const platformInfo = usePlatformInfo();
   const { user } = useAuth();
   const { settings } = useSettingsStore();
   const { bookKeys, recreateViewer, getViewSettings } = useReaderStore();
@@ -66,11 +66,9 @@ const BookMenu: React.FC<BookMenuProps> = ({ menuClassName, setIsDropdownOpen })
     setIsSortedTOC((prev) => !prev);
     setIsDropdownOpen?.(false);
     if (sideBarBookKey) {
-      saveViewSettings(envConfig, sideBarBookKey, 'sortedTOC', !isSortedTOC, true, false).then(
-        () => {
-          recreateViewer(envConfig, sideBarBookKey);
-        },
-      );
+      saveViewSettings(sideBarBookKey, 'sortedTOC', !isSortedTOC, true, false).then(() => {
+        recreateViewer(sideBarBookKey);
+      });
     }
   };
   const handleSetParallel = () => {
@@ -107,7 +105,7 @@ const BookMenu: React.FC<BookMenuProps> = ({ menuClassName, setIsDropdownOpen })
   };
   const toggleDiscordPresence = () => {
     const discordRichPresenceEnabled = !settings.discordRichPresenceEnabled;
-    saveSysSettings(envConfig, 'discordRichPresenceEnabled', discordRichPresenceEnabled);
+    saveSysSettings('discordRichPresenceEnabled', discordRichPresenceEnabled);
     setIsDropdownOpen?.(false);
     if (discordRichPresenceEnabled && !user) {
       navigateToLogin(router);
@@ -184,7 +182,7 @@ const BookMenu: React.FC<BookMenuProps> = ({ menuClassName, setIsDropdownOpen })
           </ul>
         </MenuItem>
       )}
-      {appService?.isDesktopApp && (
+      {platformInfo.isDesktopApp && (
         <>
           <hr aria-hidden='true' className='border-base-200 my-1' />
           <MenuItem

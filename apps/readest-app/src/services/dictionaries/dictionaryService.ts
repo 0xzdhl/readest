@@ -9,11 +9,12 @@
  * Mirrors the structure of `src/services/fontService.ts` but handles
  * multi-file bundles instead of single-file fonts.
  */
-import type { FileSystem } from '@/types/system';
-import type { SelectedFile } from '@/hooks/useFileSelector';
+import type { FileSystem } from '@/domain/system';
+import type { SelectedFile } from '@/domain/file-selector';
 import { uniqueId } from '@/utils/misc';
 import { getFilename } from '@/utils/path';
-import type { ImportedDictionary } from './types';
+import type { ImportedDictionary } from '@/domain/dictionaries';
+import type { ImportDictionariesResult } from '@/domain/dictionaries';
 import { scanEntryOffsets, serializeOffsetsSidecar } from './stardictReader';
 import { computeDictionaryContentId } from './contentId';
 import { v4 as uuidv4 } from 'uuid';
@@ -504,20 +505,6 @@ async function importSlobBundle(fs: FileSystem, group: SlobGroup): Promise<Impor
     unsupported: unsupported || undefined,
     unsupportedReason,
   };
-}
-
-export interface ImportDictionariesResult {
-  imported: ImportedDictionary[];
-  /**
-   * Bundles whose name matched one or more existing dictionaries in the
-   * user's library. The duplicate's old bundle dir has been removed from
-   * disk; the caller still needs to update the store — drop `oldIds`,
-   * insert `newDict` in the first old entry's `providerOrder` slot, and
-   * inherit the first old entry's enabled flag.
-   */
-  replacements: { oldIds: string[]; newDict: ImportedDictionary }[];
-  /** Filenames that didn't form a valid bundle. */
-  orphanFiles: string[];
 }
 
 /**

@@ -1,7 +1,21 @@
 import { describe, it, expect, afterEach } from 'vitest';
 import { parseWebViewInfo, parseWebViewVersion } from '@/utils/ua';
 
-type AppServiceParam = Parameters<typeof parseWebViewInfo>[0];
+type WebViewInfoParam = Parameters<typeof parseWebViewInfo>[0];
+
+// Neutral web defaults (no native-app flags set) — mirrors the legacy null-appService path.
+const webInfo: WebViewInfoParam = {
+  isAndroidApp: false,
+  isIOSApp: false,
+  isMacOSApp: false,
+  appPlatform: 'web',
+  osPlatform: 'unknown',
+};
+
+const makeInfo = (overrides: Partial<WebViewInfoParam>): WebViewInfoParam => ({
+  ...webInfo,
+  ...overrides,
+});
 
 const setUserAgent = (ua: string) => {
   Object.defineProperty(navigator, 'userAgent', {
@@ -23,15 +37,13 @@ describe('parseWebViewInfo', () => {
     setUserAgent(
       'Mozilla/5.0 (Linux; Android 13) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.6099.230 Mobile Safari/537.36',
     );
-    const appService = { isAndroidApp: true } as unknown as AppServiceParam;
-    const result = parseWebViewInfo(appService);
+    const result = parseWebViewInfo(makeInfo({ isAndroidApp: true }));
     expect(result).toBe('WebView 120.0.6099.230');
   });
 
   it('should fallback for Android WebView without Chrome version', () => {
     setUserAgent('Mozilla/5.0 (Linux; Android 13) AppleWebKit/537.36 Mobile Safari/537.36');
-    const appService = { isAndroidApp: true } as unknown as AppServiceParam;
-    const result = parseWebViewInfo(appService);
+    const result = parseWebViewInfo(makeInfo({ isAndroidApp: true }));
     expect(result).toBe('Android WebView');
   });
 
@@ -39,8 +51,7 @@ describe('parseWebViewInfo', () => {
     setUserAgent(
       'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148',
     );
-    const appService = { isIOSApp: true } as unknown as AppServiceParam;
-    const result = parseWebViewInfo(appService);
+    const result = parseWebViewInfo(makeInfo({ isIOSApp: true }));
     expect(result).toBe('WebView 605.1.15');
   });
 
@@ -48,8 +59,7 @@ describe('parseWebViewInfo', () => {
     setUserAgent(
       'Mozilla/5.0 (Macintosh; Intel Mac OS X 14_0) AppleWebKit/605.1.15 (KHTML, like Gecko)',
     );
-    const appService = { isMacOSApp: true } as unknown as AppServiceParam;
-    const result = parseWebViewInfo(appService);
+    const result = parseWebViewInfo(makeInfo({ isMacOSApp: true }));
     expect(result).toBe('WebView 605.1.15');
   });
 
@@ -57,11 +67,7 @@ describe('parseWebViewInfo', () => {
     setUserAgent(
       'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36 Edg/120.0.2210.91',
     );
-    const appService = {
-      appPlatform: 'tauri',
-      osPlatform: 'windows',
-    } as unknown as AppServiceParam;
-    const result = parseWebViewInfo(appService);
+    const result = parseWebViewInfo(makeInfo({ appPlatform: 'tauri', osPlatform: 'windows' }));
     expect(result).toBe('Edge 120.0.2210.91');
   });
 
@@ -69,11 +75,7 @@ describe('parseWebViewInfo', () => {
     setUserAgent(
       'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
     );
-    const appService = {
-      appPlatform: 'tauri',
-      osPlatform: 'linux',
-    } as unknown as AppServiceParam;
-    const result = parseWebViewInfo(appService);
+    const result = parseWebViewInfo(makeInfo({ appPlatform: 'tauri', osPlatform: 'linux' }));
     expect(result).toBe('WebView 537.36');
   });
 
@@ -81,7 +83,7 @@ describe('parseWebViewInfo', () => {
     setUserAgent(
       'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
     );
-    const result = parseWebViewInfo(null);
+    const result = parseWebViewInfo(webInfo);
     expect(result).toBe('Chrome 120.0.0.0');
   });
 
@@ -89,13 +91,13 @@ describe('parseWebViewInfo', () => {
     setUserAgent(
       'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Safari/605.1.15',
     );
-    const result = parseWebViewInfo(null);
+    const result = parseWebViewInfo(webInfo);
     expect(result).toBe('Safari 605.1.15');
   });
 
   it('should detect Firefox', () => {
     setUserAgent('Mozilla/5.0 (X11; Linux x86_64; rv:121.0) Gecko/20100101 Firefox/121.0');
-    const result = parseWebViewInfo(null);
+    const result = parseWebViewInfo(webInfo);
     expect(result).toBe('Firefox 121.0');
   });
 
@@ -103,13 +105,13 @@ describe('parseWebViewInfo', () => {
     setUserAgent(
       'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36 Edg/120.0.2210.91',
     );
-    const result = parseWebViewInfo(null);
+    const result = parseWebViewInfo(webInfo);
     expect(result).toBe('Edge 120.0.2210.91');
   });
 
   it('should return Unknown for unrecognized user agent', () => {
     setUserAgent('SomeUnknownBrowser/1.0');
-    const result = parseWebViewInfo(null);
+    const result = parseWebViewInfo(webInfo);
     expect(result).toBe('Unknown');
   });
 });
@@ -119,13 +121,13 @@ describe('parseWebViewVersion', () => {
     setUserAgent(
       'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
     );
-    const result = parseWebViewVersion(null);
+    const result = parseWebViewVersion(webInfo);
     expect(result).toBe(120);
   });
 
   it('should return 0 for unknown browser', () => {
     setUserAgent('SomeUnknownBrowser/1.0');
-    const result = parseWebViewVersion(null);
+    const result = parseWebViewVersion(webInfo);
     expect(result).toBe(0);
   });
 
@@ -133,8 +135,7 @@ describe('parseWebViewVersion', () => {
     setUserAgent(
       'Mozilla/5.0 (Linux; Android 13) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.6099.230 Mobile Safari/537.36',
     );
-    const appService = { isAndroidApp: true } as unknown as AppServiceParam;
-    const result = parseWebViewVersion(appService);
+    const result = parseWebViewVersion(makeInfo({ isAndroidApp: true }));
     expect(result).toBe(120);
   });
 });

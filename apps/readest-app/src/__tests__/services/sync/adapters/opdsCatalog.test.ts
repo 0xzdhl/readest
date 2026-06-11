@@ -5,7 +5,7 @@ import {
   OPDS_CATALOG_KIND,
   OPDS_CATALOG_SCHEMA_VERSION,
 } from '@/services/sync/adapters/opdsCatalog';
-import type { OPDSCatalog } from '@/types/opds';
+import type { OPDSCatalog } from '@/domain/opds';
 import type { FieldEnvelope, Hlc, ReplicaRow } from '@/types/replica';
 
 const sample: OPDSCatalog = {

@@ -8,7 +8,7 @@ import { BookDetailModal } from '@/components/metadata';
 import Spinner from '@/components/Spinner';
 import SettingsDialog from '@/components/settings/SettingsDialog';
 import { useAuth } from '@/context/AuthContext';
-import { useEnv } from '@/context/EnvContext';
+import { usePlatformInfo, useBooted } from '@/context/EffectRuntimeProvider';
 import { parseOpenWithFiles } from '@/helpers/openWith';
 import { useGamepad } from '@/hooks/useGamepad';
 import { useTranslation } from '@/hooks/useTranslation';
@@ -18,8 +18,8 @@ import { useBookDataStore } from '@/store/bookDataStore';
 import { useReaderStore } from '@/store/readerStore';
 import { useSettingsStore } from '@/store/settingsStore';
 import { useSidebarStore } from '@/store/sidebarStore';
-import type { Book } from '@/types/book';
-import type { SystemSettings } from '@/types/settings';
+import type { Book } from '@/domain/book';
+import type { SystemSettings } from '@/domain/settings';
 import { clearDiscordPresence } from '@/utils/discord';
 import { eventDispatcher } from '@/utils/event';
 import { uniqueId } from '@/utils/misc';
@@ -43,7 +43,8 @@ const ReaderContent: React.FC<{ ids: string; cfi?: string; settings: SystemSetti
 }) => {
   const _ = useTranslation();
   const router = useRouter();
-  const { envConfig, appService } = useEnv();
+  const booted = useBooted();
+  const platformInfo = usePlatformInfo();
   const { bookKeys, dismissBook, getNextBookKey } = useBooksManager(cfi);
   const { sideBarBookKey, setSideBarBookKey } = useSidebarStore();
   const { saveSettings } = useSettingsStore();
@@ -78,14 +79,13 @@ const ReaderContent: React.FC<{ ids: string; cfi?: string; settings: SystemSetti
       const isPrimary = !uniqueIds.has(id);
       uniqueIds.add(id);
       if (!getViewState(key)) {
-        initViewState(envConfig, id, key, isPrimary).catch((error) => {
+        initViewState(id, key, isPrimary).catch((error) => {
           console.log('Error initializing book', key, error);
           setErrorLoading(true);
           eventDispatcher.dispatch('toast', {
             message: _('Unable to open book'),
             callback: async () => {
-              const service = await envConfig.getAppService();
-              await closeReaderWindowOrGoToLibrary(service, router);
+              await closeReaderWindowOrGoToLibrary(router);
             },
             timeout: 2000,
             type: 'error',
@@ -138,7 +138,7 @@ const ReaderContent: React.FC<{ ids: string; cfi?: string; settings: SystemSetti
       const lastOpenBooks = bookKeys.map((key) => key.split('-')[0]!);
       if (settings.lastOpenBooks?.toString() !== lastOpenBooks.toString()) {
         settings.lastOpenBooks = lastOpenBooks;
-        saveSettings(envConfig, settings);
+        saveSettings(settings);
       }
     }
 
@@ -168,7 +168,7 @@ const ReaderContent: React.FC<{ ids: string; cfi?: string; settings: SystemSetti
       const settings = useSettingsStore.getState().settings;
       eventDispatcher.dispatch('sync-book-progress', { bookKey });
       eventDispatcher.dispatch('flush-kosync', { bookKey });
-      await saveConfig(envConfig, bookKey, config, settings);
+      await saveConfig(bookKey, config, settings);
     }
   };
 
@@ -176,8 +176,8 @@ const ReaderContent: React.FC<{ ids: string; cfi?: string; settings: SystemSetti
     console.log('Closing book', bookKey);
 
     const viewState = getViewState(bookKey);
-    if (viewState?.isPrimary && appService?.isDesktopApp) {
-      await clearDiscordPresence(appService);
+    if (viewState?.isPrimary && platformInfo.isDesktopApp) {
+      await clearDiscordPresence();
     }
 
     try {
@@ -196,14 +196,14 @@ const ReaderContent: React.FC<{ ids: string; cfi?: string; settings: SystemSetti
   };
 
   const saveSettingsAndGoToLibrary = () => {
-    saveSettings(envConfig, settings);
+    saveSettings(settings);
     navigateBackToLibrary();
   };
 
   const handleCloseBooks = throttle(async () => {
     const settings = useSettingsStore.getState().settings;
     await Promise.all(bookKeys.map(async (key) => await saveConfigAndCloseBook(key)));
-    await saveSettings(envConfig, settings);
+    await saveSettings(settings);
   }, 200);
 
   const handleCloseBooksToLibrary = async () => {
@@ -213,8 +213,8 @@ const ReaderContent: React.FC<{ ids: string; cfi?: string; settings: SystemSetti
       if (currentWindow.label === 'main') {
         navigateBackToLibrary();
       } else {
-        if (appService) {
-          await ensureMainLibraryWindow(appService);
+        if (booted) {
+          await ensureMainLibraryWindow();
         }
         currentWindow.close();
       }
@@ -230,8 +230,8 @@ const ReaderContent: React.FC<{ ids: string; cfi?: string; settings: SystemSetti
     }
     dismissBook(bookKey);
     if (bookKeys.filter((key) => key !== bookKey).length == 0) {
-      const openWithFiles = (await parseOpenWithFiles(appService)) || [];
-      if (appService?.hasWindow) {
+      const openWithFiles = (await parseOpenWithFiles()) || [];
+      if (platformInfo.hasWindow) {
         if (openWithFiles.length > 0) {
           tauriHandleOnCloseWindow(handleCloseBooks);
           return await tauriHandleClose();

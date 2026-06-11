@@ -1,4 +1,4 @@
-import type { BookConfig } from '@/types/book';
+import type { BookConfig } from '@/domain/book';
 import type { RsvpPosition } from './types';
 
 // Builds the BookConfig delta to persist when leaving RSVP. Pinning `location`

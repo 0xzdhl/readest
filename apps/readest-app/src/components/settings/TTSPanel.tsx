@@ -1,10 +1,9 @@
 import type React from 'react';
 import { useEffect, useState } from 'react';
-import { useEnv } from '@/context/EnvContext';
 import { saveViewSettings } from '@/helpers/settings';
 import { useResetViewSettings } from '@/hooks/useResetSettings';
 import { useTranslation } from '@/hooks/useTranslation';
-import type { TTSMediaMetadataMode } from '@/services/tts/types';
+import type { TTSMediaMetadataMode } from '@/domain/tts';
 import { useReaderStore } from '@/store/readerStore';
 import { useSettingsStore } from '@/store/settingsStore';
 import TTSHighlightStyleEditor, { type TTSHighlightStyle } from './color/TTSHighlightStyleEditor';
@@ -13,7 +12,6 @@ import type { SettingsPanelPanelProp } from './SettingsDialog';
 
 const TTSPanel: React.FC<SettingsPanelPanelProp> = ({ bookKey, onRegisterReset }) => {
   const _ = useTranslation();
-  const { envConfig } = useEnv();
   const { getViewSettings } = useReaderStore();
   const { settings, setSettings, saveSettings } = useSettingsStore();
   const viewSettings = getViewSettings(bookKey) || settings.globalViewSettings;
@@ -46,13 +44,13 @@ const TTSPanel: React.FC<SettingsPanelPanelProp> = ({ bookKey, onRegisterReset }
 
   useEffect(() => {
     if (ttsMediaMetadata === viewSettings.ttsMediaMetadata) return;
-    saveViewSettings(envConfig, bookKey, 'ttsMediaMetadata', ttsMediaMetadata, false, false);
+    saveViewSettings(bookKey, 'ttsMediaMetadata', ttsMediaMetadata, false, false);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [ttsMediaMetadata]);
 
   const handleTTSStyleChange = (style: TTSHighlightStyle) => {
     setTtsHighlightStyle(style);
-    saveViewSettings(envConfig, bookKey, 'ttsHighlightOptions', {
+    saveViewSettings(bookKey, 'ttsHighlightOptions', {
       style,
       color: ttsHighlightColor,
     });
@@ -60,7 +58,7 @@ const TTSPanel: React.FC<SettingsPanelPanelProp> = ({ bookKey, onRegisterReset }
 
   const handleTTSColorChange = (color: string) => {
     setTtsHighlightColor(color);
-    saveViewSettings(envConfig, bookKey, 'ttsHighlightOptions', {
+    saveViewSettings(bookKey, 'ttsHighlightOptions', {
       style: ttsHighlightStyle,
       color,
     });
@@ -70,7 +68,7 @@ const TTSPanel: React.FC<SettingsPanelPanelProp> = ({ bookKey, onRegisterReset }
     setCustomTtsHighlightColors(colors);
     settings.globalReadSettings.customTtsHighlightColors = colors;
     setSettings(settings);
-    saveSettings(envConfig, settings);
+    saveSettings(settings);
   };
 
   const handleMediaMetadataChange = (event: React.ChangeEvent<HTMLSelectElement>) => {

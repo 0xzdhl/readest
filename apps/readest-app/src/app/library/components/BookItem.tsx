@@ -6,14 +6,14 @@ import {
   LiaInfoCircleSolid,
 } from 'react-icons/lia';
 
-import type { Book } from '@/types/book';
-import { useEnv } from '@/context/EnvContext';
+import type { Book } from '@/domain/book';
+import { usePlatformInfo } from '@/context/EffectRuntimeProvider';
 import { useAuth } from '@/context/AuthContext';
 import { useRouter } from '@tanstack/react-router';
 import { useTranslation } from '@/hooks/useTranslation';
 import { useSettingsStore } from '@/store/settingsStore';
 import { useResponsiveSize } from '@/hooks/useResponsiveSize';
-import type { LibraryCoverFitType, LibraryViewModeType } from '@/types/settings';
+import type { LibraryCoverFitType, LibraryViewModeType } from '@/domain/settings';
 import { navigateToLogin } from '@/utils/nav';
 import { formatAuthors, formatDescription } from '@/utils/book';
 import ReadingProgress from './ReadingProgress';
@@ -45,7 +45,7 @@ const BookItem: React.FC<BookItemProps> = ({
   const _ = useTranslation();
   const router = useRouter();
   const { user } = useAuth();
-  const { appService } = useEnv();
+  const platformInfo = usePlatformInfo();
   const { settings } = useSettingsStore();
   const iconSize15 = useResponsiveSize(15);
 
@@ -57,7 +57,7 @@ const BookItem: React.FC<BookItemProps> = ({
         mode === 'grid' && 'h-full flex-col justify-end',
         mode === 'list' && 'h-28 flex-row gap-4 overflow-hidden',
         mode === 'list' ? 'library-list-item' : 'library-grid-item',
-        appService?.hasContextMenu ? 'cursor-pointer' : '',
+        platformInfo.hasContextMenu ? 'cursor-pointer' : '',
       )}
       onClick={(e) => e.stopPropagation()}
     >
@@ -129,7 +129,7 @@ const BookItem: React.FC<BookItemProps> = ({
         >
           {(book.progress || book.readingStatus) && <ReadingProgress book={book} />}
           <div className='flex items-center justify-center gap-x-2'>
-            {!appService?.isMobile && (
+            {!platformInfo.isMobile && (
               <button
                 aria-label={_('Show Book Details')}
                 className='show-detail-button -m-2 p-2 sm:opacity-0 sm:group-hover:opacity-100'

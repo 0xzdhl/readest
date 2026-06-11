@@ -6,7 +6,7 @@ import {
   type DefaultHighlightColor,
   type HighlightColor,
   type UserHighlightColor,
-} from '@/types/book';
+} from '@/domain/book';
 import { useTranslation } from '@/hooks/useTranslation';
 import { BoxedList, SettingLabel } from '../primitives';
 import NumberInput from '../NumberInput';

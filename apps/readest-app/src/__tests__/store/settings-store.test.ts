@@ -13,7 +13,7 @@ vi.mock('@/utils/time', () => ({
 import i18n from '@/i18n/i18n';
 import { initDayjs } from '@/utils/time';
 import { useSettingsStore } from '@/store/settingsStore';
-import type { SystemSettings } from '@/types/settings';
+import type { SystemSettings } from '@/domain/settings';
 
 const mockChangeLanguage = vi.mocked(i18n.changeLanguage);
 const mockInitDayjs = vi.mocked(initDayjs);

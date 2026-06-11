@@ -1,8 +1,8 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 
 import { createMdictProvider } from '@/services/dictionaries/providers/mdictProvider';
-import type { ImportedDictionary } from '@/services/dictionaries/types';
-import type { BaseDir } from '@/types/system';
+import type { ImportedDictionary } from '@/domain/dictionaries';
+import type { BaseDir } from '@/domain/system';
 
 import { MDX_FIXTURE_NAME, MDD_FIXTURE_NAME, readMdxFile, readMddFile } from './_mdictFixtures';
 import { makeReadCounter, withReadCounting } from './_countingFs';

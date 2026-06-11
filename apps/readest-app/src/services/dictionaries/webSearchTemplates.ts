@@ -12,7 +12,7 @@
  * `%GDWORD%` from there — we use `%WORD%` for brevity, but accept neither
  * verbatim variant beyond what's documented here.)
  */
-import { BUILTIN_WEB_SEARCH_IDS, type WebSearchEntry } from './types';
+import { BUILTIN_WEB_SEARCH_IDS, type WebSearchEntry } from '@/domain/dictionaries';
 
 export interface BuiltinWebSearchTemplate extends WebSearchEntry {
   /** Localizable display name key — passed through `_(...)` at render time. */

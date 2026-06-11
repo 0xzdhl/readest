@@ -1,13 +1,17 @@
 import clsx from 'clsx';
 import React, { useEffect, useState } from 'react';
+import { Effect } from 'effect';
 
-import type { Book } from '@/types/book';
-import type { BookMetadata } from '@/libs/document';
-import { useEnv } from '@/context/EnvContext';
+import type { Book } from '@/domain/book';
+import type { BookMetadata } from '@/domain/document';
+import { useRunEffect } from '@/context/EffectRuntimeProvider';
+import { BookRepository } from '@/application/repositories/BookRepository';
+import { CloudService } from '@/application/services/CloudService';
+import { exportBook } from '@/application/usecases/book';
 import { useThemeStore } from '@/store/themeStore';
 import { useTranslation } from '@/hooks/useTranslation';
 import { useMetadataEdit } from './useMetadataEdit';
-import type { DeleteAction } from '@/types/system';
+import type { DeleteAction } from '@/domain/system';
 import { eventDispatcher } from '@/utils/event';
 import { isWebAppPlatform } from '@/services/environment';
 import Alert from '@/components/Alert';
@@ -47,7 +51,7 @@ const BookDetailModal: React.FC<BookDetailModalProps> = ({
   handleBookMetadataUpdate,
 }) => {
   const _ = useTranslation();
-  const { envConfig, appService } = useEnv();
+  const runEffect = useRunEffect();
   const { safeAreaInsets } = useThemeStore();
   const [activeDeleteAction, setActiveDeleteAction] = useState<DeleteAction | null>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -94,14 +98,13 @@ const BookDetailModal: React.FC<BookDetailModalProps> = ({
 
   useEffect(() => {
     const fetchBookDetails = async () => {
-      const appService = await envConfig.getAppService();
       try {
         let details = book.metadata || null;
         if (!details && book.downloadedAt) {
-          details = await appService.fetchBookDetails(book);
+          details = await runEffect(Effect.flatMap(CloudService, (c) => c.fetchBookDetails(book)));
         }
         setBookMeta(details);
-        const size = await appService.getBookFileSize(book);
+        const size = await runEffect(Effect.flatMap(BookRepository, (r) => r.getFileSize(book)));
         setFileSize(size);
       } finally {
       }
@@ -174,7 +177,7 @@ const BookDetailModal: React.FC<BookDetailModalProps> = ({
   const handleBookExport = async () => {
     setIsLoading(true);
     setTimeout(async () => {
-      const success = await appService?.exportBook(book);
+      const success = await runEffect(exportBook(book));
       setIsLoading(false);
       if (!isWebAppPlatform()) {
         eventDispatcher.dispatch('toast', {

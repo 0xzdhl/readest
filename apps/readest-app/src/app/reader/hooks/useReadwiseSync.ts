@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useMemo } from 'react';
 import { useSettingsStore } from '@/store/settingsStore';
 import { useBookDataStore } from '@/store/bookDataStore';
-import { useEnv } from '@/context/EnvContext';
 import { useTranslation } from '@/hooks/useTranslation';
 import { eventDispatcher } from '@/utils/event';
 import { debounce } from '@/utils/debounce';
@@ -11,22 +10,18 @@ const READWISE_SYNC_DEBOUNCE_MS = 5000;
 
 export const useReadwiseSync = (bookKey: string) => {
   const _ = useTranslation();
-  const { envConfig } = useEnv();
   const { getConfig, getBookData } = useBookDataStore();
 
   // Read settings from store at call time to avoid stale closures
-  const updateLastSyncedAt = useCallback(
-    async (timestamp: number) => {
-      const { settings, setSettings, saveSettings } = useSettingsStore.getState();
-      const newSettings = {
-        ...settings,
-        readwise: { ...settings.readwise, lastSyncedAt: timestamp },
-      };
-      setSettings(newSettings);
-      await saveSettings(envConfig, newSettings);
-    },
-    [envConfig],
-  );
+  const updateLastSyncedAt = useCallback(async (timestamp: number) => {
+    const { settings, setSettings, saveSettings } = useSettingsStore.getState();
+    const newSettings = {
+      ...settings,
+      readwise: { ...settings.readwise, lastSyncedAt: timestamp },
+    };
+    setSettings(newSettings);
+    await saveSettings(newSettings);
+  }, []);
 
   // useMemo (not useCallback) so the debounce timer isn't reset on every render
   const debouncedPush = useMemo(

@@ -1,14 +1,13 @@
 import clsx from 'clsx';
 import React, { useRef, useState } from 'react';
 import { RiListSettingsLine } from 'react-icons/ri';
-import { useEnv } from '@/context/EnvContext';
 import { useReaderStore } from '@/store/readerStore';
 import { useTranslation } from '@/hooks/useTranslation';
 import { useAutoFocus } from '@/hooks/useAutoFocus';
 import { type CreateProofreadRuleOptions, useProofreadStore } from '@/store/proofreadStore';
-import type { ProofreadScope } from '@/types/book';
+import type { ProofreadScope } from '@/domain/book';
 import { eventDispatcher } from '@/utils/event';
-import type { Position, TextSelection } from '@/utils/sel';
+import type { Position, TextSelection } from '@/domain/selection';
 import { isPunctuationOnly, isWholeWord } from '@/utils/word';
 import Select from '@/components/Select';
 import Popup from '@/components/Popup';
@@ -37,7 +36,6 @@ const ProofreadPopup: React.FC<ProofreadPopupProps> = ({
   onManage,
 }) => {
   const _ = useTranslation();
-  const { envConfig } = useEnv();
   const { getProgress, getView, recreateViewer } = useReaderStore();
   const { addRule } = useProofreadStore();
   const progress = getProgress(bookKey)!;
@@ -97,13 +95,13 @@ const ProofreadPopup: React.FC<ProofreadPopupProps> = ({
       };
       onConfirm?.(options);
 
-      await addRule(envConfig, bookKey, options);
+      await addRule(bookKey, options);
 
       onDismiss();
 
       if (scope !== 'selection' && !onlyForTTS) {
         if (getView(bookKey)) {
-          recreateViewer(envConfig, bookKey);
+          recreateViewer(bookKey);
         }
       }
     }

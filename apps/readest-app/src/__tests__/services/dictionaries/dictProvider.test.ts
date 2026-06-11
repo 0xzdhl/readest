@@ -3,8 +3,8 @@ import { gzipSync } from 'node:zlib';
 
 import { createDictProvider } from '@/services/dictionaries/providers/dictProvider';
 import { decodeDictBase64, parseDictIndex } from '@/services/dictionaries/dictReader';
-import type { ImportedDictionary } from '@/services/dictionaries/types';
-import type { BaseDir } from '@/types/system';
+import type { ImportedDictionary } from '@/domain/dictionaries';
+import type { BaseDir } from '@/domain/system';
 
 import {
   INDEX_FIXTURE_NAME,

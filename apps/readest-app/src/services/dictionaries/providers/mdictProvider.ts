@@ -19,7 +19,7 @@
 import { eventDispatcher } from '@/utils/event';
 import { stubTranslation as _ } from '@/utils/misc';
 import { getDictStyles } from '@/utils/style';
-import type { DictionaryProvider, ImportedDictionary } from '../types';
+import type { DictionaryProvider, ImportedDictionary } from '@/domain/dictionaries';
 import type { DictionaryFileOpener } from './starDictProvider';
 
 interface MDXLookupResult {

@@ -1,7 +1,7 @@
 import { useCallback, useRef } from 'react';
-import type { BookNote } from '@/types/book';
-import { type Point, type TextSelection, snapRangeToWords } from '@/utils/sel';
-import { useEnv } from '@/context/EnvContext';
+import type { BookNote } from '@/domain/book';
+import { snapRangeToWords } from '@/utils/sel';
+import type { Point, TextSelection } from '@/domain/selection';
 import { useReaderStore } from '@/store/readerStore';
 import { useSettingsStore } from '@/store/settingsStore';
 import { useBookDataStore } from '@/store/bookDataStore';
@@ -23,7 +23,6 @@ export const useInstantAnnotation = ({
   setEditingAnnotation,
   setExternalDragPoint,
 }: UseInstantAnnotationProps) => {
-  const { envConfig } = useEnv();
   const { settings } = useSettingsStore();
   const { getConfig, saveConfig, updateBooknotes } = useBookDataStore();
   const { getView, getViewsById, getViewSettings, getProgress } = useReaderStore();
@@ -311,7 +310,7 @@ export const useInstantAnnotation = ({
 
       const updatedConfig = updateBooknotes(bookKey, annotations);
       if (updatedConfig) {
-        saveConfig(envConfig, bookKey, updatedConfig, settings);
+        saveConfig(bookKey, updatedConfig, settings);
       }
 
       return true;

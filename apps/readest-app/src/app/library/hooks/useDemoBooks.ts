@@ -1,9 +1,10 @@
 import { useEffect, useRef, useState } from 'react';
 
-import { useEnv } from '@/context/EnvContext';
-import type { Book } from '@/types/book';
+import type { Book } from '@/domain/book';
 import { getUserLang } from '@/utils/misc';
 import { isWebAppPlatform } from '@/services/environment';
+import { useRunEffect } from '@/context/EffectRuntimeProvider';
+import { importBooks } from '@/application/usecases/book';
 
 import libraryEn from '@/data/demo/library.en.json';
 import libraryZh from '@/data/demo/library.zh.json';
@@ -18,7 +19,7 @@ interface DemoBooks {
 }
 
 export const useDemoBooks = () => {
-  const { envConfig } = useEnv();
+  const runEffect = useRunEffect();
   const [books, setBooks] = useState<Book[]>([]);
   const isLoading = useRef(false);
 
@@ -29,12 +30,15 @@ export const useDemoBooks = () => {
     const userLang = getUserLang() as keyof typeof libraries;
     const fetchDemoBooks = async () => {
       try {
-        const appService = await envConfig.getAppService();
         const demoBooks = libraries[userLang] || (libraries.en as DemoBooks);
-        const books = await Promise.all(
-          demoBooks.library.map((url) => appService.importBook(url, [], { saveBook: false })),
+        const { imported } = await runEffect(
+          importBooks(
+            [],
+            demoBooks.library.map((url) => ({ file: url })),
+            { saveBook: false, persist: false },
+          ),
         );
-        setBooks(books.filter((book) => book !== null) as Book[]);
+        setBooks(imported);
       } catch (error) {
         console.error('Failed to import demo books:', error);
       }

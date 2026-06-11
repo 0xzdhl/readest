@@ -1,7 +1,7 @@
 import type React from 'react';
 
 import Popup from '@/components/Popup';
-import type { Position } from '@/utils/sel';
+import type { Position } from '@/domain/selection';
 import {
   useDictionaryResults,
   DictionaryResultsHeader,

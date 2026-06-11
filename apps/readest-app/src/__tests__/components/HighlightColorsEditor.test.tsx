@@ -4,7 +4,7 @@ import { render, screen, cleanup, fireEvent } from '@testing-library/react';
 
 import HighlightColorsEditor from '@/components/settings/color/HighlightColorsEditor';
 import { HIGHLIGHT_COLOR_HEX } from '@/services/constants';
-import type { DefaultHighlightColor, HighlightColor, UserHighlightColor } from '@/types/book';
+import type { DefaultHighlightColor, HighlightColor, UserHighlightColor } from '@/domain/book';
 
 vi.mock('@/hooks/useTranslation', () => ({
   useTranslation: () => (s: string) => s,

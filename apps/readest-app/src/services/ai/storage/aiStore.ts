@@ -1,6 +1,6 @@
 import lunr from 'lunr';
 import { aiLogger } from '../logger';
-import type { AIConversation, AIMessage, BookIndexMeta, ScoredChunk, TextChunk } from '../types';
+import type { AIConversation, AIMessage, BookIndexMeta, ScoredChunk, TextChunk } from '@/domain/ai';
 
 const DB_NAME = 'readest-ai';
 const DB_VERSION = 3;
