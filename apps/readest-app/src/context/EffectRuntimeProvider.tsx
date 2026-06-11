@@ -1,7 +1,16 @@
-import { createContext, useCallback, useContext, useEffect, useRef, type ReactNode } from 'react';
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useRef,
+  useState,
+  type ReactNode,
+} from 'react';
 import type { Effect } from 'effect';
 import { type ClientServices, getClientRuntime, getPlatformInfo } from '@/runtime/clientRuntime';
 import type { PlatformInfo } from '@/application/ports/Platform';
+import type { SystemSettings } from '@/domain/settings';
 import { BootApp } from '@/application/usecases/boot/BootApp';
 
 // The provided runtime is a `ManagedRuntime<ClientServices, never>`, so it can run any effect
@@ -12,6 +21,8 @@ type RunEffect = <A, E>(program: Effect.Effect<A, E, ClientServices>) => Promise
 interface RuntimeContextValue {
   readonly platformInfo: PlatformInfo;
   readonly runEffect: RunEffect;
+  readonly booted: boolean;
+  readonly bootSettings: SystemSettings | null;
 }
 
 const RuntimeContext = createContext<RuntimeContextValue | null>(null);
@@ -19,20 +30,27 @@ const RuntimeContext = createContext<RuntimeContextValue | null>(null);
 export function EffectRuntimeProvider({ children }: { children: ReactNode }) {
   const platformInfo = getPlatformInfo(); // sync (SSR-safe defaults)
   const runEffect = useCallback<RunEffect>((program) => getClientRuntime().runPromise(program), []);
+  const [booted, setBooted] = useState(false);
+  const [bootSettings, setBootSettings] = useState<SystemSettings | null>(null);
 
-  const booted = useRef(false);
+  const started = useRef(false);
   useEffect(() => {
-    if (booted.current || typeof window === 'undefined') return;
-    booted.current = true;
-    // Observe-only: prove the runtime boots end-to-end; do NOT gate the shell.
+    if (started.current || typeof window === 'undefined') return;
+    started.current = true;
+    // Authoritative boot: load platform+settings, apply customRootDir, run
+    // migrations (version-idempotent), then flip `booted`. On failure leave
+    // booted=false (faithful to the legacy null-appService pre-boot state).
     getClientRuntime()
       .runPromise(BootApp)
-      .then((r) => console.debug('[EffectBoot] booted', r.platform.appPlatform))
+      .then((r) => {
+        setBootSettings(r.settings);
+        setBooted(true);
+      })
       .catch((err) => console.warn('[EffectBoot] failed (non-fatal)', err));
   }, []);
 
   return (
-    <RuntimeContext.Provider value={{ platformInfo, runEffect }}>
+    <RuntimeContext.Provider value={{ platformInfo, runEffect, booted, bootSettings }}>
       {children}
     </RuntimeContext.Provider>
   );
@@ -51,4 +69,12 @@ export const useRunEffect = (): RunEffect => {
 export const usePlatformInfo = (): PlatformInfo => {
   const ctx = useContext(RuntimeContext);
   return ctx?.platformInfo ?? getPlatformInfo();
+};
+export const useBooted = (): boolean => {
+  const ctx = useContext(RuntimeContext);
+  return ctx?.booted ?? false;
+};
+export const useBootSettings = (): SystemSettings | null => {
+  const ctx = useContext(RuntimeContext);
+  return ctx?.bootSettings ?? null;
 };
