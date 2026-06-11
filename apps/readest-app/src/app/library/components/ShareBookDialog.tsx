@@ -8,8 +8,8 @@ import {
 } from 'react-icons/io5';
 import Dialog from '@/components/Dialog';
 import SegmentedControl from '@/components/SegmentedControl';
-import { useEnv } from '@/context/EnvContext';
-import { useRunEffect } from '@/context/EffectRuntimeProvider';
+import { usePlatformInfo, useRunEffect } from '@/context/EffectRuntimeProvider';
+import { BookRepository } from '@/application/repositories/BookRepository';
 import { CloudService } from '@/application/services/CloudService';
 import { useTranslation } from '@/hooks/useTranslation';
 import { eventDispatcher } from '@/utils/event';
@@ -36,7 +36,7 @@ interface CreatedShare {
 
 const ShareBookDialog: React.FC<ShareBookDialogProps> = ({ isOpen, book, cfi, onClose }) => {
   const _ = useTranslation();
-  const { appService } = useEnv();
+  const platformInfo = usePlatformInfo();
   const runEffect = useRunEffect();
 
   const [expirationDays, setExpirationDays] = useState<number>(SHARE_DEFAULT_EXPIRATION_DAYS);
@@ -67,14 +67,14 @@ const ShareBookDialog: React.FC<ShareBookDialogProps> = ({ isOpen, book, cfi, on
   }, [isOpen, book?.hash]);
 
   // Look up the book's file size for the Hero metadata line. Mirrors the
-  // BookDetailModal pattern: ask appService once per (open, book) pair and
-  // tolerate failures silently — file size is decorative, not required.
+  // BookDetailModal pattern: ask the BookRepository once per (open, book) pair
+  // and tolerate failures silently — file size is decorative, not required.
   useEffect(() => {
-    if (!isOpen || !book || !appService) return;
+    if (!isOpen || !book) return;
     let cancelled = false;
     (async () => {
       try {
-        const size = await appService.getBookFileSize(book);
+        const size = await runEffect(Effect.flatMap(BookRepository, (r) => r.getFileSize(book)));
         if (!cancelled) setFileSize(size);
       } catch {
         // Local file may be unavailable (cloud-only book); leave size null.
@@ -83,7 +83,7 @@ const ShareBookDialog: React.FC<ShareBookDialogProps> = ({ isOpen, book, cfi, on
     return () => {
       cancelled = true;
     };
-  }, [isOpen, book?.hash, appService]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [isOpen, book?.hash]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const expiryLabel = useMemo(() => {
     if (!created) return null;
@@ -180,7 +180,7 @@ const ShareBookDialog: React.FC<ShareBookDialogProps> = ({ isOpen, book, cfi, on
     // call throws, the plugin isn't usable on this platform — fall through
     // to web/copy. If it resolves (success OR user dismissed the sheet
     // without picking), we're done; do NOT silently copy on top of that.
-    if (appService?.isMobileApp || appService?.hasWindow) {
+    if (platformInfo.isMobileApp || platformInfo.hasWindow) {
       let sharekitWorked = false;
       try {
         const { shareText } = await import('@choochmeque/tauri-plugin-sharekit-api');

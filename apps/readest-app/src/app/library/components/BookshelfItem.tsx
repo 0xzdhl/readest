@@ -1,6 +1,9 @@
 import clsx from 'clsx';
 import { useCallback } from 'react';
+import { Effect } from 'effect';
 import { useEnv } from '@/context/EnvContext';
+import { usePlatformInfo, useRunEffect } from '@/context/EffectRuntimeProvider';
+import { BookRepository } from '@/application/repositories/BookRepository';
 import { useLibraryStore } from '@/store/libraryStore';
 import { useSettingsStore } from '@/store/settingsStore';
 import { useTranslation } from '@/hooks/useTranslation';
@@ -122,7 +125,9 @@ const BookshelfItem: React.FC<BookshelfItemProps> = ({
 }) => {
   const _ = useTranslation();
   const router = useAppRouter();
-  const { envConfig, appService } = useEnv();
+  const { envConfig } = useEnv();
+  const platformInfo = usePlatformInfo();
+  const runEffect = useRunEffect();
   const { settings } = useSettingsStore();
   const { updateBook } = useLibraryStore();
 
@@ -133,7 +138,7 @@ const BookshelfItem: React.FC<BookshelfItemProps> = ({
 
   const makeBookAvailable = async (book: Book) => {
     if (book.uploadedAt && !book.downloadedAt) {
-      if (await appService?.isBookAvailable(book)) {
+      if (await runEffect(Effect.flatMap(BookRepository, (r) => r.isAvailable(book)))) {
         if (!book.downloadedAt || !book.coverDownloadedAt) {
           book.downloadedAt = Date.now();
           book.coverDownloadedAt = Date.now();
@@ -162,7 +167,7 @@ const BookshelfItem: React.FC<BookshelfItemProps> = ({
       } else {
         const available = await makeBookAvailable(book);
         if (!available) return;
-        if (appService?.hasWindow && settings.openBookInNewWindow) {
+        if (platformInfo.hasWindow && settings.openBookInNewWindow) {
           showReaderWindow([book.hash]);
         } else {
           setTimeout(() => {
@@ -172,7 +177,7 @@ const BookshelfItem: React.FC<BookshelfItemProps> = ({
       }
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [isSelectMode, settings.openBookInNewWindow, appService],
+    [isSelectMode, settings.openBookInNewWindow, platformInfo],
   );
 
   const handleGroupClick = useCallback(
@@ -188,7 +193,7 @@ const BookshelfItem: React.FC<BookshelfItemProps> = ({
   );
 
   const bookContextMenuHandler = async (book: Book) => {
-    if (!appService?.hasContextMenu) return;
+    if (!platformInfo.hasContextMenu) return;
     const osPlatform = getOSPlatform();
     const fileRevealLabel =
       FILE_REVEAL_LABELS[osPlatform as FILE_REVEAL_PLATFORMS] || FILE_REVEAL_LABELS.default;
@@ -296,7 +301,7 @@ const BookshelfItem: React.FC<BookshelfItemProps> = ({
   };
 
   const groupContextMenuHandler = async (group: BooksGroup) => {
-    if (!appService?.hasContextMenu) return;
+    if (!platformInfo.hasContextMenu) return;
     const selectGroupMenuItem = await MenuItem.new({
       text: itemSelected ? _('Deselect Group') : _('Select Group'),
       action: async () => {
@@ -379,9 +384,9 @@ const BookshelfItem: React.FC<BookshelfItemProps> = ({
         handleOpenItem();
       },
       onContextMenu: () => {
-        if (appService?.hasContextMenu) {
+        if (platformInfo.hasContextMenu) {
           handleContextMenu();
-        } else if (appService?.isAndroidApp) {
+        } else if (platformInfo.isAndroidApp) {
           handleSelectItem();
         }
       },
@@ -408,7 +413,7 @@ const BookshelfItem: React.FC<BookshelfItemProps> = ({
           mode === 'grid' &&
             'sm:hover:bg-base-300/50 flex h-full flex-col px-0 py-2 sm:rounded-md sm:px-4 sm:py-4',
           mode === 'list' && 'border-base-300 flex flex-col border-b py-2',
-          appService?.isMobileApp && 'no-context-menu',
+          platformInfo.isMobileApp && 'no-context-menu',
           pressing && mode === 'grid' ? 'not-eink:scale-95' : 'scale-100',
         )}
         role='button'
