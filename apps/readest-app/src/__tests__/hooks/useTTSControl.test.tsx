@@ -3,11 +3,9 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 // --- Dependency mocks (must be set up before importing the hook) ---
 
-vi.mock('@/context/EnvContext', () => ({
-  useEnv: () => ({
-    appService: { isIOSApp: false, isMobile: false },
-    envConfig: {},
-  }),
+// Platform flags now come from usePlatformInfo() instead of useEnv().appService.
+vi.mock('@/context/EffectRuntimeProvider', () => ({
+  usePlatformInfo: () => ({ isIOSApp: false, isMobile: false }),
 }));
 
 vi.mock('@/context/AuthContext', () => ({

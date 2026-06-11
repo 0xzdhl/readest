@@ -1,5 +1,5 @@
 import type { FoliateView } from '@/domain/view';
-import type { AppService } from '@/domain/system';
+import { getPlatformInfo } from '@/runtime/clientRuntime';
 import { filterSSMLWithLang, parseSSMLMarks } from '@/utils/ssml';
 import { Overlayer } from 'foliate-js/overlayer.js';
 import type { TTSGranularity, TTSHighlightOptions, TTSMark, TTSVoice } from '@/domain/tts';
@@ -24,7 +24,6 @@ type TTSState =
 const HIGHLIGHT_KEY = 'tts-highlight';
 
 export class TTSController extends EventTarget {
-  appService: AppService | null = null;
   view: FoliateView;
   isAuthenticated: boolean = false;
   preprocessCallback?: (ssml: string) => Promise<string>;
@@ -50,7 +49,6 @@ export class TTSController extends EventTarget {
   options: TTSHighlightOptions = { style: 'highlight', color: 'gray' };
 
   constructor(
-    appService: AppService | null,
     view: FoliateView,
     isAuthenticated: boolean = false,
     preprocessCallback?: (ssml: string) => Promise<string>,
@@ -58,13 +56,12 @@ export class TTSController extends EventTarget {
   ) {
     super();
     this.ttsWebClient = new WebSpeechClient(this);
-    this.ttsEdgeClient = new EdgeTTSClient(this, appService);
+    this.ttsEdgeClient = new EdgeTTSClient(this);
     // TODO: implement native TTS client for iOS and PC
-    if (appService?.isAndroidApp) {
+    if (getPlatformInfo().isAndroidApp) {
       this.ttsNativeClient = new NativeTTSClient(this);
     }
     this.ttsClient = this.ttsWebClient;
-    this.appService = appService;
     this.view = view;
     this.isAuthenticated = isAuthenticated;
     this.preprocessCallback = preprocessCallback;
