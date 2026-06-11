@@ -5,7 +5,6 @@ import { MdEdit, MdDelete, MdLock, MdLockOpen, MdOutlineSearch } from 'react-ico
 
 import type { Book } from '@/domain/book';
 import type { BookMetadata } from '@/domain/document';
-import { useEnv } from '@/context/EnvContext';
 import { useRunEffect } from '@/context/EffectRuntimeProvider';
 import { useTranslation } from '@/hooks/useTranslation';
 import { flattenContributors, formatAuthors, formatPublisher, formatTitle } from '@/utils/book';
@@ -50,9 +49,8 @@ const BookDetailEdit: React.FC<BookDetailEditProps> = ({
   onSave,
 }) => {
   const _ = useTranslation();
-  const { appService } = useEnv();
   const runEffect = useRunEffect();
-  const { selectFiles } = useFileSelector(appService, _);
+  const { selectFiles } = useFileSelector(_);
 
   const hasLockedFields = Object.values(lockedFields).some((locked) => locked);
   const allFieldsLocked = Object.values(lockedFields).every((locked) => locked);

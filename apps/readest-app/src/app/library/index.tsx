@@ -7,12 +7,16 @@ import { z } from 'zod';
 
 import type { Book } from '@/domain/book';
 import type { BookMetadata } from '@/domain/document';
-import type { AppService, DeleteAction } from '@/domain/system';
-import { Effect } from 'effect';
+import type { DeleteAction } from '@/domain/system';
+import { Effect, Option } from 'effect';
 import { navigateToLibrary, navigateToReader } from '@/utils/nav';
 import { LibraryRepository } from '@/application/repositories/LibraryRepository';
+import { SettingsRepository } from '@/application/repositories/SettingsRepository';
+import { BookRepository } from '@/application/repositories/BookRepository';
 import { CoverService } from '@/application/services/CoverService';
 import { CloudService } from '@/application/services/CloudService';
+import { FileSystem } from '@/application/ports/FileSystem';
+import { Dialog } from '@/application/ports/Dialog';
 import { importBooks as importBooksUsecase } from '@/application/usecases/book';
 import { formatAuthors, formatTitle, getPrimaryLanguage, listFormater } from '@/utils/book';
 import { getImportErrorMessage } from '@/services/errors';
@@ -29,7 +33,7 @@ import { getCurrentWebview } from '@tauri-apps/api/webview';
 
 import { useEnv } from '@/context/EnvContext';
 import { useAuth } from '@/context/AuthContext';
-import { useRunEffect } from '@/context/EffectRuntimeProvider';
+import { useRunEffect, usePlatformInfo } from '@/context/EffectRuntimeProvider';
 import { useThemeStore } from '@/store/themeStore';
 import { useTranslation } from '@/hooks/useTranslation';
 import { useLibraryStore } from '@/store/libraryStore';
@@ -137,7 +141,8 @@ const LibraryPageContent = () => {
   } = useLibraryStore();
   const _ = useTranslation();
   const runEffect = useRunEffect();
-  const { selectFiles } = useFileSelector(appService, _);
+  const platformInfo = usePlatformInfo();
+  const { selectFiles } = useFileSelector(_);
   const { safeAreaInsets: insets, isRoundedWindow } = useThemeStore();
   const { clearBookData } = useBookDataStore();
   const { settings, setSettings, saveSettings } = useSettingsStore();
@@ -304,14 +309,14 @@ const LibraryPageContent = () => {
 
   useKeyDownActions({
     onCancel: triggerBackUpOneGroupLevel,
-    enabled: !!appService?.isAndroidApp && !!currentGroupPath,
+    enabled: platformInfo.isAndroidApp && !!currentGroupPath,
   });
 
   useEffect(() => {
     const doCheckAppUpdates = async () => {
-      if (appService?.hasUpdater && settings.autoCheckUpdates) {
+      if (platformInfo.hasUpdater && settings.autoCheckUpdates) {
         await checkForAppUpdates(_);
-      } else if (appService?.hasUpdater === false) {
+      } else if (platformInfo.hasUpdater === false) {
         checkAppReleaseNotes();
       }
     };
@@ -320,16 +325,16 @@ const LibraryPageContent = () => {
     }
     doCheckAppUpdates();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [appService?.hasUpdater, settings]);
+  }, [settings]);
 
   useEffect(() => {
-    if (appService?.isMobileApp) {
+    if (platformInfo.isMobileApp) {
       lockScreenOrientation({ orientation: 'auto' });
     }
-  }, [appService]);
+  }, [platformInfo.isMobileApp]);
 
   useEffect(() => {
-    if (appService?.hasWindow) {
+    if (platformInfo.hasWindow) {
       const currentWebview = getCurrentWebview();
       const unlisten = currentWebview.listen('close-reader-window', async () => {
         // Reader windows are independent Tauri webviews with their own
@@ -337,9 +342,8 @@ const LibraryPageContent = () => {
         // updates from the reader window do NOT propagate to this main
         // window's store. Reload from disk so the library reflects the
         // changes the reader just persisted.
-        const appService = await envConfig.getAppService();
-        const settings = await appService.loadSettings();
-        const library = await appService.loadLibraryBooks();
+        const settings = await runEffect(Effect.flatMap(SettingsRepository, (r) => r.load));
+        const library = await runEffect(Effect.flatMap(LibraryRepository, (r) => r.load));
         setSettings(settings);
         setLibrary(library);
       });
@@ -349,7 +353,7 @@ const LibraryPageContent = () => {
     }
     return;
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [appService, envConfig]);
+  }, [platformInfo.hasWindow]);
 
   const handleImportBookFiles = useCallback(async (event: CustomEvent) => {
     const selectedFiles: SelectedFile[] = event.detail.files;
@@ -383,10 +387,10 @@ const LibraryPageContent = () => {
   }, [libraryBooks]);
 
   const processOpenWithFiles = useCallback(
-    async (appService: AppService, openWithFiles: string[], libraryBooks: Book[]) => {
-      const settings = await appService.loadSettings();
+    async (openWithFiles: string[], libraryBooks: Book[]) => {
+      const settings = await runEffect(Effect.flatMap(SettingsRepository, (r) => r.load));
       const bookIds: string[] = [];
-      const temp = appService.isMobile ? false : !settings.autoImportBooksOnOpen;
+      const temp = platformInfo.isMobile ? false : !settings.autoImportBooksOnOpen;
       const { library: nextLibrary } = await runEffect(
         importBooksUsecase(
           libraryBooks,
@@ -419,16 +423,12 @@ const LibraryPageContent = () => {
     [],
   );
 
-  const handleOpenLastBooks = async (
-    appService: AppService,
-    lastBookIds: string[],
-    libraryBooks: Book[],
-  ) => {
+  const handleOpenLastBooks = async (lastBookIds: string[], libraryBooks: Book[]) => {
     if (lastBookIds.length === 0) return false;
     const bookIds: string[] = [];
     for (const bookId of lastBookIds) {
       const book = libraryBooks.find((b) => b.hash === bookId);
-      if (book && (await appService.isBookAvailable(book))) {
+      if (book && (await runEffect(Effect.flatMap(BookRepository, (r) => r.isAvailable(book))))) {
         bookIds.push(book.hash);
       }
     }
@@ -459,15 +459,14 @@ const LibraryPageContent = () => {
         navigateToReader(router, bookIds);
       }
     }
-  }, [pendingNavigationBookIds, appService, router]);
+  }, [pendingNavigationBookIds, router]);
 
   useEffect(() => {
     if (isInitiating.current) return;
     isInitiating.current = true;
 
     const initLogin = async () => {
-      const appService = await envConfig.getAppService();
-      const settings = await appService.loadSettings();
+      const settings = await runEffect(Effect.flatMap(SettingsRepository, (r) => r.load));
       // After Phase 7, the React-side "is signed in" check is `!!user`
       // (web cookies are validated by `useSession`; native bearers are
       // resolved by the same hook). No separate token field is needed.
@@ -484,19 +483,21 @@ const LibraryPageContent = () => {
 
     const loadingTimeout = setTimeout(() => setLoading(true), 500);
     const initLibrary = async () => {
-      const appService = await envConfig.getAppService();
-      const settings = await appService.loadSettings();
+      const settings = await runEffect(Effect.flatMap(SettingsRepository, (r) => r.load));
       setSettings(settings);
 
       // Reuse the library from the store when we return from the reader
-      const library = libraryBooks.length > 0 ? libraryBooks : await appService.loadLibraryBooks();
+      const library =
+        libraryBooks.length > 0
+          ? libraryBooks
+          : await runEffect(Effect.flatMap(LibraryRepository, (r) => r.load));
       let opened = false;
       if (checkOpenWithBooks) {
-        opened = await handleOpenWithBooks(appService, library);
+        opened = await handleOpenWithBooks(library);
       }
       setCheckOpenWithBooks(opened);
       if (!opened && checkLastOpenBooks && settings.openLastBooks) {
-        opened = await handleOpenLastBooks(appService, settings.lastOpenBooks, library);
+        opened = await handleOpenLastBooks(settings.lastOpenBooks, library);
       }
       setCheckLastOpenBooks(opened);
 
@@ -506,11 +507,11 @@ const LibraryPageContent = () => {
       setLoading(false);
     };
 
-    const handleOpenWithBooks = async (appService: AppService, library: Book[]) => {
+    const handleOpenWithBooks = async (library: Book[]) => {
       const openWithFiles = (await parseOpenWithFiles()) || [];
 
       if (openWithFiles.length > 0) {
-        return await processOpenWithFiles(appService, openWithFiles, library);
+        return await processOpenWithFiles(openWithFiles, library);
       }
       return false;
     };
@@ -747,7 +748,7 @@ const LibraryPageContent = () => {
       return false;
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [appService],
+    [],
   );
 
   const handleBookDelete = (deleteAction: DeleteAction) => {
@@ -766,7 +767,7 @@ const LibraryPageContent = () => {
       try {
         // Handle local deletion immediately
         if (deleteAction === 'local' || deleteAction === 'both') {
-          await appService?.deleteBook(book, 'local');
+          await runEffect(Effect.flatMap(CloudService, (c) => c.deleteBook(book, 'local')));
           if (deleteAction === 'both') {
             book.deletedAt = Date.now();
             book.downloadedAt = null;
@@ -847,18 +848,20 @@ const LibraryPageContent = () => {
   };
 
   const handleImportBooksFromDirectory = async (dirPath?: string) => {
-    if (!appService || !isTauriAppPlatform()) return;
+    if (!isTauriAppPlatform()) return;
 
     setIsSelectMode(false);
     console.log('Importing books from directory...');
     let importDirectory: string | undefined = dirPath;
     if (!importDirectory) {
-      if (appService.isAndroidApp) {
+      if (platformInfo.isAndroidApp) {
         if (!(await requestStoragePermission())) return;
         const response = await selectDirectory();
         importDirectory = response.path;
       } else {
-        const selectedDir = await appService.selectDirectory?.('read');
+        const selectedDir = Option.getOrUndefined(
+          await runEffect(Effect.flatMap(Dialog, (d) => d.selectDirectory('read'))),
+        );
         importDirectory = selectedDir;
       }
     }
@@ -866,7 +869,9 @@ const LibraryPageContent = () => {
       console.log('No directory selected');
       return;
     }
-    const files = await appService.readDirectory(importDirectory, 'None');
+    const files = await runEffect(
+      Effect.flatMap(FileSystem, (fs) => fs.readDir(importDirectory!, 'None')),
+    );
     const supportedFiles = files.filter((file) => {
       const ext = file.path.split('.').pop()?.toLowerCase() || '';
       return SUPPORTED_BOOK_EXTS.includes(ext);
@@ -883,7 +888,7 @@ const LibraryPageContent = () => {
   };
 
   const handleSetSelectMode = (selectMode: boolean) => {
-    if (selectMode && appService?.hasHaptics) {
+    if (selectMode && platformInfo.hasHaptics) {
       impactFeedback('medium');
     }
     setIsSelectMode(selectMode);
@@ -913,7 +918,7 @@ const LibraryPageContent = () => {
   };
 
   if (!appService || !insets || checkOpenWithBooks || checkLastOpenBooks) {
-    return <div className={clsx('full-height', !appService?.isLinuxApp && 'bg-base-200')} />;
+    return <div className={clsx('full-height', !platformInfo.isLinuxApp && 'bg-base-200')} />;
   }
 
   const showBookshelf = libraryLoaded || libraryBooks.length > 0;
@@ -925,7 +930,7 @@ const LibraryPageContent = () => {
       className={clsx(
         'library-page text-base-content full-height flex select-none flex-col overflow-hidden',
         viewSettings?.isEink ? 'bg-base-100' : 'bg-base-200',
-        appService?.hasRoundedWindow && isRoundedWindow && 'window-border rounded-window',
+        platformInfo.hasRoundedWindow && isRoundedWindow && 'window-border rounded-window',
       )}
     >
       <div
@@ -940,7 +945,7 @@ const LibraryPageContent = () => {
           onPullLibrary={pullLibrary}
           onImportBooksFromFiles={handleImportBooksFromFiles}
           onImportBooksFromDirectory={
-            appService?.canReadExternalDir ? handleImportBooksFromDirectory : undefined
+            platformInfo.canReadExternalDir ? handleImportBooksFromDirectory : undefined
           }
           onOpenCatalogManager={handleShowOPDSDialog}
           onToggleSelectMode={() => handleSetSelectMode(!isSelectMode)}

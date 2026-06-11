@@ -1,9 +1,11 @@
-import type { AppService } from '@/domain/system';
+import { Effect } from 'effect';
 import { isTauriAppPlatform } from '@/services/environment';
 import { basename } from '@tauri-apps/api/path';
 import { stubTranslation as _ } from '@/utils/misc';
 import { BOOK_ACCEPT_FORMATS, SUPPORTED_BOOK_EXTS } from '@/services/constants';
 import type { SelectedFile } from '@/domain/file-selector';
+import { getPlatformInfo, getClientRuntime } from '@/runtime/clientRuntime';
+import { Dialog } from '@/application/ports/Dialog';
 
 export interface FileSelectorOptions {
   type: SelectionType;
@@ -29,21 +31,25 @@ const selectFileWeb = (options: FileSelectorOptions): Promise<File[]> => {
 
 const selectFileTauri = async (
   options: FileSelectorOptions,
-  appService: AppService,
   _: (key: string) => string,
 ): Promise<string[]> => {
+  const platformInfo = getPlatformInfo();
   const noFilter =
-    appService?.isIOSApp ||
-    (appService?.isAndroidApp && (options.type === 'books' || options.type === 'dictionaries'));
+    platformInfo.isIOSApp ||
+    (platformInfo.isAndroidApp && (options.type === 'books' || options.type === 'dictionaries'));
   const exts = noFilter ? [] : options.extensions || [];
   const title = options.dialogTitle || _('Select Files');
-  let files = (await appService?.selectFiles(_(title), exts)) || [];
+  let files: string[] = [
+    ...(await getClientRuntime().runPromise(
+      Effect.flatMap(Dialog, (d) => d.selectFiles(_(title), exts)),
+    )),
+  ];
 
   if (noFilter && options.extensions) {
     files = await Promise.all(
       files.map(async (file: string) => {
         let processedFile = file;
-        if (appService?.isAndroidApp && file.startsWith('content://')) {
+        if (platformInfo.isAndroidApp && file.startsWith('content://')) {
           processedFile = await basename(file);
         }
         const fileExt = processedFile.split('.').pop()?.toLowerCase() || 'unknown';
@@ -51,7 +57,7 @@ const selectFileTauri = async (
         const shouldInclude = extensions.includes(fileExt) || extensions.includes('*');
         return shouldInclude ? file : null;
       }),
-    ).then((results) => results.filter((file) => file !== null));
+    ).then((results) => results.filter((file): file is string => file !== null));
   }
 
   return files;
@@ -69,15 +75,12 @@ const processTauriFiles = (files: string[]): SelectedFile[] => {
   }));
 };
 
-export const useFileSelector = (appService: AppService | null, _: (key: string) => string) => {
+export const useFileSelector = (_: (key: string) => string) => {
   const selectFiles = async (options: FileSelectorOptions = { type: 'generic' }) => {
     options = { ...FILE_SELECTION_PRESETS[options.type], ...options };
-    if (!appService) {
-      return { files: [] as SelectedFile[], error: 'App service is not available' };
-    }
     try {
       if (isTauriAppPlatform()) {
-        const filePaths = await selectFileTauri(options, appService, _);
+        const filePaths = await selectFileTauri(options, _);
         const files = await processTauriFiles(filePaths);
         return { files };
       } else {

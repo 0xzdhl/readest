@@ -44,7 +44,7 @@ const CustomFonts: React.FC<CustomFontsProps> = ({ bookKey, onBack }) => {
   const viewSettings = getViewSettings(bookKey) || settings.globalViewSettings;
   const [isDeleteMode, setIsDeleteMode] = useState(false);
 
-  const { selectFiles } = useFileSelector(appService, _);
+  const { selectFiles } = useFileSelector(_);
 
   const currentDefaultFont =
     viewSettings.defaultFont.toLowerCase() === 'serif' ? 'serif' : 'sans-serif';

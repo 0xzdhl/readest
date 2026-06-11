@@ -253,7 +253,7 @@ const CustomDictionaries: React.FC<CustomDictionariesProps> = ({ onBack }) => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const { selectFiles } = useFileSelector(appService, _);
+  const { selectFiles } = useFileSelector(_);
   const [importing, setImporting] = useState(false);
   // Edit and Delete are mutually-exclusive row affordances. Toggling one on
   // turns the other off so the trailing column never shows two icons at once.

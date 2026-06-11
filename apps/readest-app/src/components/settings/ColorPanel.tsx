@@ -84,7 +84,7 @@ const ColorPanel: React.FC<SettingsPanelPanelProp> = ({ bookKey, onRegisterReset
     saveCustomTextures,
   } = useCustomTextureStore();
   const resetToDefaults = useResetViewSettings();
-  const { selectFiles } = useFileSelector(appService, _);
+  const { selectFiles } = useFileSelector(_);
   const { activate: activateAtmosphere, deactivate: deactivateAtmosphere } = useAtmosphereStore();
 
   const handleReset = () => {
