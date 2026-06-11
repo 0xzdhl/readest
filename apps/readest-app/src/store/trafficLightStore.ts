@@ -1,16 +1,15 @@
 import { create } from 'zustand';
 import { invoke } from '@tauri-apps/api/core';
-import type { AppService } from '@/domain/system';
+import { getPlatformInfo } from '@/runtime/clientRuntime';
 
 const WINDOW_CONTROL_PAD_X = 10.0;
 const WINDOW_CONTROL_PAD_Y = 22.0;
 
 interface TrafficLightState {
-  appService?: AppService;
   isTrafficLightVisible: boolean;
   shouldShowTrafficLight: boolean;
   trafficLightInFullscreen: boolean;
-  initializeTrafficLightStore: (appService: AppService) => void;
+  initializeTrafficLightStore: () => void;
   setTrafficLightVisibility: (visible: boolean, position?: { x: number; y: number }) => void;
   initializeTrafficLightListeners: () => Promise<void>;
   cleanupTrafficLightListeners: () => void;
@@ -20,17 +19,13 @@ interface TrafficLightState {
 
 export const useTrafficLightStore = create<TrafficLightState>((set, get) => {
   return {
-    appService: undefined,
     isTrafficLightVisible: false,
     shouldShowTrafficLight: false,
     trafficLightInFullscreen: false,
 
-    initializeTrafficLightStore: (appService: AppService) => {
-      set({
-        appService,
-        isTrafficLightVisible: appService.hasTrafficLight,
-        shouldShowTrafficLight: appService.hasTrafficLight,
-      });
+    initializeTrafficLightStore: () => {
+      const hasTrafficLight = getPlatformInfo().hasTrafficLight;
+      set({ isTrafficLightVisible: hasTrafficLight, shouldShowTrafficLight: hasTrafficLight });
     },
 
     setTrafficLightVisibility: async (visible: boolean, position?: { x: number; y: number }) => {

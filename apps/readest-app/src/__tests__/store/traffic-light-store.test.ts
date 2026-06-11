@@ -23,22 +23,20 @@ vi.mock('@tauri-apps/api/core', () => ({
   invoke: vi.fn().mockResolvedValue(undefined),
 }));
 
+const mockGetPlatformInfo = vi.fn(() => ({ hasTrafficLight: false }));
+
+vi.mock('@/runtime/clientRuntime', () => ({
+  getPlatformInfo: () => mockGetPlatformInfo(),
+}));
+
 import { useTrafficLightStore } from '@/store/trafficLightStore';
 import { invoke } from '@tauri-apps/api/core';
-import type { AppService } from '@/domain/system';
-
-function createMockAppService(hasTrafficLight: boolean): AppService {
-  return {
-    hasTrafficLight,
-  } as AppService;
-}
 
 describe('trafficLightStore', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     // Reset store to initial state
     useTrafficLightStore.setState({
-      appService: undefined,
       isTrafficLightVisible: false,
       shouldShowTrafficLight: false,
       trafficLightInFullscreen: false,
@@ -58,27 +56,21 @@ describe('trafficLightStore', () => {
       expect(state.shouldShowTrafficLight).toBe(false);
       expect(state.trafficLightInFullscreen).toBe(false);
     });
-
-    test('has no appService by default', () => {
-      const state = useTrafficLightStore.getState();
-      expect(state.appService).toBeUndefined();
-    });
   });
 
   describe('initializeTrafficLightStore', () => {
-    test('sets appService and visibility from hasTrafficLight=true', () => {
-      const appService = createMockAppService(true);
-      useTrafficLightStore.getState().initializeTrafficLightStore(appService);
+    test('sets visibility from hasTrafficLight=true', () => {
+      mockGetPlatformInfo.mockReturnValue({ hasTrafficLight: true });
+      useTrafficLightStore.getState().initializeTrafficLightStore();
 
       const state = useTrafficLightStore.getState();
-      expect(state.appService).toBe(appService);
       expect(state.isTrafficLightVisible).toBe(true);
       expect(state.shouldShowTrafficLight).toBe(true);
     });
 
     test('sets visibility to false when hasTrafficLight=false', () => {
-      const appService = createMockAppService(false);
-      useTrafficLightStore.getState().initializeTrafficLightStore(appService);
+      mockGetPlatformInfo.mockReturnValue({ hasTrafficLight: false });
+      useTrafficLightStore.getState().initializeTrafficLightStore();
 
       const state = useTrafficLightStore.getState();
       expect(state.isTrafficLightVisible).toBe(false);
