@@ -1,16 +1,3 @@
-import type { SystemSettings } from '@/domain/settings';
-import type { Book, BookConfig, BookContent, ImportBookOptions, ViewSettings } from '@/domain/book';
-import type { BookMetadata } from '@/domain/document';
-import type { BookNav } from '@/domain/nav';
-import type { ProgressHandler } from '@/domain/transfer';
-import type { CustomFont, CustomFontInfo } from '@/domain/fonts';
-import type { CustomTextureInfo } from '@/domain/textures';
-import type { DatabaseOpts, DatabaseService } from '@/domain/database';
-import type { SchemaType } from '@/domain/migration';
-import type { ImportedDictionary } from '@/domain/dictionaries';
-import type { ImportDictionariesResult } from '@/domain/dictionaries';
-import type { SelectedFile } from '@/domain/file-selector';
-
 export type AppPlatform = 'web' | 'tauri' | 'node';
 export type OsPlatform = 'android' | 'ios' | 'macos' | 'windows' | 'linux' | 'unknown';
 // prettier-ignore
