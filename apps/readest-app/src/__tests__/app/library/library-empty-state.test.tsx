@@ -24,21 +24,21 @@ vi.mock('@/utils/nav', () => ({
   navigateToLogin: (...args: unknown[]) => navigateToLoginMock(...args),
 }));
 
-const useEnvMock = vi.fn();
-vi.mock('@/context/EnvContext', () => ({
-  useEnv: () => useEnvMock(),
+const usePlatformInfoMock = vi.fn();
+vi.mock('@/context/EffectRuntimeProvider', () => ({
+  usePlatformInfo: () => usePlatformInfoMock(),
 }));
 
 afterEach(() => {
   cleanup();
   useAuthMock.mockReset();
   navigateToLoginMock.mockReset();
-  useEnvMock.mockReset();
+  usePlatformInfoMock.mockReset();
 });
 
 describe('LibraryEmptyState', () => {
   it('renders title, desktop description, and both CTAs when logged out on desktop', () => {
-    useEnvMock.mockReturnValue({ appService: { isMobile: false } });
+    usePlatformInfoMock.mockReturnValue({ isMobile: false });
     useAuthMock.mockReturnValue({ user: null });
     render(<LibraryEmptyState onImport={vi.fn()} />);
 
@@ -49,7 +49,7 @@ describe('LibraryEmptyState', () => {
   });
 
   it('renders mobile description (no drag-drop language) when appService.isMobile', () => {
-    useEnvMock.mockReturnValue({ appService: { isMobile: true } });
+    usePlatformInfoMock.mockReturnValue({ isMobile: true });
     useAuthMock.mockReturnValue({ user: null });
     render(<LibraryEmptyState onImport={vi.fn()} />);
 
@@ -58,7 +58,7 @@ describe('LibraryEmptyState', () => {
   });
 
   it('hides the sync button when the user is logged in', () => {
-    useEnvMock.mockReturnValue({ appService: { isMobile: false } });
+    usePlatformInfoMock.mockReturnValue({ isMobile: false });
     useAuthMock.mockReturnValue({ user: { id: 'stub-user' } });
     render(<LibraryEmptyState onImport={vi.fn()} />);
 
@@ -67,7 +67,7 @@ describe('LibraryEmptyState', () => {
   });
 
   it('calls onImport when the Import Books button is clicked', () => {
-    useEnvMock.mockReturnValue({ appService: { isMobile: false } });
+    usePlatformInfoMock.mockReturnValue({ isMobile: false });
     useAuthMock.mockReturnValue({ user: null });
     const handleImport = vi.fn();
     render(<LibraryEmptyState onImport={handleImport} />);
