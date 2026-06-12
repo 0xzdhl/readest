@@ -1,12 +1,11 @@
 import { Effect, Layer } from 'effect';
 import type { Book } from '@/domain/book';
-import { BookError } from '@/application/errors/AppError';
 import { FileSystem } from '@/application/ports/FileSystem';
 import { PathResolver } from '@/application/ports/PathResolver';
 import { Platform } from '@/application/ports/Platform';
 import { CoverService, type CoverServiceShape } from '@/application/services/CoverService';
-import { makeLegacyFsAdapter } from './fsPortAdapter';
-import * as BookSvc from '@/services/bookService';
+import { getCoverFilename } from '@/utils/book';
+import * as CoverImages from '@/application/services/cover/coverImages';
 
 export const CoverServiceLive = Layer.effect(
   CoverService,
@@ -14,34 +13,23 @@ export const CoverServiceLive = Layer.effect(
     const fsPort = yield* FileSystem;
     const resolver = yield* PathResolver;
     const platform = yield* Platform;
-    const info = yield* platform.info;
     const localBooksDir = yield* resolver.prefix('Books'); // cached snapshot
-    const fs = makeLegacyFsAdapter(fsPort, resolver);
-    const ctx: BookSvc.CoverContext = { fs, appPlatform: info.appPlatform, localBooksDir };
-    const err = (operation: string, bookId?: string) => (cause: unknown) =>
-      new BookError({ operation, bookId, cause });
+    const provide = <A, E>(e: Effect.Effect<A, E, FileSystem | PathResolver | Platform>) =>
+      e.pipe(
+        Effect.provideService(FileSystem, fsPort),
+        Effect.provideService(PathResolver, resolver),
+        Effect.provideService(Platform, platform),
+      );
     return {
-      getCoverImageUrl: (book: Book) => BookSvc.getCoverImageUrl(ctx, book),
-      getCoverImageBlobUrl: (book: Book) =>
-        Effect.tryPromise({
-          try: () => BookSvc.getCoverImageBlobUrl(ctx, book),
-          catch: err('getCoverImageBlobUrl', book.hash),
-        }),
-      getCachedImageUrl: (pathOrUrl: string) =>
-        Effect.tryPromise({
-          try: () => BookSvc.getCachedImageUrl(ctx, pathOrUrl),
-          catch: err('getCachedImageUrl'),
-        }),
-      generateCoverImageUrl: (book: Book) =>
-        Effect.tryPromise({
-          try: () => BookSvc.generateCoverImageUrl(ctx, book),
-          catch: err('generateCoverImageUrl', book.hash),
-        }),
+      // Sync: getUrl is a sync Effect; run it over the snapshotted localBooksDir
+      // (Tauri resolver.prefix is async, so it can't be re-run under runSync).
+      getCoverImageUrl: (book: Book) =>
+        Effect.runSync(fsPort.getUrl(`${localBooksDir}/${getCoverFilename(book)}`)),
+      getCoverImageBlobUrl: (book: Book) => provide(CoverImages.getCoverImageBlobUrl(book)),
+      getCachedImageUrl: (pathOrUrl: string) => provide(CoverImages.getCachedImageUrl(pathOrUrl)),
+      generateCoverImageUrl: (book: Book) => provide(CoverImages.generateCoverImageUrl(book)),
       updateCoverImage: (book: Book, imageUrl?: string, imageFile?: string) =>
-        Effect.tryPromise({
-          try: () => BookSvc.updateCoverImage(ctx, book, imageUrl, imageFile),
-          catch: err('updateCoverImage', book.hash),
-        }),
+        provide(CoverImages.updateCoverImage(book, imageUrl, imageFile)),
     } satisfies CoverServiceShape;
   }),
 );

@@ -20,4 +20,13 @@ describe('BookRepository (live over test ports)', () => {
     );
     expect(ok).toBe(false);
   });
+
+  it('loadNav returns null when no nav file exists', async () => {
+    const nav = await run(
+      Effect.flatMap(BookRepository, (r) =>
+        r.loadNav({ hash: 'nope', format: 'EPUB', title: 'Nope' } as never),
+      ),
+    );
+    expect(nav).toBeNull();
+  });
 });

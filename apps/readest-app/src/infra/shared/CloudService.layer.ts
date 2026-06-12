@@ -1,114 +1,43 @@
 import { Effect, Layer } from 'effect';
-import type { Book } from '@/domain/book';
-import type { FileWriter, BaseDir } from '@/domain/system';
 import { CloudError } from '@/application/errors/AppError';
 import { FileSystem } from '@/application/ports/FileSystem';
 import { PathResolver } from '@/application/ports/PathResolver';
-import {
-  CloudService,
-  type CloudServiceShape,
-  type ReplicaFileOpts,
-  type ReplicaDownloadOpts,
-} from '@/application/services/CloudService';
-import { makeLegacyFsAdapter } from './fsPortAdapter';
-import * as CloudSvc from '@/services/cloudService';
-import * as BookSvc from '@/services/bookService';
+import { CloudService, type CloudServiceShape } from '@/application/services/CloudService';
+import * as CloudTransfers from '@/application/services/cloud/cloudTransfers';
+import * as BookData from '@/application/services/book/bookData';
 
 export const CloudServiceLive = Layer.effect(
   CloudService,
   Effect.gen(function* () {
     const fsPort = yield* FileSystem;
     const resolver = yield* PathResolver;
-    const localBooksDir = yield* resolver.prefix('Books'); // cached snapshot
-    const fs = makeLegacyFsAdapter(fsPort, resolver);
-    // The cloud download fns thread `appService` only into libs/storage.downloadFile,
-    // which uses exactly one method: appService.writeFile. The legacy adapter has it,
-    // so the same object satisfies both the `fs` and the `appService` params.
-    // `fs` is the legacy adapter; it has writeFile, so it satisfies FileWriter directly.
-    const writer: FileWriter = fs;
-    const resolveFilePath = (path: string, base: BaseDir) =>
-      Effect.runPromise(resolver.absolute(path, base));
-    const err = (operation: string) => (cause: unknown) => new CloudError({ operation, cause });
+    const provide = <A, E>(e: Effect.Effect<A, E, FileSystem | PathResolver>) =>
+      e.pipe(
+        Effect.provideService(FileSystem, fsPort),
+        Effect.provideService(PathResolver, resolver),
+      );
 
     return {
-      uploadBook: (book, onProgress) =>
-        Effect.tryPromise({
-          try: () => CloudSvc.uploadBook(fs, resolveFilePath, book, onProgress),
-          catch: err('uploadBook'),
-        }),
+      uploadBook: (book, onProgress) => provide(CloudTransfers.uploadBook(book, onProgress)),
       downloadBook: (book, onlyCover, redownload, onProgress) =>
-        Effect.tryPromise({
-          try: () =>
-            CloudSvc.downloadBook(
-              writer,
-              fs,
-              localBooksDir,
-              book,
-              onlyCover,
-              redownload,
-              onProgress,
-            ),
-          catch: err('downloadBook'),
-        }),
-      downloadBookCovers: (books: Book[]) =>
-        Effect.tryPromise({
-          try: () => CloudSvc.downloadBookCovers(writer, fs, localBooksDir, books),
-          catch: err('downloadBookCovers'),
-        }),
+        provide(CloudTransfers.downloadBook(book, onlyCover, redownload, onProgress)),
+      downloadBookCovers: (books) => provide(CloudTransfers.downloadBookCovers(books)),
       downloadCloudFile: (lfp, cfp, onProgress) =>
-        Effect.tryPromise({
-          try: () => CloudSvc.downloadCloudFile(writer, localBooksDir, lfp, cfp, onProgress),
-          catch: err('downloadCloudFile'),
-        }),
+        provide(CloudTransfers.downloadCloudFile(lfp, cfp, onProgress)),
       uploadFileToCloud: (lfp, cfp, base, onProgress, hash, temp) =>
-        Effect.tryPromise({
-          try: () =>
-            CloudSvc.uploadFileToCloud(fs, resolveFilePath, lfp, cfp, base, onProgress, hash, temp),
-          catch: err('uploadFileToCloud'),
-        }),
-      uploadReplicaFile: (opts: ReplicaFileOpts) =>
-        Effect.tryPromise({
-          try: () => CloudSvc.uploadReplicaFileToCloud(fs, resolveFilePath, opts),
-          catch: err('uploadReplicaFile'),
-        }),
-      downloadReplicaFile: (opts: ReplicaDownloadOpts) =>
-        Effect.tryPromise({
-          // Mirror appService.downloadReplicaFile: resolve `<bundleDir>/<filename>`
-          // lfp against the replica base BEFORE downloading, else bytes land at the
-          // literal lfp and subsequent openFile(lfp, base) fails.
-          try: async () => {
-            const dst = await resolveFilePath(opts.lfp, opts.base);
-            return CloudSvc.downloadReplicaFileFromCloud(writer, {
-              kind: opts.kind,
-              replicaId: opts.replicaId,
-              filename: opts.filename,
-              dst,
-              onProgress: opts.onProgress,
-            });
-          },
-          catch: err('downloadReplicaFile'),
-        }),
+        provide(CloudTransfers.uploadFileToCloud(lfp, cfp, base, onProgress, hash, temp)),
+      uploadReplicaFile: (opts) => provide(CloudTransfers.uploadReplicaFileToCloud(opts)),
+      downloadReplicaFile: (opts) => provide(CloudTransfers.downloadReplicaFileFromCloud(opts)),
       deleteReplicaBundle: (kind, replicaId, filenames) =>
-        Effect.tryPromise({
-          try: () => CloudSvc.deleteReplicaBundleFromCloud(kind, replicaId, filenames),
-          catch: err('deleteReplicaBundle'),
-        }),
-      deleteBook: (book, deleteAction) =>
-        Effect.tryPromise({
-          try: () => CloudSvc.deleteBook(fs, book, deleteAction),
-          catch: err('deleteBook'),
-        }),
+        provide(CloudTransfers.deleteReplicaBundleFromCloud(kind, replicaId, filenames)),
+      deleteBook: (book, deleteAction) => provide(CloudTransfers.deleteBook(book, deleteAction)),
+      // Effect-native fetchBookDetails (E6d-1 retires the E6c legacy-fs bridge):
+      // inject this layer's own downloadBook. Unwrap the BookError so CloudError.cause
+      // is the original error — single-wrap, matching the other 9 methods.
       fetchBookDetails: (book) =>
-        Effect.tryPromise({
-          // bookService.fetchBookDetails needs a downloadBook callback; inject this
-          // layer's own download path (R=never; the promise rejects on failure and
-          // Effect.tryPromise maps it to CloudError).
-          try: () =>
-            BookSvc.fetchBookDetails(fs, book, (b) =>
-              CloudSvc.downloadBook(writer, fs, localBooksDir, b),
-            ),
-          catch: err('fetchBookDetails'),
-        }),
+        provide(BookData.fetchBookDetails(book, (b) => CloudTransfers.downloadBook(b))).pipe(
+          Effect.mapError((e) => new CloudError({ operation: 'fetchBookDetails', cause: e.cause })),
+        ),
     } satisfies CloudServiceShape;
   }),
 );
