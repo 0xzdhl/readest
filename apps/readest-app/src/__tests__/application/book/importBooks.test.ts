@@ -10,36 +10,37 @@ import {
   type LibraryRepositoryShape,
 } from '@/application/repositories/LibraryRepository';
 import { CoverService, type CoverServiceShape } from '@/application/services/CoverService';
+import { BookError } from '@/application/errors/AppError';
 import { TestFileSystemLive } from '@/__tests__/support/TestFileSystem.layer';
 import { TestPathResolverLive } from '@/__tests__/support/TestPathResolver.layer';
-import type { Book } from '@/domain/book';
+import type { Book, BookConfig } from '@/domain/book';
 
 const mkBook = (hash: string): Book => ({ hash, format: 'EPUB', title: hash }) as unknown as Book;
 
-// Mock bookService.importBook to exercise the usecase's loop/persist/callbacks
-// without real document parsing. Keep buildBookLookupIndex real.
-vi.mock('@/services/bookService', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('@/services/bookService')>();
+// Mock the Effect-native importBook to exercise the usecase's loop/persist/
+// callbacks without real document parsing. The mock yields BookRepository +
+// CoverService (provided by the runtime) so the saveConfig/cover wiring is
+// still validated. buildBookLookupIndex stays real.
+vi.mock('@/application/services/book/bookImport', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@/application/services/book/bookImport')>();
   return {
     ...actual,
-    importBook: vi.fn(
-      async (
-        _fs: unknown,
-        file: string | File,
-        books: Book[],
-        opts: {
-          generateCoverImageUrl: (b: Book) => Promise<string>;
-          saveBookConfig: (b: Book, c: unknown) => Promise<void>;
-        },
-      ) => {
+    importBook: vi.fn((file: string | File, books: Book[]) =>
+      Effect.gen(function* () {
         const name = typeof file === 'string' ? file : file.name;
-        if (name === 'fail') throw new Error('boom');
+        if (name === 'fail') {
+          return yield* Effect.fail(
+            new BookError({ operation: 'importBook', cause: new Error('boom') }),
+          );
+        }
         const b = mkBook(name);
-        await opts.saveBookConfig(b, {});
-        b.coverImageUrl = await opts.generateCoverImageUrl(b);
+        const bookRepo = yield* BookRepository;
+        const cover = yield* CoverService;
+        yield* bookRepo.saveConfig(b, {} as BookConfig);
+        b.coverImageUrl = yield* cover.generateCoverImageUrl(b);
         books.push(b);
         return b;
-      },
+      }),
     ),
   };
 });

@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import type { Book, BookConfig } from '@/domain/book';
+import type { Book, BookLookupIndex } from '@/domain/book';
 import type { FileSystem } from '@/domain/system';
 import { getMetadataHash } from '@/utils/book';
 
@@ -32,8 +32,14 @@ vi.mock('@/libs/storage', () => ({
   batchGetDownloadUrls: vi.fn(),
 }));
 
-import * as BookSvc from '@/services/bookService';
-import { buildBookLookupIndex } from '@/services/bookService';
+import { Effect, Layer } from 'effect';
+import { FileSystem as FileSystemPort, type FileSystemShape } from '@/application/ports/FileSystem';
+import { CoverService, type CoverServiceShape } from '@/application/services/CoverService';
+import { BookRepositoryLive } from '@/infra/shared/BookRepository.layer';
+import {
+  buildBookLookupIndex,
+  importBook as importBookEffect,
+} from '@/application/services/book/bookImport';
 
 // Build the mocked FileSystem that importBook operates against. importBook is a
 // pure function taking the fs as its first argument, so we construct it directly
@@ -60,25 +66,63 @@ function makeMockFs(): MockFs {
   } as unknown as MockFs;
 }
 
-// Inject the callbacks that the legacy import path used to bind into
-// bookService.importBook: saveBookConfig (real impl, writes config.json via fs)
-// and generateCoverImageUrl (stub; covers are null in these tests and no
-// assertion depends on the cover URL).
+// Wrap the legacy-shape Promise mockFs into an Effect FileSystem layer so the
+// existing vi.fn assertions (mockResolvedValue / mockImplementation / .mock.calls)
+// all keep working unchanged. Each port method calls the matching mockFs method.
+const fsLayerFromMock = (mockFs: MockFs): Layer.Layer<FileSystemPort> => {
+  // vi.fn()'s ReturnType is typed as a constructable/procedure union that tsgo
+  // treats as not-callable; view the mock as plain callables for invocation.
+  const m = mockFs as unknown as Record<string, (...args: unknown[]) => Promise<unknown>>;
+  return Layer.succeed(FileSystemPort, {
+    openFile: (p: string, b: string, f?: string) => Effect.tryPromise(() => m.openFile(p, b, f)),
+    readFile: (p: string, b: string, mode: string) =>
+      Effect.tryPromise(() => m.readFile(p, b, mode)),
+    writeFile: (p: string, b: string, c: unknown) => Effect.tryPromise(() => m.writeFile(p, b, c)),
+    copyFile: (s: string, sb: string, d: string, db: string) =>
+      Effect.tryPromise(() => m.copyFile(s, sb, d, db)),
+    removeFile: (p: string, b: string) => Effect.tryPromise(() => m.removeFile(p, b)),
+    createDir: (p: string, b: string, r?: boolean) => Effect.tryPromise(() => m.createDir(p, b, r)),
+    removeDir: (p: string, b: string, r?: boolean) => Effect.tryPromise(() => m.removeDir(p, b, r)),
+    readDir: (p: string, b: string) => Effect.tryPromise(() => m.readDir(p, b)),
+    exists: (p: string, b: string) => Effect.tryPromise(() => m.exists(p, b)),
+    stat: (p: string, b: string) => Effect.tryPromise(() => m.stats(p, b)),
+    getUrl: (p: string) => Effect.sync(() => m.getURL(p)),
+    getBlobUrl: (p: string, b: string) => Effect.tryPromise(() => m.getBlobURL(p, b)),
+  } as unknown as FileSystemShape);
+};
+
+const CoverStub = Layer.succeed(CoverService, {
+  getCoverImageUrl: () => '',
+  getCoverImageBlobUrl: () => Effect.succeed(''),
+  getCachedImageUrl: () => Effect.succeed(''),
+  generateCoverImageUrl: () => Effect.succeed(''),
+  updateCoverImage: () => Effect.void,
+} as unknown as CoverServiceShape);
+
+// Drive the Effect-native importBook through the adapter layer. saveConfig is the
+// REAL BookRepository.saveConfig over the same FileSystem (writes config via
+// mockFs.writeFile), faithful to the legacy injected saveBookConfig.
 function importBook(
   fs: MockFs,
   file: string | File,
   books: Book[],
-  options: Omit<
-    Parameters<typeof BookSvc.importBook>[3],
-    'saveBookConfig' | 'generateCoverImageUrl'
-  > = {},
+  options: {
+    transient?: boolean;
+    saveBook?: boolean;
+    saveCover?: boolean;
+    overwrite?: boolean;
+    lookupIndex?: BookLookupIndex;
+  } = {},
 ): Promise<Book | null> {
-  return BookSvc.importBook(fs as unknown as FileSystem, file, books, {
-    saveBookConfig: (book: Book, config: BookConfig) =>
-      BookSvc.saveBookConfig(fs as unknown as FileSystem, book, config),
-    generateCoverImageUrl: async () => '',
-    ...options,
-  });
+  const FsLayer = fsLayerFromMock(fs);
+  const layers = Layer.mergeAll(FsLayer, CoverStub, Layer.provide(BookRepositoryLive, FsLayer));
+  return Effect.runPromise(
+    importBookEffect(file, books, options).pipe(Effect.provide(layers)) as Effect.Effect<
+      Book | null,
+      unknown,
+      never
+    >,
+  );
 }
 
 function makeBook(overrides: Partial<Book> = {}): Book {
