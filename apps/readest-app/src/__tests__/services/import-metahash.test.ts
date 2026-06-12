@@ -1,6 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import type { Book, BookLookupIndex } from '@/domain/book';
-import type { FileSystem } from '@/domain/system';
 import { getMetadataHash } from '@/utils/book';
 
 const mockOpen = vi.hoisted(() => vi.fn());
@@ -44,7 +43,7 @@ import {
 // Build the mocked FileSystem that importBook operates against. importBook is a
 // pure function taking the fs as its first argument, so we construct it directly
 // instead of routing through a god-object.
-type MockFs = Record<keyof FileSystem, ReturnType<typeof vi.fn>>;
+type MockFs = Record<string, ReturnType<typeof vi.fn>>;
 
 function makeMockFs(): MockFs {
   return {
