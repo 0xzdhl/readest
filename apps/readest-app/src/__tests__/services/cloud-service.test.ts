@@ -1,9 +1,10 @@
-﻿import { describe, test, expect, vi, beforeEach, afterEach } from 'vitest';
-import { deleteBook } from '@/services/cloudService';
+import { Effect, Layer } from 'effect';
+import { describe, test, expect, vi, beforeEach, afterEach, type Mock } from 'vitest';
+import { deleteBook } from '@/application/services/cloud/cloudTransfers';
+import { FileSystem, type FileSystemShape } from '@/application/ports/FileSystem';
 import type { Book, BookFormat } from '@/domain/book';
-import type { FileSystem } from '@/domain/system';
+import type { DeleteAction } from '@/domain/system';
 
-// Mock external dependencies
 vi.mock('@/utils/book', () => ({
   getDir: vi.fn((book: Book) => book.hash),
   getLocalBookFilename: vi.fn((book: Book) => `${book.hash}/${book.title}.epub`),
@@ -14,19 +15,12 @@ vi.mock('@/utils/book', () => ({
 vi.mock('@/libs/storage', () => ({
   downloadFile: vi.fn().mockResolvedValue(undefined),
   uploadFile: vi.fn().mockResolvedValue('https://example.com/file'),
+  uploadReplicaFile: vi.fn().mockResolvedValue(undefined),
   deleteFile: vi.fn(),
   createProgressHandler: vi.fn().mockReturnValue(vi.fn()),
   batchGetDownloadUrls: vi.fn().mockResolvedValue([]),
 }));
-
-vi.mock('@/utils/file', () => ({
-  ClosableFile: class {},
-  RemoteFile: class {
-    async open() {
-      return new File(['content'], 'test.epub');
-    }
-  },
-}));
+import * as storage from '@/libs/storage';
 
 function createMockBook(overrides: Partial<Book> = {}): Book {
   return {
@@ -44,41 +38,21 @@ function createMockBook(overrides: Partial<Book> = {}): Book {
   };
 }
 
-function createMockFs(): FileSystem {
-  return {
-    resolvePath: vi
-      .fn()
-      .mockReturnValue({ baseDir: 0, basePrefix: async () => '', fp: 'test', base: 'Books' }),
-    getURL: vi.fn().mockReturnValue('url'),
-    getBlobURL: vi.fn().mockResolvedValue('blob:url'),
-    getImageURL: vi.fn().mockResolvedValue('image:url'),
-    openFile: vi.fn().mockResolvedValue(new File(['content'], 'test.epub')),
-    copyFile: vi.fn().mockResolvedValue(undefined),
-    readFile: vi.fn().mockResolvedValue('content'),
-    writeFile: vi.fn().mockResolvedValue(undefined),
-    removeFile: vi.fn().mockResolvedValue(undefined),
-    readDir: vi.fn().mockResolvedValue([]),
-    createDir: vi.fn().mockResolvedValue(undefined),
-    removeDir: vi.fn().mockResolvedValue(undefined),
-    exists: vi.fn().mockResolvedValue(true),
-    stats: vi.fn().mockResolvedValue({
-      isFile: true,
-      isDirectory: false,
-      size: 100,
-      mtime: null,
-      atime: null,
-      birthtime: null,
-    }),
-    getPrefix: vi.fn().mockResolvedValue('Readest/Books'),
-  };
-}
+const makeFs = (over: Partial<FileSystemShape> = {}): Layer.Layer<FileSystem> =>
+  Layer.succeed(FileSystem, {
+    exists: () => Effect.succeed(true),
+    removeFile: () => Effect.void,
+    ...over,
+  } as unknown as FileSystemShape);
 
-describe('cloudService', () => {
-  let mockFs: FileSystem;
+const runDelete = (book: Book, action: DeleteAction, fs: Layer.Layer<FileSystem>) =>
+  Effect.runPromise(
+    deleteBook(book, action).pipe(Effect.provide(fs)) as Effect.Effect<void, unknown, never>,
+  );
 
+describe('cloudService.deleteBook (Effect-native, over stub FileSystem)', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    mockFs = createMockFs();
     vi.spyOn(console, 'log').mockImplementation(() => {});
   });
 
@@ -86,122 +60,106 @@ describe('cloudService', () => {
     vi.restoreAllMocks();
   });
 
-  describe('deleteBook', () => {
-    describe('local delete action', () => {
-      test('removes the local book file', async () => {
-        const book = createMockBook();
-        await deleteBook(mockFs, book, 'local');
+  describe('local delete action', () => {
+    test('removes the local book file', async () => {
+      const book = createMockBook();
+      const exists = vi.fn(() => Effect.succeed(true));
+      const removeFile = vi.fn(() => Effect.void);
+      await runDelete(book, 'local', makeFs({ exists, removeFile }));
 
-        expect(mockFs.exists).toHaveBeenCalledWith(`${book.hash}/${book.title}.epub`, 'Books');
-        expect(mockFs.removeFile).toHaveBeenCalledWith(`${book.hash}/${book.title}.epub`, 'Books');
-      });
-
-      test('sets downloadedAt to null', async () => {
-        const book = createMockBook({ downloadedAt: 12345 });
-        await deleteBook(mockFs, book, 'local');
-
-        expect(book.downloadedAt).toBeNull();
-      });
-
-      test('does not set deletedAt for local-only delete', async () => {
-        const book = createMockBook({ deletedAt: null });
-        await deleteBook(mockFs, book, 'local');
-
-        // local action does not modify deletedAt
-        expect(book.deletedAt).toBeNull();
-      });
-
-      test('skips removal when file does not exist', async () => {
-        vi.mocked(mockFs.exists).mockResolvedValue(false);
-        const book = createMockBook();
-        await deleteBook(mockFs, book, 'local');
-
-        expect(mockFs.removeFile).not.toHaveBeenCalled();
-      });
-
-      test('only deletes book file, not cover (local action)', async () => {
-        const book = createMockBook();
-        await deleteBook(mockFs, book, 'local');
-
-        // local action only deletes the book file
-        expect(mockFs.removeFile).toHaveBeenCalledTimes(1);
-        expect(mockFs.removeFile).toHaveBeenCalledWith(`${book.hash}/${book.title}.epub`, 'Books');
-      });
+      expect(exists).toHaveBeenCalledWith(`${book.hash}/${book.title}.epub`, 'Books');
+      expect(removeFile).toHaveBeenCalledWith(`${book.hash}/${book.title}.epub`, 'Books');
     });
 
-    describe('both delete action', () => {
-      test('removes book file and cover', async () => {
-        const book = createMockBook({ uploadedAt: 1000 });
-        await deleteBook(mockFs, book, 'both');
-
-        // 'both' deletes localBookFilename + coverFilename
-        expect(mockFs.removeFile).toHaveBeenCalledWith(`${book.hash}/${book.title}.epub`, 'Books');
-        expect(mockFs.removeFile).toHaveBeenCalledWith(`${book.hash}/cover.png`, 'Books');
-      });
-
-      test('sets deletedAt, clears downloadedAt and coverDownloadedAt', async () => {
-        const book = createMockBook({
-          uploadedAt: 1000,
-          downloadedAt: 2000,
-          coverDownloadedAt: 3000,
-        });
-        await deleteBook(mockFs, book, 'both');
-
-        expect(book.deletedAt).toBeGreaterThan(0);
-        expect(book.downloadedAt).toBeNull();
-        expect(book.coverDownloadedAt).toBeNull();
-      });
-
-      test('clears uploadedAt when uploaded', async () => {
-        const book = createMockBook({ uploadedAt: 1000 });
-        await deleteBook(mockFs, book, 'both');
-
-        expect(book.uploadedAt).toBeNull();
-      });
+    test('sets downloadedAt to null', async () => {
+      const book = createMockBook({ downloadedAt: 12345 });
+      await runDelete(book, 'local', makeFs());
+      expect(book.downloadedAt).toBeNull();
     });
 
-    describe('cloud delete action', () => {
-      test('does not delete local files', async () => {
-        const book = createMockBook({ uploadedAt: 1000 });
-        await deleteBook(mockFs, book, 'cloud');
+    test('does not set deletedAt for local-only delete', async () => {
+      const book = createMockBook({ deletedAt: null });
+      await runDelete(book, 'local', makeFs());
+      expect(book.deletedAt).toBeNull();
+    });
 
-        expect(mockFs.removeFile).not.toHaveBeenCalled();
+    test('skips removal when file does not exist', async () => {
+      const removeFile = vi.fn(() => Effect.void);
+      const book = createMockBook();
+      await runDelete(book, 'local', makeFs({ exists: () => Effect.succeed(false), removeFile }));
+      expect(removeFile).not.toHaveBeenCalled();
+    });
+
+    test('only deletes book file, not cover (local action)', async () => {
+      const book = createMockBook();
+      const removeFile = vi.fn(() => Effect.void);
+      await runDelete(book, 'local', makeFs({ removeFile }));
+      expect(removeFile).toHaveBeenCalledTimes(1);
+      expect(removeFile).toHaveBeenCalledWith(`${book.hash}/${book.title}.epub`, 'Books');
+    });
+  });
+
+  describe('both delete action', () => {
+    test('removes book file and cover', async () => {
+      const book = createMockBook({ uploadedAt: 1000 });
+      const removeFile = vi.fn(() => Effect.void);
+      await runDelete(book, 'both', makeFs({ removeFile }));
+      expect(removeFile).toHaveBeenCalledWith(`${book.hash}/${book.title}.epub`, 'Books');
+      expect(removeFile).toHaveBeenCalledWith(`${book.hash}/cover.png`, 'Books');
+    });
+
+    test('sets deletedAt, clears downloadedAt and coverDownloadedAt', async () => {
+      const book = createMockBook({
+        uploadedAt: 1000,
+        downloadedAt: 2000,
+        coverDownloadedAt: 3000,
       });
+      await runDelete(book, 'both', makeFs());
+      expect(book.deletedAt).toBeGreaterThan(0);
+      expect(book.downloadedAt).toBeNull();
+      expect(book.coverDownloadedAt).toBeNull();
+    });
 
-      test('clears uploadedAt when previously uploaded', async () => {
-        const book = createMockBook({ uploadedAt: 1000 });
-        await deleteBook(mockFs, book, 'cloud');
+    test('clears uploadedAt when uploaded', async () => {
+      const book = createMockBook({ uploadedAt: 1000 });
+      await runDelete(book, 'both', makeFs());
+      expect(book.uploadedAt).toBeNull();
+    });
+  });
 
-        expect(book.uploadedAt).toBeNull();
+  describe('cloud delete action', () => {
+    test('does not delete local files', async () => {
+      const book = createMockBook({ uploadedAt: 1000 });
+      const removeFile = vi.fn(() => Effect.void);
+      await runDelete(book, 'cloud', makeFs({ removeFile }));
+      expect(removeFile).not.toHaveBeenCalled();
+    });
+
+    test('clears uploadedAt when previously uploaded', async () => {
+      const book = createMockBook({ uploadedAt: 1000 });
+      await runDelete(book, 'cloud', makeFs());
+      expect(book.uploadedAt).toBeNull();
+    });
+
+    test('skips cloud delete when not uploaded', async () => {
+      const book = createMockBook({ uploadedAt: null });
+      await runDelete(book, 'cloud', makeFs());
+      expect(storage.deleteFile).not.toHaveBeenCalled();
+    });
+
+    test('calls deleteFile for remote book and cover', async () => {
+      const book = createMockBook({ uploadedAt: 1000 });
+      await runDelete(book, 'cloud', makeFs());
+      expect(storage.deleteFile).toHaveBeenCalledTimes(2);
+    });
+
+    test('does not throw when cloud delete fails', async () => {
+      (storage.deleteFile as unknown as Mock).mockImplementation(() => {
+        throw new Error('network error');
       });
-
-      test('skips cloud delete when not uploaded', async () => {
-        const { deleteFile: deleteCloudFile } = await import('@/libs/storage');
-        const book = createMockBook({ uploadedAt: null });
-        await deleteBook(mockFs, book, 'cloud');
-
-        expect(deleteCloudFile).not.toHaveBeenCalled();
-      });
-
-      test('calls deleteFile for remote book and cover', async () => {
-        const { deleteFile: deleteCloudFile } = await import('@/libs/storage');
-        const book = createMockBook({ uploadedAt: 1000 });
-        await deleteBook(mockFs, book, 'cloud');
-
-        expect(deleteCloudFile).toHaveBeenCalledTimes(2);
-      });
-
-      test('does not throw when cloud delete fails', async () => {
-        const { deleteFile: deleteCloudFile } = await import('@/libs/storage');
-        vi.mocked(deleteCloudFile).mockImplementation(() => {
-          throw new Error('network error');
-        });
-        const book = createMockBook({ uploadedAt: 1000 });
-
-        // Should not throw
-        await deleteBook(mockFs, book, 'cloud');
-        expect(book.uploadedAt).toBeNull();
-      });
+      const book = createMockBook({ uploadedAt: 1000 });
+      await runDelete(book, 'cloud', makeFs());
+      expect(book.uploadedAt).toBeNull();
     });
   });
 });

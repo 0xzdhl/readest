@@ -37,28 +37,11 @@ export type NativeTouchEventType = {
   timestamp: number;
 };
 
-export interface FileSystem {
-  resolvePath(path: string, base: BaseDir): ResolvedPath;
-  getURL(path: string): string;
-  getBlobURL(path: string, base: BaseDir): Promise<string>;
-  getImageURL(path: string): Promise<string>;
-  openFile(path: string, base: BaseDir, filename?: string): Promise<File>;
-  copyFile(srcPath: string, srcBase: BaseDir, dstPath: string, dstBase: BaseDir): Promise<void>;
-  readFile(path: string, base: BaseDir, mode: 'text' | 'binary'): Promise<string | ArrayBuffer>;
-  writeFile(path: string, base: BaseDir, content: string | ArrayBuffer | File): Promise<void>;
-  removeFile(path: string, base: BaseDir): Promise<void>;
-  readDir(path: string, base: BaseDir): Promise<FileItem[]>;
-  createDir(path: string, base: BaseDir, recursive?: boolean): Promise<void>;
-  removeDir(path: string, base: BaseDir, recursive?: boolean): Promise<void>;
-  exists(path: string, base: BaseDir): Promise<boolean>;
-  stats(path: string, base: BaseDir): Promise<FileInfo>;
-  getPrefix(base: BaseDir): Promise<string>;
-}
-
 /**
  * Minimal write-only fs contract for libs/storage.downloadFile (which reaches
- * only writeFile). Reuses the legacy FileSystem.writeFile signature so there's
- * one source of truth. The legacy god-object interface is gone (E5b-2); this is
- * the narrow write contract its download consumers actually needed.
+ * only writeFile). The legacy FileSystem god-object interface is gone (E6e);
+ * this is the narrow write contract its download consumers actually need.
  */
-export type FileWriter = Pick<FileSystem, 'writeFile'>;
+export type FileWriter = {
+  writeFile(path: string, base: BaseDir, content: string | ArrayBuffer | File): Promise<void>;
+};

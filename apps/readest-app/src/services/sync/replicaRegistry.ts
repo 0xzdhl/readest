@@ -1,14 +1,9 @@
 import type { ReplicaRow } from '@/types/replica';
-import type { BaseDir, FileSystem } from '@/domain/system';
+import type { BaseDir } from '@/domain/system';
 
 export interface BinaryCapability<T> {
   localBaseDir: BaseDir;
   enumerateFiles(replica: T): { logical: string; lfp: string; byteSize: number }[];
-}
-
-export interface LifecycleHooks<T> {
-  postDownload?(replica: T, fs: FileSystem): Promise<void>;
-  validateOnLoad?(replica: T, fs: FileSystem): Promise<{ unavailable?: boolean }>;
 }
 
 export interface ReplicaAdapter<T = unknown> {
@@ -32,7 +27,6 @@ export interface ReplicaAdapter<T = unknown> {
    */
   getDisplayName?(record: T): string;
   binary?: BinaryCapability<T>;
-  lifecycle?: LifecycleHooks<T>;
   /**
    * Field names whose values are encrypted before push and decrypted
    * after pull. The publish/pull middleware handles the crypto round
