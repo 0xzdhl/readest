@@ -2,7 +2,7 @@ import { Effect } from 'effect';
 import { describe, expect, it } from 'vitest';
 import { FileSystem } from '@/application/ports/FileSystem';
 import { TestFileSystemLive } from '@/__tests__/support/TestFileSystem.layer';
-import { safeLoadJsonE, safeSaveJsonE } from '@/application/services/settings/json';
+import { safeLoadJsonE, safeSaveJsonE } from '@/application/services/shared/json';
 
 const run = <A, E>(p: Effect.Effect<A, E, FileSystem>) =>
   Effect.runPromise(p.pipe(Effect.provide(TestFileSystemLive)) as Effect.Effect<A, E, never>);

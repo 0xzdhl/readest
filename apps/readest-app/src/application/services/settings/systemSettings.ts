@@ -14,7 +14,7 @@ import { SettingsError } from '@/application/errors/AppError';
 import { FileSystem } from '@/application/ports/FileSystem';
 import { PathResolver } from '@/application/ports/PathResolver';
 import { getDefaultViewSettings, migrateHighlightColorPrefs } from './viewSettings';
-import { safeLoadJsonE, safeSaveJsonE } from './json';
+import { safeLoadJsonE, safeSaveJsonE } from '@/application/services/shared/json';
 
 export type SettingsCtx = {
   readonly isMobile: boolean;
