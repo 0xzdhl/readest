@@ -1,23 +1,17 @@
 import { Effect, Layer } from 'effect';
-import { AssetError } from '@/application/errors/AppError';
 import { FileSystem } from '@/application/ports/FileSystem';
-import { PathResolver } from '@/application/ports/PathResolver';
 import { FontService, type FontServiceShape } from '@/application/services/FontService';
-import { makeLegacyFsAdapter } from './fsPortAdapter';
-import * as FontSvc from '@/services/fontService';
+import { importFont, deleteFont } from '@/application/services/fonts/fontAssets';
 
 export const FontServiceLive = Layer.effect(
   FontService,
   Effect.gen(function* () {
     const fsPort = yield* FileSystem;
-    const resolver = yield* PathResolver;
-    const fs = makeLegacyFsAdapter(fsPort, resolver);
-    const err = (operation: string) => (cause: unknown) => new AssetError({ operation, cause });
+    const provide = <A, E>(e: Effect.Effect<A, E, FileSystem>) =>
+      e.pipe(Effect.provideService(FileSystem, fsPort));
     return {
-      importFont: (file) =>
-        Effect.tryPromise({ try: () => FontSvc.importFont(fs, file), catch: err('importFont') }),
-      deleteFont: (font) =>
-        Effect.tryPromise({ try: () => FontSvc.deleteFont(fs, font), catch: err('deleteFont') }),
+      importFont: (file) => provide(importFont(file)),
+      deleteFont: (font) => provide(deleteFont(font)),
     } satisfies FontServiceShape;
   }),
 );
