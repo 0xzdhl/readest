@@ -1,26 +1,17 @@
 import { Effect, Layer } from 'effect';
-import { AssetError } from '@/application/errors/AppError';
 import { FileSystem } from '@/application/ports/FileSystem';
-import { PathResolver } from '@/application/ports/PathResolver';
 import { ImageService, type ImageServiceShape } from '@/application/services/ImageService';
-import { makeLegacyFsAdapter } from './fsPortAdapter';
-import * as ImageSvc from '@/services/imageService';
+import { importImage, deleteImage } from '@/application/services/images/imageAssets';
 
 export const ImageServiceLive = Layer.effect(
   ImageService,
   Effect.gen(function* () {
     const fsPort = yield* FileSystem;
-    const resolver = yield* PathResolver;
-    const fs = makeLegacyFsAdapter(fsPort, resolver);
-    const err = (operation: string) => (cause: unknown) => new AssetError({ operation, cause });
+    const provide = <A, E>(e: Effect.Effect<A, E, FileSystem>) =>
+      e.pipe(Effect.provideService(FileSystem, fsPort));
     return {
-      importImage: (file) =>
-        Effect.tryPromise({ try: () => ImageSvc.importImage(fs, file), catch: err('importImage') }),
-      deleteImage: (texture) =>
-        Effect.tryPromise({
-          try: () => ImageSvc.deleteImage(fs, texture),
-          catch: err('deleteImage'),
-        }),
+      importImage: (file) => provide(importImage(file)),
+      deleteImage: (texture) => provide(deleteImage(texture)),
     } satisfies ImageServiceShape;
   }),
 );
