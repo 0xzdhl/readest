@@ -1,6 +1,7 @@
 import { Effect } from 'effect';
 import type { SystemSettings } from '@/domain/settings';
 import { type Book, type BookConfig, type BookContent, FIXED_LAYOUT_FORMATS } from '@/domain/book';
+import type { BookMetadata } from '@/domain/document';
 import type { BookNav } from '@/domain/nav';
 import { BookError, type FsError } from '@/application/errors/AppError';
 import { FileSystem } from '@/application/ports/FileSystem';
@@ -187,5 +188,28 @@ export const refreshBookMetadata = (book: Book): Effect.Effect<boolean, BookErro
   }).pipe(
     Effect.mapError(
       (cause) => new BookError({ operation: 'refreshMetadata', bookId: book.hash, cause }),
+    ),
+  );
+
+export const fetchBookDetails = <E, R>(
+  book: Book,
+  downloadBook: (b: Book) => Effect.Effect<void, E, R>,
+): Effect.Effect<BookMetadata, BookError, FileSystem | R> =>
+  Effect.gen(function* () {
+    const fs = yield* FileSystem;
+    const fp = getLocalBookFilename(book);
+    if (!(yield* fs.exists(fp, 'Books')) && book.uploadedAt) {
+      yield* downloadBook(book);
+    }
+    const { file } = yield* openBookFile(book);
+    const bookDoc = (yield* Effect.tryPromise(() => new DocumentLoader(file).open())).book;
+    const f = file as ClosableFile;
+    if (f && f.close) {
+      yield* Effect.tryPromise(() => f.close());
+    }
+    return bookDoc.metadata;
+  }).pipe(
+    Effect.mapError(
+      (cause) => new BookError({ operation: 'fetchBookDetails', bookId: book.hash, cause }),
     ),
   );

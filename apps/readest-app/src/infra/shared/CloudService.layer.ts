@@ -4,8 +4,7 @@ import { FileSystem } from '@/application/ports/FileSystem';
 import { PathResolver } from '@/application/ports/PathResolver';
 import { CloudService, type CloudServiceShape } from '@/application/services/CloudService';
 import * as CloudTransfers from '@/application/services/cloud/cloudTransfers';
-import { makeLegacyFsAdapter } from './fsPortAdapter';
-import * as BookSvc from '@/services/bookService';
+import * as BookData from '@/application/services/book/bookData';
 
 export const CloudServiceLive = Layer.effect(
   CloudService,
@@ -17,13 +16,6 @@ export const CloudServiceLive = Layer.effect(
         Effect.provideService(FileSystem, fsPort),
         Effect.provideService(PathResolver, resolver),
       );
-    const err = (operation: string) => (cause: unknown) => new CloudError({ operation, cause });
-
-    // fetchBookDetails ONLY: temporary bridge to the not-yet-migrated bookService
-    // (bookService.fetchBookDetails + loadBookContent need a full legacy
-    // FileSystem). Removed in E6d when bookService de-adapters. This is the sole
-    // remaining makeLegacyFsAdapter use in CloudService.
-    const legacyFs = makeLegacyFsAdapter(fsPort, resolver);
 
     return {
       uploadBook: (book, onProgress) => provide(CloudTransfers.uploadBook(book, onProgress)),
@@ -39,17 +31,13 @@ export const CloudServiceLive = Layer.effect(
       deleteReplicaBundle: (kind, replicaId, filenames) =>
         provide(CloudTransfers.deleteReplicaBundleFromCloud(kind, replicaId, filenames)),
       deleteBook: (book, deleteAction) => provide(CloudTransfers.deleteBook(book, deleteAction)),
+      // Effect-native fetchBookDetails (E6d-1 retires the E6c legacy-fs bridge):
+      // inject this layer's own downloadBook. Unwrap the BookError so CloudError.cause
+      // is the original error — single-wrap, matching the other 9 methods.
       fetchBookDetails: (book) =>
-        Effect.tryPromise({
-          // bookService.fetchBookDetails needs a Promise downloadBook callback;
-          // inject this layer's new Effect-native downloadBook run through the
-          // resolved ports (R=never → Effect.runPromise valid).
-          try: () =>
-            BookSvc.fetchBookDetails(legacyFs, book, (b) =>
-              Effect.runPromise(provide(CloudTransfers.downloadBook(b))),
-            ),
-          catch: err('fetchBookDetails'),
-        }),
+        provide(BookData.fetchBookDetails(book, (b) => CloudTransfers.downloadBook(b))).pipe(
+          Effect.mapError((e) => new CloudError({ operation: 'fetchBookDetails', cause: e.cause })),
+        ),
     } satisfies CloudServiceShape;
   }),
 );
