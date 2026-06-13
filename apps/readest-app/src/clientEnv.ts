@@ -28,7 +28,7 @@ export const clientEnv = createEnv({
     VITE_DOWNLOAD_BASE_URL: z.url(),
     VITE_SUPPORT_EMAIL: z.email(),
     VITE_BRAND_NAME: z.string().min(1),
-    VITE_BETTER_AUTH_URL: z.url().default('http://localhost:5173'),
+    VITE_BETTER_AUTH_URL: z.url(),
     VITE_STORAGE_FIXED_QUOTA: z.coerce.number().int().nonnegative().optional(),
     VITE_TRANSLATION_FIXED_QUOTA: z.coerce.number().int().nonnegative().optional(),
 

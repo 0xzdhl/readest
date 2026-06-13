@@ -49,6 +49,12 @@ git submodule update --init --recursive
 pnpm install
 # copy vendors dist libs to public directory
 pnpm --filter @readest/readest-app setup-vendors
+
+# copy local dev env file
+cp apps/readest-app/.env.example apps/readest-app/.env
+
+# copy production env file
+cp apps/readest-app/.env.example apps/readest-app/.env.prod
 ```
 
 ### 3. Verify Dependencies Installation

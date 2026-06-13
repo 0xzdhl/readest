@@ -67,3 +67,4 @@ src-tauri/gen
 
 # env files
 .env
+.env.prod
