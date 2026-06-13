@@ -13,7 +13,7 @@ process.env['VITE_WEBSITE_URL'] ??= 'https://www.test.local';
 process.env['VITE_DOWNLOAD_BASE_URL'] ??= 'https://download.test.local/releases';
 process.env['VITE_SUPPORT_EMAIL'] ??= 'support@test.local';
 process.env['STORAGE_PUBLIC_BASE_URL'] ??= 'https://storage.test.local';
-process.env['RESEND_FROM_EMAIL'] ??= 'noreply@test.local';
+process.env['SMTP_FROM_EMAIL'] ??= 'noreply@test.local';
 
 // jsdom-on-Windows + vitest 4.x sometimes doesn't auto-initialize
 // `localStorage` / `sessionStorage` on the global. Many tests use the bare

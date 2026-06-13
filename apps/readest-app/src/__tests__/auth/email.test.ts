@@ -19,7 +19,14 @@ const sendMailMock = vi.hoisted(() =>
   ),
 );
 const createTransportMock = vi.hoisted(() =>
-  vi.fn<(config: { host: string; port: number; secure: boolean }) => unknown>(() => ({
+  vi.fn<
+    (config: {
+      host: string;
+      port: number;
+      secure: boolean;
+      auth?: { user: string; pass: string };
+    }) => unknown
+  >(() => ({
     sendMail: sendMailMock,
   })),
 );
@@ -56,12 +63,14 @@ describe('sendEmail', () => {
     sendMailMock.mockClear();
     createTransportMock.mockClear();
     delete process.env['RESEND_API_KEY'];
-    // RESEND_FROM_EMAIL is now a required env var (no schema default), so a
-    // valid baseline must be present for `@/env` to validate on import. Tests
-    // that assert the `from` address override it explicitly.
-    process.env['RESEND_FROM_EMAIL'] = 'noreply@example.com';
+    // SMTP_FROM_EMAIL is a required env var (no schema default), so a valid
+    // baseline must be present for `@/env` to validate on import. Tests that
+    // assert the `from` address override it explicitly.
+    process.env['SMTP_FROM_EMAIL'] = 'noreply@example.com';
     delete process.env['SMTP_HOST'];
     delete process.env['SMTP_PORT'];
+    delete process.env['SMTP_AUTH_USER'];
+    delete process.env['SMTP_AUTH_TOKEN'];
     process.env['DATABASE_URL'] = 'postgres://postgres:postgres@localhost:5432/postgres';
     process.env['BETTER_AUTH_SECRET'] = 'test-secret';
     process.env['BETTER_AUTH_URL'] = 'http://localhost:5173';
@@ -74,7 +83,7 @@ describe('sendEmail', () => {
 
   it('uses the Resend SDK when RESEND_API_KEY is set', async () => {
     process.env['RESEND_API_KEY'] = 'test-api-key';
-    process.env['RESEND_FROM_EMAIL'] = 'sender@example.com';
+    process.env['SMTP_FROM_EMAIL'] = 'sender@example.com';
 
     const { sendEmail } = await import('@/auth/email');
     await sendEmail({
@@ -122,7 +131,7 @@ describe('sendEmail', () => {
     const transportConfig = firstArgOf(createTransportMock, 0);
     expect(transportConfig.host).toBe('mailpit');
     expect(transportConfig.port).toBe(2025);
-    expect(transportConfig.secure).toBe(false);
+    expect(transportConfig.secure).toBe(true);
 
     expect(sendMailMock).toHaveBeenCalledTimes(1);
     const mailArg = firstArgOf(sendMailMock, 0);
@@ -130,6 +139,34 @@ describe('sendEmail', () => {
     expect(mailArg.subject).toBe('fallback');
     expect(mailArg.html).toBe('<p>fallback</p>');
     expect(ResendCtorMock).not.toHaveBeenCalled();
+  });
+
+  it('passes SMTP auth credentials to nodemailer when both SMTP_AUTH_USER and SMTP_AUTH_TOKEN are set', async () => {
+    process.env['SMTP_HOST'] = 'smtp.example.com';
+    process.env['SMTP_PORT'] = '587';
+    process.env['SMTP_AUTH_USER'] = 'api';
+    process.env['SMTP_AUTH_TOKEN'] = 'secret';
+
+    const { sendEmail } = await import('@/auth/email');
+    await sendEmail({ to: 'user@example.com', subject: 's', html: 'h' });
+
+    expect(createTransportMock).toHaveBeenCalledTimes(1);
+    const transportConfig = firstArgOf(createTransportMock, 0);
+    expect(transportConfig.auth).toEqual({ user: 'api', pass: 'secret' });
+  });
+
+  it('omits auth from nodemailer transport when SMTP_AUTH_TOKEN is missing', async () => {
+    process.env['SMTP_HOST'] = 'smtp.example.com';
+    process.env['SMTP_PORT'] = '587';
+    process.env['SMTP_AUTH_USER'] = 'api';
+    // SMTP_AUTH_TOKEN left unset (deleted in beforeEach)
+
+    const { sendEmail } = await import('@/auth/email');
+    await sendEmail({ to: 'user@example.com', subject: 's', html: 'h' });
+
+    expect(createTransportMock).toHaveBeenCalledTimes(1);
+    const transportConfig = firstArgOf(createTransportMock, 0);
+    expect(transportConfig.auth).toBeUndefined();
   });
 
   it('defaults SMTP host to localhost:1025 (mailpit) when unset', async () => {

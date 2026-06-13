@@ -32,9 +32,11 @@ export const env = createEnv({
     DISABLE_SIGNUP: z.enum(['true', 'false']).default('false'),
 
     RESEND_API_KEY: optionalString,
-    RESEND_FROM_EMAIL: z.email(),
+    SMTP_FROM_EMAIL: z.email(),
     SMTP_HOST: z.string().default('localhost'),
     SMTP_PORT: z.coerce.number().int().positive().default(1025),
+    SMTP_AUTH_USER: optionalString,
+    SMTP_AUTH_TOKEN: optionalString,
 
     GOOGLE_CLIENT_ID: optionalString,
     GOOGLE_CLIENT_SECRET: optionalString,

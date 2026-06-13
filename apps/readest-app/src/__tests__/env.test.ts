@@ -33,8 +33,7 @@ describe('env', () => {
     expect(env.BETTER_AUTH_URL).toBe('http://localhost:5173');
     expect(clientEnv.VITE_APP_PLATFORM).toBe('web');
     expect(env.DATABASE_POOL_MAX).toBe(10);
-    // RESEND_FROM_EMAIL is no longer a centralized default — it's now a
-    // required env var supplied externally, so it isn't asserted here.
+    // SMTP_FROM_EMAIL is a required env var supplied externally, so it isn't asserted here.
     expect(env.SMTP_HOST).toBe('localhost');
     expect(env.SMTP_PORT).toBe(1025);
     expect(env.AI_GATEWAY_EMBEDDING_MODEL).toBe('openai/text-embedding-3-small');
