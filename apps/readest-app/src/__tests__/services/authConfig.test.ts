@@ -18,7 +18,6 @@ const baselineEnv = () => {
   vi.stubEnv('VITE_WEBSITE_URL', 'https://www.example.com');
   vi.stubEnv('VITE_DOWNLOAD_BASE_URL', 'https://dl.example.com/releases');
   vi.stubEnv('VITE_SUPPORT_EMAIL', 'support@example.com');
-  vi.stubEnv('VITE_BRAND_NAME', 'ExampleBrand');
 };
 
 beforeEach(() => {
@@ -37,7 +36,8 @@ describe('fetchAuthConfig', () => {
     vi.stubGlobal(
       'fetch',
       vi.fn(
-        async () => new Response(JSON.stringify({ providers: ['google', 'apple'], signupEnabled: false })),
+        async () =>
+          new Response(JSON.stringify({ providers: ['google', 'apple'], signupEnabled: false })),
       ),
     );
 

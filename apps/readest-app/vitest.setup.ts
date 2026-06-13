@@ -12,7 +12,6 @@ process.env['VITE_NODE_BASE_URL'] ??= 'https://node.test.local';
 process.env['VITE_WEBSITE_URL'] ??= 'https://www.test.local';
 process.env['VITE_DOWNLOAD_BASE_URL'] ??= 'https://download.test.local/releases';
 process.env['VITE_SUPPORT_EMAIL'] ??= 'support@test.local';
-process.env['VITE_BRAND_NAME'] ??= 'TestBrand';
 process.env['STORAGE_PUBLIC_BASE_URL'] ??= 'https://storage.test.local';
 process.env['RESEND_FROM_EMAIL'] ??= 'noreply@test.local';
 

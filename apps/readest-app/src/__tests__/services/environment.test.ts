@@ -10,7 +10,6 @@ const PUBLIC_ENV_KEYS = [
   'VITE_WEBSITE_URL',
   'VITE_DOWNLOAD_BASE_URL',
   'VITE_SUPPORT_EMAIL',
-  'VITE_BRAND_NAME',
 ] as const;
 
 const setPublicEnv = (key: (typeof PUBLIC_ENV_KEYS)[number], value: string) => {
@@ -32,7 +31,6 @@ beforeEach(() => {
   vi.stubEnv('VITE_WEBSITE_URL', 'https://www.example.com');
   vi.stubEnv('VITE_DOWNLOAD_BASE_URL', 'https://dl.example.com/releases');
   vi.stubEnv('VITE_SUPPORT_EMAIL', 'support@example.com');
-  vi.stubEnv('VITE_BRAND_NAME', 'ExampleBrand');
   // Clean up any window globals we set
   delete (window as unknown as Record<string, unknown>)['__READEST_CLI_ACCESS'];
 });
@@ -181,10 +179,9 @@ describe('environment', () => {
 
     test('getSupportEmail and getBrandName return their vars', async () => {
       vi.stubEnv('VITE_SUPPORT_EMAIL', 'help@example.com');
-      vi.stubEnv('VITE_BRAND_NAME', 'Example Reader');
       const mod = await import('@/services/environment');
       expect(mod.getSupportEmail()).toBe('help@example.com');
-      expect(mod.getBrandName()).toBe('Example Reader');
+      expect(mod.getBrandName()).toBe('Readen');
     });
   });
 

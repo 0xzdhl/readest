@@ -15,7 +15,8 @@ export const getNodeBaseUrl = () => clientEnv.VITE_NODE_BASE_URL;
 export const getWebsiteUrl = () => clientEnv.VITE_WEBSITE_URL;
 export const getDownloadBaseUrl = () => clientEnv.VITE_DOWNLOAD_BASE_URL;
 export const getSupportEmail = () => clientEnv.VITE_SUPPORT_EMAIL;
-export const getBrandName = () => clientEnv.VITE_BRAND_NAME;
+export const getBrandName = () => 'Readen';
+
 // Strip a trailing slash so derived paths don't double up (e.g. an operator
 // setting VITE_DOWNLOAD_BASE_URL with a trailing "/").
 const noTrailingSlash = (url: string) => url.replace(/\/+$/, '');
