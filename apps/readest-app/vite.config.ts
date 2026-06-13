@@ -66,6 +66,10 @@ export default defineConfig(({ mode }) => {
           find: /^@simplecc\/(.*)/,
           replacement: path.resolve('public/vendor/simplecc/$1'),
         },
+        {
+          find: /^nunjucks$/,
+          replacement: path.resolve('node_modules/nunjucks/browser/nunjucks.js'),
+        },
         { find: /^@\/(.*)/, replacement: path.resolve('src/$1') },
         {
           find: 'js-mdict',
