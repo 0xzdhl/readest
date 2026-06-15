@@ -21,9 +21,14 @@ vi.mock('@tauri-apps/api/window', () => ({
   })),
 }));
 
-vi.mock('@/services/environment', () => ({
-  isWebAppPlatform: vi.fn(() => false),
-}));
+vi.mock('@/services/environment', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@/services/environment')>();
+  return {
+    ...actual,
+    isWebAppPlatform: vi.fn(() => false),
+    isTauriAppPlatform: vi.fn(() => false),
+  };
+});
 
 import { useThemeStore, loadDataTheme } from '@/store/themeStore';
 

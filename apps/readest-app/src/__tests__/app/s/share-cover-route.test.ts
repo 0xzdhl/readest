@@ -42,8 +42,7 @@ const callCover = (token: string) =>
     request: new Request(`http://localhost/api/share/${token}/cover`),
   });
 
-const SIGNED_URL =
-  'http://storage.local:9000/readest-files/u/h/cover.png?X-Amz-Signature=abc';
+const SIGNED_URL = 'http://storage.local:9000/readest-files/u/h/cover.png?X-Amz-Signature=abc';
 
 describe('GET /api/share/$token/cover', () => {
   beforeEach(() => {

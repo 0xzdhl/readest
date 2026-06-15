@@ -117,7 +117,6 @@ describe('ReadingRuler', () => {
       expect(overlays[0]?.getAttribute('style')).toContain('transition: height 0.6s');
       expect(overlays[1]?.getAttribute('style')).toContain('transition: height 0.6s');
       expect(saveViewSettings).toHaveBeenCalledWith(
-        {},
         'book-1',
         'readingRulerPosition',
         37.8,

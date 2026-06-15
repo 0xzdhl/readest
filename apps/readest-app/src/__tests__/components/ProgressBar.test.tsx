@@ -76,11 +76,11 @@ describe('ProgressBar — tap-to-toggle disabled reverts hidden footer', () => {
     // The persisted progressInfoMode should be reset to the default
     // ('all') so the footer reverts to its default visibility.
     const persistCalls = saveViewSettings.mock.calls.filter(
-      (args) => args[2] === 'progressInfoMode',
+      (args) => args[1] === 'progressInfoMode',
     );
     expect(persistCalls.length).toBeGreaterThanOrEqual(1);
     const lastCall = persistCalls[persistCalls.length - 1]!;
-    expect(lastCall[3]).toBe('all');
+    expect(lastCall[2]).toBe('all');
   });
 
   it("does not overwrite mode when tapToToggleFooter is on (user's cycled state stays)", () => {
@@ -95,9 +95,9 @@ describe('ProgressBar — tap-to-toggle disabled reverts hidden footer', () => {
     // initial save mirrors the existing mode; importantly we never see
     // a save with 'all' overriding the user's tap-cycled choice.
     const persistCalls = saveViewSettings.mock.calls.filter(
-      (args) => args[2] === 'progressInfoMode',
+      (args) => args[1] === 'progressInfoMode',
     );
-    expect(persistCalls.every((args) => args[3] === 'none')).toBe(true);
+    expect(persistCalls.every((args) => args[2] === 'none')).toBe(true);
   });
 
   it("leaves mode untouched when tapToToggleFooter is off but mode is already 'all'", () => {
@@ -110,10 +110,10 @@ describe('ProgressBar — tap-to-toggle disabled reverts hidden footer', () => {
     renderProgressBar();
 
     const persistCalls = saveViewSettings.mock.calls.filter(
-      (args) => args[2] === 'progressInfoMode',
+      (args) => args[1] === 'progressInfoMode',
     );
     // Either no save or a save matching the existing 'all' value — never
     // a transition through some intermediate state.
-    expect(persistCalls.every((args) => args[3] === 'all')).toBe(true);
+    expect(persistCalls.every((args) => args[2] === 'all')).toBe(true);
   });
 });

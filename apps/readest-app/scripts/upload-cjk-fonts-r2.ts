@@ -107,10 +107,7 @@ interface UploadItem {
 
 type Outcome = 'uploaded' | 'skipped' | 'failed';
 
-const headSize = async (
-  client: AwsClient,
-  url: string,
-): Promise<number | null> => {
+const headSize = async (client: AwsClient, url: string): Promise<number | null> => {
   const r = await client.fetch(url, { method: 'HEAD' });
   if (r.status === 404) return null;
   if (!r.ok) throw new Error(`HEAD ${r.status}`);

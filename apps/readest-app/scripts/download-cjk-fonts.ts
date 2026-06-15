@@ -14,8 +14,7 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const OUT_ROOT = path.resolve(__dirname, '../public/vendor/fonts');
 
 // Source CDN base. Overridable for forks that host the bundles elsewhere.
-const CDN_BASE =
-  process.env.CJK_FONT_CDN_BASE ?? 'https://storage.readest.com/public/font/dist';
+const CDN_BASE = process.env.CJK_FONT_CDN_BASE ?? 'https://storage.readest.com/public/font/dist';
 
 // Directory names as they appear on the CDN (and locally). The space in
 // "Source Han Serif CN" is URL-encoded only when building the request URL.
@@ -72,7 +71,8 @@ async function downloadFont(name: string): Promise<void> {
   console.log(`  ${name}: ${downloaded} woff2 + result.css`);
 
   for (const file of files) {
-    if (!existsSync(path.join(outDir, file))) throw new Error(`${name}/${file}: missing after write`);
+    if (!existsSync(path.join(outDir, file)))
+      throw new Error(`${name}/${file}: missing after write`);
   }
 }
 
