@@ -26,11 +26,15 @@ vi.mock('@/auth', () => ({
 }));
 
 const isTauriMock = vi.fn(() => false);
-vi.mock('@/services/environment', () => ({
-  isTauriAppPlatform: () => isTauriMock(),
-  isWebAppPlatform: () => !isTauriMock(),
-  getBaseUrl: () => 'https://example.com',
-}));
+vi.mock('@/services/environment', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@/services/environment')>();
+  return {
+    ...actual,
+    isTauriAppPlatform: () => isTauriMock(),
+    isWebAppPlatform: () => !isTauriMock(),
+    getBaseUrl: () => 'https://example.com',
+  };
+});
 
 // The login UI asks the server which OAuth providers are configured and
 // whether registration is open. Default the mock to "all configured, signup

@@ -87,9 +87,13 @@ vi.mock('@/hooks/useShortcuts', () => ({
   },
 }));
 
-vi.mock('@/services/environment', () => ({
-  isTauriAppPlatform: () => false,
-}));
+vi.mock('@/services/environment', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@/services/environment')>();
+  return {
+    ...actual,
+    isTauriAppPlatform: () => false,
+  };
+});
 
 vi.mock('@/utils/window', () => ({
   tauriHandleClose: vi.fn(),
