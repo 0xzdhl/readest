@@ -72,7 +72,7 @@ export const createAuth = (db: DbClient) => {
       sendResetPassword: async ({ user, url }) => {
         await sendEmail({
           to: user.email,
-          subject: 'Reset your Readest password',
+          subject: 'Reset your Readen password',
           html: `<p>Click <a href="${url}">here</a> to reset your password.</p>`,
         });
       },
@@ -82,7 +82,7 @@ export const createAuth = (db: DbClient) => {
       sendVerificationEmail: async ({ user, url }) => {
         await sendEmail({
           to: user.email,
-          subject: 'Verify your Readest email',
+          subject: 'Verify your Readen email',
           html: `<p>Click <a href="${url}">here</a> to verify your email.</p>`,
         });
       },
@@ -96,7 +96,7 @@ export const createAuth = (db: DbClient) => {
         sendMagicLink: async ({ email, url }) => {
           await sendEmail({
             to: email,
-            subject: 'Sign in to Readest',
+            subject: 'Sign in to Readen',
             html: `<p>Click <a href="${url}">here</a> to sign in.</p>`,
           });
         },
