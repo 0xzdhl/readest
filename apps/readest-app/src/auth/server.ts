@@ -1,9 +1,11 @@
 import { type BetterAuthOptions, betterAuth } from 'better-auth';
+import { APIError } from 'better-auth/api';
 import { drizzleAdapter } from 'better-auth/adapters/drizzle';
 import { bearer, magicLink } from 'better-auth/plugins';
 import type { DbClient } from '@/db/client';
 import { env } from '@/env';
 import { sendEmail } from './email';
+import { waitUntil } from 'cloudflare:workers';
 
 /**
  * Build a social-provider config block only when both id and secret are
@@ -94,22 +96,36 @@ export const createAuth = (db: DbClient) => {
       enabled: true,
       disableSignUp: !signupEnabled,
       requireEmailVerification: true,
-      sendResetPassword: async ({ user, url }) => {
-        await sendEmail({
-          to: user.email,
-          subject: 'Reset your Readen password',
-          html: `<p>Click <a href="${url}">here</a> to reset your password.</p>`,
+      onExistingUserSignUp: async ({ user }, req) => {
+        throw new APIError('FORBIDDEN', {
+          message: `You already registered with this email (${user.name}), please sign-in.`,
         });
+      },
+      sendResetPassword: async ({ user, url }) => {
+        waitUntil(
+          sendEmail({
+            to: user.email,
+            subject: 'Reset your Readen password',
+            html: `<p>Click <a href="${url}">here</a> to reset your password.</p>`,
+          }),
+        );
       },
     },
 
     emailVerification: {
+      sendOnSignUp: true,
       sendVerificationEmail: async ({ user, url }) => {
-        await sendEmail({
-          to: user.email,
-          subject: 'Verify your Readen email',
-          html: `<p>Click <a href="${url}">here</a> to verify your email.</p>`,
-        });
+        console.log(`sendVerificationEmail CALLED for ${user.email}`);
+        // Direct call to isolate issue from sendEmail
+        waitUntil(
+          sendEmail({
+            to: user.email,
+            subject: 'Verify your Readen email',
+            html: `<p>Click <a href="${url}">here</a> to verify your email.</p>`,
+          }),
+        );
+
+        console.log(`sendVerificationEmail COMPLETED for ${user.email}`);
       },
     },
 
@@ -119,11 +135,13 @@ export const createAuth = (db: DbClient) => {
       magicLink({
         disableSignUp: !signupEnabled,
         sendMagicLink: async ({ email, url }) => {
-          await sendEmail({
-            to: email,
-            subject: 'Sign in to Readen',
-            html: `<p>Click <a href="${url}">here</a> to sign in.</p>`,
-          });
+          waitUntil(
+            sendEmail({
+              to: email,
+              subject: 'Sign in to Readen',
+              html: `<p>Click <a href="${url}">here</a> to sign in.</p>`,
+            }),
+          );
         },
       }),
       bearer(),
