@@ -24,7 +24,7 @@
  *   pnpm upload-cjk-fonts -- --concurrency=24 --prefix=public/font/dist
  *
  * Required env (same names as the app, loaded via `dotenv -e .env`):
- *   R2_ACCOUNT_ID, R2_BUCKET_NAME, R2_ACCESS_KEY_ID, R2_SECRET_ACCESS_KEY
+ *   CLOUDFLARE_ACCOUNT_ID, R2_BUCKET_NAME, R2_ACCESS_KEY_ID, R2_SECRET_ACCESS_KEY
  * Optional:
  *   R2_REGION (default "auto"), CJK_FONT_PREFIX (default "public/font/dist")
  */
@@ -118,7 +118,7 @@ const headSize = async (client: AwsClient, url: string): Promise<number | null> 
 const putWithRetry = async (
   client: AwsClient,
   url: string,
-  body: Uint8Array,
+  body: Uint8Array<ArrayBuffer>,
   contentType: string,
   attempts = 3,
 ): Promise<void> => {
@@ -179,7 +179,7 @@ const pool = async <T>(
 const main = async (): Promise<void> => {
   const args = parseArgs(process.argv.slice(2));
 
-  const accountId = requireEnv('R2_ACCOUNT_ID');
+  const accountId = requireEnv('CLOUDFLARE_ACCOUNT_ID');
   const bucket = requireEnv('R2_BUCKET_NAME');
   const accessKeyId = requireEnv('R2_ACCESS_KEY_ID');
   const secretAccessKey = requireEnv('R2_SECRET_ACCESS_KEY');

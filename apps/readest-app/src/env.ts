@@ -32,6 +32,13 @@ export const env = createEnv({
     DISABLE_SIGNUP: z.enum(['true', 'false']).default('false'),
 
     RESEND_API_KEY: optionalString,
+    // Cloudflare account id — shared by Cloudflare Email Sending (REST API,
+    // below) and R2 object storage (endpoint host, see storage/config.ts).
+    CLOUDFLARE_ACCOUNT_ID: optionalString,
+    // Cloudflare Email Sending REST API token; needs the "Email Sending: Edit"
+    // permission. Required on the Cloudflare Worker deployment, where nodemailer
+    // SMTP cannot open the raw TCP socket it needs. See auth/email.ts for routing.
+    CLOUDFLARE_EMAIL_API_TOKEN: optionalString,
     SMTP_FROM_EMAIL: z.email(),
     SMTP_HOST: z.string().default('localhost'),
     SMTP_PORT: z.coerce.number().int().positive().default(1025),
@@ -63,7 +70,6 @@ export const env = createEnv({
     R2_ACCESS_KEY_ID: z.string().default(''),
     R2_SECRET_ACCESS_KEY: z.string().default(''),
     R2_BUCKET_NAME: z.string().default(''),
-    R2_ACCOUNT_ID: z.string().default(''),
     R2_REGION: z.string().default('auto'),
 
     S3_ENDPOINT: z.string().default(''),

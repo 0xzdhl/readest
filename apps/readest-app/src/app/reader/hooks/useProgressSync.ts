@@ -46,6 +46,18 @@ export const useProgressSync = (bookKey: string) => {
     await syncConfigs([], bookHash, metaHash, 'pull');
   };
 
+  // Push the latest local position straight to the cloud without depending on a
+  // live foliate view. Used on close, where the view is already torn down: the
+  // view is only needed to refresh the xpointer (best-effort, done in
+  // `syncConfig` while reading), never to push the config itself.
+  const pushCurrentProgress = async (bookKey: string) => {
+    const config = getConfig(bookKey);
+    const book = getBookData(bookKey)?.book;
+    if (config && book && config.progress && config.progress[0] > 0) {
+      await pushConfig(bookKey, config);
+    }
+  };
+
   const syncConfig = async () => {
     if (!configPulled.current) {
       pullConfig(bookKey);
@@ -76,13 +88,20 @@ export const useProgressSync = (bookKey: string) => {
 
   const handleSyncBookProgress = async (event: CustomEvent) => {
     const { bookKey: syncBookKey } = event.detail;
-    if (syncBookKey === bookKey) {
-      configPulled.current = false;
-      await pullConfig(bookKey);
-    }
+    if (syncBookKey !== bookKey) return;
+    // Drop any pending debounced auto-push first: once the book is closing the
+    // view is torn down, so that timer would either never fire or fire stale.
+    // Push the final position now so the last page reached before closing
+    // reaches the cloud — mirrors useKOSync's `pushProgress.flush()` on close.
+    // Then pull to reconcile any newer remote progress (this path also backs
+    // the manual "sync now" menu action, which benefits from pushing first).
+    handleAutoSync.cancel();
+    await pushCurrentProgress(bookKey);
+    configPulled.current = false;
+    await pullConfig(bookKey);
   };
 
-  // Push: ad-hoc push when the book is closed
+  // Push the final position to the cloud when the book is closed, then pull.
   useEffect(() => {
     eventDispatcher.on('sync-book-progress', handleSyncBookProgress);
     return () => {
