@@ -21,16 +21,23 @@ const isStringRecord = (value: unknown): value is Record<string, string> =>
   isRecord(value) && Object.values(value).every((item) => typeof item === 'string');
 
 const parseUploadResponse = (value: unknown) => {
-  if (!isRecord(value) || typeof value['uploadUrl'] !== 'string') {
+  if (!isRecord(value)) {
     throw new Error('Invalid upload response');
   }
   if (value['downloadUrl'] !== undefined && typeof value['downloadUrl'] !== 'string') {
     throw new Error('Invalid upload response');
   }
-  return {
-    uploadUrl: value['uploadUrl'],
-    downloadUrl: value['downloadUrl'],
-  };
+  const downloadUrl = value['downloadUrl'] as string | undefined;
+  // The server returns `skipUpload: true` when the content already exists in
+  // storage (content-addressed key), so the client must NOT re-transmit the
+  // binary. No `uploadUrl` is present in that case.
+  if (value['skipUpload'] === true) {
+    return { skipUpload: true as const, downloadUrl };
+  }
+  if (typeof value['uploadUrl'] !== 'string') {
+    throw new Error('Invalid upload response');
+  }
+  return { skipUpload: false as const, uploadUrl: value['uploadUrl'], downloadUrl };
 };
 
 const parseBatchDownloadResponse = (value: unknown) => {
@@ -87,13 +94,16 @@ export const uploadFile = async (
       }),
     });
 
-    const { uploadUrl, downloadUrl } = parseUploadResponse(await response.json());
-    if (isWebAppPlatform()) {
-      await webUpload(file, uploadUrl, onProgress);
-    } else {
-      await tauriUpload(uploadUrl, fileFullPath, 'PUT', onProgress);
+    const parsed = parseUploadResponse(await response.json());
+    // Skip the PUT entirely when the content is already stored server-side.
+    if (!parsed.skipUpload) {
+      if (isWebAppPlatform()) {
+        await webUpload(file, parsed.uploadUrl, onProgress);
+      } else {
+        await tauriUpload(parsed.uploadUrl, fileFullPath, 'PUT', onProgress);
+      }
     }
-    return temp ? downloadUrl : undefined;
+    return temp ? parsed.downloadUrl : undefined;
   } catch (error) {
     console.error('File upload failed:', error);
     if (error instanceof Error) {
@@ -131,11 +141,13 @@ export const uploadReplicaFile = async (
       }),
     });
 
-    const { uploadUrl } = parseUploadResponse(await response.json());
-    if (isWebAppPlatform()) {
-      await webUpload(file, uploadUrl, onProgress);
-    } else {
-      await tauriUpload(uploadUrl, fileFullPath, 'PUT', onProgress);
+    const parsed = parseUploadResponse(await response.json());
+    if (!parsed.skipUpload) {
+      if (isWebAppPlatform()) {
+        await webUpload(file, parsed.uploadUrl, onProgress);
+      } else {
+        await tauriUpload(parsed.uploadUrl, fileFullPath, 'PUT', onProgress);
+      }
     }
   } catch (error) {
     console.error('Replica file upload failed:', error);
