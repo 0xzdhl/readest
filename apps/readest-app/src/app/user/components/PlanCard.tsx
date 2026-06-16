@@ -1,3 +1,4 @@
+import clsx from 'clsx';
 import { IoCheckmark } from 'react-icons/io5';
 import { useTranslation } from '@/hooks/useTranslation';
 import { getLocale } from '@/utils/misc';
@@ -11,10 +12,7 @@ interface PlanCardProps {
   isUserPlan: boolean;
   comingSoon?: boolean;
   upgradable?: boolean;
-  index: number;
-  currentPlanIndex: number;
   onSubscribe: (priceId?: string, planType?: PlanType) => void;
-  onSelectPlan: (index: number) => void;
 }
 
 const PlanCard: React.FC<PlanCardProps> = ({
@@ -22,10 +20,7 @@ const PlanCard: React.FC<PlanCardProps> = ({
   isUserPlan,
   comingSoon,
   upgradable,
-  index,
-  currentPlanIndex,
   onSubscribe,
-  onSelectPlan,
 }) => {
   const _ = useTranslation();
   const { price, currency } = plan;
@@ -36,73 +31,78 @@ const PlanCard: React.FC<PlanCardProps> = ({
 
   return (
     <div
-      key={plan.plan}
-      className='w-full flex-shrink-0 px-4 py-6 sm:min-w-96 sm:max-w-96'
-      style={{ scrollSnapAlign: 'start' }}
+      className={clsx(
+        'eink-bordered bg-base-100 rounded-xl border p-5 transition-colors duration-150',
+        // The current plan is highlighted with the brand accent (this surface
+        // has a real primary action, so the accent is earned per DESIGN.md §2.2).
+        isUserPlan ? 'border-primary' : 'border-base-200',
+      )}
     >
-      <div
-        className={`rounded-xl border-2 p-4 ${plan.color} ${index === currentPlanIndex ? 'ring-2 ring-blue-500' : ''}`}
-      >
-        <div className='mb-6 text-center'>
-          <h4 className='mb-2 text-2xl font-bold'>{_(plan.name)}</h4>
-          <div className='text-3xl font-bold'>
-            {plan.plan !== 'purchase' ? (
-              <>
-                {formattedPrice}
-                <span className='text-lg font-normal'>/{_(plan.interval)}</span>
-              </>
-            ) : (
-              <span className='text-lg font-normal'>{_('On-Demand Purchase')}</span>
+      <div className='flex items-baseline justify-between gap-3'>
+        <div className='flex items-center gap-2'>
+          <h4 className='text-base-content text-lg font-semibold tracking-tight'>{_(plan.name)}</h4>
+          {isUserPlan && (
+            <span className='border-primary text-primary rounded-full border px-2 py-0.5 text-[0.7em] font-medium'>
+              {_('Current')}
+            </span>
+          )}
+        </div>
+        <div className='text-base-content shrink-0 text-end'>
+          {plan.plan !== 'purchase' ? (
+            <span className='text-xl font-bold'>
+              {formattedPrice}
+              <span className='text-base-content/60 text-[0.7em] font-normal'>
+                /{_(plan.interval)}
+              </span>
+            </span>
+          ) : (
+            <span className='text-base-content/70 text-[0.85em] font-normal'>
+              {_('On-Demand Purchase')}
+            </span>
+          )}
+        </div>
+      </div>
+
+      <div className='mt-5 space-y-3'>
+        {plan.features.map((feature, featureIndex) => (
+          <div key={featureIndex} className='flex flex-col'>
+            <div className='flex items-center gap-2'>
+              <IoCheckmark className='text-primary h-5 w-5 flex-shrink-0' aria-hidden='true' />
+              <span className='text-base-content'>{_(feature.label)}</span>
+            </div>
+            {feature.description && (
+              <div className='text-base-content/65 ms-7 text-[0.85em] leading-relaxed'>
+                {_(feature.description)}
+              </div>
             )}
           </div>
-        </div>
+        ))}
+      </div>
 
-        <div role='none' className='mb-6 space-y-3' onClick={() => onSelectPlan(index)}>
-          {plan.features.map((feature, featureIndex) => (
-            <div key={featureIndex} className='flex flex-col'>
-              <div className='flex items-center gap-2'>
-                <IoCheckmark className='h-5 w-5 flex-shrink-0 text-green-500' />
-                <span>{_(feature.label)}</span>
+      {plan.limits && Object.keys(plan.limits).length > 0 && (
+        <div className='bg-base-200 mt-5 rounded-lg p-4'>
+          <h5 className='text-base-content mb-3 font-semibold'>{_('Plan Limits')}</h5>
+          <div className='space-y-2'>
+            {Object.entries(plan.limits).map(([key, value]) => (
+              <div key={key} className='flex justify-between text-[0.9em]'>
+                <span className='text-base-content/70'>{_(key)}</span>
+                <span className='text-base-content font-medium'>{value}</span>
               </div>
-              {feature.description && (
-                <div className={`ms-7 text-sm sm:text-xs ${plan.hintColor}`}>
-                  {_(feature.description)}
-                </div>
-              )}
-            </div>
-          ))}
-        </div>
-
-        {plan.limits && Object.keys(plan.limits).length > 0 && (
-          <div
-            role='none'
-            className='mb-6 rounded-lg bg-white/50 p-4'
-            onClick={() => onSelectPlan(index)}
-          >
-            <h5 className='mb-3 font-semibold'>{_('Plan Limits')}</h5>
-            <div className='space-y-2'>
-              {Object.entries(plan.limits).map(([key, value]) => (
-                <div key={key} className='flex justify-between text-sm'>
-                  <span>{_(key)}:</span>
-                  <span className='font-medium'>{value}</span>
-                </div>
-              ))}
-            </div>
+            ))}
           </div>
-        )}
+        </div>
+      )}
 
-        {plan.plan === 'purchase' && (
+      <div className='mt-5'>
+        {plan.plan === 'purchase' ? (
           <PurchaseCallToActions plan={plan} onSubscribe={onSubscribe} />
-        )}
-
-        {plan.plan !== 'purchase' && (
+        ) : (
           <PlanActionButton
             plan={plan}
             comingSoon={comingSoon}
             upgradable={upgradable}
             isUserPlan={isUserPlan}
             onSubscribe={onSubscribe}
-            onSelectPlan={onSelectPlan}
           />
         )}
       </div>

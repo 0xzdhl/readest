@@ -13,36 +13,34 @@ interface UserInfoProps {
 const UserInfo: React.FC<UserInfoProps> = ({ avatarUrl, userFullName, userEmail, planDetails }) => {
   const _ = useTranslation();
   return (
-    <div className='flex flex-col items-center gap-x-6 gap-y-2 md:flex-row md:items-center'>
-      {/* Lock the avatar box to a square via classes so it can't go oval
-          across breakpoints. fillContainer drops UserAvatar's inline
-          width/height so the child stretches to this wrapper instead of
-          fighting it. */}
-      <div className='aspect-square h-16 w-16 flex-shrink-0 md:h-24 md:w-24'>
+    // Compact identity block for the account rail (sticky-left on desktop,
+    // stacked on top on mobile). Avatar + name + email + plan badge in a
+    // single row that reads cleanly at the rail's ~256px width.
+    <div className='flex min-w-0 items-center gap-3'>
+      {/* Lock the avatar box to a square via classes so it can't go oval.
+          fillContainer drops UserAvatar's inline width/height so the child
+          stretches to this wrapper instead of fighting it. */}
+      <div className='aspect-square h-12 w-12 flex-shrink-0'>
         {avatarUrl ? (
           <UserAvatar
             url={avatarUrl}
-            size={128}
+            size={96}
             DefaultIcon={PiUserCircle}
             className='h-full w-full'
-            borderClassName='border-base-100 border-4'
+            borderClassName='border-base-100 border-2'
             fillContainer
           />
         ) : (
-          <PiUserCircle className='h-full w-full' />
+          <PiUserCircle className='text-base-content/80 h-full w-full' />
         )}
       </div>
 
-      <div className='flex-grow text-center md:text-left'>
-        <h2 className='text-base-content text-xl font-bold md:text-2xl'>{userFullName}</h2>
-        <p className='text-base-content/60'>{userEmail}</p>
-        <div className='mt-3'>
-          <span
-            className={`inline-block rounded-full px-3 py-1 text-sm font-medium ${planDetails.color}`}
-          >
-            {_(planDetails.name)}
-          </span>
-        </div>
+      <div className='flex min-w-0 flex-grow flex-col gap-0.5'>
+        <h2 className='text-base-content truncate font-semibold tracking-tight'>{userFullName}</h2>
+        <p className='text-base-content/65 truncate text-[0.85em]'>{userEmail}</p>
+        <span className='border-base-300 text-base-content/70 mt-1 inline-flex w-fit items-center rounded-full border px-2 py-0.5 text-[0.75em] font-medium'>
+          {_(planDetails.name)}
+        </span>
       </div>
     </div>
   );

@@ -1,4 +1,3 @@
-import clsx from 'clsx';
 import { useTranslation } from '@/hooks/useTranslation';
 import { useSettingsStore } from '@/store/settingsStore';
 import {
@@ -7,6 +6,7 @@ import {
   type SyncCategory,
 } from '@/services/sync/syncCategories';
 import type { SystemSettings } from '@/domain/settings';
+import { BoxedList, SettingsSwitchRow } from '@/components/settings/primitives';
 
 interface CategoryCopy {
   title: string;
@@ -88,49 +88,42 @@ export function SyncCategoriesSection() {
   };
 
   return (
-    <div className='flex flex-col gap-6'>
-      <div className='flex flex-col gap-2'>
-        <h3 className='text-base-content text-lg font-semibold'>{_('Manage Sync')}</h3>
-        <p className='text-base-content/70 text-sm'>
+    <div className='flex flex-col gap-3'>
+      <div className='flex flex-col gap-1.5'>
+        <h3 className='text-base-content text-lg font-semibold tracking-tight'>
+          {_('Manage Sync')}
+        </h3>
+        <p className='text-base-content/70 text-[0.85em] leading-relaxed'>
           {_(
             'Choose what syncs across your devices. Disabling a category stops this device from sending or receiving rows of that kind. Anything already on the server is left alone, re-enabling resumes from where you stopped.',
           )}
         </p>
       </div>
-      <ul className='border-base-300 divide-base-300 divide-y rounded-lg border'>
+      <BoxedList>
         {SYNC_CATEGORIES.map((category) => {
           const c = copy[category];
           const on = enabled(category);
           const locked = isSyncCategoryLocked(category);
           return (
-            <li key={category} className='flex items-center justify-between gap-4 px-4 py-3'>
-              <div className='flex flex-col gap-0.5'>
-                <span className='text-base-content text-sm font-medium'>{c.title}</span>
-                <span className='text-base-content/60 text-xs'>
-                  {locked ? _('Required while Dictionaries sync is enabled') : c.description}
-                </span>
-              </div>
-              <input
-                type='checkbox'
-                role='switch'
-                aria-label={c.title}
-                aria-checked={on}
-                aria-disabled={locked}
-                checked={on}
-                onChange={(e) => {
-                  // Locked: visually stays ON (the dependency forces it),
-                  // but the user can't flip it off. We intercept the
-                  // change instead of using `disabled` so the toggle
-                  // keeps its blue "on" colour rather than greying out.
-                  if (locked) return;
-                  handleToggle(category, e.target.checked);
-                }}
-                className={clsx('toggle', locked && 'cursor-not-allowed')}
-              />
-            </li>
+            <SettingsSwitchRow
+              key={category}
+              label={c.title}
+              description={
+                locked ? _('Required while Dictionaries sync is enabled') : c.description
+              }
+              checked={on}
+              // Locked: visually stays ON (the dependency forces it), but the
+              // user can't flip it off. We intercept the change instead of
+              // disabling so the toggle keeps its "on" colour rather than
+              // greying out.
+              onChange={() => {
+                if (locked) return;
+                handleToggle(category, !on);
+              }}
+            />
           );
         })}
-      </ul>
+      </BoxedList>
     </div>
   );
 }

@@ -210,11 +210,25 @@ const SharedLinksSection: React.FC = () => {
     return 'badge badge-ghost';
   };
 
+  const SectionHeader: React.FC<{ trailing?: React.ReactNode }> = ({ trailing }) => (
+    <div className='flex flex-col gap-1.5'>
+      <div className='flex items-baseline justify-between gap-3'>
+        <h3 className='text-base-content text-lg font-semibold tracking-tight'>
+          {_('Shared books')}
+        </h3>
+        {trailing}
+      </div>
+      <p className='text-base-content/70 text-[0.85em] leading-relaxed'>
+        {_('Links you have created to share books with others.')}
+      </p>
+    </div>
+  );
+
   if (loading) {
     return (
-      <section>
-        <h3 className='text-base-content text-lg font-semibold'>{_('Shared books')}</h3>
-        <div className='mt-4 flex flex-col gap-2'>
+      <section className='flex flex-col gap-3'>
+        <SectionHeader />
+        <div className='flex flex-col gap-2'>
           {[0, 1, 2].map((k) => (
             <div key={k} className='bg-base-200 h-16 w-full animate-pulse rounded-lg' />
           ))}
@@ -225,27 +239,25 @@ const SharedLinksSection: React.FC = () => {
 
   if (error) {
     return (
-      <section>
-        <h3 className='text-base-content text-lg font-semibold'>{_('Shared books')}</h3>
-        <p className='text-error mt-2 text-sm'>{error}</p>
+      <section className='flex flex-col gap-3'>
+        <SectionHeader />
+        <p className='text-error text-[0.85em]'>{error}</p>
       </section>
     );
   }
 
   if (rows.length === 0) {
     return (
-      <section>
-        <div className='flex items-baseline justify-between'>
-          <h3 className='text-base-content text-lg font-semibold'>{_('Shared books')}</h3>
-        </div>
-        <div className='border-base-300 mt-4 flex flex-col items-center gap-3 rounded-2xl border border-dashed p-8 text-center'>
+      <section className='flex flex-col gap-3'>
+        <SectionHeader />
+        <div className='card eink-bordered border-base-200 bg-base-100 flex flex-col items-center gap-3 border border-dashed p-8 text-center'>
           <div className='bg-base-200 flex h-16 w-16 items-center justify-center rounded-2xl'>
             <IoLinkOutline className='text-base-content/60 h-8 w-8' aria-hidden='true' />
           </div>
           <p className='text-base-content text-base font-semibold'>
             {_("You haven't shared any books yet")}
           </p>
-          <p className='text-base-content/70 text-sm'>
+          <p className='text-base-content/70 text-[0.85em] leading-relaxed'>
             {_('Open a book and tap Share to send it to a friend.')}
           </p>
         </div>
@@ -258,14 +270,15 @@ const SharedLinksSection: React.FC = () => {
   ).length;
 
   return (
-    <section>
-      <div className='flex items-baseline justify-between'>
-        <h3 className='text-base-content text-lg font-semibold'>{_('Shared books')}</h3>
-        <span className='text-base-content/60 text-xs'>
-          {_('{{count}} active', { count: activeCount })}
-        </span>
-      </div>
-      <ul className='border-base-300 mt-4 divide-y divide-[var(--fallback-bc,oklch(var(--bc)/0.1))] overflow-hidden rounded-2xl border'>
+    <section className='flex flex-col gap-3'>
+      <SectionHeader
+        trailing={
+          <span className='text-base-content/60 text-[0.85em]'>
+            {_('{{count}} active', { count: activeCount })}
+          </span>
+        }
+      />
+      <ul className='card eink-bordered border-base-200 bg-base-100 divide-base-200 divide-y border'>
         {rows.map((row) => {
           const status = getStatus(row);
           const dimmed = status === 'expired' || status === 'revoked';
@@ -276,11 +289,11 @@ const SharedLinksSection: React.FC = () => {
             >
               <ShareCover token={row.token} alt={row.title} />
               <div className='min-w-0 flex-1'>
-                <div className='text-base-content truncate text-sm font-medium'>{row.title}</div>
-                <div className='text-base-content/60 truncate text-xs'>
-                  {row.author ?? '—'} · {row.format.toUpperCase()} · {formatBytes(row.size)}
+                <div className='text-base-content truncate font-medium'>{row.title}</div>
+                <div className='text-base-content/60 truncate text-[0.85em]'>
+                  {row.author ?? '-'} · {row.format.toUpperCase()} · {formatBytes(row.size)}
                 </div>
-                <div className='mt-1 flex items-center gap-2 text-xs'>
+                <div className='mt-1 flex items-center gap-2 text-[0.85em]'>
                   <span className={badgeClass(status)}>{renderExpiry(row)}</span>
                   {row.downloadCount > 0 && (
                     <span className='text-base-content/60'>
@@ -346,7 +359,7 @@ const SharedLinksSection: React.FC = () => {
           type='button'
           onClick={() => loadPage(cursor, true)}
           disabled={loadingMore}
-          className='btn btn-ghost btn-block mt-3'
+          className='btn btn-ghost btn-block'
         >
           {loadingMore ? _('Loading…') : _('Load more')}
         </button>
