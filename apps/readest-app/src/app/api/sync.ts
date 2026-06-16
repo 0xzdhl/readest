@@ -146,6 +146,28 @@ function buildExcludedSet<TTable extends PgTable>(
 }
 
 /**
+ * `set:` map for the books upsert. Same EXCLUDED-overwrite as
+ * `buildExcludedSet`, except `uploaded_at` is made non-destructive:
+ * `COALESCE(excluded.uploaded_at, books.uploaded_at)`.
+ *
+ * A device that has the book metadata but never uploaded the file pushes
+ * `uploaded_at = null`. When that row wins LWW on `updated_at`, a plain
+ * `SET uploaded_at = excluded.uploaded_at` would erase the server's real
+ * `uploaded_at`, breaking cross-device file download (data loss). The
+ * COALESCE keeps a real new upload (non-null incoming) while ignoring a
+ * null incoming value. Only `books.uploaded_at` needs this — configs/notes
+ * have no such column.
+ */
+export function buildBooksUpsertSet(): Record<string, SQL> {
+  const set = buildExcludedSet(books, ['userId', 'bookHash']);
+  const uploadedAtCol = books.uploadedAt.name;
+  set['uploadedAt'] = sql.raw(
+    `COALESCE(excluded.${uploadedAtCol}, "${getTableName(books)}".${uploadedAtCol})`,
+  );
+  return set;
+}
+
+/**
  * Last-write-wins gate for `.onConflictDoUpdate({ target, set, setWhere })`.
  * Translates the legacy supabase route's per-record comparison:
  *
@@ -292,7 +314,7 @@ export async function handlePost(request: Request, ctx: SyncHandlerContext): Pro
         .values(rows)
         .onConflictDoUpdate({
           target: [books.userId, books.bookHash],
-          set: buildExcludedSet(books, ['userId', 'bookHash']),
+          set: buildBooksUpsertSet(),
           setWhere: lwwSetWhere(books),
         });
       outBooks = await tx

@@ -166,6 +166,18 @@ export const useProgressSync = (bookKey: string) => {
       const filteredSyncedConfig = Object.fromEntries(
         Object.entries(syncedConfig).filter(([_, value]) => value !== null && value !== undefined),
       );
+      // The persisted reading position (location/progress) must never move
+      // backwards: adopt the remote one only when it is strictly ahead of the
+      // local position (per CFI ordering) or when the local config has no
+      // position yet. Otherwise a remote row with a newer updatedAt but an
+      // earlier CFI would clobber a further-ahead local position via pure LWW,
+      // then get re-pushed — silently regressing progress.
+      const remoteIsAhead =
+        !configCFI || (!!remoteCFILocation && CFI.compare(configCFI, remoteCFILocation) < 0);
+      if (!remoteIsAhead) {
+        delete filteredSyncedConfig.location;
+        delete filteredSyncedConfig.progress;
+      }
       if (syncedConfig.updatedAt >= config.updatedAt) {
         setConfig(bookKey, { ...config, ...filteredSyncedConfig });
       } else {

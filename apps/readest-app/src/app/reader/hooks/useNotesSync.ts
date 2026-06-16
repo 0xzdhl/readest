@@ -9,6 +9,28 @@ import { throttle } from '@/utils/throttle';
 import { getXPointerFromCFI, getCFIFromXPointer, XCFI } from '@/utils/xcfi';
 import { getIndexFromCfi } from '@/utils/cfi';
 
+/**
+ * Merge an incoming synced note into an existing local note.
+ *
+ * Content fields are taken from whichever side has the newer `updatedAt`, but
+ * the resulting `deletedAt` (the tombstone) is resolved independently as the
+ * most-recent deletion across both sides. This prevents a content edit from
+ * another device (newer `updatedAt`, `deletedAt=null`) from overwriting a local
+ * tombstone and resurrecting a deleted note. A note is only un-deleted when a
+ * genuinely newer deletion timestamp clears it — never as a side effect of a
+ * content edit.
+ */
+export const mergeBookNote = (existingNote: BookNote, note: BookNote): BookNote => {
+  // Pick the content winner by updatedAt (existing wins ties to stay local-stable).
+  const contentWinner = existingNote.updatedAt < note.updatedAt ? note : existingNote;
+  // Resolve the tombstone independently: keep the most-recent deletedAt.
+  const existingDeletedAt = existingNote.deletedAt ?? 0;
+  const incomingDeletedAt = note.deletedAt ?? 0;
+  const deletedAt =
+    existingDeletedAt >= incomingDeletedAt ? existingNote.deletedAt : note.deletedAt;
+  return { ...contentWinner, deletedAt };
+};
+
 export const useNotesSync = (bookKey: string) => {
   const { user } = useAuth();
   const { syncedNotes, syncNotes, lastSyncedAtNotes } = useSync(bookKey);
@@ -164,14 +186,7 @@ export const useNotesSync = (bookKey: string) => {
       const oldNotes = config?.booknotes ?? [];
       const existingNote = oldNotes.find((oldNote) => oldNote.id === note.id);
       if (existingNote) {
-        if (
-          existingNote.updatedAt < note.updatedAt ||
-          (existingNote.deletedAt ?? 0) < (note.deletedAt ?? 0)
-        ) {
-          return { ...existingNote, ...note };
-        } else {
-          return { ...note, ...existingNote };
-        }
+        return mergeBookNote(existingNote, note);
       }
       return note;
     };
@@ -185,7 +200,11 @@ export const useNotesSync = (bookKey: string) => {
       if (!newNotes.length) return;
       // Convert xpointer-only notes (from KOReader) to CFI
       const convertedNotes = await convertXPointersOnPull(newNotes);
-      convertedNotes.forEach((note) => {
+      const oldNotes = config.booknotes ?? [];
+      const processedNotes = convertedNotes.map(processNewNote);
+      processedNotes.forEach((note) => {
+        // Render based on the merged result so a note that stays deleted (its
+        // local tombstone survived a remote content edit) is never re-rendered.
         if (note.cfi) {
           const index = getIndexFromCfi(note.cfi);
           if (!note.deletedAt && index === view?.renderer.primaryIndex) {
@@ -193,10 +212,9 @@ export const useNotesSync = (bookKey: string) => {
           }
         }
       });
-      const oldNotes = config.booknotes ?? [];
       const mergedNotes = [
         ...oldNotes.filter((oldNote) => !convertedNotes.some((n) => n.id === oldNote.id)),
-        ...convertedNotes.map(processNewNote),
+        ...processedNotes,
       ];
       setConfig(bookKey, { booknotes: mergedNotes });
     };
