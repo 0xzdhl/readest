@@ -61,6 +61,31 @@ export const enabledSocialProviders = Object.keys(socialProviders) as SocialProv
 
 const { BETTER_AUTH_SECRET: secret, BETTER_AUTH_URL: baseURL } = env;
 
+/**
+ * Server-owned plan/quota fields projected onto the user row.
+ *
+ * Keys MUST match the Drizzle schema's JS property names (camelCase),
+ * not the underlying SQL column names. better-auth's drizzle adapter
+ * resolves these against `db._.fullSchema.user[<key>]`; a snake_case
+ * key throws `BetterAuthError: The field "<key>" does not exist in the
+ * "user" Drizzle schema` at sign-up time. See src/db/schema/auth.ts for
+ * the column definitions.
+ *
+ * Every field is marked `input: false`. better-auth's built-in
+ * `POST /api/auth/update-user` writes any additionalField lacking
+ * `input: false` straight to the user row via its `parseUserInput`
+ * path — without this guard any authenticated user could self-escalate
+ * their plan/quota. `input: false` only blocks that client-input path;
+ * the legitimate writers (Stripe webhook, IAP verification, storage
+ * accounting) all use direct drizzle `update().set()` and are
+ * unaffected.
+ */
+export const userAdditionalFields = {
+  plan: { type: 'string', defaultValue: 'free', input: false },
+  storageUsageBytes: { type: 'number', defaultValue: 0, input: false },
+  storagePurchasedBytes: { type: 'number', defaultValue: 0, input: false },
+} satisfies NonNullable<NonNullable<BetterAuthOptions['user']>['additionalFields']>;
+
 export const createAuth = (db: DbClient) => {
   return betterAuth({
     database: drizzleAdapter(db, { provider: 'pg' }),
@@ -105,17 +130,7 @@ export const createAuth = (db: DbClient) => {
     ],
 
     user: {
-      // Keys MUST match the Drizzle schema's JS property names (camelCase),
-      // not the underlying SQL column names. better-auth's drizzle adapter
-      // resolves these against `db._.fullSchema.user[<key>]`; a snake_case
-      // key throws `BetterAuthError: The field "<key>" does not exist in
-      // the "user" Drizzle schema` at sign-up time. See
-      // src/db/schema/auth.ts for the column definitions.
-      additionalFields: {
-        plan: { type: 'string', defaultValue: 'free' },
-        storageUsageBytes: { type: 'number', defaultValue: 0 },
-        storagePurchasedBytes: { type: 'number', defaultValue: 0 },
-      },
+      additionalFields: userAdditionalFields,
       // Enable account self-deletion so `auth.api.deleteUser({ headers })`
       // works from /api/user/delete. Without this the endpoint returns 404
       // ("Delete user is disabled. Enable it in the options"). Our schema's
