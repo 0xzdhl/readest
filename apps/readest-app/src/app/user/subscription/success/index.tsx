@@ -1,8 +1,11 @@
-﻿import { createFileRoute, useRouter } from '@tanstack/react-router';
+﻿import clsx from 'clsx';
+import { createFileRoute, useRouter } from '@tanstack/react-router';
 import { Suspense, useEffect, useState } from 'react';
+import { MdCheck, MdClose, MdScheduleSend } from 'react-icons/md';
 import type Stripe from 'stripe';
 import { z } from 'zod';
 import Spinner from '@/components/Spinner';
+import { BoxedList, SettingsRow } from '@/components/settings/primitives';
 import { useAuth } from '@/context/AuthContext';
 import { useTranslation } from '@/hooks/useTranslation';
 import type { VerifiedIAP } from '@/libs/payment/iap/types';
@@ -330,186 +333,192 @@ const SubscriptionSuccessContent = () => {
     return null;
   }
 
+  const formattedAmount =
+    sessionStatus.amount && sessionStatus.currency
+      ? new Intl.NumberFormat('en-US', {
+          style: 'currency',
+          currency: sessionStatus.currency.toUpperCase(),
+        }).format(sessionStatus.amount / 100)
+      : undefined;
+
   // Loading state
   if (sessionStatus.status === 'loading') {
     return (
-      <div className='flex min-h-screen items-center justify-center bg-gray-50'>
-        <div className='text-center'>
-          <div className='mx-auto mb-4 h-12 w-12 animate-spin rounded-full border-b-2 border-blue-600'></div>
-          <h2 className='mb-2 text-xl font-semibold text-gray-800'>
-            {_('Processing your payment...')}
-          </h2>
-          <p className='text-gray-600'>{_('Please wait while we confirm your subscription.')}</p>
-        </div>
-      </div>
+      <StatusPage>
+        <StatusIcon>
+          <div
+            className='border-base-content/25 border-t-base-content h-7 w-7 animate-spin rounded-full border-2 motion-reduce:animate-none'
+            aria-hidden='true'
+          />
+        </StatusIcon>
+        <StatusHeading>{_('Processing your payment...')}</StatusHeading>
+        <StatusSupport>{_('Please wait while we confirm your subscription.')}</StatusSupport>
+      </StatusPage>
     );
   }
 
   // Processing state (payment still being processed)
   if (sessionStatus.status === 'processing') {
     return (
-      <div className='flex min-h-screen items-center justify-center bg-gray-50'>
-        <div className='max-w-md text-center'>
-          <div className='mx-auto mb-4 flex h-12 w-12 animate-pulse items-center justify-center rounded-full bg-yellow-400'>
-            <svg
-              className='h-6 w-6 text-white'
-              fill='none'
-              stroke='currentColor'
-              viewBox='0 0 24 24'
-            >
-              <path
-                strokeLinecap='round'
-                strokeLinejoin='round'
-                strokeWidth={2}
-                d='M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z'
-              />
-            </svg>
-          </div>
-          <h2 className='mb-2 text-xl font-semibold text-gray-800'>{_('Payment Processing')}</h2>
-          <p className='mb-4 text-gray-600'>
-            {_('Your payment is being processed. This usually takes a few moments.')}
-          </p>
-        </div>
-      </div>
+      <StatusPage>
+        <StatusIcon>
+          <MdScheduleSend className='text-base-content h-7 w-7' aria-hidden='true' />
+        </StatusIcon>
+        <StatusHeading>{_('Payment Processing')}</StatusHeading>
+        <StatusSupport>
+          {_('Your payment is being processed. This usually takes a few moments.')}
+        </StatusSupport>
+      </StatusPage>
     );
   }
 
   // Failed state
   if (sessionStatus.status === 'failed') {
     return (
-      <div className='flex min-h-screen items-center justify-center bg-gray-50'>
-        <div className='mx-auto max-w-2xl px-4 text-center'>
-          <div className='mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-red-100'>
-            <svg
-              className='h-6 w-6 text-red-600'
-              fill='none'
-              stroke='currentColor'
-              viewBox='0 0 24 24'
-            >
-              <path
-                strokeLinecap='round'
-                strokeLinejoin='round'
-                strokeWidth={2}
-                d='M6 18L18 6M6 6l12 12'
-              />
-            </svg>
-          </div>
-          <h2 className='mb-2 text-xl font-semibold text-gray-800'>{_('Payment Failed')}</h2>
-          <p className='mb-6 text-gray-600'>
-            {_(
-              "We couldn't process your subscription. Please try again or contact support if the issue persists.",
-            )}
-          </p>
-          <div className='space-y-3'>
-            <button
-              onClick={handleRetry}
-              className='w-full rounded-lg bg-blue-600 px-4 py-2 font-medium text-white transition-colors duration-200 hover:bg-blue-700'
-            >
-              {_('Try Again')}
-            </button>
-            <button
-              onClick={handleGoToProfile}
-              className='w-full rounded-lg bg-gray-200 px-4 py-2 font-medium text-gray-800 transition-colors duration-200 hover:bg-gray-300'
-            >
-              {_('Back to Profile')}
-            </button>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  // Success state
-  return (
-    <div className='flex min-h-screen items-center justify-center bg-gray-50'>
-      <div className='mx-auto max-w-2xl px-4 text-center'>
-        {/* Success Icon */}
-        <div className='mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-full bg-green-100'>
-          <svg
-            className='h-8 w-8 text-green-600'
-            fill='none'
-            stroke='currentColor'
-            viewBox='0 0 24 24'
-          >
-            <path strokeLinecap='round' strokeLinejoin='round' strokeWidth={2} d='M5 13l4 4L19 7' />
-          </svg>
-        </div>
-
-        {/* Success Message */}
-        <h1 className='mb-4 text-3xl font-bold text-gray-800'>
-          🎉{' '}
-          {sessionStatus.planType === 'purchase'
-            ? _('Purchase Successful!')
-            : _('Subscription Successful!')}
-        </h1>
-
-        <div className='mb-6 rounded-lg bg-white p-6 shadow-md'>
-          <p className='mb-4 text-lg text-gray-700'>
-            {sessionStatus.planType === 'purchase'
-              ? _('Thank you for your purchase! Your payment has been processed successfully.')
-              : _('Thank you for your subscription! Your payment has been processed successfully.')}
-          </p>
-
-          {/* Subscription Details */}
-          <div className='space-y-2 text-left text-sm text-gray-600'>
-            {sessionStatus.customerEmail && (
-              <div className='flex justify-between'>
-                <span className='font-medium'>{_('Email:')}</span>
-                <span>{sessionStatus.customerEmail}</span>
-              </div>
-            )}
-            {sessionStatus.planName && (
-              <div className='flex justify-between'>
-                <span className='font-medium'>{_('Plan:')}</span>
-                <span>{_(sessionStatus.planName)}</span>
-              </div>
-            )}
-            {sessionStatus.amount && sessionStatus.currency && (
-              <div className='flex justify-between'>
-                <span className='font-medium'>{_('Amount:')}</span>
-                <span>
-                  {new Intl.NumberFormat('en-US', {
-                    style: 'currency',
-                    currency: sessionStatus.currency.toUpperCase(),
-                  }).format(sessionStatus.amount / 100)}
-                </span>
-              </div>
-            )}
-            {sessionStatus.orderId && (
-              <div className='flex justify-between'>
-                <span className='font-medium'>{_('Order ID:')}</span>
-                <span className='font-mono text-xs'>{sessionStatus.orderId}</span>
-              </div>
-            )}
-          </div>
-        </div>
-
-        {/* Action Buttons */}
-        <div className='space-y-3 sm:flex sm:justify-center sm:space-x-4 sm:space-y-0'>
-          <button
-            onClick={handleGoToLibrary}
-            className='w-full rounded-lg bg-blue-600 px-6 py-3 font-medium text-white transition-colors duration-200 hover:bg-blue-700 sm:w-auto'
-          >
-            {_('Go to Library')}
+      <StatusPage>
+        <StatusIcon tone='error'>
+          <MdClose className='text-error h-7 w-7' aria-hidden='true' />
+        </StatusIcon>
+        <StatusHeading>{_('Payment Failed')}</StatusHeading>
+        <StatusSupport>
+          {_(
+            "We couldn't process your subscription. Please try again or contact support if the issue persists.",
+          )}
+        </StatusSupport>
+        <div className='mt-8 flex w-full flex-col gap-3 sm:flex-row sm:justify-center'>
+          <button onClick={handleRetry} className='btn btn-primary w-full sm:w-auto sm:min-w-44'>
+            {_('Try Again')}
           </button>
           <button
             onClick={handleGoToProfile}
-            className='w-full rounded-lg bg-gray-200 px-6 py-3 font-medium text-gray-800 transition-colors duration-200 hover:bg-gray-300 sm:w-auto'
+            className='btn btn-ghost w-full sm:w-auto sm:min-w-44'
           >
             {_('Back to Profile')}
           </button>
         </div>
+        <SupportNote _={_} />
+      </StatusPage>
+    );
+  }
 
-        {/* Additional Info */}
-        <div className='mt-8 text-xs text-gray-500'>
-          <p>
-            {_('Need help? Contact our support team at {{email}}', { email: getSupportEmail() })}
-          </p>
-        </div>
+  // Success state
+  const successHeading =
+    sessionStatus.planType === 'purchase' ? _('Purchase Successful') : _('Subscription Successful');
+  const successSupport =
+    sessionStatus.planType === 'purchase'
+      ? _('Thank you for your purchase. Your payment has been processed successfully.')
+      : _('Thank you for your subscription. Your payment has been processed successfully.');
+
+  const hasDetails = Boolean(
+    sessionStatus.customerEmail ||
+    sessionStatus.planName ||
+    formattedAmount ||
+    sessionStatus.orderId,
+  );
+
+  return (
+    <StatusPage>
+      <StatusIcon tone='success'>
+        <MdCheck className='text-success h-8 w-8' aria-hidden='true' />
+      </StatusIcon>
+      <StatusHeading>{successHeading}</StatusHeading>
+      <StatusSupport>{successSupport}</StatusSupport>
+
+      {hasDetails && (
+        <BoxedList title={_('Order Details')} className='mt-8 text-start'>
+          {sessionStatus.customerEmail && (
+            <SettingsRow label={_('Email')}>
+              <span className='text-base-content/80 min-w-0 truncate text-end'>
+                {sessionStatus.customerEmail}
+              </span>
+            </SettingsRow>
+          )}
+          {sessionStatus.planName && (
+            <SettingsRow label={_('Plan')}>
+              <span className='text-base-content/80 min-w-0 truncate text-end'>
+                {_(sessionStatus.planName)}
+              </span>
+            </SettingsRow>
+          )}
+          {formattedAmount && (
+            <SettingsRow label={_('Amount')}>
+              <span className='text-base-content/80 text-end'>{formattedAmount}</span>
+            </SettingsRow>
+          )}
+          {sessionStatus.orderId && (
+            <SettingsRow label={_('Order ID')}>
+              <span className='text-base-content/70 min-w-0 truncate text-end font-mono text-[0.85em]'>
+                {sessionStatus.orderId}
+              </span>
+            </SettingsRow>
+          )}
+        </BoxedList>
+      )}
+
+      <div className='mt-8 flex w-full flex-col gap-3 sm:flex-row sm:justify-center'>
+        <button
+          onClick={handleGoToLibrary}
+          className='btn btn-primary w-full sm:w-auto sm:min-w-44'
+        >
+          {_('Go to Library')}
+        </button>
+        <button onClick={handleGoToProfile} className='btn btn-ghost w-full sm:w-auto sm:min-w-44'>
+          {_('Back to Profile')}
+        </button>
       </div>
-    </div>
+
+      <SupportNote _={_} />
+    </StatusPage>
   );
 };
+
+/**
+ * Spacious, full-height status scaffold. The content sits in an airy,
+ * vertically-centered column (not a floating card-island) over the window
+ * backdrop, with generous rhythm between the status icon, headline, details,
+ * and actions.
+ */
+const StatusPage: React.FC<{ children: React.ReactNode }> = ({ children }) => (
+  <div className='bg-base-200 flex min-h-[100dvh] items-center justify-center'>
+    <div className='flex w-full max-w-xl flex-col items-center px-6 py-16 text-center'>
+      {children}
+    </div>
+  </div>
+);
+
+/**
+ * Status icon chip. Reads in e-ink via a 1px contrast border (eink-bordered)
+ * plus a tonal two-step fill that still parses with no color.
+ */
+const StatusIcon: React.FC<{
+  children: React.ReactNode;
+  tone?: 'neutral' | 'success' | 'error';
+}> = ({ children, tone = 'neutral' }) => (
+  <div
+    className={clsx(
+      'eink-bordered mb-6 flex h-16 w-16 items-center justify-center rounded-full border',
+      tone === 'success' && 'border-success/30 bg-success/10',
+      tone === 'error' && 'border-error/30 bg-error/10',
+      tone === 'neutral' && 'border-base-300 bg-base-100',
+    )}
+  >
+    {children}
+  </div>
+);
+
+const StatusHeading: React.FC<{ children: React.ReactNode }> = ({ children }) => (
+  <h1 className='text-base-content text-2xl font-bold tracking-tight sm:text-3xl'>{children}</h1>
+);
+
+const StatusSupport: React.FC<{ children: React.ReactNode }> = ({ children }) => (
+  <p className='text-base-content/70 mt-3 max-w-md leading-relaxed'>{children}</p>
+);
+
+const SupportNote: React.FC<{ _: ReturnType<typeof useTranslation> }> = ({ _ }) => (
+  <p className='text-base-content/60 mt-10 text-[0.85em]'>
+    {_('Need help? Contact our support team at {{email}}', { email: getSupportEmail() })}
+  </p>
+);
 
 function SubscriptionSuccessPage() {
   return (
