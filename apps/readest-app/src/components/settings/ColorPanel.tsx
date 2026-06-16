@@ -1,4 +1,3 @@
-import clsx from 'clsx';
 import type React from 'react';
 import { useEffect, useState } from 'react';
 import { Effect } from 'effect';
@@ -32,7 +31,7 @@ import ReadingRulerSettings from './color/ReadingRulerSettings';
 import ThemeColorSelector from './color/ThemeColorSelector';
 import ThemeEditor from './color/ThemeEditor';
 import ThemeModeSelector from './color/ThemeModeSelector';
-import { SettingLabel } from './primitives';
+import { BoxedList, SettingsSwitchRow } from './primitives';
 import type { SettingsPanelPanelProp } from './SettingsDialog';
 
 const ColorPanel: React.FC<SettingsPanelPanelProp> = ({ bookKey, onRegisterReset }) => {
@@ -311,7 +310,7 @@ const ColorPanel: React.FC<SettingsPanelPanelProp> = ({ bookKey, onRegisterReset
   };
 
   return (
-    <div className='my-4 w-full space-y-6'>
+    <div className='w-full space-y-6 pb-6'>
       {showCustomThemeEditor ? (
         <ThemeEditor
           customTheme={editTheme}
@@ -321,42 +320,26 @@ const ColorPanel: React.FC<SettingsPanelPanelProp> = ({ bookKey, onRegisterReset
         />
       ) : (
         <>
-          <ThemeModeSelector
-            themeMode={themeMode}
-            onThemeModeChange={setThemeMode}
-            data-setting-id='settings.color.themeMode'
-          />
-
-          <label
-            data-setting-id='settings.color.invertImageInDarkMode'
-            className={clsx(
-              'flex items-center justify-between px-4',
-              !isDarkMode && 'cursor-not-allowed opacity-50',
-              isDarkMode && 'cursor-pointer',
-            )}
-          >
-            <SettingLabel>{_('Invert Image In Dark Mode')}</SettingLabel>
-            <input
-              type='checkbox'
-              className='toggle'
+          <BoxedList>
+            <ThemeModeSelector
+              themeMode={themeMode}
+              onThemeModeChange={setThemeMode}
+              data-setting-id='settings.color.themeMode'
+            />
+            <SettingsSwitchRow
+              label={_('Invert Image In Dark Mode')}
               checked={invertImgColorInDark}
               disabled={!isDarkMode}
               onChange={() => setInvertImgColorInDark(!invertImgColorInDark)}
+              data-setting-id='settings.color.invertImageInDarkMode'
             />
-          </label>
-
-          <label
-            data-setting-id='settings.color.overrideBookColor'
-            className='flex cursor-pointer items-center justify-between px-4'
-          >
-            <SettingLabel>{_('Override Book Color')}</SettingLabel>
-            <input
-              type='checkbox'
-              className='toggle'
+            <SettingsSwitchRow
+              label={_('Override Book Color')}
               checked={overrideColor}
               onChange={() => setOverrideColor(!overrideColor)}
+              data-setting-id='settings.color.overrideBookColor'
             />
-          </label>
+          </BoxedList>
 
           <ThemeColorSelector
             themes={themes.concat(customThemes)}

@@ -3,14 +3,19 @@ import { MdOutlineLightMode, MdOutlineDarkMode } from 'react-icons/md';
 import { TbSunMoon } from 'react-icons/tb';
 import { useTranslation } from '@/hooks/useTranslation';
 import { useAtmosphereStore } from '@/store/atmosphereStore';
-import { SettingLabel } from '../primitives';
+import { SettingsRow } from '../primitives';
 
 interface ThemeModeSelectorProps {
   themeMode: 'auto' | 'light' | 'dark';
   onThemeModeChange: (mode: 'auto' | 'light' | 'dark') => void;
+  'data-setting-id'?: string;
 }
 
-const ThemeModeSelector: React.FC<ThemeModeSelectorProps> = ({ themeMode, onThemeModeChange }) => {
+const ThemeModeSelector: React.FC<ThemeModeSelectorProps> = ({
+  themeMode,
+  onThemeModeChange,
+  'data-setting-id': dataSettingId,
+}) => {
   const _ = useTranslation();
   const { spinDirection, shaking, toggle, toggleWithShake, deactivate } = useAtmosphereStore();
 
@@ -38,8 +43,7 @@ const ThemeModeSelector: React.FC<ThemeModeSelectorProps> = ({ themeMode, onThem
   };
 
   return (
-    <div className='flex items-center justify-between px-4'>
-      <SettingLabel>{_('Theme Mode')}</SettingLabel>
+    <SettingsRow label={_('Theme Mode')} data-setting-id={dataSettingId}>
       <div className='flex gap-4'>
         <button
           title={_('Auto Mode')}
@@ -75,7 +79,7 @@ const ThemeModeSelector: React.FC<ThemeModeSelectorProps> = ({ themeMode, onThem
           </span>
         </button>
       </div>
-    </div>
+    </SettingsRow>
   );
 };
 

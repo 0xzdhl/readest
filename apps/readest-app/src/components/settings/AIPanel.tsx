@@ -316,7 +316,7 @@ const AIPanel: React.FC = () => {
   const disabledSection = !enabled ? 'opacity-50 pointer-events-none select-none' : '';
 
   return (
-    <div className='my-4 w-full space-y-6'>
+    <div className='w-full space-y-6 pb-6'>
       <BoxedList title={_('AI Assistant')}>
         <SettingsSwitchRow
           label={_('Enable AI Assistant')}
@@ -350,10 +350,10 @@ const AIPanel: React.FC = () => {
 
       {provider === 'ollama' && (
         <BoxedList title={_('Ollama Configuration')} className={disabledSection}>
-          {/* Stacked-content rows: label-on-top, input below — used when the
+          {/* Stacked-content rows: label-on-top, input below - used when the
               control is too wide to fit alongside the label (full-width text
               inputs, long selects). Custom <div> rather than <SettingsRow>
-              since SettingsRow assumes label-left/control-right. */}
+              since SettingsRow assumes label-start/control-end. */}
           <div className='flex flex-col gap-2 py-3 pe-4'>
             <div className='flex w-full items-center justify-between'>
               <SettingLabel>{_('Server URL')}</SettingLabel>
@@ -369,7 +369,7 @@ const AIPanel: React.FC = () => {
             </div>
             <input
               type='text'
-              className='input input-bordered input-sm w-full'
+              className='input input-bordered settings-content eink-bordered w-full'
               value={ollamaUrl}
               onChange={(e) => setOllamaUrl(e.target.value)}
               placeholder='http://127.0.0.1:11434'
@@ -381,7 +381,7 @@ const AIPanel: React.FC = () => {
               <div className='flex flex-col gap-2 py-3 pe-4'>
                 <SettingLabel>{_('AI Model')}</SettingLabel>
                 <select
-                  className='select select-bordered select-sm bg-base-100 text-base-content w-full'
+                  className='select select-bordered settings-content eink-bordered bg-base-100 text-base-content w-full'
                   value={ollamaModel}
                   onChange={(e) => setOllamaModel(e.target.value)}
                   disabled={!enabled}
@@ -396,7 +396,7 @@ const AIPanel: React.FC = () => {
               <div className='flex flex-col gap-2 py-3 pe-4'>
                 <SettingLabel>{_('Embedding Model')}</SettingLabel>
                 <select
-                  className='select select-bordered select-sm bg-base-100 text-base-content w-full'
+                  className='select select-bordered settings-content eink-bordered bg-base-100 text-base-content w-full'
                   value={ollamaEmbeddingModel}
                   onChange={(e) => setOllamaEmbeddingModel(e.target.value)}
                   disabled={!enabled}
@@ -410,9 +410,7 @@ const AIPanel: React.FC = () => {
               </div>
             </>
           ) : !fetchingModels ? (
-            <SettingsRow
-              label={<span className='text-warning text-sm'>{_('No models detected')}</span>}
-            />
+            <SettingsRow label={<span className='text-warning'>{_('No models detected')}</span>} />
           ) : null}
         </BoxedList>
       )}
@@ -425,38 +423,38 @@ const AIPanel: React.FC = () => {
           )}
           className={disabledSection}
         >
-          <div className='flex flex-col gap-2 px-4 py-3'>
+          <div className='flex flex-col gap-2 py-3 pe-4'>
             <div className='flex w-full items-center justify-between'>
               <SettingLabel>{_('API Key')}</SettingLabel>
               <a
                 href='https://vercel.com/docs/ai/ai-gateway'
                 target='_blank'
                 rel='noopener noreferrer'
-                className={clsx('link text-xs', !enabled && 'pointer-events-none')}
+                className={clsx('link text-[0.85em]', !enabled && 'pointer-events-none')}
               >
                 {_('Get Key')}
               </a>
             </div>
             <input
               type='password'
-              className='input input-bordered input-sm w-full'
+              className='input input-bordered settings-content eink-bordered w-full'
               value={gatewayKey}
               onChange={(e) => setGatewayKey(e.target.value)}
               placeholder='vck_...'
               disabled={!enabled}
             />
           </div>
-          <div className='flex flex-col gap-2 px-4 py-3'>
+          <div className='flex flex-col gap-2 py-3 pe-4'>
             <SettingLabel>{_('Model')}</SettingLabel>
             <select
-              className='select select-bordered select-sm bg-base-100 text-base-content w-full'
+              className='select select-bordered settings-content eink-bordered bg-base-100 text-base-content w-full'
               value={selectedModel}
               onChange={(e) => handleModelChange(e.target.value)}
               disabled={!enabled}
             >
               {modelOptions.map((opt) => (
                 <option key={opt.id} value={opt.id}>
-                  {opt.label} — ${opt.inputCost}/M in, ${opt.outputCost}/M out
+                  {opt.label} - ${opt.inputCost}/M in, ${opt.outputCost}/M out
                 </option>
               ))}
               <option value={CUSTOM_MODEL_VALUE}>{_('Custom Model...')}</option>
@@ -464,12 +462,12 @@ const AIPanel: React.FC = () => {
           </div>
 
           {selectedModel === CUSTOM_MODEL_VALUE && (
-            <div className='flex flex-col gap-2 px-4 py-3'>
+            <div className='flex flex-col gap-2 py-3 pe-4'>
               <SettingLabel>{_('Custom Model ID')}</SettingLabel>
               <div className='flex w-full gap-2'>
                 <input
                   type='text'
-                  className='input input-bordered input-sm flex-1'
+                  className='input input-bordered settings-content eink-bordered flex-1'
                   value={customModelInput}
                   onChange={(e) => {
                     setCustomModelInput(e.target.value);
@@ -492,14 +490,14 @@ const AIPanel: React.FC = () => {
                 </button>
               </div>
               {customModelStatus === 'valid' && customModelPricing && (
-                <span className='text-success flex items-center gap-1 text-sm'>
+                <span className='text-success flex items-center gap-1 text-[0.85em]'>
                   <PiCheckCircle />
-                  {_('Model available')} — ${customModelPricing.input}/M in, $
+                  {_('Model available')} - ${customModelPricing.input}/M in, $
                   {customModelPricing.output}/M out
                 </span>
               )}
               {customModelStatus === 'invalid' && (
-                <span className='text-error text-sm'>{customModelError}</span>
+                <span className='text-error text-[0.85em]'>{customModelError}</span>
               )}
             </div>
           )}
@@ -517,13 +515,13 @@ const AIPanel: React.FC = () => {
           </button>
           <div>
             {connectionStatus === 'success' && (
-              <span className='text-success flex items-center gap-1 text-sm'>
+              <span className='text-success flex items-center gap-1 text-[0.85em]'>
                 <PiCheckCircle className='size-4 shrink-0' />
                 {_('Connected')}
               </span>
             )}
             {connectionStatus === 'error' && (
-              <span className='text-error flex items-center gap-1 text-sm'>
+              <span className='text-error flex items-center gap-1 text-[0.85em]'>
                 <PiWarningCircle className='size-4 shrink-0' />
                 {errorMessage || _('Failed')}
               </span>

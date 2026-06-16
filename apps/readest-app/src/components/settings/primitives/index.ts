@@ -12,6 +12,7 @@ export { default as SettingsSwitchRow } from './SettingsSwitchRow';
 export { default as SettingsSelect } from './SettingsSelect';
 export { default as SettingsInput } from './SettingsInput';
 export { default as NavigationRow } from './NavigationRow';
+export { default as PanelHeader } from './PanelHeader';
 export { default as SectionTitle } from './SectionTitle';
 export { default as SettingLabel } from './SettingLabel';
 export { default as Tips } from './Tips';

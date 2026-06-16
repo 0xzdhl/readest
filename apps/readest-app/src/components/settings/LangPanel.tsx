@@ -1,4 +1,3 @@
-import clsx from 'clsx';
 import type React from 'react';
 import { useEffect, useState } from 'react';
 import { useAuth } from '@/context/AuthContext';
@@ -245,14 +244,14 @@ const LangPanel: React.FC<SettingsPanelPanelProp> = ({ bookKey, onRegisterReset 
 
   if (showCustomDictionaries) {
     return (
-      <div className='my-4 w-full'>
+      <div className='w-full pb-6'>
         <CustomDictionaries onBack={() => setShowCustomDictionaries(false)} />
       </div>
     );
   }
 
   return (
-    <div className={clsx('my-4 w-full space-y-6')}>
+    <div className='w-full space-y-6 pb-6'>
       <BoxedList title={_('Language')} data-setting-id='settings.language.interfaceLanguage'>
         <SettingsRow label={_('Language')}>
           <SettingsSelect
