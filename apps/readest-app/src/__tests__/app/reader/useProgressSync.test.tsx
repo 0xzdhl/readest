@@ -13,6 +13,11 @@ const h = vi.hoisted(() => {
   };
   return {
     config,
+    // Drive the pulled remote configs and CFI ordering per-test. `syncedConfigs`
+    // feeds the `useSync` mock; `cfiCompare` backs the `CFI.compare` mock so a
+    // test can express "remote position is earlier than local".
+    syncedConfigs: null as unknown[] | null,
+    cfiCompare: ((_a: string, _b: string) => 0) as (a: string, b: string) => number,
     syncConfigs: vi.fn(
       async (
         _configs?: unknown[],
@@ -32,12 +37,14 @@ const h = vi.hoisted(() => {
 });
 
 vi.mock('@/hooks/useSync', () => ({
-  useSync: () => ({ syncedConfigs: null, syncConfigs: h.syncConfigs }),
+  useSync: () => ({ syncedConfigs: h.syncedConfigs, syncConfigs: h.syncConfigs }),
 }));
 vi.mock('@/context/AuthContext', () => ({ useAuth: () => ({ user: { id: 'u1' } }) }));
 vi.mock('@/hooks/useTranslation', () => ({ useTranslation: () => (s: string) => s }));
 vi.mock('@/utils/serializer', () => ({ serializeConfig: (c: unknown) => JSON.stringify(c) }));
-vi.mock('@/libs/document', () => ({ CFI: { compare: () => 0 } }));
+vi.mock('@/libs/document', () => ({
+  CFI: { compare: (a: string, b: string) => h.cfiCompare(a, b) },
+}));
 vi.mock('@/utils/xcfi', () => ({
   getCFIFromXPointer: vi.fn(async () => ''),
   getXPointerFromCFI: vi.fn(async () => ({ xpointer: '' })),
@@ -69,6 +76,8 @@ describe('useProgressSync — closing a book', () => {
   afterEach(() => {
     cleanup();
     vi.clearAllMocks();
+    h.syncedConfigs = null;
+    h.cfiCompare = () => 0;
   });
 
   it('pushes the final reading position to the cloud when the book is closed', async () => {
@@ -101,5 +110,88 @@ describe('useProgressSync — closing a book', () => {
     // Push must precede pull so the local position is uploaded before
     // reconciling against the server.
     expect(ops.indexOf('push')).toBeLessThan(ops.indexOf('pull'));
+  });
+});
+
+describe('useProgressSync — applying remote progress', () => {
+  afterEach(() => {
+    cleanup();
+    vi.clearAllMocks();
+    h.syncedConfigs = null;
+    h.cfiCompare = () => 0;
+  });
+
+  it('does not move the persisted location/progress backwards on a newer-but-earlier remote', async () => {
+    // Local is further ahead in the book (CFI .../4/4) than the remote
+    // (.../4/2), but the remote row was written more recently (updatedAt 2000 >
+    // 1000). A pure updatedAt LWW would clobber the local position.
+    h.config.location = 'epubcfi(/6/4!/4/4)';
+    h.config.progress = [50, 100];
+    h.config.updatedAt = 1000;
+
+    const remote = {
+      bookHash: 'hash1',
+      metaHash: 'meta1',
+      location: 'epubcfi(/6/4!/4/2)',
+      progress: [5, 100] as [number, number],
+      updatedAt: 2000,
+      // A non-positional field that LWW SHOULD adopt from the newer remote.
+      lastModified: 2000,
+    };
+    h.syncedConfigs = [remote];
+
+    // CFI.compare(a, b): negative when a is before b. Local (/4/4) is AFTER
+    // remote (/4/2), so local-vs-remote is positive (local NOT behind remote).
+    h.cfiCompare = (a: string) => (a === 'epubcfi(/6/4!/4/4)' ? 1 : -1);
+
+    await act(async () => {
+      renderHook(() => useProgressSync('hash1-0'));
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+
+    expect(h.setConfig).toHaveBeenCalled();
+    const written = h.setConfig.mock.calls.at(-1)![1] as {
+      location: string;
+      progress: [number, number];
+    };
+    // The further-ahead local position must be preserved, not regressed to the
+    // earlier remote one.
+    expect(written.location).toBe('epubcfi(/6/4!/4/4)');
+    expect(written.progress).toEqual([50, 100]);
+  });
+
+  it('adopts the remote location/progress when the remote is ahead', async () => {
+    // Remote is further ahead (/4/8) than local (/4/4); it should win the
+    // position regardless of updatedAt ordering.
+    h.config.location = 'epubcfi(/6/4!/4/4)';
+    h.config.progress = [50, 100];
+    h.config.updatedAt = 1000;
+
+    const remote = {
+      bookHash: 'hash1',
+      metaHash: 'meta1',
+      location: 'epubcfi(/6/4!/4/8)',
+      progress: [80, 100] as [number, number],
+      updatedAt: 2000,
+    };
+    h.syncedConfigs = [remote];
+
+    // Local (/4/4) is BEFORE remote (/4/8): local-vs-remote negative.
+    h.cfiCompare = (a: string) => (a === 'epubcfi(/6/4!/4/4)' ? -1 : 1);
+
+    await act(async () => {
+      renderHook(() => useProgressSync('hash1-0'));
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+
+    expect(h.setConfig).toHaveBeenCalled();
+    const written = h.setConfig.mock.calls.at(-1)![1] as {
+      location: string;
+      progress: [number, number];
+    };
+    expect(written.location).toBe('epubcfi(/6/4!/4/8)');
+    expect(written.progress).toEqual([80, 100]);
   });
 });

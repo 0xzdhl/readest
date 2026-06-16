@@ -110,8 +110,14 @@ export function useSync(bookKey?: string) {
       setSyncResult({ ...syncResult, [type]: result[type] });
       const records = result[type];
       if (since > 1000 && !records?.length) return 0;
-      // For since <= 1000, we set lastSyncedAt to now if no records returned
-      const maxTime = records?.length ? computeMaxTimestamp(records) : Date.now();
+      // On an empty result we must NOT advance to the local client clock:
+      // a fast/skewed client would push lastSyncedAt into the future and cause
+      // later incremental pulls to skip other devices' records whose true
+      // timestamps fall below that future value. Stay conservative by keeping
+      // the queried `since` (for an initial pull this means re-running the full
+      // pull until real records arrive — correctness over efficiency on empty
+      // accounts). Only real record timestamps ever move the cursor forward.
+      const maxTime = records?.length ? computeMaxTimestamp(records) : since;
       setLastSyncedAt(maxTime);
 
       // due to closures in React hooks the settings might be stale
