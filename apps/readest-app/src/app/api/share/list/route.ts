@@ -1,6 +1,7 @@
 import { createFileRoute } from '@tanstack/react-router';
 import { and, desc, eq, lt, or, type SQL } from 'drizzle-orm';
 import { bookShares } from '@/db/schema';
+import { decryptShareToken } from '@/libs/shareServer';
 import { rlsMiddleware } from '@/middlewares/rls';
 import { getShareBaseUrl } from '@/services/environment';
 
@@ -64,13 +65,15 @@ export const Route = createFileRoute('/api/share/list')({
         const last = page.length > 0 ? page[page.length - 1] : null;
         const nextCursor = hasMore && last ? `${toIso(last.createdAt)}|${last.id}` : null;
 
-        return Response.json({
-          shares: page.map((row) => ({
+        const shares = await Promise.all(
+          page.map(async (row) => ({
             id: row.id,
-            // Plaintext token surfaced to the OWNER only. RLS ensures other
-            // users cannot read this row; this endpoint is auth-gated and
-            // scoped by user_id so a token never leaves the sharer's session.
-            token: row.token,
+            // Plaintext token surfaced to the OWNER only. The row stores it
+            // encrypted at rest (AAD = token_hash); we decrypt it here. RLS
+            // ensures other users cannot read this row; this endpoint is
+            // auth-gated and scoped by user_id so a token never leaves the
+            // sharer's session. Legacy plaintext rows pass through unchanged.
+            token: await decryptShareToken(row.tokenEnc, row.tokenHash),
             bookHash: row.bookHash,
             title: row.bookTitle,
             author: row.bookAuthor,
@@ -82,6 +85,10 @@ export const Route = createFileRoute('/api/share/list')({
             downloadCount: row.downloadCount,
             createdAt: toIso(row.createdAt),
           })),
+        );
+
+        return Response.json({
+          shares,
           nextCursor,
           shareUrlBase: getShareBaseUrl(),
         });
