@@ -9,7 +9,7 @@ import { PIN_LENGTH, generatePinSalt, hashPin, isValidPin, verifyPin } from '@/l
 import { useAppLockStore } from '@/store/appLockStore';
 import { useSettingsStore } from '@/store/settingsStore';
 
-const fieldLabelClass = 'text-base-content/70 text-xs font-medium tracking-wide';
+const fieldLabelClass = 'text-base-content/70 text-[0.85em] font-medium tracking-wide';
 
 /**
  * Always mounted (at Providers level). Reads `dialogMode` from
@@ -185,15 +185,41 @@ export default function AppLockDialog() {
         ? _('Enter your current PIN, then choose a new 4-digit PIN.')
         : _('Enter your current PIN to disable the app lock.');
 
+  // Multi-step surfaces label the step sequence so the progression reads calm
+  // and obvious. `set` is a single step; `change` is two; `disable` is one.
+  const steps =
+    mode === 'change'
+      ? [_('Verify'), _('Choose new PIN')]
+      : mode === 'disable'
+        ? [_('Verify')]
+        : [];
+
+  const confirmLabel =
+    mode === 'set' ? _('Set PIN') : mode === 'change' ? _('Change PIN') : _('Disable');
+
   return (
     <ModalPortal>
-      <dialog className='modal modal-open'>
-        <div className='modal-box bg-base-100 max-w-md rounded-2xl p-6 shadow-2xl'>
-          <h3 className='mb-1.5 text-lg font-semibold tracking-tight'>{title}</h3>
-          <p className='text-base-content/70 mb-6 text-sm leading-relaxed'>{description}</p>
-          <form onSubmit={handleSubmit} className='flex flex-col gap-5'>
+      <dialog className='modal modal-open' aria-label={title}>
+        <div
+          className={clsx(
+            'modal-box eink-bordered bg-base-100 border-base-200 flex w-full max-w-md flex-col',
+            'border p-0',
+          )}
+        >
+          {/* Header bar: mode-appropriate title + one-line description (§2.9, §6). */}
+          <div className='border-base-200 flex flex-col gap-1.5 border-b px-6 pb-4 pt-6'>
+            <h3 className='text-lg font-semibold tracking-tight'>{title}</h3>
+            <p className='text-base-content/70 text-[0.85em] leading-relaxed'>{description}</p>
+          </div>
+
+          <form onSubmit={handleSubmit} className='flex flex-col gap-6 px-6 py-6'>
             {(mode === 'change' || mode === 'disable') && (
-              <div className='flex flex-col items-center gap-2'>
+              <div className='flex flex-col items-center gap-3'>
+                {steps.length > 1 && (
+                  <span className='text-base-content/55 text-[0.78em] font-medium uppercase tracking-wider'>
+                    {_('Step {{current}} of {{total}}', { current: 1, total: steps.length })}
+                  </span>
+                )}
                 <span className={fieldLabelClass}>{_('Current PIN')}</span>
                 <PinInput
                   ref={currentPinRef}
@@ -208,7 +234,12 @@ export default function AppLockDialog() {
             )}
             {(mode === 'set' || mode === 'change') && (
               <>
-                <div className='flex flex-col items-center gap-2'>
+                <div className='flex flex-col items-center gap-3'>
+                  {steps.length > 1 && (
+                    <span className='text-base-content/55 text-[0.78em] font-medium uppercase tracking-wider'>
+                      {_('Step {{current}} of {{total}}', { current: 2, total: steps.length })}
+                    </span>
+                  )}
                   <span className={fieldLabelClass}>{_('New PIN')}</span>
                   <PinInput
                     ref={newPinRef}
@@ -220,7 +251,7 @@ export default function AppLockDialog() {
                     disabled={busy}
                   />
                 </div>
-                <div className='flex flex-col items-center gap-2'>
+                <div className='flex flex-col items-center gap-3'>
                   <span className={fieldLabelClass}>{_('Confirm new PIN')}</span>
                   <PinInput
                     ref={confirmPinRef}
@@ -233,9 +264,12 @@ export default function AppLockDialog() {
                 </div>
               </>
             )}
+            {/* Error slot: token error color, reserves its line so the layout
+                stays still as messages appear/clear (reduced-motion-safe: opacity
+                only, no transform). */}
             <p
               className={clsx(
-                'text-error h-4 text-center text-xs transition-opacity',
+                'text-error min-h-[1rem] text-center text-[0.85em] leading-4 transition-opacity duration-150',
                 error ? 'opacity-100' : 'opacity-0',
               )}
               aria-live='polite'
@@ -248,13 +282,10 @@ export default function AppLockDialog() {
                 onClick={closeDialog}
                 disabled={busy}
                 className={clsx(
-                  'eink-bordered',
-                  'h-10 rounded-lg px-4 text-sm font-medium',
-                  'text-base-content hover:bg-base-200',
-                  'transition-colors duration-150',
+                  'btn btn-ghost',
+                  'h-10 min-h-10 rounded-lg px-4 text-sm font-medium',
                   'focus-visible:ring-base-content/15 focus-visible:outline-none focus-visible:ring-2',
                   'disabled:cursor-not-allowed disabled:opacity-60',
-                  'disabled:hover:bg-transparent',
                 )}
               >
                 {_('Cancel')}
@@ -269,7 +300,13 @@ export default function AppLockDialog() {
                   busy && 'opacity-60',
                 )}
               >
-                {mode === 'set' ? _('Set PIN') : mode === 'change' ? _('Change PIN') : _('Disable')}
+                {busy && (
+                  <span
+                    aria-hidden='true'
+                    className='loading loading-spinner loading-xs me-2 align-[-0.125em]'
+                  />
+                )}
+                {confirmLabel}
               </button>
             </div>
           </form>
