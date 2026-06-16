@@ -4,8 +4,6 @@ import { IoAlertCircleOutline, IoBookOutline, IoOpenOutline } from 'react-icons/
 import { getWebsiteUrl, getBaseUrl } from '@/services/environment';
 import { useTranslation } from '@/hooks/useTranslation';
 import { buildAnnotationAppUrl } from '@/utils/deeplink';
-import { BrandHeader } from '@/components/landing/BrandHeader';
-import { Card } from '@/components/landing/Card';
 import { PageFooter } from '@/components/landing/PageFooter';
 
 type Platform = 'android-chromium' | 'android-other' | 'ios' | 'desktop' | 'unknown';
@@ -102,26 +100,29 @@ export function OpenAnnotationPage() {
 
   if (!bookHash || !noteId) {
     return (
-      <main className='bg-base-200 flex min-h-dvh flex-col items-center justify-center p-4 sm:p-8'>
-        <Card>
-          <div className='flex flex-col items-center text-center'>
-            <div className='bg-base-200 mb-4 flex h-16 w-16 items-center justify-center rounded-2xl'>
-              <IoAlertCircleOutline className='text-base-content/60 h-8 w-8' />
-            </div>
-            <h1 className='text-base-content text-2xl font-semibold'>
-              {_("This link can't be opened")}
-            </h1>
-            <p className='text-base-content/70 mt-2 text-sm'>
-              {_(
-                'The annotation link is missing required information. The original link may have been truncated.',
-              )}
-            </p>
-            <a href={getWebsiteUrl()} className='btn btn-ghost btn-block mt-6' rel='noopener'>
-              {_('Go to Readest')}
-            </a>
-          </div>
-        </Card>
-        <PageFooter tagline={_('Open-source ebook reader for everyone, on every device.')} />
+      <main className='bg-base-200 flex min-h-[100dvh] flex-col items-center justify-center p-6 sm:p-10'>
+        <div className='flex w-full max-w-sm flex-col items-center text-center'>
+          <span
+            className='eink-bordered border-base-300 bg-base-100 mb-6 flex h-16 w-16 items-center justify-center rounded-full border'
+            aria-hidden='true'
+          >
+            <IoAlertCircleOutline className='text-base-content h-8 w-8' />
+          </span>
+          <h1 className='text-base-content text-2xl font-semibold tracking-tight'>
+            {_("This link can't be opened")}
+          </h1>
+          <p className='text-base-content/70 mt-3 text-sm leading-relaxed'>
+            {_(
+              'The annotation link is missing required information. The original link may have been truncated.',
+            )}
+          </p>
+          <a href={getWebsiteUrl()} className='btn btn-primary btn-block mt-8' rel='noopener'>
+            {_('Go to Readest')}
+          </a>
+        </div>
+        <div className='mt-10'>
+          <PageFooter tagline={_('Open-source ebook reader for everyone, on every device.')} />
+        </div>
       </main>
     );
   }
@@ -130,32 +131,37 @@ export function OpenAnnotationPage() {
   const webReaderHref = buildWebReaderUrl(bookHash, cfi);
 
   return (
-    <main className='bg-base-200 flex min-h-dvh flex-col items-center justify-center p-4 sm:p-8'>
-      <Card>
-        <BrandHeader
-          title={_('Open in Readest')}
-          subtitle={
-            showManualOpen
-              ? _("If Readest didn't open automatically, choose an option below:")
-              : _('Continue reading where you left off.')
-          }
+    <main className='bg-base-200 flex min-h-[100dvh] flex-col items-center justify-center p-6 sm:p-10'>
+      <div className='flex w-full max-w-sm flex-col items-center text-center'>
+        <img
+          src='/icon.png'
           alt={_('Readest logo')}
+          width={64}
+          height={64}
+          loading='lazy'
+          className='mb-6 rounded-2xl'
         />
+        <h1 className='text-base-content text-2xl font-semibold tracking-tight'>
+          {_('Open in Readest')}
+        </h1>
+        <p className='text-base-content/70 mt-3 text-sm leading-relaxed'>
+          {showManualOpen
+            ? _("If Readest didn't open automatically, choose an option below:")
+            : _('Continue reading where you left off.')}
+        </p>
 
         {!showManualOpen && (
-          <div
-            className='mt-6 flex flex-col items-center gap-3 py-4'
-            role='status'
-            aria-live='polite'
-          >
+          <div className='mt-8 flex flex-col items-center gap-3' role='status' aria-live='polite'>
             <span className='loading loading-dots loading-md text-primary' aria-hidden='true' />
             <span className='text-base-content/70 text-sm'>{_('Opening Readest...')}</span>
           </div>
         )}
 
         <div
-          className={`mt-6 flex flex-col gap-2 transition-opacity motion-safe:duration-200 ${
-            showManualOpen ? 'opacity-100' : 'pointer-events-none h-0 overflow-hidden opacity-0'
+          className={`flex w-full flex-col gap-2 transition-opacity motion-safe:duration-200 ${
+            showManualOpen
+              ? 'mt-8 opacity-100'
+              : 'pointer-events-none h-0 overflow-hidden opacity-0'
           }`}
         >
           <a href={appUrl} className='btn btn-primary btn-block' rel='noopener'>
@@ -178,8 +184,10 @@ export function OpenAnnotationPage() {
             </a>
           </p>
         </div>
-      </Card>
-      <PageFooter tagline={_('Open-source ebook reader for everyone, on every device.')} />
+      </div>
+      <div className='mt-10'>
+        <PageFooter tagline={_('Open-source ebook reader for everyone, on every device.')} />
+      </div>
     </main>
   );
 }

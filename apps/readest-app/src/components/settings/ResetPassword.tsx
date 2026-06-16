@@ -1,8 +1,10 @@
 import { useRouter } from '@tanstack/react-router';
+import clsx from 'clsx';
 import { useState } from 'react';
+import { IoArrowBack } from 'react-icons/io5';
+import AuthLayout from '@/components/AuthLayout';
 import { authClient } from '@/auth';
 import { useTranslation } from '@/hooks/useTranslation';
-import { useThemeStore } from '@/store/themeStore';
 
 /**
  * Password-reset completion page. The user lands here via a link from the
@@ -14,7 +16,6 @@ import { useThemeStore } from '@/store/themeStore';
 export function ResetPassword() {
   const _ = useTranslation();
   const router = useRouter();
-  const { isDarkMode } = useThemeStore();
 
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
@@ -56,71 +57,65 @@ export function ResetPassword() {
   };
 
   return (
-    <div className='flex min-h-screen items-center justify-center'>
-      <div className='w-full max-w-md p-8'>
-        <form onSubmit={handleSubmit} className='space-y-6'>
-          <div className='space-y-1'>
-            <label
-              htmlFor='new-password'
-              className={`block text-sm font-normal ${
-                isDarkMode ? 'text-gray-300' : 'text-gray-400'
-              }`}
-            >
-              {_('New Password')}
-            </label>
-            <input
-              id='new-password'
-              type='password'
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              placeholder={_('Your new password')}
-              required
-              minLength={8}
-              disabled={loading}
-              className={`w-full rounded-md border bg-transparent px-4 py-2.5 focus:outline-none focus:ring-1 disabled:cursor-not-allowed disabled:opacity-50 ${
-                isDarkMode ? 'text-gray-300' : 'text-gray-400'
-              }`}
-            />
-          </div>
-
-          {errorMsg && <div className='text-sm text-red-500'>{errorMsg}</div>}
-          {message && <div className='text-base-content text-sm'>{message}</div>}
-
-          <button
-            type='submit'
-            disabled={loading || !password}
-            className='w-full rounded-md bg-green-400 px-4 py-2.5 font-medium text-white transition-colors hover:bg-green-500 disabled:cursor-not-allowed'
-          >
-            {loading ? _('Updating password ...') : _('Update password')}
-          </button>
-
-          <button
-            type='button'
-            onClick={() => router.history.back()}
-            className={`mt-2 flex w-full items-center justify-center gap-2 rounded-md border px-4 py-2.5 text-sm transition-colors ${
-              isDarkMode
-                ? 'border-gray-600 text-gray-300 hover:bg-gray-800'
-                : 'border-gray-300 text-gray-700 hover:bg-gray-100'
-            }`}
-          >
-            <svg
-              xmlns='http://www.w3.org/2000/svg'
-              className='h-4 w-4'
-              fill='none'
-              viewBox='0 0 24 24'
-              stroke='currentColor'
-            >
-              <path
-                strokeLinecap='round'
-                strokeLinejoin='round'
-                strokeWidth={2}
-                d='M15 19l-7-7 7-7'
-              />
-            </svg>
-            {_('Back')}
-          </button>
-        </form>
+    <AuthLayout>
+      <div className='mb-6 flex flex-col gap-1.5'>
+        <h1 className='text-base-content text-lg font-semibold tracking-tight'>
+          {_('New Password')}
+        </h1>
+        <p className='text-base-content/70 text-sm leading-relaxed'>
+          {_('Choose a new password to finish resetting your account.')}
+        </p>
       </div>
-    </div>
+      <form onSubmit={handleSubmit} className='flex w-full flex-col gap-4'>
+        <div className='flex flex-col gap-2'>
+          <label htmlFor='new-password' className='text-base-content/75 text-xs'>
+            {_('New Password')}
+          </label>
+          <input
+            id='new-password'
+            type='password'
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            placeholder={_('Your new password')}
+            required
+            minLength={8}
+            disabled={loading}
+            autoComplete='new-password'
+            className={clsx(
+              'eink-bordered bg-base-100 border-base-300 text-base-content rounded-lg border p-2.5 text-sm',
+              'focus:ring-primary/40 focus:outline-none focus:ring-2',
+              'disabled:cursor-not-allowed disabled:opacity-50',
+            )}
+          />
+        </div>
+
+        {errorMsg && <div className='text-error text-sm'>{errorMsg}</div>}
+        {message && <div className='text-base-content text-sm'>{message}</div>}
+
+        <button
+          type='submit'
+          disabled={loading || !password}
+          className={clsx(
+            'btn btn-primary h-auto min-h-0 rounded-lg p-2.5 text-sm font-medium',
+            'disabled:cursor-not-allowed disabled:opacity-50',
+          )}
+        >
+          {loading ? _('Updating password ...') : _('Update password')}
+        </button>
+
+        <button
+          type='button'
+          onClick={() => router.history.back()}
+          className={clsx(
+            'eink-bordered flex items-center justify-center gap-2 rounded-lg border p-2.5 text-sm',
+            'bg-base-100 border-base-300 hover:bg-base-200 transition-colors duration-150',
+            'focus-visible:ring-base-content/15 focus-visible:outline-none focus-visible:ring-2',
+          )}
+        >
+          <IoArrowBack className='h-4 w-4' aria-hidden='true' />
+          {_('Back')}
+        </button>
+      </form>
+    </AuthLayout>
   );
 }

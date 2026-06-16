@@ -24,6 +24,7 @@ import { getBaseUrl, isTauriAppPlatform } from '@/services/environment';
 import { useSettingsStore } from '@/store/settingsStore';
 import { useThemeStore } from '@/store/themeStore';
 import { useTrafficLightStore } from '@/store/trafficLightStore';
+import AuthLayout from './AuthLayout';
 import WindowButtons from './WindowButtons';
 
 type OAuthProvider = 'google' | 'apple' | 'github' | 'discord';
@@ -49,12 +50,13 @@ const ProviderLogin: React.FC<ProviderLoginProp> = ({ provider, handleSignIn, Ic
     <button
       onClick={() => handleSignIn(provider)}
       className={clsx(
-        'mb-2 flex w-64 items-center justify-center rounded border p-2.5',
-        'bg-base-100 border-base-300 hover:bg-base-200 shadow-sm transition',
+        'eink-bordered flex w-full items-center justify-center gap-2 rounded-lg border p-2.5',
+        'bg-base-100 border-base-300 hover:bg-base-200 transition-colors duration-150',
+        'focus-visible:ring-base-content/15 focus-visible:outline-none focus-visible:ring-2',
       )}
     >
       <Icon />
-      <span className='text-base-content/75 px-2 text-sm'>{label}</span>
+      <span className='text-base-content/75 text-sm'>{label}</span>
     </button>
   );
 };
@@ -393,7 +395,7 @@ export function AuthComponent() {
   // Unconfigured providers 404 server-side (fail-closed), so showing their
   // buttons would just dead-end the user.
   const renderProviderButtons = (signInWith: (p: OAuthProvider) => void) => (
-    <>
+    <div className='flex w-full flex-col gap-2'>
       {enabledProviders.includes('google') && (
         <ProviderLogin
           provider='google'
@@ -430,13 +432,13 @@ export function AuthComponent() {
           label={_('Sign in with {{provider}}', { provider: 'Discord' })}
         />
       )}
-    </>
+    </div>
   );
 
   const hasProviders = enabledProviders.length > 0;
 
   const renderEmailForm = () => (
-    <form onSubmit={handleEmailSubmit} className='flex w-64 flex-col gap-2'>
+    <form onSubmit={handleEmailSubmit} className='flex w-full flex-col gap-2'>
       <label htmlFor='auth-email' className='text-base-content/75 text-xs'>
         {_('Email address')}
       </label>
@@ -450,8 +452,9 @@ export function AuthComponent() {
         onChange={(e) => setEmail(e.target.value)}
         disabled={loading}
         className={clsx(
-          'bg-base-100 border-base-300 text-base-content rounded border p-2 text-sm',
-          'focus:outline-none focus:ring-1',
+          'eink-bordered bg-base-100 border-base-300 text-base-content rounded-lg border p-2.5 text-sm',
+          'focus:ring-primary/40 focus:outline-none focus:ring-2',
+          'disabled:cursor-not-allowed disabled:opacity-50',
         )}
       />
       {mode !== 'forgot' && (
@@ -470,8 +473,9 @@ export function AuthComponent() {
             disabled={loading}
             minLength={8}
             className={clsx(
-              'bg-base-100 border-base-300 text-base-content rounded border p-2 text-sm',
-              'focus:outline-none focus:ring-1',
+              'eink-bordered bg-base-100 border-base-300 text-base-content rounded-lg border p-2.5 text-sm',
+              'focus:ring-primary/40 focus:outline-none focus:ring-2',
+              'disabled:cursor-not-allowed disabled:opacity-50',
             )}
           />
         </>
@@ -480,8 +484,8 @@ export function AuthComponent() {
         type='submit'
         disabled={loading || !email || (mode !== 'forgot' && !password)}
         className={clsx(
-          'mt-2 rounded p-2 text-sm font-medium transition',
-          'bg-primary text-primary-content hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50',
+          'btn btn-primary mt-2 h-auto min-h-0 rounded-lg p-2.5 text-sm font-medium',
+          'disabled:cursor-not-allowed disabled:opacity-50',
         )}
       >
         {loading
@@ -496,7 +500,7 @@ export function AuthComponent() {
               ? _('Sign up')
               : _('Send reset password instructions')}
       </button>
-      {errorMsg && <div className='text-xs text-red-500'>{errorMsg}</div>}
+      {errorMsg && <div className='text-error text-xs'>{errorMsg}</div>}
       {statusMsg && <div className='text-base-content/75 text-xs'>{statusMsg}</div>}
 
       <div className='mt-2 flex flex-col gap-1 text-xs'>
@@ -564,8 +568,9 @@ export function AuthComponent() {
             onClick={handleMagicLink}
             disabled={loading || !email}
             className={clsx(
-              'rounded border p-2 text-sm transition',
+              'eink-bordered rounded-lg border p-2.5 text-sm transition-colors duration-150',
               'bg-base-100 border-base-300 hover:bg-base-200 disabled:cursor-not-allowed disabled:opacity-50',
+              'focus-visible:ring-base-content/15 focus-visible:outline-none focus-visible:ring-2',
             )}
             aria-label={_('Send Magic Link')}
           >
@@ -578,82 +583,75 @@ export function AuthComponent() {
 
   // Tauri (desktop + mobile) shell: window-chrome + native OAuth handoff.
   // Web shell: just a centred card.
+  // The form body is identical across shells; only the OAuth handler and the
+  // window chrome differ between Tauri and web.
+  const renderAuthBody = (signInWith: (p: OAuthProvider) => void) => (
+    <>
+      {renderProviderButtons(signInWith)}
+      {hasProviders && <hr aria-hidden='true' className='border-base-300 my-5 w-full border-t' />}
+      {renderEmailForm()}
+    </>
+  );
+
   return isTauriAppPlatform() ? (
     <div
       className={clsx(
-        'bg-base-100 full-height inset-0 flex select-none flex-col items-center overflow-hidden',
+        'bg-base-100 full-height inset-0 select-none overflow-hidden',
         platformInfo.hasRoundedWindow && isRoundedWindow && 'window-border rounded-window',
       )}
     >
       <div
-        className={clsx('flex h-full w-full flex-col items-center overflow-y-auto')}
-        style={{
-          paddingTop: `${safeAreaInsets?.top || 0}px`,
-        }}
+        className='h-full w-full overflow-y-auto'
+        style={{ paddingTop: `${safeAreaInsets?.top || 0}px` }}
       >
-        <div
-          ref={headerRef}
-          className={clsx(
-            'fixed z-10 flex w-full items-center justify-between py-2 pe-6 ps-4',
-            platformInfo.hasTrafficLight && 'pt-11',
-          )}
-        >
-          <button
-            type='button'
-            aria-label={_('Go Back')}
-            onClick={handleGoBack}
-            className={clsx('btn btn-ghost h-12 min-h-12 w-12 p-0 sm:h-8 sm:min-h-8 sm:w-8')}
-          >
-            <IoArrowBack className='text-base-content' />
-          </button>
+        <AuthLayout
+          chrome={
+            <div
+              ref={headerRef}
+              className={clsx(
+                'fixed z-30 flex w-full items-center justify-between py-2 pe-6 ps-4',
+                platformInfo.hasTrafficLight && 'pt-11',
+              )}
+            >
+              <button
+                type='button'
+                aria-label={_('Go Back')}
+                onClick={handleGoBack}
+                className={clsx('btn btn-ghost h-12 min-h-12 w-12 p-0 sm:h-8 sm:min-h-8 sm:w-8')}
+              >
+                <IoArrowBack className='text-base-content' />
+              </button>
 
-          {platformInfo.hasWindowBar && (
-            <WindowButtons
-              headerRef={headerRef}
-              showMinimize={!isTrafficLightVisible}
-              showMaximize={!isTrafficLightVisible}
-              showClose={!isTrafficLightVisible}
-              onClose={handleGoBack}
-            />
-          )}
-        </div>
-        <div
-          className={clsx(
-            'z-20 flex flex-col items-center pb-8',
-            platformInfo.hasTrafficLight ? 'mt-24' : 'mt-12',
-          )}
-          style={{ maxWidth: '420px' }}
+              {platformInfo.hasWindowBar && (
+                <WindowButtons
+                  headerRef={headerRef}
+                  showMinimize={!isTrafficLightVisible}
+                  showMaximize={!isTrafficLightVisible}
+                  showClose={!isTrafficLightVisible}
+                  onClose={handleGoBack}
+                />
+              )}
+            </div>
+          }
         >
-          {renderProviderButtons(tauriSignIn)}
-          {hasProviders && (
-            <hr aria-hidden='true' className='border-base-300 my-3 mt-6 w-64 border-t' />
-          )}
-          {renderEmailForm()}
-        </div>
+          {renderAuthBody(tauriSignIn)}
+        </AuthLayout>
       </div>
     </div>
   ) : (
-    <div
-      style={{
-        maxWidth: '420px',
-        margin: 'auto',
-        padding: '2rem',
-        paddingTop: '4rem',
-      }}
+    <AuthLayout
+      chrome={
+        <button
+          type='button'
+          aria-label={_('Go Back')}
+          onClick={handleGoBack}
+          className='btn btn-ghost fixed start-4 top-4 z-30 h-8 min-h-8 w-8 p-0'
+        >
+          <IoArrowBack className='text-base-content' />
+        </button>
+      }
     >
-      <button
-        onClick={handleGoBack}
-        className='btn btn-ghost fixed left-6 top-6 h-8 min-h-8 w-8 p-0'
-      >
-        <IoArrowBack className='text-base-content' />
-      </button>
-      <div className='flex flex-col items-center'>
-        {renderProviderButtons(webSignInSocial)}
-        {hasProviders && (
-          <hr aria-hidden='true' className='border-base-300 my-3 mt-6 w-64 border-t' />
-        )}
-        {renderEmailForm()}
-      </div>
-    </div>
+      {renderAuthBody(webSignInSocial)}
+    </AuthLayout>
   );
 }
