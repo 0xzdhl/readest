@@ -233,7 +233,7 @@ const ControlPanel: React.FC<SettingsPanelPanelProp> = ({ bookKey, onRegisterRes
   };
 
   return (
-    <div className='my-4 w-full space-y-6'>
+    <div className='w-full space-y-6 pb-6'>
       <BoxedList title={_('Scroll')} data-setting-id='settings.control.scrolledMode'>
         <SettingsSwitchRow
           label={_('Scrolled Mode')}

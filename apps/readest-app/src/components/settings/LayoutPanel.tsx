@@ -22,13 +22,7 @@ import { getMaxInlineSize } from '@/utils/config';
 import { isCJKEnv } from '@/utils/misc';
 import { getStyles } from '@/utils/style';
 import NumberInput from './NumberInput';
-import {
-  BoxedList,
-  SettingLabel,
-  SettingsRow,
-  SettingsSelect,
-  SettingsSwitchRow,
-} from './primitives';
+import { BoxedList, SettingsRow, SettingsSelect, SettingsSwitchRow } from './primitives';
 import type { SettingsPanelPanelProp } from './SettingsDialog';
 
 const LayoutPanel: React.FC<SettingsPanelPanelProp> = ({ bookKey, onRegisterReset }) => {
@@ -410,60 +404,49 @@ const LayoutPanel: React.FC<SettingsPanelPanelProp> = ({ bookKey, onRegisterRese
   const isVertical = viewSettings.vertical || writingMode.includes('vertical');
 
   return (
-    <div className='my-4 w-full space-y-6'>
-      <div
-        data-setting-id='settings.layout.overrideBookLayout'
-        className='flex items-center justify-between px-4'
-      >
-        <SettingLabel>{_('Override Book Layout')}</SettingLabel>
-        <input
-          type='checkbox'
-          className='toggle'
+    <div className='w-full space-y-6 pb-2'>
+      <BoxedList>
+        <SettingsSwitchRow
+          label={_('Override Book Layout')}
           checked={overrideLayout}
           onChange={() => setOverrideLayout(!overrideLayout)}
+          data-setting-id='settings.layout.overrideBookLayout'
         />
-      </div>
-      {mightBeRTLBook && (
-        <div
-          data-setting-id='settings.layout.writingMode'
-          className='flex items-center justify-between px-4'
-        >
-          <SettingLabel>{_('Writing Mode')}</SettingLabel>
-          <div className='flex gap-4'>
-            <button
-              title={_('Default')}
-              className={`btn btn-ghost btn-circle btn-sm ${writingMode === 'auto' ? 'btn-active bg-base-300' : ''}`}
-              onClick={() => setWritingMode('auto')}
-            >
-              <MdOutlineAutoMode />
-            </button>
-
-            <button
-              title={_('Horizontal Direction')}
-              className={`btn btn-ghost btn-circle btn-sm ${writingMode === 'horizontal-tb' ? 'btn-active bg-base-300' : ''}`}
-              onClick={() => setWritingMode('horizontal-tb')}
-            >
-              <MdOutlineTextRotationNone />
-            </button>
-
-            <button
-              title={_('Vertical Direction')}
-              className={`btn btn-ghost btn-circle btn-sm ${writingMode === 'vertical-rl' ? 'btn-active bg-base-300' : ''}`}
-              onClick={() => setWritingMode('vertical-rl')}
-            >
-              <MdTextRotateVertical />
-            </button>
-
-            <button
-              title={_('RTL Direction')}
-              className={`btn btn-ghost btn-circle btn-sm ${writingMode === 'horizontal-rl' ? 'btn-active bg-base-300' : ''}`}
-              onClick={() => setWritingMode('horizontal-rl')}
-            >
-              <TbTextDirectionRtl />
-            </button>
-          </div>
-        </div>
-      )}
+        {mightBeRTLBook && (
+          <SettingsRow label={_('Writing Mode')} data-setting-id='settings.layout.writingMode'>
+            <div className='flex gap-1'>
+              <button
+                title={_('Default')}
+                className={`btn btn-ghost btn-circle btn-sm ${writingMode === 'auto' ? 'btn-active bg-base-300' : ''}`}
+                onClick={() => setWritingMode('auto')}
+              >
+                <MdOutlineAutoMode />
+              </button>
+              <button
+                title={_('Horizontal Direction')}
+                className={`btn btn-ghost btn-circle btn-sm ${writingMode === 'horizontal-tb' ? 'btn-active bg-base-300' : ''}`}
+                onClick={() => setWritingMode('horizontal-tb')}
+              >
+                <MdOutlineTextRotationNone />
+              </button>
+              <button
+                title={_('Vertical Direction')}
+                className={`btn btn-ghost btn-circle btn-sm ${writingMode === 'vertical-rl' ? 'btn-active bg-base-300' : ''}`}
+                onClick={() => setWritingMode('vertical-rl')}
+              >
+                <MdTextRotateVertical />
+              </button>
+              <button
+                title={_('RTL Direction')}
+                className={`btn btn-ghost btn-circle btn-sm ${writingMode === 'horizontal-rl' ? 'btn-active bg-base-300' : ''}`}
+                onClick={() => setWritingMode('horizontal-rl')}
+              >
+                <TbTextDirectionRtl />
+              </button>
+            </div>
+          </SettingsRow>
+        )}
+      </BoxedList>
 
       {viewSettings.vertical && (
         <BoxedList title={_('Border Frame')} data-setting-id='settings.layout.borderFrame'>

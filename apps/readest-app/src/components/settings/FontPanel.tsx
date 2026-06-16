@@ -29,7 +29,13 @@ import { getOSPlatform, isCJKEnv } from '@/utils/misc';
 import CustomFonts from './CustomFonts';
 import FontDropdown from './FontDropDown';
 import NumberInput from './NumberInput';
-import { BoxedList, NavigationRow, SettingLabel, SettingsRow } from './primitives';
+import {
+  BoxedList,
+  NavigationRow,
+  SettingLabel,
+  SettingsRow,
+  SettingsSwitchRow,
+} from './primitives';
 import type { SettingsPanelPanelProp } from './SettingsDialog';
 
 const genCJKFontsList = (sysFonts: string[]) => {
@@ -279,26 +285,22 @@ const FontPanel: React.FC<SettingsPanelPanelProp> = ({ bookKey, onRegisterReset 
 
   if (fontPanelView === 'custom-fonts') {
     return (
-      <div className='my-4 w-full'>
+      <div className='w-full'>
         <CustomFonts bookKey={bookKey} onBack={handleBackToMain} />
       </div>
     );
   }
 
   return (
-    <div className='my-4 w-full space-y-6'>
-      <label
-        data-setting-id='settings.font.overrideBookFont'
-        className='flex cursor-pointer items-center justify-between px-4'
-      >
-        <SettingLabel>{_('Override Book Font')}</SettingLabel>
-        <input
-          type='checkbox'
-          className='toggle'
+    <div className='w-full space-y-6 pb-6'>
+      <BoxedList>
+        <SettingsSwitchRow
+          label={_('Override Book Font')}
           checked={overrideFont}
           onChange={() => setOverrideFont(!overrideFont)}
+          data-setting-id='settings.font.overrideBookFont'
         />
-      </label>
+      </BoxedList>
 
       <BoxedList title={_('Font Size')}>
         <NumberInput

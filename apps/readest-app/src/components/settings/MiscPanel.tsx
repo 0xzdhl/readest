@@ -180,14 +180,14 @@ const MiscPanel: React.FC<SettingsPanelPanelProp> = ({ bookKey, onRegisterReset 
           </button>
         </div>
       </BoxedList>
-      {error && <p className='text-error mt-1 ps-4 text-sm'>{error}</p>}
+      {error && <p className='text-error mt-1 ps-4 text-[0.85em]'>{error}</p>}
     </div>
   );
 
   return (
     <div
       className={clsx(
-        'my-4 w-full space-y-6',
+        'w-full space-y-6 pb-6',
         inputFocusInAndroid && 'h-[50%] overflow-y-auto pb-[200px]',
       )}
     >

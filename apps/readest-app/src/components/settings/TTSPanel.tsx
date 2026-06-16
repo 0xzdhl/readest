@@ -76,7 +76,7 @@ const TTSPanel: React.FC<SettingsPanelPanelProp> = ({ bookKey, onRegisterReset }
   };
 
   return (
-    <div className='my-4 w-full space-y-6'>
+    <div className='w-full space-y-6 pb-6'>
       <TTSHighlightStyleEditor
         style={ttsHighlightStyle}
         color={ttsHighlightColor}
