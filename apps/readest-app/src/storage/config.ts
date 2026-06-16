@@ -19,7 +19,7 @@ export class StorageConfig extends Context.Tag('StorageConfig')<
 export const makeStorageConfig = (): StorageConfigShape => {
   if (env.OBJECT_STORAGE_TYPE === 'r2') {
     if (
-      !env.R2_ACCOUNT_ID ||
+      !env.CLOUDFLARE_ACCOUNT_ID ||
       !env.R2_BUCKET_NAME ||
       !env.R2_ACCESS_KEY_ID ||
       !env.R2_SECRET_ACCESS_KEY
@@ -27,7 +27,7 @@ export const makeStorageConfig = (): StorageConfigShape => {
       throw new StorageConfigError('Missing required R2 storage configuration');
     }
     return {
-      endpoint: `https://${env.R2_ACCOUNT_ID}.r2.cloudflarestorage.com`,
+      endpoint: `https://${env.CLOUDFLARE_ACCOUNT_ID}.r2.cloudflarestorage.com`,
       region: env.R2_REGION,
       bucketName: env.R2_BUCKET_NAME,
       tempBucketName: env.TEMP_STORAGE_PUBLIC_BUCKET_NAME,

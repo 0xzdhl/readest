@@ -31,6 +31,20 @@ const createTransportMock = vi.hoisted(() =>
   })),
 );
 
+const fetchMock = vi.hoisted(() =>
+  vi.fn<(url: string, init: RequestInit) => Promise<Response>>(
+    async () =>
+      new Response(
+        JSON.stringify({
+          success: true,
+          errors: [],
+          result: { delivered: ['user@example.com'], permanent_bounces: [], queued: [] },
+        }),
+        { status: 200 },
+      ),
+  ),
+);
+
 vi.mock('resend', () => ({ Resend: ResendCtorMock }));
 vi.mock('nodemailer', () => ({
   default: { createTransport: createTransportMock },
@@ -53,6 +67,18 @@ function firstArgOf<TArgs extends unknown[]>(
   return call[0];
 }
 
+/** Like `firstArgOf`, but returns the first two positional arguments. */
+function firstTwoArgsOf<TArgs extends unknown[]>(
+  mock: { mock: { calls: TArgs[] } },
+  callIndex: number,
+): [TArgs[0], TArgs[1]] {
+  const call = mock.mock.calls[callIndex];
+  if (!call) {
+    throw new Error(`Expected mock to have been called at least ${callIndex + 1} times`);
+  }
+  return [call[0], call[1]];
+}
+
 describe('sendEmail', () => {
   const originalEnv = { ...process.env };
 
@@ -62,7 +88,11 @@ describe('sendEmail', () => {
     ResendCtorMock.mockClear();
     sendMailMock.mockClear();
     createTransportMock.mockClear();
+    fetchMock.mockClear();
+    vi.stubGlobal('fetch', fetchMock);
     delete process.env['RESEND_API_KEY'];
+    delete process.env['CLOUDFLARE_ACCOUNT_ID'];
+    delete process.env['CLOUDFLARE_EMAIL_API_TOKEN'];
     // SMTP_FROM_EMAIL is a required env var (no schema default), so a valid
     // baseline must be present for `@/env` to validate on import. Tests that
     // assert the `from` address override it explicitly.
@@ -79,6 +109,7 @@ describe('sendEmail', () => {
 
   afterEach(() => {
     process.env = { ...originalEnv };
+    vi.unstubAllGlobals();
   });
 
   it('uses the Resend SDK when RESEND_API_KEY is set', async () => {
@@ -114,6 +145,70 @@ describe('sendEmail', () => {
     await expect(sendEmail({ to: 'user@example.com', subject: 's', html: 'h' })).rejects.toThrow(
       /boom/,
     );
+  });
+
+  it('uses the Cloudflare Email Sending REST API when account id and token are set', async () => {
+    process.env['CLOUDFLARE_ACCOUNT_ID'] = 'acc_123';
+    process.env['CLOUDFLARE_EMAIL_API_TOKEN'] = 'cf-token';
+    process.env['SMTP_FROM_EMAIL'] = 'sender@example.com';
+
+    const { sendEmail } = await import('@/auth/email');
+    await sendEmail({ to: 'user@example.com', subject: 'hi', html: '<p>hi</p>' });
+
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    const [url, init] = firstTwoArgsOf(fetchMock, 0);
+    expect(url).toBe('https://api.cloudflare.com/client/v4/accounts/acc_123/email/sending/send');
+    expect(init.method).toBe('POST');
+    const headers = init.headers as Record<string, string>;
+    expect(headers['Authorization']).toBe('Bearer cf-token');
+    expect(headers['Content-Type']).toBe('application/json');
+    const body = JSON.parse(init.body as string) as {
+      from: string;
+      to: string;
+      subject: string;
+      html: string;
+    };
+    expect(body.from).toBe('sender@example.com');
+    expect(body.to).toBe('user@example.com');
+    expect(body.subject).toBe('hi');
+    expect(body.html).toBe('<p>hi</p>');
+
+    // The Cloudflare path short-circuits before the SMTP/Resend fallbacks.
+    expect(createTransportMock).not.toHaveBeenCalled();
+    expect(ResendCtorMock).not.toHaveBeenCalled();
+  });
+
+  it('throws when the Cloudflare REST response reports failure', async () => {
+    process.env['CLOUDFLARE_ACCOUNT_ID'] = 'acc_123';
+    process.env['CLOUDFLARE_EMAIL_API_TOKEN'] = 'cf-token';
+    fetchMock.mockResolvedValueOnce(
+      new Response(
+        JSON.stringify({
+          success: false,
+          errors: [{ code: 1000, message: 'Sender domain not verified' }],
+          result: null,
+        }),
+        { status: 400 },
+      ),
+    );
+
+    const { sendEmail } = await import('@/auth/email');
+    await expect(sendEmail({ to: 'u@e.com', subject: 's', html: 'h' })).rejects.toThrow(
+      /Sender domain not verified/,
+    );
+    expect(createTransportMock).not.toHaveBeenCalled();
+  });
+
+  it('prefers Resend over the Cloudflare REST API when both are configured', async () => {
+    process.env['RESEND_API_KEY'] = 'test-api-key';
+    process.env['CLOUDFLARE_ACCOUNT_ID'] = 'acc_123';
+    process.env['CLOUDFLARE_EMAIL_API_TOKEN'] = 'cf-token';
+
+    const { sendEmail } = await import('@/auth/email');
+    await sendEmail({ to: 'user@example.com', subject: 'hi', html: '<p>hi</p>' });
+
+    expect(resendSendMock).toHaveBeenCalledTimes(1);
+    expect(fetchMock).not.toHaveBeenCalled();
   });
 
   it('falls back to nodemailer SMTP when RESEND_API_KEY is unset', async () => {

@@ -33,7 +33,7 @@ describe('makeStorageConfig', () => {
   it('builds R2 config from env (endpoint uses account id)', async () => {
     const { makeStorageConfig } = await loadConfig({
       OBJECT_STORAGE_TYPE: 'r2',
-      R2_ACCOUNT_ID: 'acct123',
+      CLOUDFLARE_ACCOUNT_ID: 'acct123',
       R2_REGION: 'auto',
       R2_BUCKET_NAME: 'bucket-r2',
       R2_ACCESS_KEY_ID: 'key-r2',
@@ -64,7 +64,7 @@ describe('makeStorageConfig', () => {
   it('throws StorageConfigError when R2 account id missing', async () => {
     const { makeStorageConfig, StorageConfigError } = await loadConfig({
       OBJECT_STORAGE_TYPE: 'r2',
-      R2_ACCOUNT_ID: '',
+      CLOUDFLARE_ACCOUNT_ID: '',
       R2_BUCKET_NAME: 'bucket-r2',
       R2_ACCESS_KEY_ID: 'key-r2',
       R2_SECRET_ACCESS_KEY: 'secret-r2',

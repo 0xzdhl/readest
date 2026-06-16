@@ -1,6 +1,6 @@
 import clsx from 'clsx';
 import type React from 'react';
-import { lazy, Suspense, useEffect, useRef, useState } from 'react';
+import { Suspense, useEffect, useRef, useState } from 'react';
 import { FiSearch } from 'react-icons/fi';
 import { IoAccessibilityOutline } from 'react-icons/io5';
 import { LiaHandPointerSolid } from 'react-icons/lia';
