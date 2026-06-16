@@ -32,6 +32,20 @@
       "id": "fa6e3eb1988a424bbf3c952e01650ced",
     },
   ],
+  // Per-IP rate limit for the unauthenticated /api/kosync open relay (see
+  // src/app/api/kosync.ts). Lenient ceiling — a single user syncing reading
+  // progress issues only a few calls per session; this caps abuse/cost. The
+  // Rate Limiting binding `period` only accepts 10 or 60 seconds.
+  "ratelimits": [
+    {
+      "name": "KOSYNC_RATE_LIMITER",
+      "namespace_id": "1001",
+      "simple": {
+        "limit": 120,
+        "period": 60
+      }
+    }
+  ],
   "vars": {
     "PNPM_VERSION": "10.28.1"
   }
