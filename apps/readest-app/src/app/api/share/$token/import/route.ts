@@ -1,5 +1,5 @@
 import { createFileRoute } from '@tanstack/react-router';
-import { and, eq, isNotNull } from 'drizzle-orm';
+import { and, eq, isNotNull, isNull, sum } from 'drizzle-orm';
 import { setRlsBypass } from '@/db/rls';
 import { files } from '@/db/schema';
 import { rlsMiddleware } from '@/middlewares/rls';
@@ -60,7 +60,13 @@ export const Route = createFileRoute('/api/share/$token/import')({
           const own = await tx
             .select({ id: files.id, bookHash: files.bookHash, fileKey: files.fileKey })
             .from(files)
-            .where(and(eq(files.userId, user.id), eq(files.bookHash, share.bookHash)));
+            .where(
+              and(
+                eq(files.userId, user.id),
+                eq(files.bookHash, share.bookHash),
+                isNull(files.deletedAt),
+              ),
+            );
           const ownBook = own.find((f) => !isCoverKey(f.fileKey));
           if (ownBook) {
             return Response.json({
@@ -76,7 +82,13 @@ export const Route = createFileRoute('/api/share/$token/import')({
         const liveRows = await tx
           .select({ id: files.id, fileKey: files.fileKey })
           .from(files)
-          .where(and(eq(files.userId, user.id), eq(files.bookHash, share.bookHash)));
+          .where(
+            and(
+              eq(files.userId, user.id),
+              eq(files.bookHash, share.bookHash),
+              isNull(files.deletedAt),
+            ),
+          );
         const liveBook = liveRows.find((f) => !isCoverKey(f.fileKey));
         if (liveBook) {
           return Response.json({
@@ -120,8 +132,17 @@ export const Route = createFileRoute('/api/share/$token/import')({
           });
         }
 
-        // Quota check before doing any byte-copy work.
-        const { usage, quota } = getStoragePlanData(user);
+        // Quota check before doing any byte-copy work. `user.storageUsageBytes`
+        // is never written, so derive REAL usage from the live `files` rows in
+        // this same tx (consistent with the storage-upload gate).
+        const [usageRow] = await tx
+          .select({ totalSize: sum(files.fileSize) })
+          .from(files)
+          .where(and(eq(files.userId, user.id), isNull(files.deletedAt)));
+        // `sum()` returns string | null from postgres-js to preserve bigint
+        // precision; coerce to a JS number for the comparison below.
+        const usage = Number(usageRow?.totalSize ?? 0);
+        const { quota } = getStoragePlanData(user);
         if (usage + share.bookSize > quota + STORAGE_QUOTA_GRACE_BYTES) {
           return Response.json(
             { error: 'Insufficient storage quota', code: 'quota_exceeded', usage, quota },

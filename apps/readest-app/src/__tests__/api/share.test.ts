@@ -172,20 +172,29 @@ describe.skipIf(!url)('/api/share/* (rlsMiddleware + publicMiddleware)', () => {
     expect(body.token).toBeTruthy();
     expect(body.token.length).toBe(22);
 
-    const rows = await adminClient<{ user_id: string; book_hash: string; token: string }[]>`
-      SELECT user_id, book_hash, token FROM book_shares WHERE user_id = ${userA}`;
+    const rows = await adminClient<
+      { user_id: string; book_hash: string; token_hash: string; token_enc: string }[]
+    >`
+      SELECT user_id, book_hash, token_hash, token_enc FROM book_shares WHERE user_id = ${userA}`;
     expect(rows).toHaveLength(1);
     expect(rows[0]?.book_hash).toBe('hash-A-1');
-    expect(rows[0]?.token).toBe(body.token);
+    // The stored value is the ENCRYPTED token, not the plaintext returned over
+    // the wire. It must NOT equal the raw token but MUST decrypt back to it
+    // (AAD = the row's token_hash).
+    const storedEnc = rows[0]!.token_enc;
+    expect(storedEnc).not.toBe(body.token);
+    const decrypted = await shareServer.decryptShareToken(storedEnc, rows[0]!.token_hash);
+    expect(decrypted).toBe(body.token);
   });
 
   // ─── list (owner-only) ───────────────────────────────────────────────────
   it('list: cross-user RLS denial — userB does not see userA shares', async () => {
     await seedBookFile(userA, 'hash-A-2');
     const hashA = await shareServer.hashShareToken('ABCDEFGHIJKLMNOPQRSTUV');
+    const encA = await shareServer.encryptShareToken('ABCDEFGHIJKLMNOPQRSTUV', hashA);
     await adminClient`INSERT INTO book_shares
-        (token_hash, token, user_id, book_hash, book_title, book_format, book_size, expires_at)
-        VALUES (${hashA}, 'ABCDEFGHIJKLMNOPQRSTUV', ${userA}, 'hash-A-2', 'A', 'EPUB', 1000,
+        (token_hash, token_enc, user_id, book_hash, book_title, book_format, book_size, expires_at)
+        VALUES (${hashA}, ${encA}, ${userA}, 'hash-A-2', 'A', 'EPUB', 1000,
                 ${new Date(Date.now() + 86400000)})`;
 
     getSessionMock.mockResolvedValueOnce(sessionFor(userB));
@@ -196,14 +205,56 @@ describe.skipIf(!url)('/api/share/* (rlsMiddleware + publicMiddleware)', () => {
     expect(body.shares).toEqual([]);
   });
 
+  it('list: owner receives the DECRYPTED token (not the stored ciphertext)', async () => {
+    await seedBookFile(userA, 'hash-A-list');
+    const rawToken = 'FBCDEFGHIJKLMNOPQRSTUV';
+    const hash = await shareServer.hashShareToken(rawToken);
+    const enc = await shareServer.encryptShareToken(rawToken, hash);
+    // Sanity: what we store really is ciphertext, not the plaintext token.
+    expect(enc).not.toBe(rawToken);
+    await adminClient`INSERT INTO book_shares
+        (token_hash, token_enc, user_id, book_hash, book_title, book_format, book_size, expires_at)
+        VALUES (${hash}, ${enc}, ${userA}, 'hash-A-list', 'A', 'EPUB', 1000,
+                ${new Date(Date.now() + 86400000)})`;
+
+    getSessionMock.mockResolvedValueOnce(sessionFor(userA));
+    const request = new Request('http://localhost/api/share/list', { method: 'GET' });
+    const response = await runRoute(listModule.Route as RouteLike, 'GET', { request });
+    expect(response.status).toBe(200);
+    const body = (await response.json()) as { shares: Array<{ token: string }> };
+    expect(body.shares).toHaveLength(1);
+    expect(body.shares[0]?.token).toBe(rawToken);
+  });
+
+  it('list: legacy plaintext token row passes through unchanged', async () => {
+    await seedBookFile(userA, 'hash-A-legacy');
+    // A pre-migration row stored the raw token directly in the (renamed)
+    // token_enc column. decryptShareToken must pass it through as-is.
+    const legacyToken = 'GBCDEFGHIJKLMNOPQRSTUV';
+    const hash = await shareServer.hashShareToken(legacyToken);
+    await adminClient`INSERT INTO book_shares
+        (token_hash, token_enc, user_id, book_hash, book_title, book_format, book_size, expires_at)
+        VALUES (${hash}, ${legacyToken}, ${userA}, 'hash-A-legacy', 'A', 'EPUB', 1000,
+                ${new Date(Date.now() + 86400000)})`;
+
+    getSessionMock.mockResolvedValueOnce(sessionFor(userA));
+    const request = new Request('http://localhost/api/share/list', { method: 'GET' });
+    const response = await runRoute(listModule.Route as RouteLike, 'GET', { request });
+    expect(response.status).toBe(200);
+    const body = (await response.json()) as { shares: Array<{ token: string }> };
+    expect(body.shares).toHaveLength(1);
+    expect(body.shares[0]?.token).toBe(legacyToken);
+  });
+
   // ─── revoke (owner-only) ─────────────────────────────────────────────────
   it('revoke: owner can revoke, sets revoked_at', async () => {
     await seedBookFile(userA, 'hash-A-3');
     const token = 'ABCDEFGHIJKLMNOPQRSTUW';
     const tokenHash = await shareServer.hashShareToken(token);
+    const tokenEnc = await shareServer.encryptShareToken(token, tokenHash);
     await adminClient`INSERT INTO book_shares
-        (token_hash, token, user_id, book_hash, book_title, book_format, book_size, expires_at)
-        VALUES (${tokenHash}, ${token}, ${userA}, 'hash-A-3', 'A', 'EPUB', 1000,
+        (token_hash, token_enc, user_id, book_hash, book_title, book_format, book_size, expires_at)
+        VALUES (${tokenHash}, ${tokenEnc}, ${userA}, 'hash-A-3', 'A', 'EPUB', 1000,
                 ${new Date(Date.now() + 86400000)})`;
 
     getSessionMock.mockResolvedValueOnce(sessionFor(userA));
@@ -225,9 +276,10 @@ describe.skipIf(!url)('/api/share/* (rlsMiddleware + publicMiddleware)', () => {
     await seedBookFile(userA, 'hash-A-4', true);
     const token = 'ABCDEFGHIJKLMNOPQRSTUX';
     const tokenHash = await shareServer.hashShareToken(token);
+    const tokenEnc = await shareServer.encryptShareToken(token, tokenHash);
     await adminClient`INSERT INTO book_shares
-        (token_hash, token, user_id, book_hash, book_title, book_author, book_format, book_size, expires_at)
-        VALUES (${tokenHash}, ${token}, ${userA}, 'hash-A-4', 'The Book', 'The Author', 'EPUB',
+        (token_hash, token_enc, user_id, book_hash, book_title, book_author, book_format, book_size, expires_at)
+        VALUES (${tokenHash}, ${tokenEnc}, ${userA}, 'hash-A-4', 'The Book', 'The Author', 'EPUB',
                 1000, ${new Date(Date.now() + 86400000)})`;
 
     const request = new Request(`http://localhost/api/share/${token}`, { method: 'GET' });
@@ -261,9 +313,10 @@ describe.skipIf(!url)('/api/share/* (rlsMiddleware + publicMiddleware)', () => {
     await seedBookFile(userA, 'hash-A-rev');
     const token = 'ABCDEFGHIJKLMNOPQRSTUY';
     const tokenHash = await shareServer.hashShareToken(token);
+    const tokenEnc = await shareServer.encryptShareToken(token, tokenHash);
     await adminClient`INSERT INTO book_shares
-        (token_hash, token, user_id, book_hash, book_title, book_format, book_size, expires_at, revoked_at)
-        VALUES (${tokenHash}, ${token}, ${userA}, 'hash-A-rev', 'A', 'EPUB', 1000,
+        (token_hash, token_enc, user_id, book_hash, book_title, book_format, book_size, expires_at, revoked_at)
+        VALUES (${tokenHash}, ${tokenEnc}, ${userA}, 'hash-A-rev', 'A', 'EPUB', 1000,
                 ${new Date(Date.now() + 86400000)}, ${new Date()})`;
 
     const request = new Request(`http://localhost/api/share/${token}`, { method: 'GET' });
@@ -281,9 +334,10 @@ describe.skipIf(!url)('/api/share/* (rlsMiddleware + publicMiddleware)', () => {
     await seedBookFile(userA, 'hash-A-cov', true);
     const token = 'ABCDEFGHIJKLMNOPQRSTUZ';
     const tokenHash = await shareServer.hashShareToken(token);
+    const tokenEnc = await shareServer.encryptShareToken(token, tokenHash);
     await adminClient`INSERT INTO book_shares
-        (token_hash, token, user_id, book_hash, book_title, book_format, book_size, expires_at)
-        VALUES (${tokenHash}, ${token}, ${userA}, 'hash-A-cov', 'A', 'EPUB', 1000,
+        (token_hash, token_enc, user_id, book_hash, book_title, book_format, book_size, expires_at)
+        VALUES (${tokenHash}, ${tokenEnc}, ${userA}, 'hash-A-cov', 'A', 'EPUB', 1000,
                 ${new Date(Date.now() + 86400000)})`;
 
     // The cover endpoint proxies the presigned storage URL rather than 302-ing
@@ -315,9 +369,10 @@ describe.skipIf(!url)('/api/share/* (rlsMiddleware + publicMiddleware)', () => {
     await seedBookFile(userA, 'hash-A-dl');
     const token = 'AABCDEFGHIJKLMNOPQRSTU';
     const tokenHash = await shareServer.hashShareToken(token);
+    const tokenEnc = await shareServer.encryptShareToken(token, tokenHash);
     await adminClient`INSERT INTO book_shares
-        (token_hash, token, user_id, book_hash, book_title, book_format, book_size, expires_at)
-        VALUES (${tokenHash}, ${token}, ${userA}, 'hash-A-dl', 'A', 'EPUB', 1000,
+        (token_hash, token_enc, user_id, book_hash, book_title, book_format, book_size, expires_at)
+        VALUES (${tokenHash}, ${tokenEnc}, ${userA}, 'hash-A-dl', 'A', 'EPUB', 1000,
                 ${new Date(Date.now() + 86400000)})`;
 
     const request = new Request(`http://localhost/api/share/${token}/download`, { method: 'GET' });
@@ -334,9 +389,10 @@ describe.skipIf(!url)('/api/share/* (rlsMiddleware + publicMiddleware)', () => {
     await seedBookFile(userA, 'hash-A-cnf');
     const token = 'BBCDEFGHIJKLMNOPQRSTUV';
     const tokenHash = await shareServer.hashShareToken(token);
+    const tokenEnc = await shareServer.encryptShareToken(token, tokenHash);
     await adminClient`INSERT INTO book_shares
-        (token_hash, token, user_id, book_hash, book_title, book_format, book_size, expires_at, download_count)
-        VALUES (${tokenHash}, ${token}, ${userA}, 'hash-A-cnf', 'A', 'EPUB', 1000,
+        (token_hash, token_enc, user_id, book_hash, book_title, book_format, book_size, expires_at, download_count)
+        VALUES (${tokenHash}, ${tokenEnc}, ${userA}, 'hash-A-cnf', 'A', 'EPUB', 1000,
                 ${new Date(Date.now() + 86400000)}, 0)`;
 
     const request = new Request(`http://localhost/api/share/${token}/download/confirm`, {
@@ -358,9 +414,10 @@ describe.skipIf(!url)('/api/share/* (rlsMiddleware + publicMiddleware)', () => {
     await seedBookFile(userA, 'hash-A-cnf-rev');
     const token = 'CBCDEFGHIJKLMNOPQRSTUV';
     const tokenHash = await shareServer.hashShareToken(token);
+    const tokenEnc = await shareServer.encryptShareToken(token, tokenHash);
     await adminClient`INSERT INTO book_shares
-        (token_hash, token, user_id, book_hash, book_title, book_format, book_size, expires_at, revoked_at, download_count)
-        VALUES (${tokenHash}, ${token}, ${userA}, 'hash-A-cnf-rev', 'A', 'EPUB', 1000,
+        (token_hash, token_enc, user_id, book_hash, book_title, book_format, book_size, expires_at, revoked_at, download_count)
+        VALUES (${tokenHash}, ${tokenEnc}, ${userA}, 'hash-A-cnf-rev', 'A', 'EPUB', 1000,
                 ${new Date(Date.now() + 86400000)}, ${new Date()}, 0)`;
 
     const request = new Request(`http://localhost/api/share/${token}/download/confirm`, {
@@ -383,9 +440,10 @@ describe.skipIf(!url)('/api/share/* (rlsMiddleware + publicMiddleware)', () => {
     await seedBookFile(userA, 'hash-A-imp');
     const token = 'DBCDEFGHIJKLMNOPQRSTUV';
     const tokenHash = await shareServer.hashShareToken(token);
+    const tokenEnc = await shareServer.encryptShareToken(token, tokenHash);
     await adminClient`INSERT INTO book_shares
-        (token_hash, token, user_id, book_hash, book_title, book_format, book_size, expires_at)
-        VALUES (${tokenHash}, ${token}, ${userA}, 'hash-A-imp', 'A', 'EPUB', 1000,
+        (token_hash, token_enc, user_id, book_hash, book_title, book_format, book_size, expires_at)
+        VALUES (${tokenHash}, ${tokenEnc}, ${userA}, 'hash-A-imp', 'A', 'EPUB', 1000,
                 ${new Date(Date.now() + 86400000)})`;
 
     getSessionMock.mockResolvedValueOnce(sessionFor(userB));
@@ -412,9 +470,10 @@ describe.skipIf(!url)('/api/share/* (rlsMiddleware + publicMiddleware)', () => {
     await seedBookFile(userB, 'hash-A-idem');
     const token = 'EBCDEFGHIJKLMNOPQRSTUV';
     const tokenHash = await shareServer.hashShareToken(token);
+    const tokenEnc = await shareServer.encryptShareToken(token, tokenHash);
     await adminClient`INSERT INTO book_shares
-        (token_hash, token, user_id, book_hash, book_title, book_format, book_size, expires_at)
-        VALUES (${tokenHash}, ${token}, ${userA}, 'hash-A-idem', 'A', 'EPUB', 1000,
+        (token_hash, token_enc, user_id, book_hash, book_title, book_format, book_size, expires_at)
+        VALUES (${tokenHash}, ${tokenEnc}, ${userA}, 'hash-A-idem', 'A', 'EPUB', 1000,
                 ${new Date(Date.now() + 86400000)})`;
 
     getSessionMock.mockResolvedValueOnce(sessionFor(userB));

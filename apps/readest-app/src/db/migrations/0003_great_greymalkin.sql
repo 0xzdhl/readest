@@ -1,0 +1,1 @@
+ALTER TABLE "book_shares" RENAME COLUMN "token" TO "token_enc";

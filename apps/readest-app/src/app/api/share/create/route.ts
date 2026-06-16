@@ -1,7 +1,7 @@
 import { createFileRoute } from '@tanstack/react-router';
 import { and, count, eq, gt, isNull } from 'drizzle-orm';
 import { bookShares, files } from '@/db/schema';
-import { generateShareToken } from '@/libs/shareServer';
+import { encryptShareToken, generateShareToken } from '@/libs/shareServer';
 import { rlsMiddleware } from '@/middlewares/rls';
 import {
   SHARE_CFI_MAX_LENGTH,
@@ -39,7 +39,7 @@ const trimText = (value: unknown, max: number): string | null => {
 // Reject the C0 control range (U+0000-U+001F) and DEL (U+007F). The cfi
 // is round-tripped into URLs and rendered into HTML; a control byte in
 // either path would do bad things.
-const isControlChar = (s: string): boolean => /[\\u0000-\\u001f\\u007f]/.test(s);
+export const isControlChar = (s: string): boolean => /[\u0000-\u001f\u007f]/.test(s);
 
 export const Route = createFileRoute('/api/share/create')({
   server: {
@@ -170,10 +170,15 @@ export const Route = createFileRoute('/api/share/create')({
         const { raw, hash } = await generateShareToken();
         const expiresAt = new Date(Date.now() + expirationDays * 24 * 60 * 60 * 1000);
 
+        // Store the token ENCRYPTED at rest (AAD = its own token_hash). The raw
+        // token is still returned to the owner over TLS in the HTTP response
+        // (and again via /list) so the management UI keeps working.
+        const tokenEnc = await encryptShareToken(raw, hash);
+
         try {
           await tx.insert(bookShares).values({
             tokenHash: hash,
-            token: raw,
+            tokenEnc,
             userId: user.id,
             bookHash,
             bookTitle: title,

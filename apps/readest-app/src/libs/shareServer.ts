@@ -2,6 +2,7 @@ import { and, eq, isNull } from 'drizzle-orm';
 import { customAlphabet } from 'nanoid';
 import type { DbTx } from '@/db/rls';
 import { bookShares, files } from '@/db/schema';
+import { env } from '@/env';
 
 // 22-char URL-safe alphabet (alphanumeric only — no `-` or `_`). Avoids
 // punctuation that some chat clients linkify oddly.
@@ -15,12 +16,140 @@ export const isValidShareToken = (token: unknown): token is string =>
   typeof token === 'string' && SHARE_TOKEN_REGEX.test(token);
 
 // Generate a fresh share token. The raw value is shown to the user once at
-// create-time; only the hash is persisted to the database. A leaked DB read
-// therefore cannot recover live bearer credentials.
+// create-time; the database stores only the SHA-256 hash (for O(1) lookup) and
+// an AES-256-GCM-encrypted copy of the raw token (for owner management). Since
+// neither the hash nor the ciphertext is reversible without the server's
+// `BETTER_AUTH_SECRET`, a DB dump ALONE cannot recover live bearer credentials.
 export const generateShareToken = async (): Promise<{ raw: string; hash: string }> => {
   const raw = generator();
   const hash = await hashShareToken(raw);
   return { raw, hash };
+};
+
+// ─── Token-at-rest encryption (Scheme B) ───────────────────────────────────
+//
+// The owner-management UI needs the raw token back (to copy/share the link),
+// so a one-way hash alone is not enough. We therefore ALSO store the raw token
+// encrypted under a key derived from the existing `BETTER_AUTH_SECRET` env (no
+// new secret to manage). A DB dump without that env value yields only
+// ciphertext; the live token cannot be recovered.
+//
+// Format: base64( iv(12 random bytes) || ciphertext+GCM-tag ).
+// AAD: the row's `token_hash`, binding each ciphertext to exactly one row so a
+// stolen ciphertext cannot be transplanted onto a different share row.
+
+const HKDF_SALT = 'readest-share-token-hkdf-v1';
+const HKDF_INFO = 'aes-256-gcm';
+const AES_KEY_BYTES = 32;
+const GCM_IV_BYTES = 12;
+
+let cachedKeyPromise: Promise<CryptoKey> | null = null;
+
+// Derive (once, then cache) the AES-256-GCM key via HKDF-SHA256 from
+// BETTER_AUTH_SECRET. The salt/info are fixed app constants — versioned in the
+// salt string so a future rotation can change the derivation deterministically.
+const getShareEncryptionKey = (): Promise<CryptoKey> => {
+  if (cachedKeyPromise) return cachedKeyPromise;
+  cachedKeyPromise = (async () => {
+    const ikm = new TextEncoder().encode(env.BETTER_AUTH_SECRET);
+    const baseKey = await crypto.subtle.importKey('raw', ikm, 'HKDF', false, ['deriveKey']);
+    return crypto.subtle.deriveKey(
+      {
+        name: 'HKDF',
+        hash: 'SHA-256',
+        salt: new TextEncoder().encode(HKDF_SALT),
+        info: new TextEncoder().encode(HKDF_INFO),
+      },
+      baseKey,
+      { name: 'AES-GCM', length: AES_KEY_BYTES * 8 },
+      false,
+      ['encrypt', 'decrypt'],
+    );
+  })();
+  return cachedKeyPromise;
+};
+
+const toBase64 = (bytes: Uint8Array): string => {
+  let binary = '';
+  for (const b of bytes) binary += String.fromCharCode(b);
+  return btoa(binary);
+};
+
+const fromBase64 = (b64: string): Uint8Array => {
+  const binary = atob(b64);
+  const out = new Uint8Array(binary.length);
+  for (let i = 0; i < binary.length; i++) out[i] = binary.charCodeAt(i);
+  return out;
+};
+
+/**
+ * Encrypt a raw share token for storage at rest. `aad` MUST be the row's
+ * `token_hash` so the ciphertext is bound to its row. Returns
+ * base64(iv || ciphertext+tag).
+ */
+export const encryptShareToken = async (raw: string, aad: string): Promise<string> => {
+  const key = await getShareEncryptionKey();
+  const iv = crypto.getRandomValues(new Uint8Array(GCM_IV_BYTES));
+  const ciphertext = new Uint8Array(
+    await crypto.subtle.encrypt(
+      {
+        name: 'AES-GCM',
+        iv: iv as BufferSource,
+        additionalData: new TextEncoder().encode(aad) as BufferSource,
+      },
+      key,
+      new TextEncoder().encode(raw) as BufferSource,
+    ),
+  );
+  const packed = new Uint8Array(iv.length + ciphertext.length);
+  packed.set(iv, 0);
+  packed.set(ciphertext, iv.length);
+  return toBase64(packed);
+};
+
+// A stored value looks decryptable only if it is valid base64 that is at least
+// long enough to hold the 12-byte IV plus a 16-byte GCM tag. Legacy plaintext
+// tokens (22 url-safe chars, no `+`/`/`/`=`) will not satisfy the length floor
+// in practice, but we still fall through to passthrough if decryption fails.
+const MIN_PACKED_BYTES = GCM_IV_BYTES + 16;
+
+/**
+ * Decrypt a stored share token. `aad` MUST be the same `token_hash` used at
+ * encrypt time.
+ *
+ * BACKWARD-COMPAT: if `stored` is not in the expected base64(iv||ct) format or
+ * fails to decrypt/authenticate (e.g. a legacy pre-migration plaintext row, or
+ * a value encrypted under a different AAD that we must not silently swap), the
+ * value is returned AS-IS so existing shares keep working. Callers that need
+ * strict authentication should not rely on this passthrough.
+ */
+export const decryptShareToken = async (stored: string, aad: string): Promise<string> => {
+  let packed: Uint8Array;
+  try {
+    packed = fromBase64(stored);
+  } catch {
+    return stored; // not valid base64 → legacy plaintext passthrough
+  }
+  if (packed.length < MIN_PACKED_BYTES) {
+    return stored; // too short to be our format → passthrough
+  }
+  try {
+    const key = await getShareEncryptionKey();
+    const iv = packed.subarray(0, GCM_IV_BYTES);
+    const ciphertext = packed.subarray(GCM_IV_BYTES);
+    const plaintext = await crypto.subtle.decrypt(
+      {
+        name: 'AES-GCM',
+        iv: iv as BufferSource,
+        additionalData: new TextEncoder().encode(aad) as BufferSource,
+      },
+      key,
+      ciphertext as BufferSource,
+    );
+    return new TextDecoder().decode(plaintext);
+  } catch {
+    return stored; // wrong key/AAD/corrupt → passthrough (legacy compat)
+  }
 };
 
 // SHA-256 of the raw token. Used at create (insert) and lookup (constant-time

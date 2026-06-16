@@ -6,7 +6,10 @@ export const bookShares = pgTable(
   {
     id: uuid('id').primaryKey().defaultRandom(),
     tokenHash: text('token_hash').notNull().unique(),
-    token: text('token').notNull(),
+    // AES-256-GCM ciphertext of the raw share token (base64(iv||ct+tag)), bound
+    // to this row via token_hash as AAD. See @/libs/shareServer for the codec.
+    // A DB dump alone cannot recover the live token without BETTER_AUTH_SECRET.
+    tokenEnc: text('token_enc').notNull(),
     userId: text('user_id')
       .notNull()
       .references(() => user.id, { onDelete: 'cascade' }),
