@@ -282,279 +282,285 @@ const StorageManager = () => {
   return (
     <div className='flex flex-col gap-6'>
       {/* Stats Section */}
-      {stats ? (
-        <div className='bg-base-100 border-base-300 rounded-lg border p-4'>
-          <h3 className='text-base-content mb-4 text-lg font-semibold'>
+      <div className='flex flex-col gap-3'>
+        <div className='flex flex-col gap-1.5'>
+          <h3 className='text-base-content text-lg font-semibold tracking-tight'>
             {_('Cloud Storage Usage')}
           </h3>
-          <div className='grid grid-cols-2 gap-4 sm:grid-cols-4'>
-            <div>
-              <div className='text-base-content/60 text-sm'>{_('Total Files')}</div>
-              <div className='text-base-content text-xl font-semibold'>{stats.totalFiles}</div>
-            </div>
-            <div>
-              <div className='text-base-content/60 text-sm'>{_('Total Size')}</div>
-              <div className='text-base-content text-xl font-semibold'>
-                {formatFileSize(stats.totalSize)}
-              </div>
-            </div>
-            <div>
-              <div className='text-base-content/60 text-sm'>{_('Quota')}</div>
-              <div className='text-base-content text-xl font-semibold'>
-                {formatFileSize(stats.quota)}
-              </div>
-            </div>
-            <div>
-              <div className='text-base-content/60 text-sm'>{_('Used')}</div>
-              <div className='text-base-content text-xl font-semibold'>
-                {stats.usagePercentage}%
-              </div>
-            </div>
-          </div>
-          <div className='bg-base-300 mt-4 h-2 w-full overflow-hidden rounded-full'>
-            <div
-              className='bg-primary h-full transition-all'
-              style={{ width: `${Math.min(stats.usagePercentage, 100)}%` }}
-            />
-          </div>
+          <p className='text-base-content/70 text-[0.85em] leading-relaxed'>
+            {_('Files you have uploaded to sync across your devices.')}
+          </p>
         </div>
-      ) : (
-        <div className='bg-base-100 border-base-300 rounded-lg border p-4'>
-          <div className='skeleton mb-4 h-6 w-32'></div>
-          <div className='grid grid-cols-2 gap-4 sm:grid-cols-4'>
-            <div className='skeleton h-16 w-full'></div>
-            <div className='skeleton h-16 w-full'></div>
-            <div className='skeleton h-16 w-full'></div>
-            <div className='skeleton h-16 w-full'></div>
+        {stats ? (
+          <div className='card eink-bordered border-base-200 bg-base-100 border p-4'>
+            <div className='grid grid-cols-2 gap-4 sm:grid-cols-4'>
+              <div>
+                <div className='text-base-content/60 text-[0.85em]'>{_('Total Files')}</div>
+                <div className='text-base-content text-xl font-semibold'>{stats.totalFiles}</div>
+              </div>
+              <div>
+                <div className='text-base-content/60 text-[0.85em]'>{_('Total Size')}</div>
+                <div className='text-base-content text-xl font-semibold'>
+                  {formatFileSize(stats.totalSize)}
+                </div>
+              </div>
+              <div>
+                <div className='text-base-content/60 text-[0.85em]'>{_('Quota')}</div>
+                <div className='text-base-content text-xl font-semibold'>
+                  {formatFileSize(stats.quota)}
+                </div>
+              </div>
+              <div>
+                <div className='text-base-content/60 text-[0.85em]'>{_('Used')}</div>
+                <div className='text-base-content text-xl font-semibold'>
+                  {stats.usagePercentage}%
+                </div>
+              </div>
+            </div>
+            <div className='bg-base-300 mt-4 h-2 w-full overflow-hidden rounded-full'>
+              <div
+                className='bg-primary h-full transition-all'
+                style={{ width: `${Math.min(stats.usagePercentage, 100)}%` }}
+              />
+            </div>
           </div>
-          <div className='skeleton mt-4 h-2 w-full rounded-full'></div>
-        </div>
-      )}
+        ) : (
+          <div className='card eink-bordered border-base-200 bg-base-100 border p-4'>
+            <div className='grid grid-cols-2 gap-4 sm:grid-cols-4'>
+              <div className='skeleton h-16 w-full'></div>
+              <div className='skeleton h-16 w-full'></div>
+              <div className='skeleton h-16 w-full'></div>
+              <div className='skeleton h-16 w-full'></div>
+            </div>
+            <div className='skeleton mt-4 h-2 w-full rounded-full'></div>
+          </div>
+        )}
+      </div>
 
       {/* Files Section */}
-      <div className='bg-base-100 border-base-300 rounded-lg border'>
-        <div className='border-base-300 flex flex-col gap-4 border-b p-4 sm:flex-row sm:items-center sm:justify-between'>
-          <div className='hidden items-center justify-center sm:flex'>
-            <h3 className='text-base-content text-lg font-semibold'>{_('Files')}</h3>
+      <div className='flex flex-col gap-3'>
+        <h3 className='text-base-content text-lg font-semibold tracking-tight'>{_('Files')}</h3>
+        <div className='card eink-bordered border-base-200 bg-base-100 border'>
+          <div className='flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between'>
+            <div className='flex flex-col gap-2 sm:flex-row'>
+              <input
+                type='text'
+                placeholder={_('Search files...')}
+                value={searchInput}
+                onChange={(e) => setSearchInput(e.target.value)}
+                className='input input-bordered eink-bordered input-sm w-full sm:w-64'
+                disabled={loading}
+              />
+
+              <select
+                value={`${sortBy}-${sortOrder}`}
+                onChange={(e) => {
+                  const [newSortBy, newSortOrder] = e.target.value.split('-');
+                  setSortBy(newSortBy as ListFilesParams['sortBy']);
+                  setSortOrder(newSortOrder as 'asc' | 'desc');
+                }}
+                disabled={loading}
+                className='select select-bordered eink-bordered select-sm'
+              >
+                <option value='created_at-desc'>{_('Newest First')}</option>
+                <option value='created_at-asc'>{_('Oldest First')}</option>
+                <option value='file_size-desc'>{_('Largest First')}</option>
+                <option value='file_size-asc'>{_('Smallest First')}</option>
+                <option value='file_key-asc'>{_('Name A-Z')}</option>
+                <option value='file_key-desc'>{_('Name Z-A')}</option>
+              </select>
+            </div>
+
+            <div className='flex items-center justify-between gap-3 sm:justify-end'>
+              <span className='text-base-content/70 text-[0.85em]'>
+                {_('{{count}} selected', { count: selectedFiles.size })}
+              </span>
+              <button
+                onClick={() => setShowConfirmDelete(true)}
+                className='btn btn-ghost btn-sm text-error'
+                disabled={loading || selectedFiles.size === 0}
+              >
+                {_('Delete Selected')}
+              </button>
+            </div>
           </div>
 
-          <div className='flex flex-col gap-2 sm:flex-row'>
-            <input
-              type='text'
-              placeholder={_('Search files...')}
-              value={searchInput}
-              onChange={(e) => setSearchInput(e.target.value)}
-              className='input input-bordered input-sm w-full sm:w-64'
-              disabled={loading}
-            />
+          {loading && <Spinner loading />}
 
-            <select
-              value={`${sortBy}-${sortOrder}`}
-              onChange={(e) => {
-                const [newSortBy, newSortOrder] = e.target.value.split('-');
-                setSortBy(newSortBy as ListFilesParams['sortBy']);
-                setSortOrder(newSortOrder as 'asc' | 'desc');
-              }}
-              disabled={loading}
-              className='select select-bordered select-sm'
-            >
-              <option value='created_at-desc'>{_('Newest First')}</option>
-              <option value='created_at-asc'>{_('Oldest First')}</option>
-              <option value='file_size-desc'>{_('Largest First')}</option>
-              <option value='file_size-asc'>{_('Smallest First')}</option>
-              <option value='file_key-asc'>{_('Name A-Z')}</option>
-              <option value='file_key-desc'>{_('Name Z-A')}</option>
-            </select>
-          </div>
-        </div>
-
-        {/* Actions Bar */}
-        <div className='bg-base-200 border-base-300 flex items-center justify-between border-b p-4'>
-          <span className='text-base-content text-sm'>
-            {_('{{count}} selected', { count: selectedFiles.size })}
-          </span>
-          <button
-            onClick={() => setShowConfirmDelete(true)}
-            className='btn btn-error btn-sm'
-            disabled={loading || selectedFiles.size === 0}
-          >
-            {_('Delete Selected')}
-          </button>
-        </div>
-
-        {loading && <Spinner loading />}
-
-        {/* Files List - Grouped by Book */}
-        <div className='w-full'>
-          <table className='table-sm table w-full [&_td]:px-2 [&_td]:py-1 [&_th]:px-2 [&_th]:py-1'>
-            <thead className='h-10'>
-              <tr>
-                <th className='w-12'>
-                  <div className='flex items-center'>
-                    <input
-                      type='checkbox'
-                      checked={isAllSelected}
-                      onChange={(e) => handleSelectAll(e.target.checked)}
-                      className='checkbox checkbox-sm'
-                      disabled={!filesLoaded || loading}
-                    />
-                  </div>
-                </th>
-                <th className='!ps-0'>{_('File Name')}</th>
-                <th className='hidden sm:table-cell'>{_('Size')}</th>
-                <th className='hidden sm:table-cell'>{_('Created')}</th>
-              </tr>
-            </thead>
-            <tbody>
-              {!filesLoaded ? (
-                <>
-                  {[...Array(5)].map((_, i) => (
-                    <tr key={i}>
-                      <td className='min-w-16'>
-                        <div className='skeleton h-5 w-5'></div>
-                      </td>
-                      <td className='max-w-0 !ps-0 sm:w-[80%]'>
-                        <div className='flex flex-col gap-2'>
-                          <div className='skeleton h-4 w-3/4'></div>
-                          <div className='skeleton h-3 w-1/2 sm:hidden'></div>
-                        </div>
-                      </td>
-                      <td className='hidden sm:table-cell'>
-                        <div className='skeleton h-4 w-16'></div>
-                      </td>
-                      <td className='hidden sm:table-cell'>
-                        <div className='skeleton h-4 w-20'></div>
-                      </td>
-                    </tr>
-                  ))}
-                </>
-              ) : groupedFiles.size === 0 ? (
+          {/* Files List - Grouped by Book */}
+          <div className='border-base-200 w-full border-t'>
+            <table className='table-sm table w-full [&_td]:px-2 [&_td]:py-1 [&_th]:px-2 [&_th]:py-1'>
+              <thead className='h-10'>
                 <tr>
-                  <td colSpan={4} className='text-center'>
-                    <div className='text-base-content/60 py-8'>
-                      {searchQuery ? _('No files found') : _('No files uploaded yet')}
+                  <th className='w-12'>
+                    <div className='flex items-center'>
+                      <input
+                        type='checkbox'
+                        checked={isAllSelected}
+                        onChange={(e) => handleSelectAll(e.target.checked)}
+                        className='checkbox checkbox-sm'
+                        disabled={!filesLoaded || loading}
+                      />
                     </div>
-                  </td>
+                  </th>
+                  <th className='!ps-0'>{_('File Name')}</th>
+                  <th className='hidden sm:table-cell'>{_('Size')}</th>
+                  <th className='hidden sm:table-cell'>{_('Created')}</th>
                 </tr>
-              ) : (
-                Array.from(groupedFiles.entries()).map(([bookHash, bookFiles]) => {
-                  const mainFile = getMainBookFile(bookFiles);
-                  const isExpanded = expandedBooks.has(bookHash);
-                  const hasMultipleFiles = bookFiles.length > 1;
-                  const bookSelected = isBookSelected(bookFiles);
-                  const bookPartiallySelected = isBookPartiallySelected(bookFiles);
-
-                  if (!mainFile) return null;
-
-                  return (
-                    <React.Fragment key={bookHash}>
-                      {/* Main book row */}
-                      <tr className='hover'>
-                        <td>
-                          <div className='flex items-center gap-1'>
-                            <input
-                              type='checkbox'
-                              checked={bookSelected}
-                              ref={(el) => {
-                                if (el) el.indeterminate = bookPartiallySelected;
-                              }}
-                              onChange={(e) => handleSelectBook(bookFiles, e.target.checked)}
-                              disabled={loading}
-                              className='checkbox checkbox-sm'
-                            />
-                            {hasMultipleFiles && (
-                              <button
-                                onClick={() => toggleBookExpansion(bookHash)}
-                                className='btn btn-ghost btn-xs'
-                              >
-                                {isExpanded ? '−' : '+'}
-                              </button>
-                            )}
-                          </div>
+              </thead>
+              <tbody>
+                {!filesLoaded ? (
+                  <>
+                    {[...Array(5)].map((_, i) => (
+                      <tr key={i}>
+                        <td className='min-w-16'>
+                          <div className='skeleton h-5 w-5'></div>
                         </td>
                         <td className='max-w-0 !ps-0 sm:w-[80%]'>
-                          <div className='flex flex-col'>
-                            <div className='flex items-center gap-2'>
-                              <span className='text-base-content block max-w-full truncate font-medium'>
-                                {getFileName(mainFile.file_key)}
-                              </span>
-                              {hasMultipleFiles && (
-                                <span className='text-base-content/60 flex-shrink-0 whitespace-nowrap text-xs'>
-                                  ({bookFiles.length} {_('files')})
-                                </span>
-                              )}
-                            </div>
-                            <span className='text-base-content/60 text-xs sm:hidden'>
-                              {formatFileSize(getBookTotalSize(bookFiles))} ·{' '}
-                              {formatDate(mainFile.created_at)}
-                            </span>
+                          <div className='flex flex-col gap-2'>
+                            <div className='skeleton h-4 w-3/4'></div>
+                            <div className='skeleton h-3 w-1/2 sm:hidden'></div>
                           </div>
                         </td>
-                        <td className='hidden whitespace-nowrap sm:table-cell'>
-                          {formatFileSize(getBookTotalSize(bookFiles))}
+                        <td className='hidden sm:table-cell'>
+                          <div className='skeleton h-4 w-16'></div>
                         </td>
-                        <td className='hidden whitespace-nowrap sm:table-cell'>
-                          {formatDate(mainFile.created_at)}
+                        <td className='hidden sm:table-cell'>
+                          <div className='skeleton h-4 w-20'></div>
                         </td>
                       </tr>
+                    ))}
+                  </>
+                ) : groupedFiles.size === 0 ? (
+                  <tr>
+                    <td colSpan={4} className='text-center'>
+                      <div className='text-base-content/60 py-8'>
+                        {searchQuery ? _('No files found') : _('No files uploaded yet')}
+                      </div>
+                    </td>
+                  </tr>
+                ) : (
+                  Array.from(groupedFiles.entries()).map(([bookHash, bookFiles]) => {
+                    const mainFile = getMainBookFile(bookFiles);
+                    const isExpanded = expandedBooks.has(bookHash);
+                    const hasMultipleFiles = bookFiles.length > 1;
+                    const bookSelected = isBookSelected(bookFiles);
+                    const bookPartiallySelected = isBookPartiallySelected(bookFiles);
 
-                      {/* Expanded files (excluding covers unless expanded) */}
-                      {isExpanded &&
-                        bookFiles.map((file) => (
-                          <tr key={file.file_key} className='hover bg-base-200/50'>
-                            <td>
-                              <div className='pl-4'>
-                                <input
-                                  type='checkbox'
-                                  checked={selectedFiles.has(file.file_key)}
-                                  onChange={(e) =>
-                                    handleSelectFile(file.file_key, e.target.checked)
-                                  }
-                                  disabled={loading}
-                                  className='checkbox checkbox-sm'
-                                />
-                              </div>
-                            </td>
-                            <td className='max-w-0 !ps-0 sm:w-[80%]'>
-                              <div className='flex flex-col'>
-                                <span className='text-base-content/80 text-xs'>
-                                  {getFileName(file.file_key)}
+                    if (!mainFile) return null;
+
+                    return (
+                      <React.Fragment key={bookHash}>
+                        {/* Main book row */}
+                        <tr className='hover'>
+                          <td>
+                            <div className='flex items-center gap-1'>
+                              <input
+                                type='checkbox'
+                                checked={bookSelected}
+                                ref={(el) => {
+                                  if (el) el.indeterminate = bookPartiallySelected;
+                                }}
+                                onChange={(e) => handleSelectBook(bookFiles, e.target.checked)}
+                                disabled={loading}
+                                className='checkbox checkbox-sm'
+                              />
+                              {hasMultipleFiles && (
+                                <button
+                                  onClick={() => toggleBookExpansion(bookHash)}
+                                  className='btn btn-ghost btn-xs'
+                                >
+                                  {isExpanded ? '−' : '+'}
+                                </button>
+                              )}
+                            </div>
+                          </td>
+                          <td className='max-w-0 !ps-0 sm:w-[80%]'>
+                            <div className='flex flex-col'>
+                              <div className='flex items-center gap-2'>
+                                <span className='text-base-content block max-w-full truncate font-medium'>
+                                  {getFileName(mainFile.file_key)}
                                 </span>
+                                {hasMultipleFiles && (
+                                  <span className='text-base-content/60 flex-shrink-0 whitespace-nowrap text-xs'>
+                                    ({bookFiles.length} {_('files')})
+                                  </span>
+                                )}
                               </div>
-                            </td>
-                            <td className='hidden sm:table-cell'>
-                              {formatFileSize(file.file_size)}
-                            </td>
-                            <td className='hidden sm:table-cell'>{formatDate(file.created_at)}</td>
-                          </tr>
-                        ))}
-                    </React.Fragment>
-                  );
-                })
-              )}
-            </tbody>
-          </table>
-        </div>
+                              <span className='text-base-content/60 text-xs sm:hidden'>
+                                {formatFileSize(getBookTotalSize(bookFiles))} ·{' '}
+                                {formatDate(mainFile.created_at)}
+                              </span>
+                            </div>
+                          </td>
+                          <td className='hidden whitespace-nowrap sm:table-cell'>
+                            {formatFileSize(getBookTotalSize(bookFiles))}
+                          </td>
+                          <td className='hidden whitespace-nowrap sm:table-cell'>
+                            {formatDate(mainFile.created_at)}
+                          </td>
+                        </tr>
 
-        {/* Pagination */}
-        <div className='border-base-300 flex items-center justify-between border-t p-4'>
-          <button
-            onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
-            disabled={currentPage === 1}
-            className='btn btn-sm'
-          >
-            {_('Previous')}
-          </button>
-          <span className='text-base-content text-sm'>
-            {_('Page {{current}} of {{total}}', { current: currentPage, total: totalPages })}
-          </span>
-          <button
-            onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
-            disabled={currentPage === totalPages}
-            className='btn btn-sm'
-          >
-            {_('Next')}
-          </button>
+                        {/* Expanded files (excluding covers unless expanded) */}
+                        {isExpanded &&
+                          bookFiles.map((file) => (
+                            <tr key={file.file_key} className='hover bg-base-200/50'>
+                              <td>
+                                <div className='ps-4'>
+                                  <input
+                                    type='checkbox'
+                                    checked={selectedFiles.has(file.file_key)}
+                                    onChange={(e) =>
+                                      handleSelectFile(file.file_key, e.target.checked)
+                                    }
+                                    disabled={loading}
+                                    className='checkbox checkbox-sm'
+                                  />
+                                </div>
+                              </td>
+                              <td className='max-w-0 !ps-0 sm:w-[80%]'>
+                                <div className='flex flex-col'>
+                                  <span className='text-base-content/80 text-xs'>
+                                    {getFileName(file.file_key)}
+                                  </span>
+                                </div>
+                              </td>
+                              <td className='hidden sm:table-cell'>
+                                {formatFileSize(file.file_size)}
+                              </td>
+                              <td className='hidden sm:table-cell'>
+                                {formatDate(file.created_at)}
+                              </td>
+                            </tr>
+                          ))}
+                      </React.Fragment>
+                    );
+                  })
+                )}
+              </tbody>
+            </table>
+          </div>
+
+          {/* Pagination */}
+          <div className='border-base-200 flex items-center justify-between border-t p-4'>
+            <button
+              onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+              disabled={currentPage === 1}
+              className='btn btn-ghost btn-sm'
+            >
+              {_('Previous')}
+            </button>
+            <span className='text-base-content/70 text-[0.85em]'>
+              {_('Page {{current}} of {{total}}', { current: currentPage, total: totalPages })}
+            </span>
+            <button
+              onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+              disabled={currentPage === totalPages}
+              className='btn btn-ghost btn-sm'
+            >
+              {_('Next')}
+            </button>
+          </div>
         </div>
       </div>
 

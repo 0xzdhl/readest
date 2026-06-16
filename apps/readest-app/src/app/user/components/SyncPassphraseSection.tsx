@@ -92,30 +92,48 @@ export function SyncPassphraseSection() {
   };
 
   return (
-    <section className='border-base-300 rounded-lg border p-4 text-sm'>
-      <h3 className='mb-2 font-semibold'>{_('Sync passphrase')}</h3>
-      <p className='text-base-content/70 mb-3'>
-        {status === 'unset'
-          ? _(
-              'Sensitive synced fields are encrypted before upload. Set a passphrase now or later when encryption is needed.',
-            )
-          : _('Saved to this account. You will be prompted for it when decrypting credentials.')}
-      </p>
-      {message && <p className='text-base-content/60 mb-3 text-xs'>{message}</p>}
-      <div className='flex flex-wrap gap-2'>
-        {status === 'unset' ? (
-          <button className='btn btn-primary btn-sm' disabled={busy} onClick={handleSetOrUnlock}>
-            {_('Set passphrase')}
-          </button>
-        ) : (
-          <button
-            className='btn btn-error btn-outline btn-sm'
-            disabled={busy}
-            onClick={handleForget}
+    <section className='flex flex-col gap-3'>
+      <div className='flex flex-col gap-1.5'>
+        <h3 className='text-base-content text-lg font-semibold tracking-tight'>
+          {_('Sync passphrase')}
+        </h3>
+        <p className='text-base-content/70 text-[0.85em] leading-relaxed'>
+          {status === 'unset'
+            ? _(
+                'Sensitive synced fields are encrypted before upload. Set a passphrase now or later when encryption is needed.',
+              )
+            : _('Saved to this account. You will be prompted for it when decrypting credentials.')}
+        </p>
+      </div>
+      <div className='card eink-bordered border-base-200 bg-base-100 flex flex-col gap-3 border p-4'>
+        <div className='flex items-center justify-between gap-3'>
+          <span className='font-medium'>
+            {status === 'unset' ? _('No passphrase set') : _('Passphrase active')}
+          </span>
+          <span
+            className={
+              status === 'unset' ? 'badge badge-ghost' : 'badge badge-success badge-outline'
+            }
           >
-            {_('Forgot passphrase')}
-          </button>
-        )}
+            {status === 'unset' ? _('Not set') : _('Set')}
+          </span>
+        </div>
+        {message && <p className='text-base-content/70 text-[0.85em] leading-relaxed'>{message}</p>}
+        <div className='flex flex-wrap gap-2'>
+          {status === 'unset' ? (
+            <button className='btn btn-primary btn-sm' disabled={busy} onClick={handleSetOrUnlock}>
+              {_('Set passphrase')}
+            </button>
+          ) : (
+            <button
+              className='btn btn-ghost btn-sm text-error'
+              disabled={busy}
+              onClick={handleForget}
+            >
+              {_('Forgot passphrase')}
+            </button>
+          )}
+        </div>
       </div>
     </section>
   );

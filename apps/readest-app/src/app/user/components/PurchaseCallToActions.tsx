@@ -1,3 +1,4 @@
+import clsx from 'clsx';
 import { useTranslation } from '@/hooks/useTranslation';
 import type { PlanType } from '@/types/quota';
 import { getLocale } from '@/utils/misc';
@@ -15,11 +16,6 @@ const PurchaseCallToActions: React.FC<PurchaseCallToActionsProps> = ({ plan, onS
     return null;
   }
 
-  const storageProducts = plan.products.filter((product) => product.feature === 'storage');
-  const customizationProducts = plan.products.filter(
-    (product) => product.feature === 'customization',
-  );
-
   const formatProductPrice = (price: number, currency: string) => {
     return new Intl.NumberFormat(getLocale(), {
       style: 'currency',
@@ -27,51 +23,29 @@ const PurchaseCallToActions: React.FC<PurchaseCallToActionsProps> = ({ plan, onS
     }).format(price / 100);
   };
 
-  return (
-    <div className='flex flex-col gap-4'>
-      {storageProducts.length > 0 && (
-        <div className='grid grid-cols-2 gap-2'>
-          {storageProducts.map((product) => {
-            const productPrice = formatProductPrice(product.price, product.currency);
-            return (
-              <button
-                key={product.id}
-                onClick={() => onSubscribe(product.id, 'purchase')}
-                className='flex w-full flex-col items-center justify-center rounded-lg bg-green-200 p-2 transition-colors hover:bg-green-300'
-              >
-                <span className='text-base font-semibold text-green-800'>{_(product.name)}</span>
-                <span className='text-sm font-bold text-green-600'>{productPrice}</span>
-              </button>
-            );
-          })}
-        </div>
-      )}
+  // Render EVERY purchasable one-time product as a buy tile. The previous code
+  // only surfaced products tagged `storage` / `customization` and dropped the
+  // rest (the `getProductFeature` fallback is `generic`), so lifetime products
+  // without those tags showed no buy button at all. Token-based, eink-bordered,
+  // two-step-depth hover so it themes cleanly and reads on monochrome.
+  const tileClass =
+    'eink-bordered border-base-200 bg-base-100 flex w-full flex-col items-center justify-center gap-0.5 rounded-lg border p-3 transition-colors duration-150 hover:border-base-300 hover:bg-base-200/60 focus-visible:ring-base-content/15 focus-visible:outline-none focus-visible:ring-2';
 
-      {customizationProducts.length > 0 ? (
-        <div className='grid grid-cols-1 gap-2'>
-          {customizationProducts.map((product) => {
-            const productPrice = formatProductPrice(product.price, product.currency);
-            return (
-              <button
-                key={product.id}
-                onClick={() => onSubscribe(product.id, 'purchase')}
-                className='flex w-full flex-col items-center justify-center rounded-lg bg-green-200 p-2 transition-colors hover:bg-green-300'
-              >
-                <span className='text-base font-semibold text-green-700'>{_(product.name)}</span>
-                <span className='text-sm font-bold text-green-600'>{productPrice}</span>
-              </button>
-            );
-          })}
-        </div>
-      ) : (
-        <div className='grid grid-cols-1 gap-2'>
-          <button className='flex min-h-[3.5rem] w-full flex-col items-center justify-center rounded-lg bg-green-200 p-2'>
-            <span className='text-base font-semibold text-green-700'>
-              {_('Full Customization')} ({_('Coming Soon')})
-            </span>
-          </button>
-        </div>
-      )}
+  return (
+    <div className={clsx('grid gap-2', plan.products.length === 1 ? 'grid-cols-1' : 'grid-cols-2')}>
+      {plan.products.map((product) => (
+        <button
+          key={product.id}
+          type='button'
+          onClick={() => onSubscribe(product.id, 'purchase')}
+          className={tileClass}
+        >
+          <span className='text-base-content font-semibold'>{_(product.name)}</span>
+          <span className='text-primary text-[0.85em] font-bold'>
+            {formatProductPrice(product.price, product.currency)}
+          </span>
+        </button>
+      ))}
     </div>
   );
 };

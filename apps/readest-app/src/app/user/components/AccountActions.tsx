@@ -1,6 +1,14 @@
+import clsx from 'clsx';
 import { useState } from 'react';
+import {
+  MdOutlineCreditCard,
+  MdOutlineRestore,
+  MdOutlineLockReset,
+  MdOutlineMailOutline,
+} from 'react-icons/md';
 import { usePlatformInfo } from '@/context/EffectRuntimeProvider';
 import { useTranslation } from '@/hooks/useTranslation';
+import { BoxedList, NavigationRow } from '@/components/settings/primitives';
 import type { UserPlan } from '@/types/quota';
 
 interface DeleteConfirmationModalProps {
@@ -18,25 +26,21 @@ const DeleteConfirmationModal: React.FC<DeleteConfirmationModalProps> = ({
   if (!show) return null;
 
   return (
-    <div className='fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-4'>
-      <div className='w-full max-w-md rounded-2xl bg-white p-6'>
-        <h3 className='mb-4 text-xl font-bold text-gray-800'>{_('Delete Your Account?')}</h3>
-        <p className='mb-6 text-gray-600'>
+    <div className='fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4'>
+      <div className='eink-bordered bg-base-100 w-full max-w-md rounded-2xl p-6 shadow-xl'>
+        <h3 className='text-base-content mb-3 text-lg font-semibold tracking-tight'>
+          {_('Delete Your Account?')}
+        </h3>
+        <p className='text-base-content/70 mb-6 text-[0.9em] leading-relaxed'>
           {_(
             'This action cannot be undone. All your data in the cloud will be permanently deleted.',
           )}
         </p>
         <div className='flex flex-col gap-3 sm:flex-row'>
-          <button
-            onClick={onCancel}
-            className='flex-1 rounded-lg bg-gray-300 px-4 py-2 font-medium text-gray-800 hover:bg-gray-400'
-          >
+          <button onClick={onCancel} className='btn btn-ghost flex-1'>
             {_('Cancel')}
           </button>
-          <button
-            onClick={onConfirm}
-            className='flex-1 rounded-lg bg-red-500 px-4 py-2 font-medium text-white hover:bg-red-600'
-          >
+          <button onClick={onConfirm} className='btn btn-error flex-1'>
             {_('Delete Permanently')}
           </button>
         </div>
@@ -54,9 +58,6 @@ interface AccountActionsProps {
   onConfirmDelete: () => void;
   onRestorePurchase?: () => void;
   onManageSubscription?: () => void;
-  onManageStorage?: () => void;
-  onManageSharedLinks?: () => void;
-  onManageSync?: () => void;
 }
 
 const AccountActions: React.FC<AccountActionsProps> = ({
@@ -68,9 +69,6 @@ const AccountActions: React.FC<AccountActionsProps> = ({
   onConfirmDelete,
   onRestorePurchase,
   onManageSubscription,
-  onManageStorage,
-  onManageSharedLinks,
-  onManageSync,
 }) => {
   const _ = useTranslation();
   const platformInfo = usePlatformInfo();
@@ -84,6 +82,10 @@ const AccountActions: React.FC<AccountActionsProps> = ({
     setShowConfirmDelete(false);
   };
 
+  const showRestore = platformInfo.hasIAP && iapAvailable;
+  const showSubscription = !showRestore && userPlan !== 'free';
+  const hasSubscriptionGroup = showRestore || showSubscription;
+
   return (
     <>
       <DeleteConfirmationModal
@@ -94,72 +96,67 @@ const AccountActions: React.FC<AccountActionsProps> = ({
           setShowConfirmDelete(false);
         }}
       />
-      <div className='flex flex-col gap-4 md:grid md:grid-cols-2 lg:grid-cols-3'>
-        {platformInfo.hasIAP && iapAvailable ? (
-          <button
-            onClick={onRestorePurchase}
-            className='w-full rounded-lg bg-blue-100 px-6 py-3 font-medium text-blue-600 transition-colors hover:bg-blue-200 md:w-auto'
-          >
-            {_('Restore Purchase')}
-          </button>
-        ) : (
-          userPlan !== 'free' && (
-            <button
-              onClick={onManageSubscription}
-              className='w-full rounded-lg bg-blue-100 px-6 py-3 font-medium text-blue-600 transition-colors hover:bg-blue-200 md:w-auto'
-            >
-              {_('Manage Subscription')}
-            </button>
-          )
+      <div className='flex flex-col gap-6'>
+        {hasSubscriptionGroup && (
+          <BoxedList title={_('Subscription')}>
+            {showSubscription && (
+              <NavigationRow
+                icon={MdOutlineCreditCard}
+                title={_('Manage Subscription')}
+                onClick={() => onManageSubscription?.()}
+              />
+            )}
+            {showRestore && (
+              <NavigationRow
+                icon={MdOutlineRestore}
+                title={_('Restore Purchase')}
+                onClick={() => onRestorePurchase?.()}
+              />
+            )}
+          </BoxedList>
         )}
-        {onManageSync && (
+
+        <BoxedList title={_('Account')}>
+          <NavigationRow
+            icon={MdOutlineLockReset}
+            title={_('Reset Password')}
+            onClick={onResetPassword}
+          />
+          <NavigationRow
+            icon={MdOutlineMailOutline}
+            title={_('Update Email')}
+            onClick={onUpdateEmail}
+          />
+        </BoxedList>
+
+        <div className='flex flex-col gap-3'>
           <button
-            onClick={onManageSync}
-            className='w-full rounded-lg bg-blue-100 px-6 py-3 font-medium text-blue-600 transition-colors hover:bg-blue-200 md:w-auto'
+            type='button'
+            onClick={onLogout}
+            className={clsx(
+              'eink-bordered border-base-200 bg-base-100 flex h-11 items-center justify-center rounded-lg border px-4',
+              'text-base-content font-medium',
+              'transition-colors duration-150',
+              'hover:border-base-300 hover:bg-base-200/60 active:bg-base-200/80',
+              'focus-visible:ring-base-content/15 focus-visible:outline-none focus-visible:ring-2',
+            )}
           >
-            {_('Manage Sync')}
+            {_('Sign Out')}
           </button>
-        )}
-        {onManageStorage && (
           <button
-            onClick={onManageStorage}
-            className='w-full rounded-lg bg-purple-100 px-6 py-3 font-medium text-purple-600 transition-colors hover:bg-purple-200 md:w-auto'
+            type='button'
+            onClick={handleDeleteRequest}
+            className={clsx(
+              'eink-bordered border-base-200 bg-base-100 flex h-11 items-center justify-center rounded-lg border px-4',
+              'text-error font-medium',
+              'transition-colors duration-150',
+              'hover:border-error/40 hover:bg-error/5 active:bg-error/10',
+              'focus-visible:ring-error/30 focus-visible:outline-none focus-visible:ring-2',
+            )}
           >
-            {_('Manage Storage')}
+            {_('Delete Account')}
           </button>
-        )}
-        {onManageSharedLinks && (
-          <button
-            onClick={onManageSharedLinks}
-            className='w-full rounded-lg bg-purple-100 px-6 py-3 font-medium text-purple-600 transition-colors hover:bg-purple-200 md:w-auto'
-          >
-            {_('Manage Shared Links')}
-          </button>
-        )}
-        <button
-          onClick={onResetPassword}
-          className='w-full rounded-lg bg-gray-200 px-6 py-3 font-medium text-gray-800 transition-colors hover:bg-gray-300 md:w-auto'
-        >
-          {_('Reset Password')}
-        </button>
-        <button
-          onClick={onUpdateEmail}
-          className='w-full rounded-lg bg-gray-200 px-6 py-3 font-medium text-gray-800 transition-colors hover:bg-gray-300 md:w-auto'
-        >
-          {_('Update Email')}
-        </button>
-        <button
-          onClick={onLogout}
-          className='w-full rounded-lg bg-gray-200 px-6 py-3 font-medium text-gray-800 transition-colors hover:bg-gray-300 md:w-auto'
-        >
-          {_('Sign Out')}
-        </button>
-        <button
-          onClick={handleDeleteRequest}
-          className='w-full rounded-lg bg-red-100 px-6 py-3 font-medium text-red-600 transition-colors hover:bg-red-200 md:w-auto'
-        >
-          {_('Delete Account')}
-        </button>
+        </div>
       </div>
     </>
   );

@@ -7,7 +7,6 @@ interface PlanActionButtonProps {
   comingSoon?: boolean;
   upgradable?: boolean;
   onSubscribe: (priceId?: string) => void;
-  onSelectPlan: (index: number) => void;
 }
 
 const PlanActionButton: React.FC<PlanActionButtonProps> = ({
@@ -16,49 +15,33 @@ const PlanActionButton: React.FC<PlanActionButtonProps> = ({
   comingSoon,
   upgradable,
   onSubscribe,
-  onSelectPlan,
 }) => {
   const _ = useTranslation();
 
-  if (upgradable && plan.plan !== 'free' && !isUserPlan) {
+  if (isUserPlan) {
+    // Current plan (free or paid): a calm, non-interactive marker, not a CTA.
+    return (
+      <div className='border-base-200 text-base-content/70 flex w-full items-center justify-center rounded-lg border px-6 py-3 text-[0.9em] font-medium'>
+        {_('Current Plan')}
+      </div>
+    );
+  }
+
+  if (upgradable && plan.plan !== 'free') {
     if (comingSoon) {
       return (
-        <button
-          disabled
-          className='w-full cursor-default rounded-lg bg-gray-200 px-6 py-3 font-semibold text-gray-500'
-        >
+        <button type='button' disabled className='btn w-full' aria-disabled='true'>
           {_('Coming Soon')}
         </button>
       );
     }
     return (
       <button
+        type='button'
         onClick={() => onSubscribe(plan.productId)}
-        className='w-full rounded-lg bg-blue-600 px-6 py-3 font-semibold text-white transition-colors hover:bg-blue-700'
+        className='btn btn-primary w-full'
       >
         {_('Upgrade to {{plan}}', { plan: _(plan.name) })}
-      </button>
-    );
-  }
-
-  if (plan.plan === 'free' && isUserPlan) {
-    return (
-      <button
-        onClick={() => onSelectPlan(1)}
-        className='w-full rounded-lg bg-blue-600 px-6 py-3 font-semibold text-white transition-colors hover:bg-blue-700'
-      >
-        {_('Upgrade to Plus or Pro')}
-      </button>
-    );
-  }
-
-  if (isUserPlan) {
-    return (
-      <button
-        disabled
-        className='w-full cursor-default rounded-lg bg-green-100 px-6 py-3 font-semibold text-green-700'
-      >
-        {_('Current Plan')}
       </button>
     );
   }

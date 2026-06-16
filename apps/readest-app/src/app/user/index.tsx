@@ -2,6 +2,14 @@
 import { useState, useEffect, useCallback } from 'react';
 import { createFileRoute, useRouter } from '@tanstack/react-router';
 import { z } from 'zod';
+import type { IconType } from 'react-icons';
+import {
+  MdOutlineCloud,
+  MdOutlineLink,
+  MdOutlinePerson,
+  MdOutlineSync,
+  MdOutlineWorkspacePremium,
+} from 'react-icons/md';
 import { usePlatformInfo, useBooted } from '@/context/EffectRuntimeProvider';
 import { useAuth } from '@/context/AuthContext';
 import { useTheme } from '@/hooks/useTheme';
@@ -59,6 +67,9 @@ type CheckoutState = {
   planName: string;
 };
 
+type AccountSection = 'overview' | 'storage' | 'shared' | 'sync' | 'plans';
+const ACCOUNT_SECTION_KEYS = ['overview', 'storage', 'shared', 'sync', 'plans'] as const;
+
 function ProfilePage() {
   const _ = useTranslation();
   const router = useRouter();
@@ -69,10 +80,12 @@ function ProfilePage() {
 
   const [loading, setLoading] = useState(false);
   const [showEmbeddedCheckout, setShowEmbeddedCheckout] = useState(false);
-  const [showStorageManager, setShowStorageManager] = useState(false);
-  const [showSharedLinksManager, setShowSharedLinksManager] = useState(false);
   const search = Route.useSearch();
-  const [showSyncManager, setShowSyncManager] = useState(() => search.section === 'sync');
+  const [activeSection, setActiveSection] = useState<AccountSection>(() =>
+    (ACCOUNT_SECTION_KEYS as readonly string[]).includes(search.section)
+      ? (search.section as AccountSection)
+      : 'overview',
+  );
   const [checkoutState, setCheckoutState] = useState<CheckoutState>({
     clientSecret: '',
     sessionId: '',
@@ -117,16 +130,15 @@ function ProfilePage() {
   const handleGoBack = () => {
     if (showEmbeddedCheckout) {
       setShowEmbeddedCheckout(false);
-    } else if (showStorageManager) {
-      setShowStorageManager(false);
-      refresh();
-    } else if (showSharedLinksManager) {
-      setShowSharedLinksManager(false);
-    } else if (showSyncManager) {
-      setShowSyncManager(false);
     } else {
       navigateToLibrary(router);
     }
+  };
+
+  const handleSelectSection = (section: AccountSection) => {
+    // Leaving Storage refreshes quota/usage in case files were deleted there.
+    if (activeSection === 'storage' && section !== 'storage') refresh();
+    setActiveSection(section);
   };
 
   const handleStripeSubscribe = async (productId?: string, planType: PlanType = 'subscription') => {
@@ -245,17 +257,6 @@ function ProfilePage() {
     handleConfirmDelete(_('Failed to delete user. Please try again later.'));
   };
 
-  const handleManageStorage = () => {
-    setShowStorageManager(true);
-  };
-
-  const handleManageSharedLinks = () => {
-    setShowSharedLinksManager(true);
-  };
-  const handleManageSync = () => {
-    setShowSyncManager(true);
-  };
-
   if (!mounted) {
     return null;
   }
@@ -263,7 +264,7 @@ function ProfilePage() {
   if (!user || !booted) {
     return (
       <div className='mx-auto max-w-4xl px-4 py-8'>
-        <div className='overflow-hidden rounded-lg shadow-md'>
+        <div className='eink-bordered border-base-200 bg-base-100 overflow-hidden rounded-lg border'>
           <div className='flex min-h-[300px] items-center justify-center p-6'>
             <div className='text-base-content animate-pulse'>{_('Loading profile...')}</div>
           </div>
@@ -284,6 +285,83 @@ function ProfilePage() {
   const userPlanDetails =
     getPlanDetails(userProfilePlan, availablePlans) || getPlanDetails('free', availablePlans);
 
+  const sectionNav: { key: AccountSection; label: string; icon: IconType }[] = [
+    { key: 'overview', label: _('Overview'), icon: MdOutlinePerson },
+    { key: 'storage', label: _('Storage'), icon: MdOutlineCloud },
+    { key: 'shared', label: _('Shared Links'), icon: MdOutlineLink },
+    { key: 'sync', label: _('Sync'), icon: MdOutlineSync },
+    { key: 'plans', label: _('Plans'), icon: MdOutlineWorkspacePremium },
+  ];
+
+  const renderNavButton = (
+    item: { key: AccountSection; label: string; icon: IconType },
+    horizontal: boolean,
+  ) => {
+    const active = activeSection === item.key;
+    const Icon = item.icon;
+    return (
+      <button
+        key={item.key}
+        type='button'
+        onClick={() => handleSelectSection(item.key)}
+        aria-current={active ? 'page' : undefined}
+        className={clsx(
+          'flex items-center gap-2.5 rounded-lg px-3 py-2 text-start transition-colors duration-150',
+          'focus-visible:ring-base-content/15 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset',
+          horizontal ? 'shrink-0 whitespace-nowrap' : 'w-full',
+          active
+            ? 'bg-base-300/80 text-base-content eink:eink-bordered eink:border'
+            : 'text-base-content/80 hover:bg-base-200',
+        )}
+      >
+        <Icon className='h-[1.15em] w-[1.15em] shrink-0' aria-hidden='true' />
+        <span className='truncate'>{item.label}</span>
+      </button>
+    );
+  };
+
+  const renderSection = () => {
+    switch (activeSection) {
+      case 'storage':
+        return <StorageManager />;
+      case 'shared':
+        return <SharedLinksSection />;
+      case 'sync':
+        return (
+          <div className='flex flex-col gap-8'>
+            <SyncCategoriesSection />
+            <SyncPassphraseSection />
+          </div>
+        );
+      case 'plans':
+        return (
+          <PlansComparison
+            availablePlans={availablePlans}
+            userPlan={userProfilePlan}
+            onSubscribe={
+              platformInfo.hasIAP && iapAvailable ? handleIAPSubscribe : handleStripeSubscribe
+            }
+          />
+        );
+      default:
+        return (
+          <div className='flex flex-col gap-8'>
+            <UsageStats quotas={quotas} />
+            <AccountActions
+              userPlan={userProfilePlan}
+              iapAvailable={iapAvailable}
+              onLogout={handleLogout}
+              onResetPassword={handleResetPassword}
+              onUpdateEmail={handleUpdateEmail}
+              onConfirmDelete={handleDeleteWithMessage}
+              onRestorePurchase={handleIAPRestorePurchase}
+              onManageSubscription={handleManageSubscription}
+            />
+          </div>
+        );
+    }
+  };
+
   return (
     <div
       className={clsx(
@@ -292,20 +370,23 @@ function ProfilePage() {
       )}
     >
       <div
-        className={clsx('flex h-full w-full flex-col items-center overflow-y-auto')}
-        style={{
-          paddingTop: `${safeAreaInsets?.top || 0}px`,
-        }}
+        className='flex h-full w-full flex-col overflow-y-auto'
+        style={{ paddingTop: `${safeAreaInsets?.top || 0}px` }}
       >
         <ProfileHeader onGoBack={handleGoBack} />
-        <div className='w-full min-w-60 max-w-4xl py-10'>
-          {loading && (
-            <div className='fixed inset-0 z-50 flex items-center justify-center'>
-              <Spinner loading className='text-gray-900' />
-            </div>
+        {loading && (
+          <div className='fixed inset-0 z-50 flex items-center justify-center'>
+            <Spinner loading className='text-base-content' />
+          </div>
+        )}
+        <div
+          className={clsx(
+            'mx-auto w-full max-w-5xl flex-1 px-4 pb-12 sm:px-6',
+            platformInfo.hasTrafficLight ? 'pt-24' : 'pt-14',
           )}
+        >
           {showEmbeddedCheckout ? (
-            <div className='bg-base-100 rounded-lg p-4'>
+            <div className='eink-bordered border-base-200 bg-base-100 rounded-lg border p-4'>
               <Checkout
                 clientSecret={checkoutState.clientSecret}
                 sessionId={checkoutState.sessionId}
@@ -314,68 +395,39 @@ function ProfilePage() {
               />
             </div>
           ) : (
-            <div className='sm:bg-base-200 overflow-hidden rounded-lg sm:p-6 sm:shadow-md'>
-              <div className='flex flex-col gap-y-8'>
-                <div className='flex flex-col gap-y-8 px-6'>
-                  <UserInfo
-                    avatarUrl={avatarUrl}
-                    userFullName={userFullName}
-                    userEmail={userEmail}
-                    planDetails={userPlanDetails}
-                  />
-
-                  {!showStorageManager && !showSharedLinksManager && !showSyncManager && (
-                    <UsageStats quotas={quotas} />
-                  )}
-                </div>
-
-                {showStorageManager ? (
-                  <div className='flex flex-col gap-y-8 px-6'>
-                    <StorageManager />
+            <>
+              <div className='flex flex-col gap-6 lg:flex-row lg:gap-10'>
+                <aside className='lg:w-64 lg:flex-shrink-0'>
+                  <div className='flex flex-col gap-4 lg:sticky lg:top-4'>
+                    <UserInfo
+                      avatarUrl={avatarUrl}
+                      userFullName={userFullName}
+                      userEmail={userEmail}
+                      planDetails={userPlanDetails}
+                    />
+                    {/* Desktop: vertical rail nav. */}
+                    <nav
+                      aria-label={_('Account sections')}
+                      className='hidden flex-col gap-0.5 lg:flex'
+                    >
+                      {sectionNav.map((item) => renderNavButton(item, false))}
+                    </nav>
+                    {/* Mobile: the rail collapses to a horizontal scroll strip. */}
+                    <nav
+                      aria-label={_('Account sections')}
+                      className='-mx-4 flex gap-1 overflow-x-auto px-4 lg:hidden'
+                      style={{ scrollbarWidth: 'none' }}
+                    >
+                      {sectionNav.map((item) => renderNavButton(item, true))}
+                    </nav>
                   </div>
-                ) : showSharedLinksManager ? (
-                  <div className='flex flex-col gap-y-8 px-6'>
-                    <SharedLinksSection />
-                  </div>
-                ) : showSyncManager ? (
-                  <div className='flex flex-col gap-y-8 px-6'>
-                    <SyncCategoriesSection />
-                    <SyncPassphraseSection />
-                  </div>
-                ) : (
-                  <>
-                    <div className='flex flex-col gap-y-8 sm:px-6'>
-                      <PlansComparison
-                        availablePlans={availablePlans}
-                        userPlan={userProfilePlan}
-                        onSubscribe={
-                          platformInfo.hasIAP && iapAvailable
-                            ? handleIAPSubscribe
-                            : handleStripeSubscribe
-                        }
-                      />
-                    </div>
-                    <div className='flex flex-col gap-y-8 px-6'>
-                      <AccountActions
-                        userPlan={userProfilePlan}
-                        iapAvailable={iapAvailable}
-                        onLogout={handleLogout}
-                        onResetPassword={handleResetPassword}
-                        onUpdateEmail={handleUpdateEmail}
-                        onConfirmDelete={handleDeleteWithMessage}
-                        onRestorePurchase={handleIAPRestorePurchase}
-                        onManageSubscription={handleManageSubscription}
-                        onManageStorage={handleManageStorage}
-                        onManageSharedLinks={handleManageSharedLinks}
-                        onManageSync={handleManageSync}
-                      />
-                    </div>
-                  </>
-                )}
-
+                </aside>
+                <main className='min-w-0 flex-1'>{renderSection()}</main>
+              </div>
+              <div className='mt-10'>
                 <LegalLinks />
               </div>
-            </div>
+            </>
           )}
         </div>
         <Toast />

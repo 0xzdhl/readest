@@ -27,9 +27,9 @@ const ProfileHeader: React.FC<ProfileHeaderProps> = ({ onGoBack }) => {
       <button
         aria-label={_('Go Back')}
         onClick={onGoBack}
-        className={clsx('btn btn-ghost h-12 min-h-12 w-12 p-0 sm:h-8 sm:min-h-8 sm:w-8')}
+        className={clsx('btn btn-ghost btn-circle h-10 min-h-10 w-10 p-0 sm:h-8 sm:min-h-8 sm:w-8')}
       >
-        <IoArrowBack className='text-base-content' />
+        <IoArrowBack className='text-base-content h-5 w-5' />
       </button>
 
       {platformInfo.hasWindowBar && (
