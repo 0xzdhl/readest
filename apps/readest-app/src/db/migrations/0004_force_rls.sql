@@ -23,8 +23,8 @@
 -- level. The predicate added in handleGet (eq(table.userId, ctx.user.id))
 -- is a defense-in-depth layer that works regardless of DB role.
 
-ALTER TABLE public.books          FORCE ROW LEVEL SECURITY;
-ALTER TABLE public.book_configs   FORCE ROW LEVEL SECURITY;
-ALTER TABLE public.book_notes     FORCE ROW LEVEL SECURITY;
-ALTER TABLE public.files          FORCE ROW LEVEL SECURITY;
+ALTER TABLE public.books          FORCE ROW LEVEL SECURITY;--> statement-breakpoint
+ALTER TABLE public.book_configs   FORCE ROW LEVEL SECURITY;--> statement-breakpoint
+ALTER TABLE public.book_notes     FORCE ROW LEVEL SECURITY;--> statement-breakpoint
+ALTER TABLE public.files          FORCE ROW LEVEL SECURITY;--> statement-breakpoint
 ALTER TABLE public.replica_keys   FORCE ROW LEVEL SECURITY;
