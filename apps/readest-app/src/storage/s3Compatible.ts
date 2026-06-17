@@ -119,6 +119,27 @@ export const S3CompatibleStorageLive = Layer.effect(
             return new StorageRequestError(String(e));
           },
         }),
+
+      getObjectBytes: (fileKey, bucketName) =>
+        Effect.tryPromise({
+          try: async () => {
+            const r = await client.fetch(objectUrl(bucketName ?? config.bucketName, fileKey), {
+              method: 'GET',
+            });
+            if (r.status === 404) {
+              throw new StorageNotFoundError(`Not found: ${fileKey}`);
+            }
+            if (!r.ok) {
+              throw new StorageRequestError(`Get failed: ${r.status}`, r.status);
+            }
+            return await r.arrayBuffer();
+          },
+          catch: (e) => {
+            if (e instanceof StorageNotFoundError) return e;
+            if (e instanceof StorageRequestError) return e;
+            return new StorageRequestError(String(e));
+          },
+        }),
     });
   }),
 );

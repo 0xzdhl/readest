@@ -33,5 +33,10 @@ export class ObjectStorage extends Context.Tag('ObjectStorage')<
       bucketName?: string,
       sourceBucketName?: string,
     ) => Effect.Effect<void, StorageRequestError | StorageNotFoundError>;
+
+    readonly getObjectBytes: (
+      fileKey: string,
+      bucketName?: string,
+    ) => Effect.Effect<ArrayBuffer, StorageRequestError | StorageNotFoundError>;
   }
 >() {}
