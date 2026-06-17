@@ -76,7 +76,10 @@ export const Route = createFileRoute('/api/storage/delete')({
             );
             if (Either.isLeft(deleteResult)) {
               console.error('Error deleting object from storage:', deleteResult.left);
-              return Response.json({ error: 'Could not delete file from storage' }, { status: 500 });
+              return Response.json(
+                { error: 'Could not delete file from storage' },
+                { status: 500 },
+              );
             }
           }
 

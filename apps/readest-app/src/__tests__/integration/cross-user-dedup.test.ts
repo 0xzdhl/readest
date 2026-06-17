@@ -59,8 +59,9 @@ type HandlerArgs = {
 };
 type Handler = (args: HandlerArgs) => Promise<Response>;
 
-const getHandler = (route: { options: { server?: { handlers?: Record<string, Handler> } } }, method: string): Handler => {
-  const h = route.options.server?.handlers?.[method];
+const getHandler = (route: unknown, method: string): Handler => {
+  const r = route as { options: { server?: { handlers?: Record<string, Handler> } } };
+  const h = r.options.server?.handlers?.[method];
   if (!h) throw new Error(`No ${method} handler on route`);
   return h;
 };
@@ -77,20 +78,22 @@ interface InMemoryStorageStats {
 function makeInMemoryStorage(
   store: Map<string, ArrayBuffer>,
   stats: InMemoryStorageStats,
-): ObjectStorage {
-  return {
-    getUploadSignedUrl: (fileKey, _contentLength, _expiresIn, _bucket) =>
-      Effect.succeed(`https://fake-upload.test/${fileKey}`),
+): ReturnType<typeof ObjectStorage.of> {
+  return ObjectStorage.of({
+    getUploadSignedUrl: (
+      fileKey: string,
+      _contentLength: number,
+      _expiresIn: number,
+      _bucket?: string,
+    ) => Effect.succeed(`https://fake-upload.test/${fileKey}`),
 
-    getDownloadSignedUrl: (fileKey, _expiresIn, _bucket) =>
+    getDownloadSignedUrl: (fileKey: string, _expiresIn: number, _bucket?: string) =>
       Effect.succeed(`https://fake-download.test/${fileKey}`),
 
-    headObject: (fileKey, _bucket) =>
-      store.has(fileKey)
-        ? Effect.void
-        : Effect.fail(new StorageNotFoundError(fileKey)),
+    headObject: (fileKey: string, _bucket?: string) =>
+      store.has(fileKey) ? Effect.void : Effect.fail(new StorageNotFoundError(fileKey)),
 
-    getObjectBytes: (fileKey, _bucket) => {
+    getObjectBytes: (fileKey: string, _bucket?: string) => {
       const data = store.get(fileKey);
       if (!data) {
         return Effect.fail(new StorageNotFoundError(fileKey));
@@ -98,7 +101,12 @@ function makeInMemoryStorage(
       return Effect.succeed(data);
     },
 
-    copyObject: (sourceFileKey, destFileKey, _bucket, _srcBucket) => {
+    copyObject: (
+      sourceFileKey: string,
+      destFileKey: string,
+      _bucket?: string,
+      _srcBucket?: string,
+    ) => {
       const data = store.get(sourceFileKey);
       if (!data) {
         return Effect.fail(new StorageNotFoundError(sourceFileKey));
@@ -108,12 +116,12 @@ function makeInMemoryStorage(
       return Effect.void;
     },
 
-    deleteObject: (fileKey, _bucket) => {
+    deleteObject: (fileKey: string, _bucket?: string) => {
       stats.deleteObjectCallCount++;
       store.delete(fileKey);
       return Effect.void;
     },
-  } satisfies ObjectStorage;
+  });
 }
 
 // ---------------------------------------------------------------------------
@@ -168,7 +176,9 @@ function makeUserAwareTx(userId: string, filesRows: FilesRow[]): DbTx {
    */
   function makeSelectResult(rows: FilesRow[]) {
     // Wrap in a real Promise so the handler can `const [row] = await tx.select...`
-    const p = Promise.resolve(rows) as Promise<FilesRow[]> & { limit: (n: number) => Promise<FilesRow[]> };
+    const p = Promise.resolve(rows) as Promise<FilesRow[]> & {
+      limit: (n: number) => Promise<FilesRow[]>;
+    };
     p.limit = (_n: number) => Promise.resolve(rows);
     return p;
   }
@@ -176,7 +186,9 @@ function makeUserAwareTx(userId: string, filesRows: FilesRow[]): DbTx {
   // Special "sum" result for finalize's quota query — returns [{total: X}]
   function makeAggResult(total: number) {
     const rows = [{ total }] as unknown as FilesRow[];
-    const p = Promise.resolve(rows) as Promise<FilesRow[]> & { limit: (n: number) => Promise<FilesRow[]> };
+    const p = Promise.resolve(rows) as Promise<FilesRow[]> & {
+      limit: (n: number) => Promise<FilesRow[]>;
+    };
     p.limit = (_n: number) => Promise.resolve(rows);
     return p;
   }
@@ -354,7 +366,7 @@ function extractInArrayValues(expr: SqlLike): string[] | undefined {
 //    the result in Either (success or failure) — mirrors run.ts behaviour.
 // ---------------------------------------------------------------------------
 
-function makeRunStorageProgram(storage: ObjectStorage) {
+function makeRunStorageProgram(storage: ReturnType<typeof ObjectStorage.of>) {
   return async <A>(
     prog: Effect.Effect<A, import('@/storage').StorageError, ObjectStorage>,
   ): Promise<Either.Either<A, import('@/storage').StorageError>> => {
@@ -426,7 +438,7 @@ describe('cross-user binary dedup — end-to-end (in-memory)', () => {
   let store: Map<string, ArrayBuffer>;
   let stats: InMemoryStorageStats;
   let filesRows: FilesRow[];
-  let storage: ObjectStorage;
+  let storage: ReturnType<typeof ObjectStorage.of>;
 
   beforeEach(() => {
     vi.clearAllMocks();
@@ -657,7 +669,10 @@ describe('cross-user binary dedup — end-to-end (in-memory)', () => {
     expect(resA.status, 'A delete status').toBe(200);
 
     // A's DB row should be gone
-    expect(filesRows.find((r) => r.id === 'row-a'), 'A row removed from DB').toBeUndefined();
+    expect(
+      filesRows.find((r) => r.id === 'row-a'),
+      'A row removed from DB',
+    ).toBeUndefined();
 
     // content/<sha> MUST still be in the store (B still references it)
     expect(store.has(contentKey), 'content object retained after A deletes (B has ref)').toBe(true);
@@ -671,7 +686,10 @@ describe('cross-user binary dedup — end-to-end (in-memory)', () => {
     expect(resB.status, 'B delete status').toBe(200);
 
     // B's DB row should be gone
-    expect(filesRows.find((r) => r.id === 'row-b'), 'B row removed from DB').toBeUndefined();
+    expect(
+      filesRows.find((r) => r.id === 'row-b'),
+      'B row removed from DB',
+    ).toBeUndefined();
 
     // content/<sha> MUST now be removed (refcount dropped to 0)
     expect(store.has(contentKey), 'content object GCd after B deletes (refcount 0)').toBe(false);

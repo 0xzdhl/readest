@@ -60,8 +60,8 @@ const makeTx = (rows: FakeFileRow[]) => {
  */
 const makeStorageMock = (capturedKey: string[]) =>
   vi.fn(async (prog: Effect.Effect<string, never, ObjectStorage>) => {
-    const mockStorage: ObjectStorage = {
-      getDownloadSignedUrl: (key: string, _expiresIn: number) => {
+    const mockStorage = ObjectStorage.of({
+      getDownloadSignedUrl: (key: string, _expiresIn: number, _bucket?: string) => {
         capturedKey.push(key);
         return Effect.succeed(`https://cdn.example.com/${key}`) as Effect.Effect<
           string,
@@ -69,14 +69,17 @@ const makeStorageMock = (capturedKey: string[]) =>
           never
         >;
       },
-      getUploadSignedUrl: (_key, _size, _exp) =>
+      getUploadSignedUrl: (_key: string, _size: number, _exp: number, _bucket?: string) =>
         Effect.succeed('') as Effect.Effect<string, never, never>,
-      deleteObject: (_key) => Effect.void as Effect.Effect<void, never, never>,
-      headObject: (_key) => Effect.void as Effect.Effect<void, never, never>,
-      copyObject: (_src, _dst) => Effect.void as Effect.Effect<void, never, never>,
-      getObjectBytes: (_key) =>
+      deleteObject: (_key: string, _bucket?: string) =>
+        Effect.void as Effect.Effect<void, never, never>,
+      headObject: (_key: string, _bucket?: string) =>
+        Effect.void as Effect.Effect<void, never, never>,
+      copyObject: (_src: string, _dst: string, _bucket?: string, _srcBucket?: string) =>
+        Effect.void as Effect.Effect<void, never, never>,
+      getObjectBytes: (_key: string, _bucket?: string) =>
         Effect.succeed(new ArrayBuffer(0)) as Effect.Effect<ArrayBuffer, never, never>,
-    };
+    });
     const layer = Layer.succeed(ObjectStorage, mockStorage);
     const result = await Effect.runPromise(
       Effect.provide(prog, layer) as Effect.Effect<string, never, never>,
