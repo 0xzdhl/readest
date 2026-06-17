@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import type { Book, BookLookupIndex } from '@/domain/book';
 import { getMetadataHash } from '@/utils/book';
+import { setCurrentUserNamespace } from '@/services/userNamespace';
 
 const mockOpen = vi.hoisted(() => vi.fn());
 const mockPartialMD5 = vi.hoisted(() => vi.fn());
@@ -159,6 +160,7 @@ describe('importBook metaHash deduplication', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
+    setCurrentUserNamespace(null); // pin to 'local' for deterministic paths
     fs = makeMockFs();
     fs.exists.mockResolvedValue(false);
     fs.createDir.mockResolvedValue(undefined);
@@ -221,6 +223,8 @@ describe('importBook metaHash deduplication', () => {
     setupMockBookDoc();
 
     fs.exists.mockImplementation(async (path: string) => {
+      // namespaced candidate-scan path returns false → falls through to legacy fallback
+      if (path === 'users/local/old-hash-123/config.json') return false;
       if (path === 'old-hash-123/config.json') return true;
       if (path === 'old-hash-123') return true;
       return false;
@@ -230,11 +234,13 @@ describe('importBook metaHash deduplication', () => {
     const mockFile = new File(['new content'], 'test.epub', { type: 'application/epub+zip' });
     await importBook(fs, mockFile, books);
 
-    // Should have read config from old directory
+    // Should have read config from old (canonical) directory via legacy fallback
     expect(fs.readFile).toHaveBeenCalledWith('old-hash-123/config.json', 'Books', 'text');
-    // Should have written config to new directory with updated bookHash and metaHash
+    // Should have written config to namespaced new directory with updated bookHash and metaHash
     const writeCalls = fs.writeFile.mock.calls;
-    const configWrite = writeCalls.find((c: unknown[]) => c[0] === 'new-hash-456/config.json');
+    const configWrite = writeCalls.find(
+      (c: unknown[]) => c[0] === 'users/local/new-hash-456/config.json',
+    );
     expect(configWrite).toBeDefined();
     const writtenConfig = JSON.parse(configWrite![2] as string);
     expect(writtenConfig.bookHash).toBe('new-hash-456');
@@ -307,6 +313,7 @@ describe('importBook metaHash aggregation', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
+    setCurrentUserNamespace(null); // pin to 'local' for deterministic paths
     fs = makeMockFs();
     fs.exists.mockResolvedValue(false);
     fs.createDir.mockResolvedValue(undefined);
@@ -351,16 +358,18 @@ describe('importBook metaHash aggregation', () => {
     setupMockBookDoc();
 
     fs.exists.mockImplementation(async (path: string) => {
-      if (path.endsWith('/config.json')) return true;
+      if (path === 'users/local/hash-1/config.json') return true;
+      if (path === 'users/local/hash-2/config.json') return true;
+      if (path === 'users/local/hash-3/config.json') return true;
       if (['hash-1', 'hash-2', 'hash-3'].includes(path)) return true;
       return false;
     });
     fs.readFile.mockImplementation(async (path: string) => {
-      if (path === 'hash-1/config.json')
+      if (path === 'users/local/hash-1/config.json')
         return JSON.stringify({ updatedAt: 3000, progress: [10, 200], location: 'loc1' });
-      if (path === 'hash-2/config.json')
+      if (path === 'users/local/hash-2/config.json')
         return JSON.stringify({ updatedAt: 1000, progress: [50, 200], location: 'loc2' });
-      if (path === 'hash-3/config.json')
+      if (path === 'users/local/hash-3/config.json')
         return JSON.stringify({ updatedAt: 2000, progress: [30, 200], location: 'loc3' });
       return '{}';
     });
@@ -370,7 +379,7 @@ describe('importBook metaHash aggregation', () => {
 
     const writeCalls = fs.writeFile.mock.calls;
     const configWrite = writeCalls.find(
-      (c: unknown[]) => (c[0] as string) === 'new-hash/config.json',
+      (c: unknown[]) => (c[0] as string) === 'users/local/new-hash/config.json',
     );
     expect(configWrite).toBeDefined();
     const writtenConfig = JSON.parse(configWrite![2] as string);
@@ -390,12 +399,13 @@ describe('importBook metaHash aggregation', () => {
     setupMockBookDoc();
 
     fs.exists.mockImplementation(async (path: string) => {
-      if (path.endsWith('/config.json')) return true;
+      if (path === 'users/local/hash-1/config.json') return true;
+      if (path === 'users/local/hash-2/config.json') return true;
       if (['hash-1', 'hash-2'].includes(path)) return true;
       return false;
     });
     fs.readFile.mockImplementation(async (path: string) => {
-      if (path === 'hash-1/config.json')
+      if (path === 'users/local/hash-1/config.json')
         return JSON.stringify({
           updatedAt: 1000,
           progress: [80, 200],
@@ -418,7 +428,7 @@ describe('importBook metaHash aggregation', () => {
             },
           ],
         });
-      if (path === 'hash-2/config.json')
+      if (path === 'users/local/hash-2/config.json')
         return JSON.stringify({
           updatedAt: 2000,
           progress: [20, 200],
@@ -442,7 +452,7 @@ describe('importBook metaHash aggregation', () => {
 
     const writeCalls = fs.writeFile.mock.calls;
     const configWrite = writeCalls.find(
-      (c: unknown[]) => (c[0] as string) === 'new-hash/config.json',
+      (c: unknown[]) => (c[0] as string) === 'users/local/new-hash/config.json',
     );
     expect(configWrite).toBeDefined();
     const writtenConfig = JSON.parse(configWrite![2] as string);
@@ -469,14 +479,15 @@ describe('importBook metaHash aggregation', () => {
     setupMockBookDoc();
 
     fs.exists.mockImplementation(async (path: string) => {
-      if (path.endsWith('/config.json')) return true;
+      if (path === 'users/local/hash-1/config.json') return true;
+      if (path === 'users/local/hash-2/config.json') return true;
       if (['hash-1', 'hash-2'].includes(path)) return true;
       return false;
     });
     fs.readFile.mockImplementation(async (path: string) => {
-      if (path === 'hash-1/config.json')
+      if (path === 'users/local/hash-1/config.json')
         return JSON.stringify({ updatedAt: 1000, location: 'loc1' });
-      if (path === 'hash-2/config.json')
+      if (path === 'users/local/hash-2/config.json')
         return JSON.stringify({ updatedAt: 2000, progress: [5, 100], location: 'loc2' });
       return '{}';
     });
@@ -486,7 +497,7 @@ describe('importBook metaHash aggregation', () => {
 
     const writeCalls = fs.writeFile.mock.calls;
     const configWrite = writeCalls.find(
-      (c: unknown[]) => (c[0] as string) === 'new-hash/config.json',
+      (c: unknown[]) => (c[0] as string) === 'users/local/new-hash/config.json',
     );
     expect(configWrite).toBeDefined();
     const writtenConfig = JSON.parse(configWrite![2] as string);
@@ -579,12 +590,13 @@ describe('importBook metaHash aggregation', () => {
     setupMockBookDoc();
 
     fs.exists.mockImplementation(async (path: string) => {
-      if (path.endsWith('/config.json')) return true;
+      if (path === 'users/local/exact-hash/config.json') return true;
+      if (path === 'users/local/dup-hash/config.json') return true;
       if (path === 'dup-hash') return true;
       return false;
     });
     fs.readFile.mockImplementation(async (path: string) => {
-      if (path === 'exact-hash/config.json')
+      if (path === 'users/local/exact-hash/config.json')
         return JSON.stringify({
           updatedAt: 1000,
           progress: [10, 100],
@@ -592,7 +604,7 @@ describe('importBook metaHash aggregation', () => {
             { id: 'n1', type: 'annotation', cfi: 'c1', note: 'x', createdAt: 1, updatedAt: 1 },
           ],
         });
-      if (path === 'dup-hash/config.json')
+      if (path === 'users/local/dup-hash/config.json')
         return JSON.stringify({
           updatedAt: 5000,
           progress: [70, 100],
@@ -609,7 +621,7 @@ describe('importBook metaHash aggregation', () => {
 
     const writeCalls = fs.writeFile.mock.calls;
     const configWrite = writeCalls.find(
-      (c: unknown[]) => (c[0] as string) === 'exact-hash/config.json',
+      (c: unknown[]) => (c[0] as string) === 'users/local/exact-hash/config.json',
     );
     expect(configWrite).toBeDefined();
     const writtenConfig = JSON.parse(configWrite![2] as string);
@@ -627,6 +639,7 @@ describe('importBook with BookLookupIndex', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
+    setCurrentUserNamespace(null); // pin to 'local' for deterministic paths
     fs = makeMockFs();
     fs.exists.mockResolvedValue(false);
     fs.createDir.mockResolvedValue(undefined);
