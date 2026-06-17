@@ -13,6 +13,7 @@ import { CSPostHogProvider } from '@/context/PHContext';
 import { SyncProvider } from '@/context/SyncContext';
 import { useBackgroundTexture } from '@/hooks/useBackgroundTexture';
 import { useEinkMode } from '@/hooks/useEinkMode';
+import { useUserScopedReset } from '@/hooks/useUserScopedReset';
 import { useDefaultIconSize } from '@/hooks/useResponsiveSize';
 import { useSafeAreaInsets } from '@/hooks/useSafeAreaInsets';
 import i18n from '@/i18n/i18n';
@@ -25,6 +26,18 @@ import { initSystemThemeListener, loadDataTheme } from '@/store/themeStore';
 import { getLocale } from '@/utils/misc';
 import { getDirFromUILanguage } from '@/utils/rtl';
 import { getAndroidPatchedViewportContent } from '@/utils/viewport';
+
+/**
+ * Null-rendering mount point for useUserScopedReset.
+ *
+ * Placed inside <AuthProvider> (so useAuth resolves) and inside the component
+ * tree that is itself a child of <EffectRuntimeProvider> in __root.tsx
+ * (so useRunEffect resolves).  Both contexts are guaranteed available here.
+ */
+const UserScopedResetMount = () => {
+  useUserScopedReset();
+  return null;
+};
 
 const Providers = ({ children }: { children: React.ReactNode }) => {
   const booted = useBooted();
@@ -129,6 +142,7 @@ const Providers = ({ children }: { children: React.ReactNode }) => {
   return (
     <CSPostHogProvider>
       <AuthProvider>
+        <UserScopedResetMount />
         <IconContext.Provider value={{ size: `${iconSize}px` }}>
           <SyncProvider>
             <DropdownProvider>
