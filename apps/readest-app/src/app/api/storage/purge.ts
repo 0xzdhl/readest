@@ -1,5 +1,5 @@
 import { createFileRoute } from '@tanstack/react-router';
-import { and, eq, inArray, isNull } from 'drizzle-orm';
+import { and, eq, inArray, isNull, sql } from 'drizzle-orm';
 import { files } from '@/db/schema';
 import { rlsMiddleware } from '@/middlewares/rls';
 import { Effect, Either } from 'effect';
@@ -41,10 +41,20 @@ export const Route = createFileRoute('/api/storage/purge')({
             return Response.json({ error: 'All fileKeys must be strings' }, { status: 400 });
           }
 
-          let fileRecords: Array<{ id: string; userId: string; fileKey: string }>;
+          let fileRecords: Array<{
+            id: string;
+            userId: string;
+            fileKey: string;
+            contentHash: string | null;
+          }>;
           try {
             fileRecords = await tx
-              .select({ id: files.id, userId: files.userId, fileKey: files.fileKey })
+              .select({
+                id: files.id,
+                userId: files.userId,
+                fileKey: files.fileKey,
+                contentHash: files.contentHash,
+              })
               .from(files)
               .where(
                 and(
@@ -75,10 +85,52 @@ export const Route = createFileRoute('/api/storage/purge')({
 
           const results = await Promise.allSettled(
             fileRecords.map(async (fileRecord) => {
+              try {
+                // Delete the DB row FIRST so the refcount reflects this removal.
+                // (Race note: concurrent deletes of the last two refs to the same
+                // content_hash may both see count=0 — acceptable v1 limitation.)
+                await tx.delete(files).where(eq(files.id, fileRecord.id));
+              } catch (error) {
+                console.error(`Error deleting file ${fileRecord.fileKey}:`, error);
+                return {
+                  fileKey: fileRecord.fileKey,
+                  success: false as const,
+                  error: error instanceof Error ? error.message : 'Unknown error',
+                };
+              }
+
+              const targetKey = fileRecord.contentHash
+                ? `content/${fileRecord.contentHash}`
+                : fileRecord.fileKey;
+              let shouldDeleteObject = true;
+              if (fileRecord.contentHash) {
+                try {
+                  const [{ count }] = (await tx.execute(
+                    sql`select files_content_ref_count(${fileRecord.contentHash}) as count`,
+                  )) as unknown as Array<{ count: number | string }>;
+                  shouldDeleteObject = Number(count) === 0;
+                } catch (error) {
+                  console.error(
+                    `Error checking refcount for ${fileRecord.fileKey}:`,
+                    error,
+                  );
+                  return {
+                    fileKey: fileRecord.fileKey,
+                    success: false as const,
+                    error: error instanceof Error ? error.message : 'Unknown error',
+                  };
+                }
+              }
+
+              if (!shouldDeleteObject) {
+                // Another user still references this content — skip object delete.
+                return { fileKey: fileRecord.fileKey, success: true as const };
+              }
+
               const deleteResult = await runStorageProgram(
                 Effect.gen(function* () {
                   const storage = yield* ObjectStorage;
-                  yield* storage.deleteObject(fileRecord.fileKey).pipe(
+                  yield* storage.deleteObject(targetKey).pipe(
                     // Idempotent bulk delete: NotFound counts as success for the
                     // per-key Promise.allSettled accounting.
                     Effect.catchTag('StorageNotFoundError', () => Effect.void),
@@ -93,20 +145,7 @@ export const Route = createFileRoute('/api/storage/purge')({
                   error: deleteResult.left.message,
                 };
               }
-              // The DB delete is a throwing call outside the Effect; keep it
-              // guarded so a failure is reported against the right fileKey
-              // rather than surfacing as a rejected (unknown-key) promise.
-              try {
-                await tx.delete(files).where(eq(files.id, fileRecord.id));
-                return { fileKey: fileRecord.fileKey, success: true as const };
-              } catch (error) {
-                console.error(`Error deleting file ${fileRecord.fileKey}:`, error);
-                return {
-                  fileKey: fileRecord.fileKey,
-                  success: false as const,
-                  error: error instanceof Error ? error.message : 'Unknown error',
-                };
-              }
+              return { fileKey: fileRecord.fileKey, success: true as const };
             }),
           );
 
