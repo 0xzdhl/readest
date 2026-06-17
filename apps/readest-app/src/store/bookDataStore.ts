@@ -26,6 +26,7 @@ interface BookDataState {
   updateBooknotes: (key: string, booknotes: BookNote[]) => BookConfig | undefined;
   getBookData: (keyOrId: string) => BookData | null;
   clearBookData: (keyOrId: string) => void;
+  clearAll: () => void;
 }
 
 export const useBookDataStore = create<BookDataState>((set, get) => ({
@@ -43,6 +44,9 @@ export const useBookDataStore = create<BookDataState>((set, get) => ({
         booksData: newBooksData,
       };
     });
+  },
+  clearAll: () => {
+    set({ booksData: {} });
   },
   getConfig: (key: string | null) => {
     if (!key) return null;

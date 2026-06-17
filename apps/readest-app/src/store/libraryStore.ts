@@ -6,10 +6,12 @@ import { BOOK_UNGROUPED_NAME } from '@/services/constants';
 import { md5Fingerprint } from '@/utils/md5';
 import { LibraryRepository } from '@/application/repositories/LibraryRepository';
 import { getClientRuntime } from '@/runtime/clientRuntime';
+import { getCurrentUserNamespace } from '@/services/userNamespace';
 
 interface LibraryState {
   library: Book[]; // might contain deleted books
   libraryLoaded: boolean;
+  loadedNamespace: string | null;
   isSyncing: boolean;
   syncProgress: number;
   checkOpenWithBooks: boolean;
@@ -20,6 +22,7 @@ interface LibraryState {
   hashIndex: Map<string, number>; // hash -> array index for O(1) lookup
   visibleLibrary: Book[];
   setIsSyncing: (syncing: boolean) => void;
+  resetForUserSwitch: () => void;
   setSyncProgress: (progress: number) => void;
   setSelectedBooks: (ids: string[]) => void;
   getSelectedBooks: () => string[];
@@ -62,6 +65,7 @@ function buildHashIndex(books: Book[]): Map<string, number> {
 export const useLibraryStore = create<LibraryState>((set, get) => ({
   library: [],
   libraryLoaded: false,
+  loadedNamespace: null,
   isSyncing: false,
   syncProgress: 0,
   currentBookshelf: [],
@@ -91,10 +95,24 @@ export const useLibraryStore = create<LibraryState>((set, get) => ({
     set({
       library: books,
       libraryLoaded: true,
+      loadedNamespace: getCurrentUserNamespace(),
       hashIndex: buildHashIndex(books),
       visibleLibrary: books.filter((b) => !b.deletedAt),
     });
     get().refreshGroups();
+  },
+
+  resetForUserSwitch: () => {
+    set({
+      library: [],
+      libraryLoaded: false,
+      loadedNamespace: null,
+      hashIndex: new Map(),
+      visibleLibrary: [],
+      currentBookshelf: [],
+      selectedBooks: new Set(),
+      groups: {},
+    });
   },
 
   // Immutable lightweight progress update — skips refreshGroups (which is the
