@@ -1,8 +1,11 @@
 import { createFileRoute } from '@tanstack/react-router';
+import { and, eq, isNull, sum } from 'drizzle-orm';
+import { files } from '@/db/schema';
 import { env } from '@/env';
 import { rlsMiddleware } from '@/middlewares/rls';
 import { Effect, Either } from 'effect';
 import { ObjectStorage, runStorageProgram } from '@/storage';
+import { getStoragePlanData, STORAGE_QUOTA_GRACE_BYTES } from '@/libs/server/storage-plan';
 
 /**
  * Hard cap on a single temp (public-bucket) upload. The temp branch writes a
@@ -37,24 +40,37 @@ function sanitizeTempFileName(fileName: string): string | null {
 }
 
 /**
- * POST /api/storage/upload — owner-only. Mints a presigned PUT URL. For a book
- * upload it stages the bytes (`staging/<user>/<uuid>`); the `files` row + quota
- * gate + cross-user dedup happen at POST /api/storage/finalize. The temp
- * (public bucket) and replica branches keep the single-step content-addressed
- * flow.
+ * POST /api/storage/upload — owner-only. Mints a presigned PUT URL. Three
+ * branches:
+ *
+ *  1. temp (`temp:true`) — writes into the public bucket with no quota row;
+ *     returns `{ uploadUrl, downloadUrl }`.
+ *
+ *  2. replica (`replicaKind` present, `temp` absent/false) — single-step
+ *     content-addressed per-user flow for dictionaries / large sync objects.
+ *     Replicas are NOT cross-user deduped. Enforces quota, inserts a `files`
+ *     row, returns `{ uploadUrl, fileKey }` (or `{ skipUpload, fileKey }` if
+ *     the object already exists).
+ *
+ *  3. book (fallthrough) — stages bytes to `staging/<user>/<uuid>`; the
+ *     `files` row, quota gate, and cross-user dedup happen at POST
+ *     /api/storage/finalize. Returns `{ stagingKey, uploadUrl }`.
  */
 export const Route = createFileRoute('/api/storage/upload')({
   server: {
     middleware: [rlsMiddleware],
     handlers: {
       POST: async ({ request, context }) => {
-        const { user } = context;
+        const { user, tx } = context;
         const body: {
           fileName?: string;
           fileSize?: number;
           temp?: boolean;
+          bookHash?: string;
+          replicaKind?: string;
+          replicaId?: string;
         } = await request.json();
-        const { fileName, fileSize, temp = false } = body;
+        const { fileName, fileSize, temp = false, bookHash, replicaKind, replicaId } = body;
 
         if (temp) {
           try {
@@ -111,6 +127,83 @@ export const Route = createFileRoute('/api/storage/upload')({
           } catch (error) {
             console.error('Error creating presigned post for temp file:', error);
             return Response.json({ error: 'Could not create presigned post' }, { status: 500 });
+          }
+        }
+
+        if (replicaKind) {
+          // Replica (dictionary / sync) upload: single-step content-addressed
+          // per-user flow (replicas are NOT cross-user deduped). Restores the
+          // pre-dedup behavior the replica path depends on.
+          try {
+            if (!fileName || !fileSize) {
+              return Response.json({ error: 'Missing file info' }, { status: 400 });
+            }
+            const fileKey = `${user.id}/${fileName}`;
+            const headResult = await runStorageProgram(
+              Effect.gen(function* () {
+                const storage = yield* ObjectStorage;
+                return yield* storage.headObject(fileKey);
+              }),
+            );
+            if (Either.isRight(headResult)) {
+              await tx
+                .insert(files)
+                .values({
+                  userId: user.id,
+                  bookHash: bookHash ?? null,
+                  replicaKind: replicaKind ?? null,
+                  replicaId: replicaId ?? null,
+                  fileKey,
+                  fileSize,
+                })
+                .onConflictDoNothing({ target: files.fileKey });
+              return Response.json({ skipUpload: true, fileKey });
+            }
+            const { quota } = getStoragePlanData(user);
+            const [usageRow] = await tx
+              .select({ total: sum(files.fileSize) })
+              .from(files)
+              .where(and(eq(files.userId, user.id), isNull(files.deletedAt)));
+            const usage = Number(usageRow?.total ?? 0);
+            if (usage + fileSize > quota + STORAGE_QUOTA_GRACE_BYTES) {
+              return Response.json({ error: 'Insufficient storage quota', usage }, { status: 403 });
+            }
+            await tx
+              .insert(files)
+              .values({
+                userId: user.id,
+                bookHash: bookHash ?? null,
+                replicaKind: replicaKind ?? null,
+                replicaId: replicaId ?? null,
+                fileKey,
+                fileSize,
+              })
+              .onConflictDoNothing({ target: files.fileKey });
+            const existing = await tx
+              .select()
+              .from(files)
+              .where(and(eq(files.userId, user.id), eq(files.fileKey, fileKey)))
+              .limit(1);
+            const objSize = existing[0]?.fileSize ?? fileSize;
+            const uploadResult = await runStorageProgram(
+              Effect.gen(function* () {
+                const storage = yield* ObjectStorage;
+                return yield* storage.getUploadSignedUrl(fileKey, objSize, 1800);
+              }),
+            );
+            if (Either.isLeft(uploadResult)) {
+              console.error('Error creating presigned post:', uploadResult.left);
+              return Response.json({ error: 'Could not create presigned post' }, { status: 500 });
+            }
+            return Response.json({
+              uploadUrl: uploadResult.right,
+              fileKey,
+              usage: usage + fileSize,
+              quota,
+            });
+          } catch (error) {
+            console.error(error);
+            return Response.json({ error: 'Something went wrong' }, { status: 500 });
           }
         }
 

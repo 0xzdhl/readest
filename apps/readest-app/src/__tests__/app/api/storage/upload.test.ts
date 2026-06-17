@@ -25,6 +25,11 @@ vi.mock('@/storage', () => ({
   runStorageProgram: runStorageProgramMock,
 }));
 
+vi.mock('@/libs/server/storage-plan', () => ({
+  getStoragePlanData: vi.fn(() => ({ quota: 10 * 1024 * 1024 * 1024 })),
+  STORAGE_QUOTA_GRACE_BYTES: 0,
+}));
+
 import { Route } from '@/app/api/storage/upload';
 
 type Handler = (args: {
@@ -238,5 +243,121 @@ describe('POST /api/storage/upload — temp branch sanitize/size cap (#12)', () 
       context: makeContext(tx),
     });
     expect(res.status).toBe(400);
+  });
+});
+
+describe('POST /api/storage/upload — replica branch (dict/sync, single-step content-addressed)', () => {
+  beforeEach(() => {
+    runStorageProgramMock.mockReset();
+  });
+  afterEach(() => vi.clearAllMocks());
+
+  it('returns uploadUrl + fileKey (<userId>/<fileName>) and inserts a files row with replicaKind/replicaId', async () => {
+    // headObject returns Left → object does NOT exist yet → full upload path
+    runStorageProgramMock
+      .mockResolvedValueOnce(Either.left(new Error('not found'))) // headObject
+      .mockResolvedValueOnce(Either.right('https://signed.test/replica-url')); // getUploadSignedUrl
+
+    const insertedValues: Record<string, unknown>[] = [];
+    const tx = makeTx({
+      onInsert: (values) => {
+        insertedValues.push(values);
+      },
+    });
+
+    const handler = getHandler();
+    const res = await handler({
+      request: post({
+        fileName: 'dict.db',
+        fileSize: 500_000,
+        replicaKind: 'dict',
+        replicaId: 'r1',
+      }),
+      params: {},
+      context: makeContext(tx),
+    });
+
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as {
+      uploadUrl?: string;
+      fileKey?: string;
+      stagingKey?: string;
+    };
+    // Must return a per-user fileKey, NOT a stagingKey
+    expect(body.fileKey).toBe(`${userId}/dict.db`);
+    expect(body.uploadUrl).toBe('https://signed.test/replica-url');
+    expect(body.stagingKey).toBeUndefined();
+
+    // A files row must have been inserted with replicaKind + replicaId
+    expect(insertedValues.length).toBeGreaterThanOrEqual(1);
+    const row = insertedValues.find((v) => v['replicaKind'] === 'dict');
+    expect(row).toBeDefined();
+    expect(row?.['replicaId']).toBe('r1');
+    expect(row?.['fileKey']).toBe(`${userId}/dict.db`);
+  });
+
+  it('skipUpload path: returns { skipUpload: true, fileKey } and inserts a files row when object already exists', async () => {
+    // headObject returns Right → object already exists → skipUpload
+    runStorageProgramMock.mockResolvedValueOnce(Either.right({ size: 500_000 }));
+
+    const insertedValues: Record<string, unknown>[] = [];
+    const tx = makeTx({
+      onInsert: (values) => {
+        insertedValues.push(values);
+      },
+    });
+
+    const handler = getHandler();
+    const res = await handler({
+      request: post({
+        fileName: 'dict.db',
+        fileSize: 500_000,
+        replicaKind: 'dict',
+        replicaId: 'r1',
+      }),
+      params: {},
+      context: makeContext(tx),
+    });
+
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as {
+      skipUpload?: boolean;
+      fileKey?: string;
+      uploadUrl?: string;
+    };
+    expect(body.skipUpload).toBe(true);
+    expect(body.fileKey).toBe(`${userId}/dict.db`);
+    expect(body.uploadUrl).toBeUndefined();
+
+    // Even on skipUpload a files row is upserted (idempotent insert)
+    expect(insertedValues.length).toBeGreaterThanOrEqual(1);
+    const row = insertedValues.find((v) => v['replicaKind'] === 'dict');
+    expect(row?.['replicaId']).toBe('r1');
+  });
+
+  it('returns 400 when fileName is missing for a replica upload', async () => {
+    const tx = makeTx();
+    const handler = getHandler();
+    const res = await handler({
+      request: post({ fileSize: 1000, replicaKind: 'dict', replicaId: 'r1' }),
+      params: {},
+      context: makeContext(tx),
+    });
+    expect(res.status).toBe(400);
+    const body = (await res.json()) as { error?: string };
+    expect(body.error).toMatch(/missing file info/i);
+  });
+
+  it('returns 400 when fileSize is missing for a replica upload', async () => {
+    const tx = makeTx();
+    const handler = getHandler();
+    const res = await handler({
+      request: post({ fileName: 'dict.db', replicaKind: 'dict', replicaId: 'r1' }),
+      params: {},
+      context: makeContext(tx),
+    });
+    expect(res.status).toBe(400);
+    const body = (await res.json()) as { error?: string };
+    expect(body.error).toMatch(/missing file info/i);
   });
 });
