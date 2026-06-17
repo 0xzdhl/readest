@@ -8,12 +8,12 @@ import { FileSystem } from '@/application/ports/FileSystem';
 import {
   getDir,
   getLocalBookFilename,
-  getConfigFilename,
   getBookNavFilename,
   getMetadataHash,
   formatTitle,
   getPrimaryLanguage,
 } from '@/utils/book';
+import { getConfigStoragePath } from '@/utils/userPaths';
 import { EXTS } from '@/domain/document';
 import { DocumentLoader } from '@/libs/document';
 import {
@@ -106,8 +106,8 @@ export const loadBookConfig = (
   return Effect.gen(function* () {
     const fs = yield* FileSystem;
     let str = '{}';
-    if (yield* fs.exists(getConfigFilename(book), 'Books')) {
-      str = (yield* fs.readFile(getConfigFilename(book), 'Books', 'text')) as string;
+    if (yield* fs.exists(getConfigStoragePath(book), 'Books')) {
+      str = (yield* fs.readFile(getConfigStoragePath(book), 'Books', 'text')) as string;
     }
     return deserializeConfig(str, globalViewSettings, DEFAULT_BOOK_SEARCH_CONFIG);
   }).pipe(
@@ -135,7 +135,7 @@ export const saveBookConfig = (
     } else {
       serializedConfig = JSON.stringify(config);
     }
-    yield* fs.writeFile(getConfigFilename(book), 'Books', serializedConfig);
+    yield* fs.writeFile(getConfigStoragePath(book), 'Books', serializedConfig);
   }).pipe(
     Effect.mapError(
       (cause) => new BookError({ operation: 'saveConfig', bookId: book.hash, cause }),

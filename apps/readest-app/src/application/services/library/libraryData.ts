@@ -3,7 +3,7 @@ import type { Book } from '@/domain/book';
 import { BookError } from '@/application/errors/AppError';
 import { FileSystem } from '@/application/ports/FileSystem';
 import { CoverService } from '@/application/services/CoverService';
-import { getLibraryFilename } from '@/utils/book';
+import { getLibraryStoragePath } from '@/utils/userPaths';
 import { safeLoadJsonE, safeSaveJsonE } from '@/application/services/shared/json';
 
 const COVER_CONCURRENCY = 20;
@@ -15,7 +15,7 @@ export const loadLibraryBooks = (): Effect.Effect<Book[], BookError, FileSystem 
     if (!(yield* fs.exists('', 'Books'))) {
       yield* fs.createDir('', 'Books', true);
     }
-    const books = yield* safeLoadJsonE<Book[]>(getLibraryFilename(), 'Books', []);
+    const books = yield* safeLoadJsonE<Book[]>(getLibraryStoragePath(), 'Books', []);
     yield* Effect.forEach(
       books,
       (book) =>
@@ -31,5 +31,5 @@ export const loadLibraryBooks = (): Effect.Effect<Book[], BookError, FileSystem 
 export const saveLibraryBooks = (books: Book[]): Effect.Effect<void, BookError, FileSystem> =>
   Effect.gen(function* () {
     const libraryBooks = books.map(({ coverImageUrl: _coverImageUrl, ...rest }) => rest);
-    yield* safeSaveJsonE(getLibraryFilename(), 'Books', libraryBooks);
+    yield* safeSaveJsonE(getLibraryStoragePath(), 'Books', libraryBooks);
   }).pipe(Effect.mapError((cause) => new BookError({ operation: 'saveLibrary', cause })));
