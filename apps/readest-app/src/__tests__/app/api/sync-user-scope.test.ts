@@ -222,3 +222,179 @@ describe('handleGet — user-scope predicate (defense-in-depth)', () => {
     }
   });
 });
+
+// ---------------------------------------------------------------------------
+// handlePost — push read-back user-scope predicate (defense-in-depth)
+// ---------------------------------------------------------------------------
+//
+// Symmetric with the handleGet fix: the post-upsert read-back SELECTs must
+// also AND `eq(table.userId, user.id)` so that a superuser / RLS-bypassing
+// DB connection cannot echo back another user's rows for a shared bookHash.
+//
+// Strategy: fake tx that tracks insert→upsert chain AND captures the
+// read-back `.select().from(table).where(cond)` conditions, then asserts
+// each captured condition contains `user_id = <userId>`.
+// ---------------------------------------------------------------------------
+
+import { handlePost } from '@/app/api/sync';
+
+const POST_USER_B = 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb';
+const SHARED_BOOK_HASH = 'shared-content-hash-001';
+const NOTE_ID = 'note-uuid-001';
+
+/**
+ * Fake tx for handlePost: supports the insert-upsert chain (insert/values/
+ * onConflictDoUpdate resolves void) AND captures read-back SELECT conditions.
+ */
+function makePostFakeTx(capturedWheres: Array<{ tableName: string; cond: SQL | undefined }>): DbTx {
+  // Upsert chain: insert().values().onConflictDoUpdate() → resolves to []
+  const makeInsertChain = () => ({
+    values: () => ({
+      onConflictDoUpdate: () => Promise.resolve([]),
+    }),
+  });
+
+  // Read-back chain: select().from(table).where(cond) → resolves to []
+  const makeSelectChain = (tableName: string) => ({
+    where(cond: SQL | undefined) {
+      capturedWheres.push({ tableName, cond });
+      return Promise.resolve([]);
+    },
+  });
+
+  const fakeTx = {
+    insert: () => makeInsertChain(),
+    select: () => ({
+      from: (table: PgTable) => makeSelectChain(getTableName(table)),
+    }),
+    execute: async () => [],
+  };
+  return fakeTx as unknown as DbTx;
+}
+
+/**
+ * Build a minimal SyncData JSON body with one book, one config, and one note
+ * all sharing SHARED_BOOK_HASH (simulating shared content-addressed data).
+ */
+function makePostBody(): string {
+  const now = new Date().toISOString();
+  return JSON.stringify({
+    books: [
+      {
+        book_hash: SHARED_BOOK_HASH,
+        meta_hash: null,
+        format: 'EPUB',
+        title: 'Shared Book',
+        author: 'Author',
+        created_at: now,
+        updated_at: now,
+        deleted_at: null,
+        uploaded_at: null,
+      },
+    ],
+    configs: [
+      {
+        book_hash: SHARED_BOOK_HASH,
+        meta_hash: null,
+        created_at: now,
+        updated_at: now,
+        deleted_at: null,
+      },
+    ],
+    notes: [
+      {
+        book_hash: SHARED_BOOK_HASH,
+        meta_hash: null,
+        id: NOTE_ID,
+        type: 'highlight',
+        note: '',
+        created_at: now,
+        updated_at: now,
+        deleted_at: null,
+      },
+    ],
+  });
+}
+
+describe('handlePost — push read-back user-scope predicate (defense-in-depth)', () => {
+  it('books read-back WHERE includes eq(userId, user.id)', async () => {
+    const captured: Array<{ tableName: string; cond: SQL | undefined }> = [];
+    const ctx: SyncHandlerContext = {
+      user: { id: POST_USER_B },
+      tx: makePostFakeTx(captured),
+    };
+    const request = new Request('http://localhost/api/sync', {
+      method: 'POST',
+      body: makePostBody(),
+    });
+
+    await handlePost(request, ctx);
+
+    const booksReadBack = captured.find((w) => w.tableName === getTableName(books));
+    expect(booksReadBack, 'books read-back WHERE must be captured').toBeDefined();
+    assertOwnerPredicate(booksReadBack!.cond, books, POST_USER_B, 'books post read-back');
+  });
+
+  it('bookConfigs read-back WHERE includes eq(userId, user.id)', async () => {
+    const captured: Array<{ tableName: string; cond: SQL | undefined }> = [];
+    const ctx: SyncHandlerContext = {
+      user: { id: POST_USER_B },
+      tx: makePostFakeTx(captured),
+    };
+    const request = new Request('http://localhost/api/sync', {
+      method: 'POST',
+      body: makePostBody(),
+    });
+
+    await handlePost(request, ctx);
+
+    const configsReadBack = captured.find((w) => w.tableName === getTableName(bookConfigs));
+    expect(configsReadBack, 'bookConfigs read-back WHERE must be captured').toBeDefined();
+    assertOwnerPredicate(
+      configsReadBack!.cond,
+      bookConfigs,
+      POST_USER_B,
+      'bookConfigs post read-back',
+    );
+  });
+
+  it('bookNotes read-back WHERE includes eq(userId, user.id)', async () => {
+    const captured: Array<{ tableName: string; cond: SQL | undefined }> = [];
+    const ctx: SyncHandlerContext = {
+      user: { id: POST_USER_B },
+      tx: makePostFakeTx(captured),
+    };
+    const request = new Request('http://localhost/api/sync', {
+      method: 'POST',
+      body: makePostBody(),
+    });
+
+    await handlePost(request, ctx);
+
+    const notesReadBack = captured.find((w) => w.tableName === getTableName(bookNotes));
+    expect(notesReadBack, 'bookNotes read-back WHERE must be captured').toBeDefined();
+    assertOwnerPredicate(notesReadBack!.cond, bookNotes, POST_USER_B, 'bookNotes post read-back');
+  });
+
+  it('read-back WHEREs do NOT contain a different user id (isolation guarantee)', async () => {
+    const captured: Array<{ tableName: string; cond: SQL | undefined }> = [];
+    const ctx: SyncHandlerContext = {
+      user: { id: POST_USER_B },
+      tx: makePostFakeTx(captured),
+    };
+    const request = new Request('http://localhost/api/sync', {
+      method: 'POST',
+      body: makePostBody(),
+    });
+
+    await handlePost(request, ctx);
+
+    for (const { tableName, cond } of captured) {
+      const condStr = conditionToString(cond);
+      expect(condStr, `${tableName} read-back must not contain user A's id`).not.toContain(
+        TEST_USER_ID,
+      );
+      expect(condStr, `${tableName} read-back must contain user B's id`).toContain(POST_USER_B);
+    }
+  });
+});

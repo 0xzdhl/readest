@@ -324,9 +324,12 @@ export async function handlePost(request: Request, ctx: SyncHandlerContext): Pro
         .select()
         .from(books)
         .where(
-          inArray(
-            books.bookHash,
-            rows.map((r) => r.bookHash),
+          and(
+            eq(books.userId, user.id),
+            inArray(
+              books.bookHash,
+              rows.map((r) => r.bookHash),
+            ),
           ),
         );
     }
@@ -362,9 +365,12 @@ export async function handlePost(request: Request, ctx: SyncHandlerContext): Pro
         .select()
         .from(bookConfigs)
         .where(
-          inArray(
-            bookConfigs.bookHash,
-            rows.map((r) => r.bookHash),
+          and(
+            eq(bookConfigs.userId, user.id),
+            inArray(
+              bookConfigs.bookHash,
+              rows.map((r) => r.bookHash),
+            ),
           ),
         );
     }
@@ -404,7 +410,12 @@ export async function handlePost(request: Request, ctx: SyncHandlerContext): Pro
         and(eq(bookNotes.bookHash, r.bookHash), eq(bookNotes.id, r.id)),
       );
       const noteFilter = or(...noteKeys);
-      outNotes = noteFilter ? await tx.select().from(bookNotes).where(noteFilter) : [];
+      outNotes = noteFilter
+        ? await tx
+            .select()
+            .from(bookNotes)
+            .where(and(eq(bookNotes.userId, user.id), noteFilter))
+        : [];
     }
 
     return Response.json(
