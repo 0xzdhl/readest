@@ -212,23 +212,26 @@ export async function handleGet(request: Request, ctx: SyncHandlerContext): Prom
   }
 
   try {
-    // Per-table query builder. RLS adds the implicit `user_id = $current`
-    // predicate; we only contribute the freshness filter and optional
-    // book/meta filters (matching the original supabase query semantics).
+    // Per-table query builder. Defense-in-depth: always AND an explicit
+    // `user_id = ctx.user.id` predicate so a pull cannot return another
+    // user's rows even when the DB connection bypasses RLS (e.g. a
+    // superuser role or a misconfigured DATABASE_URL). RLS still adds a
+    // second implicit check when properly configured.
     const buildWhere = <TTable extends typeof books | typeof bookConfigs | typeof bookNotes>(
       table: TTable,
     ): SQL | undefined => {
+      const owner = eq(table.userId, ctx.user.id); // defense-in-depth; do NOT rely on RLS alone
       const freshness = or(gt(table.updatedAt, since), gt(table.deletedAt, since));
       if (bookParam && metaHashParam) {
-        return and(or(eq(table.bookHash, bookParam), eq(table.metaHash, metaHashParam)), freshness);
+        return and(
+          owner,
+          or(eq(table.bookHash, bookParam), eq(table.metaHash, metaHashParam)),
+          freshness,
+        );
       }
-      if (bookParam) {
-        return and(eq(table.bookHash, bookParam), freshness);
-      }
-      if (metaHashParam) {
-        return and(eq(table.metaHash, metaHashParam), freshness);
-      }
-      return freshness;
+      if (bookParam) return and(owner, eq(table.bookHash, bookParam), freshness);
+      if (metaHashParam) return and(owner, eq(table.metaHash, metaHashParam), freshness);
+      return and(owner, freshness);
     };
 
     const results: {
