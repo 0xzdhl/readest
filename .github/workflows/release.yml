@@ -216,13 +216,13 @@ jobs:
           echo 'CARGO_TARGET_ARM_UNKNOWN_LINUX_GNUEABIHF_LINKER=arm-linux-gnueabihf-gcc' >> $GITHUB_ENV
           echo 'CARGO_TARGET_ARM_UNKNOWN_LINUX_GNUEABIHF_RUSTFLAGS=--cfg=io_uring_skip_arch_check' >> $GITHUB_ENV
 
-      - name: create .env.local file for Next.js
+      - name: create .env.local file for Vite
         run: |
-          echo "NEXT_PUBLIC_POSTHOG_KEY=${{ secrets.NEXT_PUBLIC_POSTHOG_KEY }}" >> .env.local
-          echo "NEXT_PUBLIC_POSTHOG_HOST=${{ secrets.NEXT_PUBLIC_POSTHOG_HOST }}" >> .env.local
-          echo "NEXT_PUBLIC_SUPABASE_URL=${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}" >> .env.local
-          echo "NEXT_PUBLIC_SUPABASE_ANON_KEY=${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}" >> .env.local
-          echo "NEXT_PUBLIC_APP_PLATFORM=tauri" >> .env.local
+          echo "VITE_POSTHOG_KEY=${{ secrets.VITE_POSTHOG_KEY }}" >> .env.local
+          echo "VITE_POSTHOG_HOST=${{ secrets.VITE_POSTHOG_HOST }}" >> .env.local
+          echo "VITE_SUPABASE_URL=${{ secrets.VITE_SUPABASE_URL }}" >> .env.local
+          echo "VITE_SUPABASE_ANON_KEY=${{ secrets.VITE_SUPABASE_ANON_KEY }}" >> .env.local
+          echo "VITE_APP_PLATFORM=tauri" >> .env.local
           cp .env.local apps/readest-app/.env.local
 
       - name: build and upload Android apks
@@ -334,7 +334,7 @@ jobs:
         run: |
           echo "Building Portable Binaries"
           pushd apps/readest-app/
-          echo "NEXT_PUBLIC_PORTABLE_APP=true" >> .env.local
+          echo "VITE_PORTABLE_APP=true" >> .env.local
           pnpm tauri build ${{ matrix.config.args }}
 
           popd

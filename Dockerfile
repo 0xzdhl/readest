@@ -20,13 +20,13 @@ EXPOSE 3000
 ENTRYPOINT ["pnpm", "dev-web", "-H", "0.0.0.0"]
 
 FROM base AS build
-ARG NEXT_PUBLIC_SUPABASE_URL
-ARG NEXT_PUBLIC_SUPABASE_ANON_KEY
-ARG NEXT_PUBLIC_APP_PLATFORM
-ARG NEXT_PUBLIC_API_BASE_URL
-ARG NEXT_PUBLIC_OBJECT_STORAGE_TYPE
-ARG NEXT_PUBLIC_STORAGE_FIXED_QUOTA
-ARG NEXT_PUBLIC_TRANSLATION_FIXED_QUOTA
+ARG VITE_SUPABASE_URL
+ARG VITE_SUPABASE_ANON_KEY
+ARG VITE_APP_PLATFORM
+ARG VITE_API_BASE_URL
+ARG VITE_OBJECT_STORAGE_TYPE
+ARG VITE_STORAGE_FIXED_QUOTA
+ARG VITE_TRANSLATION_FIXED_QUOTA
 COPY --from=dependencies /app/node_modules /app/node_modules
 COPY --from=dependencies /app/apps/readest-app/node_modules /app/apps/readest-app/node_modules
 COPY --from=dependencies /app/apps/readest-app/public/vendor /app/apps/readest-app/public/vendor

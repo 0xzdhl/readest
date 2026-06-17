@@ -16,7 +16,7 @@ For the best experience to build Readest for yourself, use a recent version of N
 
 Basically you need to install or update the following development tools:
 
-- **Node.js** and **pnpm** for Next.js development
+- **Node.js** and **pnpm** for web development
 - **Rust** and **Cargo** for Tauri development
 
 ```bash
