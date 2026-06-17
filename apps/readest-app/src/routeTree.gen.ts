@@ -34,10 +34,10 @@ import { Route as ApiUserDeleteRouteImport } from './app/api/user/delete'
 import { Route as ApiSyncReplicasRouteImport } from './app/api/sync/replicas'
 import { Route as ApiSyncReplicaKeysRouteImport } from './app/api/sync/replica-keys'
 import { Route as ApiStorageUploadRouteImport } from './app/api/storage/upload'
-import { Route as ApiStorageFinalizeRouteImport } from './app/api/storage/finalize'
 import { Route as ApiStorageStatsRouteImport } from './app/api/storage/stats'
 import { Route as ApiStoragePurgeRouteImport } from './app/api/storage/purge'
 import { Route as ApiStorageListRouteImport } from './app/api/storage/list'
+import { Route as ApiStorageFinalizeRouteImport } from './app/api/storage/finalize'
 import { Route as ApiStorageDownloadRouteImport } from './app/api/storage/download'
 import { Route as ApiStorageDeleteRouteImport } from './app/api/storage/delete'
 import { Route as ApiDeeplTranslateRouteImport } from './app/api/deepl/translate'
@@ -191,11 +191,6 @@ const ApiStorageUploadRoute = ApiStorageUploadRouteImport.update({
   path: '/api/storage/upload',
   getParentRoute: () => rootRouteImport,
 } as any)
-const ApiStorageFinalizeRoute = ApiStorageFinalizeRouteImport.update({
-  id: '/api/storage/finalize',
-  path: '/api/storage/finalize',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const ApiStorageStatsRoute = ApiStorageStatsRouteImport.update({
   id: '/api/storage/stats',
   path: '/api/storage/stats',
@@ -209,6 +204,11 @@ const ApiStoragePurgeRoute = ApiStoragePurgeRouteImport.update({
 const ApiStorageListRoute = ApiStorageListRouteImport.update({
   id: '/api/storage/list',
   path: '/api/storage/list',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiStorageFinalizeRoute = ApiStorageFinalizeRouteImport.update({
+  id: '/api/storage/finalize',
+  path: '/api/storage/finalize',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ApiStorageDownloadRoute = ApiStorageDownloadRouteImport.update({
@@ -392,11 +392,11 @@ export interface FileRoutesByFullPath {
   '/api/deepl/translate': typeof ApiDeeplTranslateRoute
   '/api/storage/delete': typeof ApiStorageDeleteRoute
   '/api/storage/download': typeof ApiStorageDownloadRoute
+  '/api/storage/finalize': typeof ApiStorageFinalizeRoute
   '/api/storage/list': typeof ApiStorageListRoute
   '/api/storage/purge': typeof ApiStoragePurgeRoute
   '/api/storage/stats': typeof ApiStorageStatsRoute
   '/api/storage/upload': typeof ApiStorageUploadRoute
-  '/api/storage/finalize': typeof ApiStorageFinalizeRoute
   '/api/sync/replica-keys': typeof ApiSyncReplicaKeysRoute
   '/api/sync/replicas': typeof ApiSyncReplicasRoute
   '/api/user/delete': typeof ApiUserDeleteRoute
@@ -449,11 +449,11 @@ export interface FileRoutesByTo {
   '/api/deepl/translate': typeof ApiDeeplTranslateRoute
   '/api/storage/delete': typeof ApiStorageDeleteRoute
   '/api/storage/download': typeof ApiStorageDownloadRoute
+  '/api/storage/finalize': typeof ApiStorageFinalizeRoute
   '/api/storage/list': typeof ApiStorageListRoute
   '/api/storage/purge': typeof ApiStoragePurgeRoute
   '/api/storage/stats': typeof ApiStorageStatsRoute
   '/api/storage/upload': typeof ApiStorageUploadRoute
-  '/api/storage/finalize': typeof ApiStorageFinalizeRoute
   '/api/sync/replica-keys': typeof ApiSyncReplicaKeysRoute
   '/api/sync/replicas': typeof ApiSyncReplicasRoute
   '/api/user/delete': typeof ApiUserDeleteRoute
@@ -508,11 +508,11 @@ export interface FileRoutesById {
   '/api/deepl/translate': typeof ApiDeeplTranslateRoute
   '/api/storage/delete': typeof ApiStorageDeleteRoute
   '/api/storage/download': typeof ApiStorageDownloadRoute
+  '/api/storage/finalize': typeof ApiStorageFinalizeRoute
   '/api/storage/list': typeof ApiStorageListRoute
   '/api/storage/purge': typeof ApiStoragePurgeRoute
   '/api/storage/stats': typeof ApiStorageStatsRoute
   '/api/storage/upload': typeof ApiStorageUploadRoute
-  '/api/storage/finalize': typeof ApiStorageFinalizeRoute
   '/api/sync/replica-keys': typeof ApiSyncReplicaKeysRoute
   '/api/sync/replicas': typeof ApiSyncReplicasRoute
   '/api/user/delete': typeof ApiUserDeleteRoute
@@ -568,6 +568,7 @@ export interface FileRouteTypes {
     | '/api/deepl/translate'
     | '/api/storage/delete'
     | '/api/storage/download'
+    | '/api/storage/finalize'
     | '/api/storage/list'
     | '/api/storage/purge'
     | '/api/storage/stats'
@@ -624,6 +625,7 @@ export interface FileRouteTypes {
     | '/api/deepl/translate'
     | '/api/storage/delete'
     | '/api/storage/download'
+    | '/api/storage/finalize'
     | '/api/storage/list'
     | '/api/storage/purge'
     | '/api/storage/stats'
@@ -681,6 +683,7 @@ export interface FileRouteTypes {
     | '/api/deepl/translate'
     | '/api/storage/delete'
     | '/api/storage/download'
+    | '/api/storage/finalize'
     | '/api/storage/list'
     | '/api/storage/purge'
     | '/api/storage/stats'
@@ -738,11 +741,11 @@ export interface RootRouteChildren {
   ApiDeeplTranslateRoute: typeof ApiDeeplTranslateRoute
   ApiStorageDeleteRoute: typeof ApiStorageDeleteRoute
   ApiStorageDownloadRoute: typeof ApiStorageDownloadRoute
+  ApiStorageFinalizeRoute: typeof ApiStorageFinalizeRoute
   ApiStorageListRoute: typeof ApiStorageListRoute
   ApiStoragePurgeRoute: typeof ApiStoragePurgeRoute
   ApiStorageStatsRoute: typeof ApiStorageStatsRoute
   ApiStorageUploadRoute: typeof ApiStorageUploadRoute
-  ApiStorageFinalizeRoute: typeof ApiStorageFinalizeRoute
   ApiUserDeleteRoute: typeof ApiUserDeleteRoute
   AuthCallbackIndexRoute: typeof AuthCallbackIndexRoute
   AuthErrorIndexRoute: typeof AuthErrorIndexRoute
@@ -927,13 +930,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiStorageUploadRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/api/storage/finalize': {
-      id: '/api/storage/finalize'
-      path: '/api/storage/finalize'
-      fullPath: '/api/storage/finalize'
-      preLoaderRoute: typeof ApiStorageFinalizeRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/api/storage/stats': {
       id: '/api/storage/stats'
       path: '/api/storage/stats'
@@ -953,6 +949,13 @@ declare module '@tanstack/react-router' {
       path: '/api/storage/list'
       fullPath: '/api/storage/list'
       preLoaderRoute: typeof ApiStorageListRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/storage/finalize': {
+      id: '/api/storage/finalize'
+      path: '/api/storage/finalize'
+      fullPath: '/api/storage/finalize'
+      preLoaderRoute: typeof ApiStorageFinalizeRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/storage/download': {
@@ -1243,11 +1246,11 @@ const rootRouteChildren: RootRouteChildren = {
   ApiDeeplTranslateRoute: ApiDeeplTranslateRoute,
   ApiStorageDeleteRoute: ApiStorageDeleteRoute,
   ApiStorageDownloadRoute: ApiStorageDownloadRoute,
+  ApiStorageFinalizeRoute: ApiStorageFinalizeRoute,
   ApiStorageListRoute: ApiStorageListRoute,
   ApiStoragePurgeRoute: ApiStoragePurgeRoute,
   ApiStorageStatsRoute: ApiStorageStatsRoute,
   ApiStorageUploadRoute: ApiStorageUploadRoute,
-  ApiStorageFinalizeRoute: ApiStorageFinalizeRoute,
   ApiUserDeleteRoute: ApiUserDeleteRoute,
   AuthCallbackIndexRoute: AuthCallbackIndexRoute,
   AuthErrorIndexRoute: AuthErrorIndexRoute,
