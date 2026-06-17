@@ -14,7 +14,7 @@ Active feature on branch `dev` as of 2026-05-02. Plan file: `/Users/chrox/.claud
 
 - **Universal 7-day cap** on share expiry, no tier differentiation, no "Never". All users pick `[1, 3, 7]` days. DMCA-risk reduction.
 - **App Router** for all share routes (mirrors `/o` precedent + recent Stripe / AI / IAP / OPDS). Pages API `storage/*` neighbors stay where they are.
-- **Single non-dynamic landing page** at `src/app/s/page.tsx` + rewrite `'/s/:token' → '/s?token=:token'` in `next.config.mjs`. Mirrors `/o`'s pattern exactly. Avoids `[token]` dynamic-segment trap under `output: 'export'`.
+- **Single non-dynamic landing page** at `src/app/s/page.tsx` with TanStack Router search param validation. Mirrors `/o`'s pattern exactly.
 - **R2 server-side byte-copy** for `/import` (recipient-side library import). NOT a reference. Preserves invariant that every `files` row's `file_key` starts with that row's `user_id` — keeps stats / purge / delete / download routes working unchanged.
 - **`token_hash` (sha256) in DB**, never the raw token. Raw token shown to user once at create.
 - **Live `(user_id, book_hash)` resolution** at every access (no FK to `files`). Re-uploads of the same hash follow the share automatically.
@@ -37,8 +37,8 @@ Deferred to TODOS.md: QR code on landing, notify-on-download toggle.
 
 1. Upload-confirmation: HEAD R2 in `/create`, or add `uploaded_at` column to `files`? — recommend HEAD.
 2. Migration directory: project has no `apps/readest-app/supabase/migrations/`. Confirm where SQL actually lands before writing the file.
-3. `@vercel/og` runtime compat with CloudFlare Workers (OpenNextJS). Verify before relying on it; fallback to Satori + sharp if incompatible.
-4. App Router route handlers under `src/app/api/share/...` should be silently dropped by `output: 'export'` in Next 16.2.3. Confirm during first Tauri build.
+3. OG image generation runtime compat with CloudFlare Workers. Verify before relying on Satori + resvg-wasm; fallback to sharp if incompatible.
+4. TanStack Start server routes under `src/app/api/share/...` are excluded from the Tauri client build via the Cloudflare plugin conditional.
 
 ## Critical files for implementation
 

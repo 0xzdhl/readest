@@ -4,7 +4,7 @@
 
 ### Overview
 
-Readest is a cross-platform e-reader (macOS, Windows, Linux, Android, iOS, Web) built on Next.js and Tauri. It processes user-supplied ebook files, syncs data to the cloud, integrates with external services (OPDS catalogs, KOReader, DeepL, Yandex), and handles user authentication.
+Readest is a cross-platform e-reader (macOS, Windows, Linux, Android, iOS, Web) built on TanStack Start and Tauri. It processes user-supplied ebook files, syncs data to the cloud, integrates with external services (OPDS catalogs, KOReader, DeepL, Yandex), and handles user authentication.
 
 ### Assets
 

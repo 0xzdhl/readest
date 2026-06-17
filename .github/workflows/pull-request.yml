@@ -58,15 +58,6 @@ jobs:
           node-version: 24
           cache: pnpm
 
-      - name: cache Next.js build
-        uses: actions/cache@v5
-        with:
-          path: apps/readest-app/.next/cache
-          key: nextjs-web-${{ github.sha }}-${{ hashFiles('pnpm-lock.yaml') }}
-          restore-keys: |
-            nextjs-web-${{ github.sha }}-
-            nextjs-web-
-
       - name: install Dependencies
         working-directory: apps/readest-app
         run: |
@@ -104,15 +95,6 @@ jobs:
         with:
           node-version: 24
           cache: pnpm
-
-      - name: cache Next.js build
-        uses: actions/cache@v5
-        with:
-          path: apps/readest-app/.next/cache
-          key: nextjs-test-${{ github.sha }}-${{ hashFiles('pnpm-lock.yaml') }}
-          restore-keys: |
-            nextjs-test-${{ github.sha }}-
-            nextjs-test-
 
       - name: install Dependencies
         working-directory: apps/readest-app
@@ -162,15 +144,6 @@ jobs:
         with:
           node-version: 24
           cache: pnpm
-
-      - name: cache Next.js build
-        uses: actions/cache@v5
-        with:
-          path: apps/readest-app/.next/cache
-          key: nextjs-tauri-${{ github.sha }}-${{ hashFiles('pnpm-lock.yaml') }}
-          restore-keys: |
-            nextjs-tauri-${{ github.sha }}-
-            nextjs-tauri-
 
       - name: install Dependencies
         working-directory: apps/readest-app
