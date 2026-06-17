@@ -18,6 +18,7 @@ interface FileRow {
   userId: string;
   fileKey: string;
   bookHash: string | null;
+  contentHash: string | null;
 }
 
 async function processFileKeys(
@@ -32,6 +33,7 @@ async function processFileKeys(
         userId: files.userId,
         fileKey: files.fileKey,
         bookHash: files.bookHash,
+        contentHash: files.contentHash,
       })
       .from(files)
       .where(
@@ -68,6 +70,7 @@ async function processFileKeys(
             userId: files.userId,
             fileKey: files.fileKey,
             bookHash: files.bookHash,
+            contentHash: files.contentHash,
           })
           .from(files)
           .where(
@@ -102,10 +105,13 @@ async function processFileKeys(
       if (fileRecord.userId !== userId) {
         return { fileKey, downloadUrl: undefined };
       }
+      const objectKey = fileRecord.contentHash
+        ? `content/${fileRecord.contentHash}`
+        : fileRecord.fileKey;
       const signed = await runStorageProgram(
         Effect.gen(function* () {
           const storage = yield* ObjectStorage;
-          return yield* storage.getDownloadSignedUrl(fileRecord.fileKey, 1800);
+          return yield* storage.getDownloadSignedUrl(objectKey, 1800);
         }),
       );
       if (Either.isLeft(signed)) {
