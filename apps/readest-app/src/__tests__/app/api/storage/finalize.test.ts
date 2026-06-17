@@ -98,7 +98,10 @@ const FILE_SIZE_LARGE = DEDUP_MAX_BYTES + 1;
 const FREE_QUOTA = 1 * 1024 * 1024 * 1024; // from DEFAULT_STORAGE_QUOTA['free']
 const GRACE = 10 * 1024 * 1024;
 
-const makeContext = (tx: ReturnType<typeof makeTx>, userOverrides: Record<string, unknown> = {}) => ({
+const makeContext = (
+  tx: ReturnType<typeof makeTx>,
+  userOverrides: Record<string, unknown> = {},
+) => ({
   user: {
     id: userId,
     email: 'a@test.com',
@@ -143,9 +146,7 @@ const makeStorageSequence = (contentExists: boolean) => {
     () => Either.right(STAGED_BYTES),
     // 3. headObject(contentKey) → exists or not-found
     () =>
-      contentExists
-        ? Either.right(undefined)
-        : Either.left(new Error('StorageNotFoundError')),
+      contentExists ? Either.right(undefined) : Either.left(new Error('StorageNotFoundError')),
     // 4. copyObject (only when !contentExists) or deleteObject(staging)
     () => Either.right(undefined),
     // 5. deleteObject(staging) if copy happened
@@ -182,7 +183,11 @@ describe('POST /api/storage/finalize', () => {
     });
 
     expect(res.status).toBe(200);
-    const body = (await res.json()) as { ok: boolean; contentHash: string | null; deduped: boolean };
+    const body = (await res.json()) as {
+      ok: boolean;
+      contentHash: string | null;
+      deduped: boolean;
+    };
     expect(body.ok).toBe(true);
     expect(body.deduped).toBe(false);
     expect(body.contentHash).toBeTruthy();
@@ -219,7 +224,11 @@ describe('POST /api/storage/finalize', () => {
     });
 
     expect(res.status).toBe(200);
-    const body = (await res.json()) as { ok: boolean; contentHash: string | null; deduped: boolean };
+    const body = (await res.json()) as {
+      ok: boolean;
+      contentHash: string | null;
+      deduped: boolean;
+    };
     expect(body.ok).toBe(true);
     expect(body.deduped).toBe(true);
 
@@ -307,7 +316,11 @@ describe('POST /api/storage/finalize', () => {
     });
 
     expect(res.status).toBe(200);
-    const body = (await res.json()) as { ok: boolean; contentHash: string | null; deduped: boolean };
+    const body = (await res.json()) as {
+      ok: boolean;
+      contentHash: string | null;
+      deduped: boolean;
+    };
     expect(body.ok).toBe(true);
     expect(body.contentHash).toBeNull();
     expect(body.deduped).toBe(false);
@@ -381,7 +394,11 @@ describe('POST /api/storage/finalize', () => {
     });
 
     expect(res.status).toBe(200);
-    const body = (await res.json()) as { ok: boolean; contentHash: string | null; deduped: boolean };
+    const body = (await res.json()) as {
+      ok: boolean;
+      contentHash: string | null;
+      deduped: boolean;
+    };
 
     // Server computes the hash from the actual staged bytes — not from the body
     const expectedSha = await sha256Hex(STAGED_BYTES);

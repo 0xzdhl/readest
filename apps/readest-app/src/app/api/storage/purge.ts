@@ -110,10 +110,7 @@ export const Route = createFileRoute('/api/storage/purge')({
                   )) as unknown as Array<{ count: number | string }>;
                   shouldDeleteObject = Number(count) === 0;
                 } catch (error) {
-                  console.error(
-                    `Error checking refcount for ${fileRecord.fileKey}:`,
-                    error,
-                  );
+                  console.error(`Error checking refcount for ${fileRecord.fileKey}:`, error);
                   return {
                     fileKey: fileRecord.fileKey,
                     success: false as const,

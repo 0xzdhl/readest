@@ -92,28 +92,27 @@ const deleteRequest = (fileKey: string) =>
  * Build a runStorageProgram mock that executes the passed Effect with a real
  * ObjectStorage service layer, capturing the key passed to deleteObject.
  */
-const makeStorageMock = (capturedKeys: string[], deleteObjectSpy: ReturnType<typeof vi.fn>) =>
+const makeStorageMock = (capturedKeys: string[], deleteObjectSpy: (key: string) => void) =>
   vi.fn(async (prog: Effect.Effect<void, never, ObjectStorage>) => {
-    const mockStorage: ObjectStorage = {
-      getUploadSignedUrl: (_key, _size, _exp, _bucket) =>
+    const mockStorage = ObjectStorage.of({
+      getUploadSignedUrl: (_key: string, _size: number, _exp: number, _bucket?: string) =>
         Effect.succeed('') as Effect.Effect<string, never, never>,
-      getDownloadSignedUrl: (_key, _exp, _bucket) =>
+      getDownloadSignedUrl: (_key: string, _exp: number, _bucket?: string) =>
         Effect.succeed('') as Effect.Effect<string, never, never>,
       deleteObject: (key: string, _bucket?: string) => {
         capturedKeys.push(key);
         deleteObjectSpy(key);
         return Effect.void as Effect.Effect<void, never, never>;
       },
-      headObject: (_key, _bucket) => Effect.void as Effect.Effect<void, never, never>,
-      copyObject: (_src, _dst, _bucket, _srcBucket) =>
+      headObject: (_key: string, _bucket?: string) =>
         Effect.void as Effect.Effect<void, never, never>,
-      getObjectBytes: (_key, _bucket) =>
+      copyObject: (_src: string, _dst: string, _bucket?: string, _srcBucket?: string) =>
+        Effect.void as Effect.Effect<void, never, never>,
+      getObjectBytes: (_key: string, _bucket?: string) =>
         Effect.succeed(new ArrayBuffer(0)) as Effect.Effect<ArrayBuffer, never, never>,
-    };
+    });
     const layer = Layer.succeed(ObjectStorage, mockStorage);
-    await Effect.runPromise(
-      Effect.provide(prog, layer) as Effect.Effect<void, never, never>,
-    );
+    await Effect.runPromise(Effect.provide(prog, layer) as Effect.Effect<void, never, never>);
     return Either.right(undefined);
   });
 
