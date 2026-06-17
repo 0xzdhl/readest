@@ -17,11 +17,14 @@ export const files = pgTable(
     // Added in migration 007
     replicaKind: text('replica_kind'),
     replicaId: text('replica_id'),
+    // Added in migration 0005_files_content_hash
+    contentHash: text('content_hash'),
   },
   (t) => [
     index('idx_files_user_id_deleted_at').on(t.userId, t.deletedAt),
     index('idx_files_file_key').on(t.fileKey),
     index('idx_files_file_key_deleted_at').on(t.fileKey, t.deletedAt),
     index('idx_files_replica_lookup').on(t.userId, t.replicaKind, t.replicaId),
+    index('idx_files_content_hash_live').on(t.contentHash, t.deletedAt),
   ],
 );

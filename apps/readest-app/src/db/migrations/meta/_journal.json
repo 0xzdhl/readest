@@ -36,6 +36,13 @@
       "when": 1750125600000,
       "tag": "0004_force_rls",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1750125601000,
+      "tag": "0005_files_content_hash",
+      "breakpoints": true
     }
   ]
 }
