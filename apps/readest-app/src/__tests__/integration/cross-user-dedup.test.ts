@@ -101,7 +101,7 @@ function makeInMemoryStorage(
     copyObject: (sourceFileKey, destFileKey, _bucket, _srcBucket) => {
       const data = store.get(sourceFileKey);
       if (!data) {
-        return Effect.fail(new (require('@/storage/errors').StorageNotFoundError)(sourceFileKey));
+        return Effect.fail(new StorageNotFoundError(sourceFileKey));
       }
       stats.copyObjectCallCount++;
       store.set(destFileKey, data);
@@ -147,6 +147,13 @@ let rowIdCounter = 0;
 // We build a "thenable chain" object that is a PromiseLike resolving to the
 // rows array AND exposes `.limit(n)` that also resolves to a slice of rows.
 
+/**
+ * Captured state from the last non-aggregate SELECT .where() call.
+ * Reset by each test via `beforeEach`. Allows assertions on query structure
+ * (e.g. verifying that the download SELECT includes an inArray fileKey filter).
+ */
+let lastSelectFileKeyFilter: string[] | undefined = undefined;
+
 function makeUserAwareTx(userId: string, filesRows: FilesRow[]): DbTx {
   const refCount = (contentHash: string): number =>
     filesRows.filter((r) => r.contentHash === contentHash && r.deletedAt === null).length;
@@ -174,8 +181,6 @@ function makeUserAwareTx(userId: string, filesRows: FilesRow[]): DbTx {
     return p;
   }
 
-  let selectCallCount = 0;
-
   const tx: Record<string, unknown> = {
     select: (_cols?: unknown) => {
       // The first select call in finalize is the quota sum (returns [{total}]).
@@ -186,15 +191,25 @@ function makeUserAwareTx(userId: string, filesRows: FilesRow[]): DbTx {
         typeof _cols === 'object' &&
         _cols !== null &&
         'total' in (_cols as object);
-      selectCallCount++;
       return {
         from: (_table: unknown) => ({
-          where: (_cond: unknown) => {
+          where: (cond: unknown) => {
             if (isAggQuery) {
               const usageBytes = liveRowsForUser().reduce((s, r) => s + r.fileSize, 0);
               return makeAggResult(usageBytes);
             }
-            return makeSelectResult(liveRowsForUser());
+            // For non-aggregate queries, extract the inArray(files.fileKey, ...) filter
+            // from the WHERE condition and apply it to the in-memory rows. This makes
+            // the fake-tx respect the production fileKey filter so that a regression
+            // removing inArray from download.ts would cause the assertion below to fail.
+            const requestedFileKeys = extractInArrayValues(cond as SqlLike);
+            // Capture for regression assertions in the calling test.
+            lastSelectFileKeyFilter = requestedFileKeys;
+            const rows =
+              requestedFileKeys !== undefined
+                ? liveRowsForUser().filter((r) => requestedFileKeys.includes(r.fileKey))
+                : liveRowsForUser();
+            return makeSelectResult(rows);
           },
         }),
       };
@@ -233,9 +248,6 @@ function makeUserAwareTx(userId: string, filesRows: FilesRow[]): DbTx {
       return Promise.resolve([{ count }]);
     },
   };
-
-  // suppress unused variable lint warning
-  void selectCallCount;
 
   return tx as unknown as DbTx;
 }
@@ -281,6 +293,57 @@ function extractSqlParam(expr: SqlLike): string | undefined {
   for (const chunk of expr.queryChunks) {
     // In `sql` tagged template, interpolated values appear as plain strings.
     if (typeof chunk === 'string') return chunk;
+  }
+  return undefined;
+}
+
+/**
+ * Extract the values array from a Drizzle `inArray(col, values)` expression,
+ * searching recursively through nested `and(...)` wrappers.
+ *
+ * Drizzle compiles `inArray(col, ['a', 'b'])` into queryChunks like:
+ *   [{value: ['']}, <column-def>, {value: [' in ']}, <params-array>, {value: ['']}]
+ *
+ * where <params-array> is an Array of Drizzle bound-parameter objects with shape
+ * `{brand: '...', value: 'the-string', encoder: ...}`. The values array chunk
+ * immediately follows the chunk with `value: [' in ']`.
+ */
+function extractInArrayValues(expr: SqlLike): string[] | undefined {
+  if (!expr?.queryChunks) return undefined;
+  const chunks = expr.queryChunks;
+  for (let i = 0; i < chunks.length; i++) {
+    const chunk = chunks[i];
+    // Check if this chunk is an SQL-like sub-expression (nested and/inArray)
+    if (chunk !== null && typeof chunk === 'object' && !Array.isArray(chunk)) {
+      const c = chunk as Record<string, unknown>;
+      // Recurse into nested expressions (e.g. and() wraps sub-expressions in queryChunks)
+      if ('queryChunks' in c) {
+        const found = extractInArrayValues(c as SqlLike);
+        if (found !== undefined) return found;
+      }
+      // Detect " in " operator chunk, then next chunk is the bound-param values array
+      if ('value' in c && Array.isArray(c['value'])) {
+        const valArr = c['value'] as unknown[];
+        if (valArr.length === 1 && typeof valArr[0] === 'string' && valArr[0].trim() === 'in') {
+          const next = chunks[i + 1];
+          if (Array.isArray(next)) {
+            // Items are either plain strings (simple mock) or Drizzle bound-param objects
+            // with shape {brand, value: string, encoder}.
+            const extracted = next.map((item) => {
+              if (typeof item === 'string') return item;
+              if (item !== null && typeof item === 'object' && 'value' in (item as object)) {
+                const v = (item as Record<string, unknown>)['value'];
+                if (typeof v === 'string') return v;
+              }
+              return null;
+            });
+            if (extracted.every((v) => v !== null)) {
+              return extracted as string[];
+            }
+          }
+        }
+      }
+    }
   }
   return undefined;
 }
@@ -371,6 +434,7 @@ describe('cross-user binary dedup — end-to-end (in-memory)', () => {
     stats = { copyObjectCallCount: 0, deleteObjectCallCount: 0 };
     filesRows = [];
     rowIdCounter = 0;
+    lastSelectFileKeyFilter = undefined;
     storage = makeInMemoryStorage(store, stats);
     runStorageProgramMock.mockImplementation(makeRunStorageProgram(storage));
   });
@@ -468,6 +532,11 @@ describe('cross-user binary dedup — end-to-end (in-memory)', () => {
 
     const fileKeyA = `${USER_A}/book.epub`;
     const fileKeyB = `${USER_B}/book.epub`;
+    // A second row for User A with a DIFFERENT fileKey and a different content object.
+    // This row must NOT appear in User A's download response when requesting fileKeyA.
+    const fileKeyA2 = `${USER_A}/other-book.epub`;
+    const otherContentKey = 'content/other-sha-not-requested';
+    store.set(otherContentKey, new TextEncoder().encode('other content').buffer as ArrayBuffer);
 
     filesRows.push(
       {
@@ -477,6 +546,15 @@ describe('cross-user binary dedup — end-to-end (in-memory)', () => {
         fileKey: fileKeyA,
         fileSize: TEST_BYTES.byteLength,
         contentHash: sha,
+        deletedAt: null,
+      },
+      {
+        id: 'row-a2',
+        userId: USER_A,
+        bookHash: 'hash-book-2',
+        fileKey: fileKeyA2,
+        fileSize: 13,
+        contentHash: 'other-sha-not-requested',
         deletedAt: null,
       },
       {
@@ -501,6 +579,22 @@ describe('cross-user binary dedup — end-to-end (in-memory)', () => {
     expect(resA.status, 'A download status').toBe(200);
     const bodyA = (await resA.json()) as { downloadUrl?: string };
     expect(bodyA.downloadUrl, 'A gets a signed URL').toContain(`fake-download.test/${contentKey}`);
+
+    // Real regression-catcher: the fake-tx captures the inArray values from the
+    // WHERE condition. If production code removes `inArray(files.fileKey, fileKeys)`
+    // from the download SELECT, `extractInArrayValues` returns undefined and
+    // `lastSelectFileKeyFilter` stays undefined → the assertion below fails.
+    // This ensures the production fileKey filter cannot be silently removed.
+    expect(
+      lastSelectFileKeyFilter,
+      'download SELECT must include inArray(files.fileKey, ...) filter',
+    ).toEqual([fileKeyA]);
+
+    // The returned URL must point at the correct content object (not the other-book URL).
+    expect(
+      bodyA.downloadUrl,
+      'A download URL resolves to the correct content object',
+    ).not.toContain('other-sha-not-requested');
 
     // User B: should get a signed URL pointing at the SAME content object
     const resB = await downloadHandler({
