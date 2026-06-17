@@ -1,6 +1,5 @@
-ALTER TABLE "files" ADD COLUMN "content_hash" text;
-CREATE INDEX IF NOT EXISTS "idx_files_content_hash_live" ON "files" ("content_hash","deleted_at");
-
+ALTER TABLE "files" ADD COLUMN "content_hash" text;--> statement-breakpoint
+CREATE INDEX IF NOT EXISTS "idx_files_content_hash_live" ON "files" ("content_hash","deleted_at");--> statement-breakpoint
 -- Cross-user live reference count for GC. SECURITY DEFINER so it ignores RLS
 -- (it must see other users' rows) but returns ONLY a count — never row data.
 --
@@ -12,6 +11,10 @@ CREATE INDEX IF NOT EXISTS "idx_files_content_hash_live" ON "files" ("content_ha
 -- job would incorrectly consider a shared content object unreferenced and delete
 -- it while other users still point to it. Run as postgres/superuser so the
 -- SECURITY DEFINER execution context genuinely bypasses RLS.
+--
+-- NOTE: the statement-breakpoint markers above/below are REQUIRED — without
+-- them drizzle-kit splits this file on the `;` inside the `$$…$$` body and the
+-- function never gets created (the column + index still apply, masking it).
 CREATE OR REPLACE FUNCTION files_content_ref_count(p_content_hash text)
 RETURNS bigint
 LANGUAGE sql
@@ -20,6 +23,5 @@ SET search_path = public
 AS $$
   SELECT count(*) FROM files
   WHERE content_hash = p_content_hash AND deleted_at IS NULL;
-$$;
-
+$$;--> statement-breakpoint
 GRANT EXECUTE ON FUNCTION files_content_ref_count(text) TO readest_app;
