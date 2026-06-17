@@ -215,5 +215,6 @@ describe('useUserScopedReset', () => {
     expect(setCurrentUserNamespaceSpy).toHaveBeenCalledWith(null);
     expect(clearAllSpy).toHaveBeenCalled();
     expect(resetForUserSwitchSpy).toHaveBeenCalled();
+    expect(migrateIntoNamespaceMock).toHaveBeenCalledWith('local');
   });
 });
