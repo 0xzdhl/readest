@@ -4,15 +4,19 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 /**
  * Unit tests for POST /api/storage/upload. The handler is driven directly
  * (bypassing the rls middleware) with a hand-rolled `tx` mock so we can
- * exercise the quota gate and the temp-branch sanitization without a real DB.
+ * exercise the staging key minting and the temp-branch sanitization without
+ * a real DB.
  *
  * Covers:
- *  - #5: cumulative quota is enforced against the REAL `sum(files.file_size)`
- *    for the user (deleted rows excluded), not the never-written
- *    `user.storageUsageBytes`.
- *  - #14: concurrent same-key uploads are idempotent (no spurious 500 from a
- *    UNIQUE violation on file_key).
+ *  - #16: book upload branch now mints a staging presigned PUT (staging/<user.id>/<uuid>)
+ *    and writes NO `files` row; quota gate and dedup move to /finalize (Task 5).
  *  - #12: the temp branch caps file size and sanitizes the client fileName.
+ *
+ * NOTE: The old quota-gate assertions (#5) and idempotent-insert assertions (#14)
+ * and skip-re-upload assertions (#13) applied to the OLD book branch which
+ * inserted a `files` row and enforced quota inline. Those behaviors have moved
+ * to POST /api/storage/finalize (Task 5). Coverage of the quota gate and dedup
+ * now lives in finalize.test.ts.
  */
 
 const runStorageProgramMock = vi.hoisted(() => vi.fn());
@@ -37,25 +41,16 @@ const getHandler = (): Handler => {
 };
 
 interface TxOptions {
-  /** value returned by the `sum(file_size)` usage query (postgres-js: string|null) */
-  usageSum?: string | number | null;
-  /** rows returned when reading back the files row after upsert */
-  existingRow?: Record<string, unknown> | null;
   /** invoked when an insert is attempted */
   onInsert?: (values: Record<string, unknown>) => void;
 }
 
 /**
- * Build a chainable drizzle-like tx mock. The upload handler issues two
- * shapes of query:
- *   1. select({ total: sum(...) }).from(files).where(...)   -> usage
- *   2. select().from(files).where(...).limit(1)            -> existing row
- * plus insert(files).values(...).onConflictDoNothing().
+ * Build a chainable drizzle-like tx mock. Only insert is relevant for the
+ * new book branch (to assert NO insert happens). The select chain is kept
+ * for completeness / replica-branch coverage.
  */
-const makeTx = (opts: TxOptions) => {
-  const usageRows = [{ total: opts.usageSum ?? null }];
-  const existingRows = opts.existingRow ? [opts.existingRow] : [];
-
+const makeTx = (opts: TxOptions = {}) => {
   const insert = vi.fn((_table: unknown) => {
     const chain = {
       values: vi.fn((values: Record<string, unknown>) => {
@@ -70,7 +65,7 @@ const makeTx = (opts: TxOptions) => {
 
   const select = vi.fn((projection?: Record<string, unknown>) => {
     const isUsageQuery = !!projection && Object.keys(projection).length > 0;
-    const result = isUsageQuery ? usageRows : existingRows;
+    const result = isUsageQuery ? [{ total: null }] : [];
     const builder = {
       from: vi.fn(() => builder),
       where: vi.fn(() => builder),
@@ -94,8 +89,6 @@ const makeContext = (
     id: userId,
     email: 'a@test',
     plan: 'free',
-    // Intentionally large so the OLD gate (which read this field) would always
-    // pass — proving the new gate ignores it in favour of the real sum.
     storageUsageBytes: 0,
     storagePurchasedBytes: 0,
     ...userOverrides,
@@ -109,109 +102,91 @@ const post = (body: unknown) =>
     body: JSON.stringify(body),
   });
 
-describe('POST /api/storage/upload — quota gate (#5)', () => {
+describe('POST /api/storage/upload — book branch → staging presigned PUT (#16)', () => {
   beforeEach(() => {
     runStorageProgramMock.mockReset();
-    // 1st storage call is headObject (existence check); return absent so the
-    // normal upload path runs. 2nd call is the presign.
-    runStorageProgramMock.mockResolvedValueOnce(Either.left('not-found'));
-    runStorageProgramMock.mockResolvedValue(Either.right('https://signed.test/url'));
+    // Book branch only calls storage once: getUploadSignedUrl for the staging key.
+    runStorageProgramMock.mockResolvedValue(Either.right('https://signed.test/staging-url'));
   });
   afterEach(() => vi.clearAllMocks());
 
-  it('rejects when REAL usage (sum of files.file_size) + new file exceeds quota', async () => {
-    // free quota = 500 MiB. Existing real usage already at 500 MiB.
-    const realUsage = 500 * 1024 * 1024;
-    const tx = makeTx({ usageSum: String(realUsage), existingRow: null });
+  it('returns stagingKey matching staging/<userId>/ and an uploadUrl, inserts NO files row', async () => {
+    let insertCalled = false;
+    const tx = makeTx({
+      onInsert: () => {
+        insertCalled = true;
+      },
+    });
     const handler = getHandler();
     const res = await handler({
-      request: post({ fileName: 'big.epub', fileSize: 50 * 1024 * 1024, bookHash: 'h' }),
+      request: post({ fileName: 'book.epub', fileSize: 2_000_000, bookHash: 'abc123' }),
       params: {},
-      // storageUsageBytes deliberately 0: old gate would have allowed this.
-      context: makeContext(tx, { storageUsageBytes: 0 }),
+      context: makeContext(tx),
     });
-    expect(res.status).toBe(403);
-    const body = (await res.json()) as { error?: string; usage?: number };
-    expect(body.error).toMatch(/quota/i);
-    expect(body.usage).toBe(realUsage);
-  });
 
-  it('allows upload when REAL usage leaves room (and reports real usage)', async () => {
-    const realUsage = 1000;
-    const tx = makeTx({ usageSum: String(realUsage), existingRow: null });
-    const handler = getHandler();
-    const res = await handler({
-      request: post({ fileName: 'ok.epub', fileSize: 2000, bookHash: 'h' }),
-      params: {},
-      context: makeContext(tx, { storageUsageBytes: 9_999_999_999 }),
-    });
     expect(res.status).toBe(200);
-    const body = (await res.json()) as { usage?: number; uploadUrl?: string };
-    expect(body.uploadUrl).toBe('https://signed.test/url');
-    // usage reported is real-usage + this file, not the stale user field.
-    expect(body.usage).toBe(realUsage + 2000);
+    const body = (await res.json()) as { stagingKey?: string; uploadUrl?: string };
+    // stagingKey must be staging/<user.id>/<uuid>
+    expect(body.stagingKey).toMatch(new RegExp(`^staging/${userId}/`));
+    expect(body.uploadUrl).toBe('https://signed.test/staging-url');
+    // No files row inserted
+    expect(insertCalled).toBe(false);
+    expect(tx.insert).not.toHaveBeenCalled();
   });
-});
 
-describe('POST /api/storage/upload — idempotent same-key insert (#14)', () => {
-  beforeEach(() => {
-    runStorageProgramMock.mockReset();
-    // 1st storage call is headObject (existence check); return absent so the
-    // normal upload path runs. 2nd call is the presign.
-    runStorageProgramMock.mockResolvedValueOnce(Either.left('not-found'));
-    runStorageProgramMock.mockResolvedValue(Either.right('https://signed.test/url'));
-  });
-  afterEach(() => vi.clearAllMocks());
-
-  it('uses onConflictDoNothing so a concurrent same-key upload returns 200, not 500', async () => {
-    let usedOnConflict = false;
-    const tx = makeTx({ usageSum: '0', existingRow: null });
-    // Patch insert to assert onConflictDoNothing is used.
-    tx.insert = vi.fn(() => ({
-      values: vi.fn(() => ({
-        onConflictDoNothing: vi.fn(() => {
-          usedOnConflict = true;
-          return Promise.resolve(undefined);
-        }),
-      })),
-    })) as unknown as typeof tx.insert;
-
+  it('returns 400 when fileName is missing', async () => {
+    const tx = makeTx();
     const handler = getHandler();
     const res = await handler({
-      request: post({ fileName: 'book.epub', fileSize: 1000, bookHash: 'h' }),
+      request: post({ fileSize: 1000 }),
+      params: {},
+      context: makeContext(tx),
+    });
+    expect(res.status).toBe(400);
+    const body = (await res.json()) as { error?: string };
+    expect(body.error).toMatch(/missing file info/i);
+  });
+
+  it('returns 400 when fileSize is missing', async () => {
+    const tx = makeTx();
+    const handler = getHandler();
+    const res = await handler({
+      request: post({ fileName: 'book.epub' }),
+      params: {},
+      context: makeContext(tx),
+    });
+    expect(res.status).toBe(400);
+    const body = (await res.json()) as { error?: string };
+    expect(body.error).toMatch(/missing file info/i);
+  });
+
+  it('returns 500 when storage presign fails', async () => {
+    runStorageProgramMock.mockReset();
+    runStorageProgramMock.mockResolvedValue(Either.left(new Error('storage error')));
+    const tx = makeTx();
+    const handler = getHandler();
+    const res = await handler({
+      request: post({ fileName: 'book.epub', fileSize: 1000 }),
+      params: {},
+      context: makeContext(tx),
+    });
+    expect(res.status).toBe(500);
+  });
+
+  it('does NOT include quota, usage, or fileKey in the response', async () => {
+    const tx = makeTx();
+    const handler = getHandler();
+    const res = await handler({
+      request: post({ fileName: 'book.epub', fileSize: 2_000_000 }),
       params: {},
       context: makeContext(tx),
     });
     expect(res.status).toBe(200);
-    expect(usedOnConflict).toBe(true);
-  });
-});
-
-describe('POST /api/storage/upload — skip re-upload when object exists (#13)', () => {
-  afterEach(() => vi.clearAllMocks());
-
-  it('returns skipUpload (no presign, no quota gate) when the object already exists', async () => {
-    runStorageProgramMock.mockReset();
-    // headObject succeeds -> the content is already stored. Every subsequent
-    // runStorageProgram call would also return right, so counting calls proves
-    // no presign was attempted.
-    runStorageProgramMock.mockResolvedValue(Either.right(undefined));
-
-    // usageSum is over quota: a skip must NOT run the quota gate (no new bytes).
-    const tx = makeTx({ usageSum: String(10 * 1024 * 1024 * 1024), existingRow: null });
-    const handler = getHandler();
-    const res = await handler({
-      request: post({ fileName: 'h/h.epub', fileSize: 5_000_000, bookHash: 'h' }),
-      params: {},
-      context: makeContext(tx, { storageUsageBytes: 0 }),
-    });
-
-    expect(res.status).toBe(200);
-    const body = (await res.json()) as { skipUpload?: boolean; uploadUrl?: string };
-    expect(body.skipUpload).toBe(true);
-    expect(body.uploadUrl).toBeUndefined();
-    // Only the headObject call happened — no presign, despite being over quota.
-    expect(runStorageProgramMock).toHaveBeenCalledTimes(1);
+    const body = (await res.json()) as Record<string, unknown>;
+    expect(body['quota']).toBeUndefined();
+    expect(body['usage']).toBeUndefined();
+    expect(body['fileKey']).toBeUndefined();
+    expect(body['skipUpload']).toBeUndefined();
   });
 });
 
@@ -223,7 +198,7 @@ describe('POST /api/storage/upload — temp branch sanitize/size cap (#12)', () 
   afterEach(() => vi.clearAllMocks());
 
   it('rejects an oversized temp upload', async () => {
-    const tx = makeTx({ usageSum: '0' });
+    const tx = makeTx();
     const handler = getHandler();
     const res = await handler({
       request: post({ temp: true, fileName: 'pic.png', fileSize: 1024 * 1024 * 1024 }),
@@ -234,7 +209,7 @@ describe('POST /api/storage/upload — temp branch sanitize/size cap (#12)', () 
   });
 
   it('sanitizes path traversal / separators out of the temp fileName', async () => {
-    const tx = makeTx({ usageSum: '0' });
+    const tx = makeTx();
     const handler = getHandler();
     const res = await handler({
       request: post({ temp: true, fileName: '../../etc/passwd', fileSize: 1000 }),
@@ -255,7 +230,7 @@ describe('POST /api/storage/upload — temp branch sanitize/size cap (#12)', () 
   });
 
   it('rejects a temp upload whose fileName sanitizes to empty', async () => {
-    const tx = makeTx({ usageSum: '0' });
+    const tx = makeTx();
     const handler = getHandler();
     const res = await handler({
       request: post({ temp: true, fileName: '../../', fileSize: 1000 }),
