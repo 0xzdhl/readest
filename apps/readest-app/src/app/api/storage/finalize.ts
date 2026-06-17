@@ -23,7 +23,7 @@ export const Route = createFileRoute('/api/storage/finalize')({
         } = await request.json();
         const { stagingKey, fileName, bookHash, fileSize } = body;
 
-        if (!stagingKey || !fileName || !fileSize) {
+        if (!stagingKey || !fileName || !fileSize || fileSize < 0) {
           return Response.json({ error: 'Missing finalize info' }, { status: 400 });
         }
         // The staging object must belong to the caller — never let a client

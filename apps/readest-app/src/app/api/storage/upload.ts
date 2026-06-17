@@ -37,8 +37,11 @@ function sanitizeTempFileName(fileName: string): string | null {
 }
 
 /**
- * POST /api/storage/upload — owner-only. Mints a presigned PUT URL for a new
- * object and (for non-temp uploads) inserts a `files` row tracking quota use.
+ * POST /api/storage/upload — owner-only. Mints a presigned PUT URL. For a book
+ * upload it stages the bytes (`staging/<user>/<uuid>`); the `files` row + quota
+ * gate + cross-user dedup happen at POST /api/storage/finalize. The temp
+ * (public bucket) and replica branches keep the single-step content-addressed
+ * flow.
  */
 export const Route = createFileRoute('/api/storage/upload')({
   server: {
