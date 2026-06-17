@@ -16,13 +16,13 @@ import {
   getDir,
   getLocalBookFilename,
   getCoverFilename,
-  getConfigFilename,
   INIT_BOOK_CONFIG,
   formatTitle,
   formatAuthors,
   getPrimaryLanguage,
   getMetadataHash,
 } from '@/utils/book';
+import { getConfigStoragePath } from '@/utils/userPaths';
 import { partialMd5, md5 } from '@/utils/md5';
 import { getBaseFilename, getFilename } from '@/utils/path';
 import { DocumentLoader } from '@/libs/document';
@@ -76,7 +76,7 @@ const mergeBooks = (
     const allCandidates = [book, ...duplicates];
     const configs: Partial<BookConfig>[] = [];
     for (const candidate of allCandidates) {
-      const configPath = getConfigFilename(candidate);
+      const configPath = getConfigStoragePath(candidate);
       if (yield* fs.exists(configPath, 'Books')) {
         const parsed = yield* fs.readFile(configPath, 'Books', 'text').pipe(
           Effect.flatMap((str) =>
@@ -333,7 +333,7 @@ export const importBook = (
         const config = yield* Effect.try(() => JSON.parse(bestConfigData!) as Partial<BookConfig>);
         config.bookHash = hash;
         config.metaHash = metaHash;
-        yield* fs.writeFile(getConfigFilename(book), 'Books', JSON.stringify(config));
+        yield* fs.writeFile(getConfigStoragePath(book), 'Books', JSON.stringify(config));
       } else {
         const oldConfigPath = `${oldBookDir}/config.json`;
         if (yield* fs.exists(oldConfigPath, 'Books')) {
@@ -341,7 +341,7 @@ export const importBook = (
           const config = yield* Effect.try(() => JSON.parse(configData) as Partial<BookConfig>);
           config.bookHash = hash;
           config.metaHash = metaHash;
-          yield* fs.writeFile(getConfigFilename(book), 'Books', JSON.stringify(config));
+          yield* fs.writeFile(getConfigStoragePath(book), 'Books', JSON.stringify(config));
         } else {
           yield* bookRepo.saveConfig(book, INIT_BOOK_CONFIG);
         }
@@ -353,7 +353,7 @@ export const importBook = (
       const config = yield* Effect.try(() => JSON.parse(bestConfigData!) as Partial<BookConfig>);
       config.bookHash = hash;
       config.metaHash = metaHash;
-      yield* fs.writeFile(getConfigFilename(book), 'Books', JSON.stringify(config));
+      yield* fs.writeFile(getConfigStoragePath(book), 'Books', JSON.stringify(config));
     }
 
     if (isPseStream) {
