@@ -316,6 +316,33 @@ describe('bookDataStore', () => {
     });
   });
 
+  describe('clearAll', () => {
+    test('resets booksData to empty object', () => {
+      const data1 = makeBookData('book1');
+      const data2 = makeBookData('book2');
+      useBookDataStore.setState({ booksData: { book1: data1, book2: data2 } });
+
+      useBookDataStore.getState().clearAll();
+
+      expect(useBookDataStore.getState().booksData).toEqual({});
+    });
+
+    test('is a no-op when booksData is already empty', () => {
+      useBookDataStore.getState().clearAll();
+
+      expect(useBookDataStore.getState().booksData).toEqual({});
+    });
+
+    test('getBookData returns null for any key after clearAll', () => {
+      const data = makeBookData('book1');
+      useBookDataStore.setState({ booksData: { book1: data } });
+
+      useBookDataStore.getState().clearAll();
+
+      expect(useBookDataStore.getState().getBookData('book1')).toBeNull();
+    });
+  });
+
   describe('saveConfig', () => {
     function makeLibraryBook(overrides: Partial<Book> = {}): Book {
       return {

@@ -13,6 +13,7 @@ import { SYNC_BOOKS_INTERVAL_SEC } from '@/services/constants';
 import { throttle } from '@/utils/throttle';
 import { debounce } from '@/utils/debounce';
 import { eventDispatcher } from '@/utils/event';
+import { getCurrentUserNamespace } from '@/services/userNamespace';
 
 export const useBooksSync = () => {
   const _ = useTranslation();
@@ -25,7 +26,9 @@ export const useBooksSync = () => {
 
   const getNewBooks = useCallback(() => {
     if (!user) return {};
-    const library = useLibraryStore.getState().library;
+    const st = useLibraryStore.getState();
+    if (!st.libraryLoaded || st.loadedNamespace !== getCurrentUserNamespace()) return {};
+    const library = st.library;
     const newBooks = library.filter(
       (book) =>
         !book.syncedAt ||
@@ -65,6 +68,8 @@ export const useBooksSync = () => {
     throttle(
       async () => {
         if (isPullingRef.current) return;
+        const _st = useLibraryStore.getState();
+        if (!_st.libraryLoaded || _st.loadedNamespace !== getCurrentUserNamespace()) return;
         const newBooks = getNewBooks();
         if (!newBooks.lastSyncedAt) return;
         isPullingRef.current = true;
@@ -88,6 +93,8 @@ export const useBooksSync = () => {
 
   const pushLibrary = useCallback(async () => {
     if (!user) return;
+    const st = useLibraryStore.getState();
+    if (!st.libraryLoaded || st.loadedNamespace !== getCurrentUserNamespace()) return;
     const newBooks = getNewBooks();
     if (newBooks.lastSyncedAt) {
       await syncBooks(newBooks?.books, 'push');

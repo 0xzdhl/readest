@@ -1,4 +1,4 @@
-import { describe, test, expect, beforeEach, vi } from 'vitest';
+import { describe, test, expect, beforeEach, afterEach, vi } from 'vitest';
 
 vi.mock('@/services/environment', () => ({
   isTauriAppPlatform: () => false,
@@ -37,6 +37,7 @@ vi.mock('@/runtime/clientRuntime', async () => {
 
 import { useLibraryStore } from '@/store/libraryStore';
 import type { Book, BooksGroup } from '@/domain/book';
+import { setCurrentUserNamespace, getCurrentUserNamespace } from '@/services/userNamespace';
 
 function makeBook(overrides: Partial<Book> = {}): Book {
   return {
@@ -53,6 +54,7 @@ function makeBook(overrides: Partial<Book> = {}): Book {
 describe('libraryStore', () => {
   beforeEach(() => {
     librarySaveSpy.mockClear();
+    setCurrentUserNamespace(null);
     useLibraryStore.setState({
       library: [],
       libraryLoaded: false,
@@ -63,7 +65,12 @@ describe('libraryStore', () => {
       groups: {},
       hashIndex: new Map(),
       visibleLibrary: [],
+      loadedNamespace: null,
     });
+  });
+
+  afterEach(() => {
+    setCurrentUserNamespace(null);
   });
 
   describe('setLibrary', () => {
@@ -485,6 +492,63 @@ describe('libraryStore', () => {
 
       const shelf = useLibraryStore.getState().currentBookshelf;
       expect(shelf).toHaveLength(1);
+    });
+  });
+
+  describe('loadedNamespace + setLibrary', () => {
+    test('setLibrary stamps loadedNamespace with the current user namespace', () => {
+      setCurrentUserNamespace('user-A');
+      expect(getCurrentUserNamespace()).toBe('user-A');
+
+      const books = [makeBook({ hash: 'a' })];
+      useLibraryStore.getState().setLibrary(books);
+
+      const state = useLibraryStore.getState();
+      expect(state.libraryLoaded).toBe(true);
+      expect(state.loadedNamespace).toBe('user-A');
+    });
+
+    test('setLibrary stamps "local" when no user namespace is set', () => {
+      // namespace is reset to null (→ "local") in beforeEach
+      const books = [makeBook({ hash: 'a' })];
+      useLibraryStore.getState().setLibrary(books);
+
+      expect(useLibraryStore.getState().loadedNamespace).toBe('local');
+    });
+  });
+
+  describe('resetForUserSwitch', () => {
+    test('clears library, marks not loaded, nulls loadedNamespace, clears visibleLibrary', () => {
+      setCurrentUserNamespace('user-A');
+      useLibraryStore
+        .getState()
+        .setLibrary([makeBook({ hash: 'a' }), makeBook({ hash: 'b', deletedAt: 1 })]);
+
+      // sanity: state is populated before reset
+      expect(useLibraryStore.getState().library).toHaveLength(2);
+      expect(useLibraryStore.getState().libraryLoaded).toBe(true);
+      expect(useLibraryStore.getState().loadedNamespace).toBe('user-A');
+
+      useLibraryStore.getState().resetForUserSwitch();
+
+      const state = useLibraryStore.getState();
+      expect(state.library).toEqual([]);
+      expect(state.libraryLoaded).toBe(false);
+      expect(state.loadedNamespace).toBeNull();
+      expect(state.visibleLibrary).toEqual([]);
+      expect(state.currentBookshelf).toEqual([]);
+      expect(state.selectedBooks.size).toBe(0);
+      expect(Object.keys(state.groups)).toHaveLength(0);
+    });
+
+    test('hashIndex is cleared by resetForUserSwitch', () => {
+      setCurrentUserNamespace('user-A');
+      useLibraryStore.getState().setLibrary([makeBook({ hash: 'a' }), makeBook({ hash: 'b' })]);
+      expect(useLibraryStore.getState().hashIndex.size).toBe(2);
+
+      useLibraryStore.getState().resetForUserSwitch();
+
+      expect(useLibraryStore.getState().hashIndex.size).toBe(0);
     });
   });
 });
