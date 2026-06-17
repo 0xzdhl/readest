@@ -12,6 +12,7 @@ const API_ENDPOINTS = {
   stats: getAPIBaseUrl() + '/storage/stats',
   list: getAPIBaseUrl() + '/storage/list',
   purge: getAPIBaseUrl() + '/storage/purge',
+  finalize: getAPIBaseUrl() + '/storage/finalize',
 };
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
@@ -125,7 +126,7 @@ export const uploadFile = async (
     } else {
       await tauriUpload(uploadUrl, fileFullPath, 'PUT', onProgress);
     }
-    await fetchWithAuth(getAPIBaseUrl() + '/storage/finalize', {
+    await fetchWithAuth(API_ENDPOINTS.finalize, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ stagingKey, fileName: file.name, bookHash, fileSize: file.size }),
