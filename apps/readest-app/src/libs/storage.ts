@@ -40,6 +40,16 @@ const parseUploadResponse = (value: unknown) => {
   return { skipUpload: false as const, uploadUrl: value['uploadUrl'], downloadUrl };
 };
 
+const parseStagingResponse = (value: unknown) => {
+  if (!isRecord(value)) {
+    throw new Error('Invalid staging response');
+  }
+  if (typeof value['stagingKey'] !== 'string' || typeof value['uploadUrl'] !== 'string') {
+    throw new Error('Invalid staging response');
+  }
+  return { stagingKey: value['stagingKey'], uploadUrl: value['uploadUrl'] };
+};
+
 const parseBatchDownloadResponse = (value: unknown) => {
   if (!isRecord(value) || !isStringRecord(value['downloadUrls'])) {
     throw new Error('Invalid download URLs response');
@@ -94,16 +104,33 @@ export const uploadFile = async (
       }),
     });
 
-    const parsed = parseUploadResponse(await response.json());
-    // Skip the PUT entirely when the content is already stored server-side.
-    if (!parsed.skipUpload) {
-      if (isWebAppPlatform()) {
-        await webUpload(file, parsed.uploadUrl, onProgress);
-      } else {
-        await tauriUpload(parsed.uploadUrl, fileFullPath, 'PUT', onProgress);
+    if (temp) {
+      // Temp uploads (e.g. cover images) still use the old single-step path
+      // that returns { uploadUrl, downloadUrl } directly.
+      const parsed = parseUploadResponse(await response.json());
+      if (!parsed.skipUpload) {
+        if (isWebAppPlatform()) {
+          await webUpload(file, parsed.uploadUrl, onProgress);
+        } else {
+          await tauriUpload(parsed.uploadUrl, fileFullPath, 'PUT', onProgress);
+        }
       }
+      return parsed.downloadUrl;
     }
-    return temp ? parsed.downloadUrl : undefined;
+
+    // Non-temp book uploads: two-step stage → finalize flow.
+    const { stagingKey, uploadUrl } = parseStagingResponse(await response.json());
+    if (isWebAppPlatform()) {
+      await webUpload(file, uploadUrl, onProgress);
+    } else {
+      await tauriUpload(uploadUrl, fileFullPath, 'PUT', onProgress);
+    }
+    await fetchWithAuth(getAPIBaseUrl() + '/storage/finalize', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ stagingKey, fileName: file.name, bookHash, fileSize: file.size }),
+    });
+    return undefined;
   } catch (error) {
     console.error('File upload failed:', error);
     if (error instanceof Error) {
