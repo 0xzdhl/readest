@@ -28,6 +28,7 @@ import { useLibraryStore } from '@/store/libraryStore';
 import { useTranslation } from '@/hooks/useTranslation';
 import { useResponsiveSize } from '@/hooks/useResponsiveSize';
 import { navigateToLibrary, navigateToReader, showReaderWindow } from '@/utils/nav';
+import { prefetchBookProgress } from '@/services/sync/prefetchProgress';
 import {
   createBookFilter,
   createBookGroups,
@@ -348,11 +349,20 @@ const Bookshelf: React.FC<BookshelfProps> = ({
 
   const openSelectedBooks = () => {
     handleSetSelectMode(false);
+    const selected = getSelectedBooks();
+    // Prefetch each book's cloud reading progress so the reader opens at the
+    // synced position (overlaps download/navigation). Best-effort.
+    if (user) {
+      for (const hash of selected) {
+        const book = libraryBooks.find((b) => b.hash === hash);
+        if (book) prefetchBookProgress(book);
+      }
+    }
     if (platformInfo.hasWindow && settings.openBookInNewWindow) {
-      showReaderWindow(getSelectedBooks());
+      showReaderWindow(selected);
     } else {
       setTimeout(() => setLoading(true), 200);
-      navigateToReader(router, getSelectedBooks());
+      navigateToReader(router, selected);
     }
   };
 

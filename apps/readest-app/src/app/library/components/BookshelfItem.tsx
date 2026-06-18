@@ -2,7 +2,9 @@ import clsx from 'clsx';
 import { useCallback } from 'react';
 import { Effect } from 'effect';
 import { usePlatformInfo, useRunEffect } from '@/context/EffectRuntimeProvider';
+import { useAuth } from '@/context/AuthContext';
 import { BookRepository } from '@/application/repositories/BookRepository';
+import { prefetchBookProgress } from '@/services/sync/prefetchProgress';
 import { useLibraryStore } from '@/store/libraryStore';
 import { useSettingsStore } from '@/store/settingsStore';
 import { useTranslation } from '@/hooks/useTranslation';
@@ -126,6 +128,7 @@ const BookshelfItem: React.FC<BookshelfItemProps> = ({
   const router = useAppRouter();
   const platformInfo = usePlatformInfo();
   const runEffect = useRunEffect();
+  const { user } = useAuth();
   const { settings } = useSettingsStore();
   const { updateBook } = useLibraryStore();
 
@@ -163,6 +166,10 @@ const BookshelfItem: React.FC<BookshelfItemProps> = ({
       if (isSelectMode) {
         toggleSelection(book.hash);
       } else {
+        // Kick off the cloud reading-progress pull now so it overlaps the book
+        // download/navigation; the reader consumes it to open at the synced
+        // position (see takePrefetchedProgress in initViewState).
+        if (user) prefetchBookProgress(book);
         const available = await makeBookAvailable(book);
         if (!available) return;
         if (platformInfo.hasWindow && settings.openBookInNewWindow) {
@@ -175,7 +182,7 @@ const BookshelfItem: React.FC<BookshelfItemProps> = ({
       }
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [isSelectMode, settings.openBookInNewWindow, platformInfo],
+    [isSelectMode, settings.openBookInNewWindow, platformInfo, user],
   );
 
   const handleGroupClick = useCallback(

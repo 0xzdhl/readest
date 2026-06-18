@@ -18,6 +18,7 @@ const h = vi.hoisted(() => {
     // test can express "remote position is earlier than local".
     syncedConfigs: null as unknown[] | null,
     cfiCompare: ((_a: string, _b: string) => 0) as (a: string, b: string) => number,
+    getCFIFromXPointer: vi.fn(async (..._args: unknown[]) => ''),
     syncConfigs: vi.fn(
       async (
         _configs?: unknown[],
@@ -28,7 +29,11 @@ const h = vi.hoisted(() => {
     ),
     getConfig: vi.fn(() => config),
     setConfig: vi.fn(),
-    getBookData: vi.fn(() => ({ book: { metaHash: 'meta1', format: 'EPUB' } })),
+    getBookData: vi.fn(
+      (): { book: { metaHash: string; format: string }; bookDoc?: { sections: unknown[] } } => ({
+        book: { metaHash: 'meta1', format: 'EPUB' },
+      }),
+    ),
     getView: vi.fn(() => null),
     getProgress: vi.fn(() => ({ location: 'epubcfi(/6/4!/4/2)' })),
     setHoveredBookKey: vi.fn(),
@@ -46,8 +51,29 @@ vi.mock('@/libs/document', () => ({
   CFI: { compare: (a: string, b: string) => h.cfiCompare(a, b) },
 }));
 vi.mock('@/utils/xcfi', () => ({
-  getCFIFromXPointer: vi.fn(async () => ''),
+  getCFIFromXPointer: h.getCFIFromXPointer,
   getXPointerFromCFI: vi.fn(async () => ({ xpointer: '' })),
+  // Faithful stand-in for the real helper: refine the position via its XPointer
+  // when present, but swallow conversion failures and fall back to the location
+  // CFI. The real implementation is unit-tested in utils/xcfi.spec.ts.
+  resolveRemoteProgressCFI: async (
+    location: string | undefined,
+    xpointer: string | undefined,
+    doc: unknown,
+    index: number | undefined,
+    bookDoc: unknown,
+  ) => {
+    let remote = location;
+    if (xpointer && bookDoc) {
+      try {
+        const candidate = await h.getCFIFromXPointer(xpointer, doc, index, bookDoc);
+        if (!remote || h.cfiCompare(remote, candidate as string) < 0) remote = candidate as string;
+      } catch {
+        // fall back to the location CFI
+      }
+    }
+    return remote;
+  },
 }));
 vi.mock('@/store/bookDataStore', () => ({
   useBookDataStore: () => ({
@@ -119,6 +145,8 @@ describe('useProgressSync — applying remote progress', () => {
     vi.clearAllMocks();
     h.syncedConfigs = null;
     h.cfiCompare = () => 0;
+    h.getBookData.mockReturnValue({ book: { metaHash: 'meta1', format: 'EPUB' } });
+    h.getCFIFromXPointer.mockResolvedValue('');
   });
 
   it('does not move the persisted location/progress backwards on a newer-but-earlier remote', async () => {
@@ -178,6 +206,47 @@ describe('useProgressSync — applying remote progress', () => {
     h.syncedConfigs = [remote];
 
     // Local (/4/4) is BEFORE remote (/4/8): local-vs-remote negative.
+    h.cfiCompare = (a: string) => (a === 'epubcfi(/6/4!/4/4)' ? -1 : 1);
+
+    await act(async () => {
+      renderHook(() => useProgressSync('hash1-0'));
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+
+    expect(h.setConfig).toHaveBeenCalled();
+    const written = h.setConfig.mock.calls.at(-1)![1] as {
+      location: string;
+      progress: [number, number];
+    };
+    expect(written.location).toBe('epubcfi(/6/4!/4/8)');
+    expect(written.progress).toEqual([80, 100]);
+  });
+
+  it('still applies the remote location when the remote XPointer fails to convert', async () => {
+    // Regression: the remote is ahead and carries an XPointer that throws while
+    // converting on this device (its DOM structure differs). The failure must
+    // NOT abort the apply and discard the valid location CFI — otherwise the
+    // synced position is lost and later clobbered by a re-push.
+    h.config.location = 'epubcfi(/6/4!/4/4)';
+    h.config.progress = [50, 100];
+    h.config.updatedAt = 1000;
+    h.getBookData.mockReturnValue({
+      book: { metaHash: 'meta1', format: 'EPUB' },
+      bookDoc: { sections: [] },
+    });
+    h.getCFIFromXPointer.mockRejectedValue(new Error('Element index 0 out of bounds for tag div'));
+
+    const remote = {
+      bookHash: 'hash1',
+      metaHash: 'meta1',
+      location: 'epubcfi(/6/4!/4/8)',
+      xpointer: '/body/DocFragment[4]/body/div[1]',
+      progress: [80, 100] as [number, number],
+      updatedAt: 2000,
+    };
+    h.syncedConfigs = [remote];
+    // Local (/4/4) is BEFORE remote (/4/8): the remote location is ahead.
     h.cfiCompare = (a: string) => (a === 'epubcfi(/6/4!/4/4)' ? -1 : 1);
 
     await act(async () => {
