@@ -11,7 +11,7 @@ import { CFI } from '@/libs/document';
 import { debounce } from '@/utils/debounce';
 import { eventDispatcher } from '@/utils/event';
 import { DEFAULT_BOOK_SEARCH_CONFIG, SYNC_PROGRESS_INTERVAL_SEC } from '@/services/constants';
-import { getCFIFromXPointer, getXPointerFromCFI } from '@/utils/xcfi';
+import { getXPointerFromCFI, resolveRemoteProgressCFI } from '@/utils/xcfi';
 
 export const useProgressSync = (bookKey: string) => {
   const _ = useTranslation();
@@ -145,24 +145,21 @@ export const useProgressSync = (bookKey: string) => {
     )[0];
     if (syncedConfig) {
       const configCFI = config?.location;
-      let remoteCFILocation = syncedConfig.location;
-      const xpointer = syncedConfig.xpointer;
       const bookData = getBookData(bookKey);
       const view = getView(bookKey);
-      if (xpointer && view && bookData && bookData.bookDoc) {
-        const pContents = view.renderer.getContents();
-        const pIdx = view.renderer.primaryIndex;
-        const content = pContents.find((x) => x.index === pIdx) ?? pContents[0];
-        const candidateCFI = await getCFIFromXPointer(
-          xpointer,
-          content?.doc,
-          content?.index,
-          bookData.bookDoc,
-        );
-        if (!remoteCFILocation || CFI.compare(remoteCFILocation, candidateCFI) < 0) {
-          remoteCFILocation = candidateCFI;
-        }
-      }
+      const contents = view?.renderer.getContents();
+      const primaryIndex = view?.renderer.primaryIndex;
+      const content = contents?.find((x) => x.index === primaryIndex) ?? contents?.[0];
+      // Refine the remote position with its XPointer when possible, but never let
+      // a conversion failure abort the apply — fall back to the location CFI so
+      // the synced position still lands (and is not later clobbered by a re-push).
+      const remoteCFILocation = await resolveRemoteProgressCFI(
+        syncedConfig.location,
+        syncedConfig.xpointer,
+        content?.doc,
+        content?.index,
+        bookData?.bookDoc ?? undefined,
+      );
       const filteredSyncedConfig = Object.fromEntries(
         Object.entries(syncedConfig).filter(([_, value]) => value !== null && value !== undefined),
       );

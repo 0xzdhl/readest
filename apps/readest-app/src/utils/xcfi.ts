@@ -4,6 +4,7 @@
  */
 
 import type { BookDoc } from '@/domain/document';
+import { CFI } from '@/libs/document';
 import { parse, fake, collapse, fromRange, toRange, toElement } from 'foliate-js/epubcfi.js';
 
 type XPointer = {
@@ -12,13 +13,23 @@ type XPointer = {
   pos1?: string;
 };
 
+export type XCFIOptions = {
+  // When true, an XPointer step that does not exist in this DOM resolves to the
+  // deepest ancestor that DID resolve (approximate landing) instead of throwing.
+  // Intended for reading-progress sync, NOT annotations: a misplaced highlight is
+  // worse than a skipped one, so note conversion keeps the strict default.
+  allowPartial?: boolean;
+};
+
 export class XCFI {
   private document: Document;
   private spineItemIndex: number;
+  private allowPartial: boolean;
 
-  constructor(htmlDocument: Document, spineIndex: number = 0) {
+  constructor(htmlDocument: Document, spineIndex: number = 0, options: XCFIOptions = {}) {
     this.document = htmlDocument;
     this.spineItemIndex = spineIndex;
+    this.allowPartial = options.allowPartial ?? false;
   }
 
   static extractSpineIndex(cfiOrXPath: string): number {
@@ -200,29 +211,35 @@ export class XCFI {
       const offsetInNode = parseInt(indexedTextMatch[2]!, 10);
       const elementPath = xpointer.replace(/\/text\(\)\[\d+\]\.\d+$/, '');
 
-      const element = this.resolveXPointerPath(elementPath);
-      if (!element) {
-        throw new Error(`Cannot resolve XPointer path: ${elementPath}`);
+      const { element, partial } = this.resolveXPointerPath(elementPath);
+      // The element path didn't fully resolve — the text offset is meaningless
+      // against this approximate ancestor, so land at its start.
+      if (partial) {
+        return { element };
       }
 
-      // Find the Kth direct text node child and compute cumulative offset
-      const textOffset = this.resolveIndexedTextNode(element, textNodeIndex, offsetInNode);
-      return { element, textOffset };
+      try {
+        // Find the Kth direct text node child and compute cumulative offset
+        const textOffset = this.resolveIndexedTextNode(element, textNodeIndex, offsetInNode);
+        return { element, textOffset };
+      } catch (error) {
+        // The element resolved but its text-node shape differs here. For progress
+        // we land at the element start; strict callers (notes) still fail.
+        if (this.allowPartial) return { element };
+        throw error;
+      }
     }
 
     // Format: /text().N — cumulative character offset
     const textOffsetMatch = xpointer.match(/\/text\(\)\.(\d+)$/);
-    const textOffset = textOffsetMatch ? parseInt(textOffsetMatch[1]!, 10) : undefined;
+    const rawTextOffset = textOffsetMatch ? parseInt(textOffsetMatch[1]!, 10) : undefined;
 
     const elementPath =
-      textOffset !== undefined ? xpointer.replace(/\/text\(\)\.\d+$/, '') : xpointer;
+      rawTextOffset !== undefined ? xpointer.replace(/\/text\(\)\.\d+$/, '') : xpointer;
 
-    const element = this.resolveXPointerPath(elementPath);
-    if (!element) {
-      throw new Error(`Cannot resolve XPointer path: ${elementPath}`);
-    }
+    const { element, partial } = this.resolveXPointerPath(elementPath);
 
-    return { element, textOffset };
+    return { element, textOffset: partial ? undefined : rawTextOffset };
   }
 
   /**
@@ -257,7 +274,17 @@ export class XCFI {
     );
   }
 
-  private resolveXPointerPath(path: string): Element | null {
+  /**
+   * Resolve an XPointer element path to a DOM element.
+   *
+   * Returns `partial: true` when a step cannot be resolved (the stored XPointer
+   * was built against a different DOM — e.g. another device's rendered document)
+   * and we stopped at the deepest ancestor that DID resolve. Callers should land
+   * the position approximately at that ancestor rather than failing the whole
+   * conversion. This matters most for KOReader-only sync, where there is no CFI
+   * to fall back to. A genuinely malformed path (bad format/segment) still throws.
+   */
+  private resolveXPointerPath(path: string): { element: Element; partial: boolean } {
     const pathMatch = path.match(/^\/body\/DocFragment\[\d+\]\/body(.*)$/);
     if (!pathMatch) {
       throw new Error(`Invalid XPointer format: ${path}`);
@@ -267,7 +294,7 @@ export class XCFI {
     let current: Element = this.document.body;
 
     if (!elementPath || elementPath === '') {
-      return current;
+      return { element: current, partial: false };
     }
 
     const segments = elementPath.split('/').filter(Boolean);
@@ -300,13 +327,17 @@ export class XCFI {
       );
 
       if (index >= children.length) {
+        if (this.allowPartial) {
+          // Step does not exist here — stop at the deepest resolved ancestor.
+          return { element: current, partial: true };
+        }
         throw new Error(`Element index ${index} out of bounds for tag ${tagName}`);
       }
 
       current = children[index]!;
     }
 
-    return current;
+    return { element: current, partial: false };
   }
 
   /**
@@ -561,15 +592,16 @@ export const getCFIFromXPointer = async (
   doc?: Document,
   index?: number,
   bookDoc?: BookDoc,
+  options: XCFIOptions = {},
 ) => {
   const xSpineIndex = XCFI.extractSpineIndex(xpointer);
   let converter: XCFI;
   if (index === xSpineIndex && doc) {
-    converter = new XCFI(doc, index || 0);
+    converter = new XCFI(doc, index || 0, options);
   } else {
     const doc = await bookDoc?.sections?.[xSpineIndex]?.createDocument();
     if (!doc) throw new Error('Failed to load document for XPointer conversion.');
-    converter = new XCFI(doc, xSpineIndex || 0);
+    converter = new XCFI(doc, xSpineIndex || 0, options);
   }
 
   const cfi = converter.xPointerToCFI(xpointer);
@@ -594,6 +626,45 @@ export const getXPointerFromCFI = async (
 
   const xpointer = converter.cfiToXPointer(cfi);
   return xpointer;
+};
+
+/**
+ * Resolve the remote reading position to a foliate CFI for cloud progress sync.
+ *
+ * `locationCFI` is the foliate-native CFI persisted alongside the position and is
+ * the authoritative location for Readest↔Readest sync. `xpointer` is a
+ * best-effort KOReader-style refinement that lets us adopt a further-ahead
+ * position pushed by a KOReader client. An XPointer built against one device's
+ * *rendered* document can fail to resolve against another device's freshly
+ * parsed section document (the DOM structures differ), in which case
+ * `getCFIFromXPointer` throws. That refinement failure must NOT discard the
+ * valid `locationCFI` — otherwise the whole progress apply is aborted and the
+ * synced position is lost — so the conversion is swallowed and we fall back to
+ * the CFI.
+ */
+export const resolveRemoteProgressCFI = async (
+  locationCFI: string | undefined,
+  xpointer: string | undefined,
+  doc?: Document,
+  index?: number,
+  bookDoc?: BookDoc,
+): Promise<string | undefined> => {
+  let remoteCFILocation = locationCFI;
+  if (xpointer && bookDoc) {
+    try {
+      // allowPartial: this is reading-progress, so an XPointer that no longer
+      // resolves exactly should land approximately rather than be discarded.
+      const candidateCFI = await getCFIFromXPointer(xpointer, doc, index, bookDoc, {
+        allowPartial: true,
+      });
+      if (!remoteCFILocation || CFI.compare(remoteCFILocation, candidateCFI) < 0) {
+        remoteCFILocation = candidateCFI;
+      }
+    } catch (error) {
+      console.warn('Failed to refine remote progress via XPointer; using CFI location', error);
+    }
+  }
+  return remoteCFILocation;
 };
 
 // Koreader sometimes cannot recognize totally valid XPointer.

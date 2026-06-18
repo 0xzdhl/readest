@@ -109,7 +109,11 @@ export const useKOSync = (bookKey: string) => {
           .getContents()
           .find((x) => x.index === view?.renderer.primaryIndex);
         const koProgress = remote.progress;
-        const cfi = await getCFIFromXPointer(koProgress, content?.doc, content?.index, bookDoc);
+        // allowPartial: reading-progress should land approximately when the
+        // stored XPointer no longer resolves exactly, rather than failing.
+        const cfi = await getCFIFromXPointer(koProgress, content?.doc, content?.index, bookDoc, {
+          allowPartial: true,
+        });
         view?.goTo(cfi);
       } catch (error) {
         console.error('Failed to convert XPointer to CFI', error);

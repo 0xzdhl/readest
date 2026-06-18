@@ -20,6 +20,7 @@ import {
   parsePseStreamFileName,
 } from '@/services/opds/pseStream';
 import { computeBookNav, hydrateBookNav, updateToc } from '@/services/nav';
+import { mergeRemoteOpenPosition, takePrefetchedProgress } from '@/services/sync/prefetchProgress';
 import { BOOK_NAV_VERSION } from '@/domain/nav';
 import { formatTitle, getMetadataHash, getPrimaryLanguage } from '@/utils/book';
 import { getBaseFilename } from '@/utils/path';
@@ -182,6 +183,14 @@ export const useReaderStore = create<ReaderStore>((set, get) => ({
       const config = await runtime.runPromise(
         Effect.flatMap(BookRepository, (r) => r.loadConfig(book, settings)),
       );
+      // Prefer the cloud reading position prefetched at library-launch time so
+      // the view opens directly at the synced position instead of flashing the
+      // local position (or page 1) and then jumping. Best-effort: a missing,
+      // slow, or offline prefetch leaves the local config untouched.
+      const remoteConfig = await takePrefetchedProgress(book.hash);
+      if (remoteConfig) {
+        Object.assign(config, mergeRemoteOpenPosition(config, remoteConfig));
+      }
       // Import annotations from third-party readers on first open
       if (bookDoc.metadata.identifier) {
         const { getAnnotationProviders } = await import('@/services/annotation');

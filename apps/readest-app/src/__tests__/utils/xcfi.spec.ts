@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import { XCFI } from '@/utils/xcfi';
+import type { BookDoc } from '@/domain/document';
+import { XCFI, resolveRemoteProgressCFI } from '@/utils/xcfi';
 
 describe('CFIToXPointerConverter', () => {
   let converter: XCFI;
@@ -260,7 +261,7 @@ describe('CFIToXPointerConverter', () => {
       expect(() => converter.xPointerToCFI(invalidXPointer)).toThrow('Failed to convert XPointer');
     });
 
-    it('should throw error for XPointer with non-existent path', () => {
+    it('throws for a non-existent path by default (strict mode keeps notes safe)', () => {
       const invalidXPointer = '/body/DocFragment[1]/body/nonexistent[999]';
       expect(() => converter.xPointerToCFI(invalidXPointer)).toThrow();
     });
@@ -282,6 +283,50 @@ describe('CFIToXPointerConverter', () => {
       // Verify round-trip works
       const backToXPointer = converter.cfiToXPointer(cfi);
       expect(backToXPointer.xpointer).toBe(xpointer);
+    });
+  });
+
+  describe('xPointerToCFI - graceful partial resolution', () => {
+    // A stored XPointer can be built against a different (e.g. rendered) DOM than
+    // the one we resolve against — common for KOReader-only sync, where there is
+    // no CFI to fall back to. Rather than failing the whole conversion, resolve
+    // to the nearest ancestor that DOES exist so the position lands approximately.
+    beforeEach(() => {
+      // simpleDoc: body > div > (p, p, p). allowPartial enables approximate
+      // landing — the mode reading-progress sync uses (notes stay strict).
+      converter = new XCFI(simpleDoc, 0, { allowPartial: true });
+    });
+
+    it('does not throw for a path whose first step is missing', () => {
+      expect(() =>
+        converter.xPointerToCFI('/body/DocFragment[1]/body/nonexistent[999]'),
+      ).not.toThrow();
+    });
+
+    it('lands at the section body when the first step is missing', () => {
+      const partial = converter.xPointerToCFI('/body/DocFragment[1]/body/nonexistent[999]');
+      const bodyStart = converter.xPointerToCFI('/body/DocFragment[1]/body');
+      expect(partial).toBe(bodyStart);
+    });
+
+    it('lands at the deepest resolvable ancestor when a deep step is out of bounds', () => {
+      const partial = converter.xPointerToCFI('/body/DocFragment[1]/body/div/p[99]');
+      const ancestor = converter.xPointerToCFI('/body/DocFragment[1]/body/div');
+      expect(partial).toBe(ancestor);
+    });
+
+    it('drops the text offset when the element path cannot be fully resolved', () => {
+      const withOffset = converter.xPointerToCFI(
+        '/body/DocFragment[1]/body/nonexistent[9]/text().50',
+      );
+      const bodyStart = converter.xPointerToCFI('/body/DocFragment[1]/body');
+      expect(withOffset).toBe(bodyStart);
+    });
+
+    it('does not throw when an indexed text node is out of bounds in a resolved element', () => {
+      expect(() =>
+        converter.xPointerToCFI('/body/DocFragment[1]/body/div/p/text()[5].3'),
+      ).not.toThrow();
     });
   });
 
@@ -529,5 +574,93 @@ describe('CFIToXPointerConverter', () => {
       const cfi = converter.xPointerToCFI(xp);
       expect(cfi).toMatch(/^epubcfi\(/);
     });
+  });
+});
+
+describe('resolveRemoteProgressCFI', () => {
+  const makeBookDoc = (sectionDocs: Record<number, string>): BookDoc => {
+    const sections: Array<{ createDocument: () => Promise<Document> }> = [];
+    for (const [idx, html] of Object.entries(sectionDocs)) {
+      sections[Number(idx)] = {
+        createDocument: async () => new DOMParser().parseFromString(html, 'text/html'),
+      };
+    }
+    return { sections } as unknown as BookDoc;
+  };
+
+  it('keeps the accurate location CFI when the XPointer only resolves approximately', async () => {
+    // The remote XPointer was built against another device's DOM and the <div>
+    // it names does not exist here, so it now resolves *approximately* to the
+    // section start (graceful partial resolution) rather than throwing. The
+    // location CFI is the accurate, further-ahead position and must win.
+    const locationCFI = 'epubcfi(/6/8!/4/2/2)';
+    const bookDoc = makeBookDoc({ 3: '<html><body><p>no div here</p></body></html>' });
+
+    const result = await resolveRemoteProgressCFI(
+      locationCFI,
+      '/body/DocFragment[4]/body/div[1]',
+      undefined,
+      undefined,
+      bookDoc,
+    );
+
+    expect(result).toBe(locationCFI);
+  });
+
+  it('returns the location CFI unchanged when there is no XPointer', async () => {
+    const locationCFI = 'epubcfi(/6/8!/4/2/2)';
+    const result = await resolveRemoteProgressCFI(
+      locationCFI,
+      undefined,
+      undefined,
+      undefined,
+      {} as BookDoc,
+    );
+    expect(result).toBe(locationCFI);
+  });
+
+  it('falls back to the location CFI when the XPointer is malformed (unconvertible)', async () => {
+    const locationCFI = 'epubcfi(/6/8!/4/2/2)';
+    const bookDoc = makeBookDoc({ 3: '<html><body><p>x</p></body></html>' });
+    const result = await resolveRemoteProgressCFI(
+      locationCFI,
+      'not-a-valid-xpointer',
+      undefined,
+      undefined,
+      bookDoc,
+    );
+    expect(result).toBe(locationCFI);
+  });
+
+  it('returns undefined (never throws) when a malformed XPointer cannot convert and there is no location CFI', async () => {
+    const bookDoc = makeBookDoc({ 3: '<html><body><p>x</p></body></html>' });
+    const result = await resolveRemoteProgressCFI(
+      undefined,
+      'not-a-valid-xpointer',
+      undefined,
+      undefined,
+      bookDoc,
+    );
+    expect(result).toBeUndefined();
+  });
+
+  it('adopts the XPointer-derived CFI when it is further ahead than the location CFI', async () => {
+    const doc = new DOMParser().parseFromString(
+      '<html><body><div><p>Chapter content</p></div></body></html>',
+      'text/html',
+    );
+    // The location CFI sits in spine 0; the XPointer points into spine 1, which
+    // is further ahead, so the refinement should win.
+    const locationCFI = 'epubcfi(/6/2!/4/2/2)';
+    const result = await resolveRemoteProgressCFI(
+      locationCFI,
+      '/body/DocFragment[2]/body/div',
+      doc,
+      1,
+      {} as BookDoc,
+    );
+
+    expect(result).not.toBe(locationCFI);
+    expect(XCFI.extractSpineIndex(result!)).toBe(1);
   });
 });
