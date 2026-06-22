@@ -1,6 +1,5 @@
 import type { Book, BookConfig } from '@/domain/book';
 import type { DBBookConfig } from '@/types/records';
-import { CFI } from '@/libs/document';
 import { SyncClient } from '@/libs/sync';
 import { isSyncCategoryEnabled } from '@/services/sync/syncCategories';
 import { transformBookConfigFromDB } from '@/utils/transform';
@@ -14,19 +13,32 @@ const prefetchCache = new Map<string, Promise<BookConfig | null>>();
 
 /**
  * Adopt the remote reading position into the local config for the initial open,
- * but only when the remote is strictly ahead — the same never-go-backwards
- * invariant `applyRemoteProgress` enforces. Uses the remote's foliate-native CFI
- * directly (no section-document parsing at open time). Pure; never mutates.
+ * using the same timestamp last-write-wins rule `applyRemoteProgress` and the
+ * server's `lwwSetWhere` enforce: the most-recently-written position wins by
+ * `updatedAt`, even when it is EARLIER in the book (a deliberate re-read).
+ *
+ * The old "furthest-CFI wins" rule was the cross-device bug — a device that was
+ * BEHIND but genuinely re-reading got yanked to the furthest (stale) position on
+ * open, and the carried-over LOCAL timestamp let a re-push re-stamp the stale
+ * position so it never died. We now adopt the remote ONLY when it is strictly
+ * newer, and carry the remote `updatedAt` forward so `applyRemoteProgress` does
+ * not later treat the adopted position as "local is newer" and so a subsequent
+ * re-push merely ties (not >) the server LWW gate and is dropped.
+ *
+ * A timestamp tie keeps the local position. Pure; never mutates.
  */
 export const mergeRemoteOpenPosition = (local: BookConfig, remote: BookConfig): BookConfig => {
   if (!remote.location) return local;
-  const remoteAhead = !local.location || CFI.compare(local.location, remote.location) < 0;
-  if (!remoteAhead) return local;
+  const remoteNewer = (remote.updatedAt ?? 0) > (local.updatedAt ?? 0);
+  if (!remoteNewer) return local;
   return {
     ...local,
     location: remote.location,
     progress: remote.progress ?? local.progress,
     xpointer: remote.xpointer ?? local.xpointer,
+    // Carry the winning timestamp forward so the adopted position is recognized
+    // as remote-authored, not as a fresh local write.
+    updatedAt: remote.updatedAt,
   };
 };
 

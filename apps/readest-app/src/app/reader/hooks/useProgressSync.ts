@@ -25,6 +25,21 @@ export const useProgressSync = (bookKey: string) => {
 
   const configPulled = useRef(false);
   const hasPulledConfigOnce = useRef(false);
+  // One-shot guard against re-pushing a position this device did not navigate
+  // to: the programmatic open-landing relocate (view.init/goTo → foliate
+  // 'relocate' → setProgress) and any position adopted from the cloud by
+  // `applyRemoteProgress`. Without this, the landing relocate fires the
+  // auto-push effect and `useProgressAutoSave` re-stamps the adopted (possibly
+  // stale, furthest-read) position with a fresh timestamp, so it wins the
+  // server LWW and never dies (the open-time re-push ratchet). Seeded with the
+  // opened position so the FIRST landing relocate is covered, then cleared so a
+  // genuine later relocate to a DIFFERENT location still pushes.
+  const lastAdoptedLocation = useRef<string | null>(null);
+  const seededInitialLocation = useRef(false);
+  if (!seededInitialLocation.current) {
+    seededInitialLocation.current = true;
+    lastAdoptedLocation.current = getConfig(bookKey)?.location ?? null;
+  }
 
   const pushConfig = async (bookKey: string, config: BookConfig | null) => {
     const book = getBookData(bookKey)?.book;
@@ -148,6 +163,17 @@ export const useProgressSync = (bookKey: string) => {
   // Push: auto-push progress when progress changes with a debounce
   useEffect(() => {
     if (!progress?.location || !user) return;
+    // Suppress the auto-push for the programmatic open-landing relocate or a
+    // position adopted from the cloud — those are not genuine user navigation,
+    // and re-pushing them re-stamps a possibly stale position so it wins LWW
+    // forever. One-shot: clear the guard so a genuine later relocate to a
+    // DIFFERENT location still pushes both config and books. Manual / on-close
+    // pushes go through `pushCurrentProgress` (a direct push, not this effect),
+    // so this guard never blocks them.
+    if (progress.location === lastAdoptedLocation.current) {
+      lastAdoptedLocation.current = null;
+      return;
+    }
     handleAutoSync();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [progress?.location]);
@@ -205,6 +231,14 @@ export const useProgressSync = (bookKey: string) => {
         delete filteredSyncedConfig.location;
         delete filteredSyncedConfig.progress;
         delete filteredSyncedConfig.xpointer;
+      }
+      if (remoteWins) {
+        // Record the adopted position so the relocate it triggers (whether the
+        // view is nudged below, or the next open lands on it) does not bounce
+        // back to the cloud as a fresh local write. Cover both the resolved CFI
+        // the view will land on and the raw synced location, since the relocate
+        // may report either.
+        lastAdoptedLocation.current = remoteCFILocation ?? syncedConfig.location ?? null;
       }
       setConfig(
         bookKey,

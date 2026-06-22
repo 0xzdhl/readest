@@ -43,11 +43,12 @@ afterEach(() => {
 describe('mergeRemoteOpenPosition', () => {
   const base = { bookHash: 'h', metaHash: 'meta', updatedAt: 1000 } as BookConfig;
 
-  it('adopts the remote position when the remote is strictly ahead', () => {
+  it('adopts the remote position when the remote is newer (timestamp last-write-wins)', () => {
     const local = {
       ...base,
       location: 'epubcfi(/6/4!/4/2)',
       progress: [5, 100] as [number, number],
+      updatedAt: 1000,
     };
     const remote = {
       ...base,
@@ -58,45 +59,102 @@ describe('mergeRemoteOpenPosition', () => {
     const merged = mergeRemoteOpenPosition(local, remote);
     expect(merged.location).toBe('epubcfi(/6/4!/4/8)');
     expect(merged.progress).toEqual([80, 100]);
+    // The adopted position carries the remote timestamp forward so a later
+    // applyRemoteProgress / re-push does not treat it as "local is newer".
+    expect(merged.updatedAt).toBe(2000);
   });
 
-  it('keeps the local position when the remote is behind (even if newer)', () => {
+  it('adopts a remote that is BEHIND in the book but NEWER by updatedAt', () => {
+    // The exact cross-device defect: the server is stuck further ahead in the
+    // book but the user genuinely re-read an earlier page on the other device,
+    // writing a NEWER row. Time-based LWW must adopt the newer-but-earlier
+    // remote on open instead of yanking the reader to the furthest position.
+    const local = {
+      ...base,
+      location: 'epubcfi(/6/4!/4/932)',
+      progress: [932, 976] as [number, number],
+      updatedAt: 1000,
+    };
+    const remote = {
+      ...base,
+      location: 'epubcfi(/6/4!/4/88)',
+      progress: [88, 976] as [number, number],
+      updatedAt: 2000,
+    };
+    const merged = mergeRemoteOpenPosition(local, remote);
+    expect(merged.location).toBe('epubcfi(/6/4!/4/88)');
+    expect(merged.progress).toEqual([88, 976]);
+    expect(merged.updatedAt).toBe(2000);
+  });
+
+  it('keeps the local position when the remote is ahead but OLDER (timestamp last-write-wins)', () => {
+    // Inverted furthest-wins test: the remote is further ahead in the book but
+    // its row is older, so under time-based LWW the local position must hold.
     const local = {
       ...base,
       location: 'epubcfi(/6/4!/4/8)',
       progress: [80, 100] as [number, number],
+      updatedAt: 2000,
     };
     const remote = {
       ...base,
-      location: 'epubcfi(/6/4!/4/2)',
-      progress: [5, 100] as [number, number],
-      updatedAt: 9999,
+      location: 'epubcfi(/6/4!/4/16)',
+      progress: [95, 100] as [number, number],
+      updatedAt: 1000,
     };
     const merged = mergeRemoteOpenPosition(local, remote);
     expect(merged.location).toBe('epubcfi(/6/4!/4/8)');
     expect(merged.progress).toEqual([80, 100]);
+    expect(merged.updatedAt).toBe(2000);
   });
 
-  it('keeps the local position when positions are equal', () => {
+  it('keeps the local position when the remote is behind AND older (timestamp last-write-wins)', () => {
+    // Inverted furthest-wins test: previously "keeps local when remote behind
+    // even if newer". Now expressed purely as a timestamp scenario — the remote
+    // is both behind and older, so local clearly wins.
     const local = {
       ...base,
-      location: 'epubcfi(/6/4!/4/4)',
-      progress: [50, 100] as [number, number],
+      location: 'epubcfi(/6/4!/4/8)',
+      progress: [80, 100] as [number, number],
+      updatedAt: 2000,
     };
-    const remote = {
-      ...base,
-      location: 'epubcfi(/6/4!/4/4)',
-      progress: [50, 100] as [number, number],
-    };
-    expect(mergeRemoteOpenPosition(local, remote).location).toBe('epubcfi(/6/4!/4/4)');
-  });
-
-  it('adopts the remote position when the local config has no location', () => {
-    const local = { ...base };
     const remote = {
       ...base,
       location: 'epubcfi(/6/4!/4/2)',
       progress: [5, 100] as [number, number],
+      updatedAt: 1000,
+    };
+    const merged = mergeRemoteOpenPosition(local, remote);
+    expect(merged.location).toBe('epubcfi(/6/4!/4/8)');
+    expect(merged.progress).toEqual([80, 100]);
+    expect(merged.updatedAt).toBe(2000);
+  });
+
+  it('keeps the local position when timestamps tie (a tie keeps local)', () => {
+    const local = {
+      ...base,
+      location: 'epubcfi(/6/4!/4/4)',
+      progress: [50, 100] as [number, number],
+      updatedAt: 1000,
+    };
+    const remote = {
+      ...base,
+      location: 'epubcfi(/6/4!/4/16)',
+      progress: [95, 100] as [number, number],
+      updatedAt: 1000,
+    };
+    const merged = mergeRemoteOpenPosition(local, remote);
+    expect(merged.location).toBe('epubcfi(/6/4!/4/4)');
+    expect(merged.progress).toEqual([50, 100]);
+  });
+
+  it('adopts the remote position when the local config has no location and remote is newer', () => {
+    const local = { ...base, updatedAt: 1000 };
+    const remote = {
+      ...base,
+      location: 'epubcfi(/6/4!/4/2)',
+      progress: [5, 100] as [number, number],
+      updatedAt: 2000,
     };
     const merged = mergeRemoteOpenPosition(local, remote);
     expect(merged.location).toBe('epubcfi(/6/4!/4/2)');
@@ -109,28 +167,32 @@ describe('mergeRemoteOpenPosition', () => {
       location: 'epubcfi(/6/4!/4/4)',
       progress: [50, 100] as [number, number],
     };
-    const remote = { ...base, xpointer: '/body/DocFragment[2]/body/div' };
+    const remote = { ...base, xpointer: '/body/DocFragment[2]/body/div', updatedAt: 9999 };
     expect(mergeRemoteOpenPosition(local, remote).location).toBe('epubcfi(/6/4!/4/4)');
   });
 
-  it('keeps the local config when CFI comparison fails (malformed remote CFI)', () => {
+  it('does not throw and adopts a newer remote even with a malformed CFI (no CFI compare)', () => {
+    // Time-based LWW no longer parses CFIs, so a malformed remote CFI cannot
+    // throw. A newer remote is still adopted verbatim.
     const local = {
       ...base,
       location: 'epubcfi(/6/4!/4/2)',
       progress: [5, 100] as [number, number],
+      updatedAt: 1000,
     };
     const remote = {
       ...base,
       location: 'not-a-valid-cfi',
       progress: [9, 100] as [number, number],
+      updatedAt: 2000,
     };
     expect(() => mergeRemoteOpenPosition(local, remote)).not.toThrow();
-    expect(mergeRemoteOpenPosition(local, remote).location).toBe('epubcfi(/6/4!/4/2)');
+    expect(mergeRemoteOpenPosition(local, remote).location).toBe('not-a-valid-cfi');
   });
 
   it('does not mutate the local config', () => {
-    const local = { ...base, location: 'epubcfi(/6/4!/4/2)' };
-    const remote = { ...base, location: 'epubcfi(/6/4!/4/8)' };
+    const local = { ...base, location: 'epubcfi(/6/4!/4/2)', updatedAt: 1000 };
+    const remote = { ...base, location: 'epubcfi(/6/4!/4/8)', updatedAt: 2000 };
     mergeRemoteOpenPosition(local, remote);
     expect(local.location).toBe('epubcfi(/6/4!/4/2)');
   });
