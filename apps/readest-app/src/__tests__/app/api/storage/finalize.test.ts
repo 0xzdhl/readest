@@ -68,9 +68,16 @@ const makeTx = (opts: TxOpts = {}) => {
   };
 
   const onConflictDoNothingMock = vi.fn(() => Promise.resolve(undefined));
+  // Drizzle's onConflictDoUpdate takes a single config object: { target, set, setWhere }.
+  const onConflictDoUpdateMock = vi.fn((_config: Record<string, unknown>) =>
+    Promise.resolve(undefined),
+  );
   const valuesMock = vi.fn((values: Record<string, unknown>) => {
     opts.onInsert?.(values);
-    return { onConflictDoNothing: onConflictDoNothingMock };
+    return {
+      onConflictDoNothing: onConflictDoNothingMock,
+      onConflictDoUpdate: onConflictDoUpdateMock,
+    };
   });
   const insertMock = vi.fn(() => ({ values: valuesMock }));
 
@@ -79,6 +86,7 @@ const makeTx = (opts: TxOpts = {}) => {
     insert: insertMock,
     _valuesMock: valuesMock,
     _onConflictDoNothingMock: onConflictDoNothingMock,
+    _onConflictDoUpdateMock: onConflictDoUpdateMock,
   };
 };
 
@@ -439,5 +447,62 @@ describe('POST /api/storage/finalize', () => {
       context: makeContext(tx),
     });
     expect(res.status).toBe(400);
+  });
+
+  // -------------------------------------------------------------------------
+  // 9. Dedup row reconciliation (Bug 2): the files row must RECONCILE its
+  //    content_hash on a fileKey conflict, not silently keep a stale NULL via
+  //    onConflictDoNothing — otherwise download falls back to a per-user key
+  //    that has no object after the bytes were promoted to content/<sha>.
+  // -------------------------------------------------------------------------
+  it('under threshold: upserts via onConflictDoUpdate, reconciling content_hash (gated to NULL rows)', async () => {
+    runStorageProgramMock.mockImplementation(makeStorageSequence(false));
+
+    const tx = makeTx();
+    const handler = getHandler();
+    const res = await handler({
+      request: post(VALID_BODY),
+      params: {},
+      context: makeContext(tx),
+    });
+
+    expect(res.status).toBe(200);
+    const expectedSha = await sha256Hex(STAGED_BYTES);
+
+    // Must reconcile on conflict (heal a stale NULL-contentHash row), NOT keep it.
+    expect(tx._onConflictDoUpdateMock).toHaveBeenCalledTimes(1);
+    expect(tx._onConflictDoNothingMock).not.toHaveBeenCalled();
+
+    const config = tx._onConflictDoUpdateMock.mock.calls[0]![0] as {
+      target: unknown;
+      set: Record<string, unknown>;
+      setWhere?: unknown;
+    };
+    expect(config.set.contentHash).toBe(expectedSha);
+    // setWhere guards the update to rows whose content_hash IS NULL, so a
+    // legitimate existing content_hash is never demoted.
+    expect(config.setWhere).toBeTruthy();
+  });
+
+  it('over threshold: upsert carries contentHash=null (never invents a hash for large files)', async () => {
+    runStorageProgramMock
+      .mockResolvedValueOnce(Either.right(undefined)) // headObject(stagingKey)
+      .mockResolvedValueOnce(Either.right(undefined)) // copyObject(staging → <user>/<fileName>)
+      .mockResolvedValueOnce(Either.right(undefined)); // deleteObject(staging)
+
+    const tx = makeTx();
+    const handler = getHandler();
+    const res = await handler({
+      request: post({ ...VALID_BODY, fileSize: FILE_SIZE_LARGE }),
+      params: {},
+      context: makeContext(tx),
+    });
+
+    expect(res.status).toBe(200);
+    expect(tx._onConflictDoUpdateMock).toHaveBeenCalledTimes(1);
+    const config = tx._onConflictDoUpdateMock.mock.calls[0]![0] as {
+      set: Record<string, unknown>;
+    };
+    expect(config.set.contentHash ?? null).toBeNull();
   });
 });
