@@ -1412,5 +1412,8 @@
   "Start your library": "আপনার লাইব্রেরি শুরু করুন",
   "Pick a book from your device to add it to your library.": "আপনার লাইব্রেরিতে যোগ করতে ডিভাইস থেকে একটি বই বেছে নিন।",
   "Drop a book anywhere on this window, or pick one from your computer.": "এই উইন্ডোর যেকোনো জায়গায় একটি বই ছাড়ুন, অথবা আপনার কম্পিউটার থেকে একটি বেছে নিন।",
-  "Sign in to sync your library": "আপনার লাইব্রেরি সিঙ্ক করতে সাইন ইন করুন"
+  "Sign in to sync your library": "আপনার লাইব্রেরি সিঙ্ক করতে সাইন ইন করুন",
+  "Syncing…": "সিঙ্ক হচ্ছে…",
+  "Synced": "সিঙ্ক হয়েছে",
+  "Sync failed": "সিঙ্ক ব্যর্থ হয়েছে"
 }

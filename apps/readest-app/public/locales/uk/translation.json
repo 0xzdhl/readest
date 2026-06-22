@@ -1462,5 +1462,8 @@
   "Start your library": "Створіть свою бібліотеку",
   "Pick a book from your device to add it to your library.": "Виберіть книжку з вашого пристрою, щоб додати її до бібліотеки.",
   "Drop a book anywhere on this window, or pick one from your computer.": "Перетягніть книжку будь-куди у це вікно або виберіть її з комп’ютера.",
-  "Sign in to sync your library": "Увійдіть, щоб синхронізувати бібліотеку"
+  "Sign in to sync your library": "Увійдіть, щоб синхронізувати бібліотеку",
+  "Syncing…": "Синхронізація…",
+  "Synced": "Синхронізовано",
+  "Sync failed": "Помилка синхронізації"
 }

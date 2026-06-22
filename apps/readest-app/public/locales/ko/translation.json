@@ -1387,5 +1387,8 @@
   "Start your library": "서재 만들기",
   "Pick a book from your device to add it to your library.": "기기에서 책을 골라 서재에 추가하세요.",
   "Drop a book anywhere on this window, or pick one from your computer.": "이 창의 아무 곳에나 책을 놓거나, 컴퓨터에서 골라 보세요.",
-  "Sign in to sync your library": "로그인하여 서재 동기화"
+  "Sign in to sync your library": "로그인하여 서재 동기화",
+  "Syncing…": "동기화 중…",
+  "Synced": "동기화됨",
+  "Sync failed": "동기화 실패"
 }

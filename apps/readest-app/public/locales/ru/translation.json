@@ -1462,5 +1462,8 @@
   "Start your library": "Создайте свою библиотеку",
   "Pick a book from your device to add it to your library.": "Выберите книгу с устройства, чтобы добавить её в библиотеку.",
   "Drop a book anywhere on this window, or pick one from your computer.": "Перетащите книгу в любое место этого окна или выберите её на компьютере.",
-  "Sign in to sync your library": "Войдите, чтобы синхронизировать библиотеку"
+  "Sign in to sync your library": "Войдите, чтобы синхронизировать библиотеку",
+  "Syncing…": "Синхронизация…",
+  "Synced": "Синхронизировано",
+  "Sync failed": "Ошибка синхронизации"
 }

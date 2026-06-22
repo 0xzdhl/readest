@@ -1387,5 +1387,8 @@
   "Start your library": "Mulakan perpustakaan anda",
   "Pick a book from your device to add it to your library.": "Pilih buku dari peranti anda untuk ditambahkan ke perpustakaan anda.",
   "Drop a book anywhere on this window, or pick one from your computer.": "Lepaskan buku di mana-mana pada tetingkap ini, atau pilih satu dari komputer anda.",
-  "Sign in to sync your library": "Daftar masuk untuk menyegerakkan perpustakaan anda"
+  "Sign in to sync your library": "Daftar masuk untuk menyegerakkan perpustakaan anda",
+  "Syncing…": "Menyegerak…",
+  "Synced": "Disegerakkan",
+  "Sync failed": "Penyegerakan gagal"
 }

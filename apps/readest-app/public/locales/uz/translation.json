@@ -1412,5 +1412,8 @@
   "Start your library": "Kutubxonangizni boshlang",
   "Pick a book from your device to add it to your library.": "Kutubxonangizga qo‘shish uchun qurilmangizdan kitob tanlang.",
   "Drop a book anywhere on this window, or pick one from your computer.": "Ushbu oynaning istalgan joyiga kitob tashlang yoki kompyuteringizdan birini tanlang.",
-  "Sign in to sync your library": "Kutubxonangizni sinxronlash uchun tizimga kiring"
+  "Sign in to sync your library": "Kutubxonangizni sinxronlash uchun tizimga kiring",
+  "Syncing…": "Sinxronlanmoqda…",
+  "Synced": "Sinxronlandi",
+  "Sync failed": "Sinxronlash amalga oshmadi"
 }

@@ -1412,5 +1412,8 @@
   "Start your library": "Ξεκινήστε τη βιβλιοθήκη σας",
   "Pick a book from your device to add it to your library.": "Επιλέξτε ένα βιβλίο από τη συσκευή σας για να το προσθέσετε στη βιβλιοθήκη σας.",
   "Drop a book anywhere on this window, or pick one from your computer.": "Αφήστε ένα βιβλίο οπουδήποτε σε αυτό το παράθυρο ή επιλέξτε ένα από τον υπολογιστή σας.",
-  "Sign in to sync your library": "Συνδεθείτε για να συγχρονίσετε τη βιβλιοθήκη σας"
+  "Sign in to sync your library": "Συνδεθείτε για να συγχρονίσετε τη βιβλιοθήκη σας",
+  "Syncing…": "Συγχρονισμός…",
+  "Synced": "Συγχρονίστηκε",
+  "Sync failed": "Ο συγχρονισμός απέτυχε"
 }

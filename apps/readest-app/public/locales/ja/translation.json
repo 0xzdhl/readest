@@ -1387,5 +1387,8 @@
   "Start your library": "ライブラリーを作成しましょう",
   "Pick a book from your device to add it to your library.": "デバイスから本を選んでライブラリーに追加しましょう。",
   "Drop a book anywhere on this window, or pick one from your computer.": "このウィンドウの好きな場所に本をドロップするか、コンピューターから選んでください。",
-  "Sign in to sync your library": "サインインしてライブラリーを同期"
+  "Sign in to sync your library": "サインインしてライブラリーを同期",
+  "Syncing…": "同期中…",
+  "Synced": "同期しました",
+  "Sync failed": "同期に失敗しました"
 }
