@@ -1387,5 +1387,8 @@
   "Start your library": "Mulai perpustakaan Anda",
   "Pick a book from your device to add it to your library.": "Pilih buku dari perangkat Anda untuk ditambahkan ke perpustakaan Anda.",
   "Drop a book anywhere on this window, or pick one from your computer.": "Jatuhkan buku di mana saja pada jendela ini, atau pilih satu dari komputer Anda.",
-  "Sign in to sync your library": "Masuk untuk menyinkronkan perpustakaan Anda"
+  "Sign in to sync your library": "Masuk untuk menyinkronkan perpustakaan Anda",
+  "Syncing…": "Menyinkronkan…",
+  "Synced": "Tersinkronkan",
+  "Sync failed": "Sinkronisasi gagal"
 }

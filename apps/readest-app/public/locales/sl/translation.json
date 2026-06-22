@@ -1462,5 +1462,8 @@
   "Start your library": "Začnite svojo knjižnico",
   "Pick a book from your device to add it to your library.": "Izberite knjigo iz svoje naprave, da jo dodate v svojo knjižnico.",
   "Drop a book anywhere on this window, or pick one from your computer.": "Spustite knjigo kjer koli v tem oknu ali jo izberite iz svojega računalnika.",
-  "Sign in to sync your library": "Prijavite se za sinhronizacijo svoje knjižnice"
+  "Sign in to sync your library": "Prijavite se za sinhronizacijo svoje knjižnice",
+  "Syncing…": "Sinhroniziranje…",
+  "Synced": "Sinhronizirano",
+  "Sync failed": "Sinhronizacija ni uspela"
 }

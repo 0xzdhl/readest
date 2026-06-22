@@ -1437,5 +1437,8 @@
   "Start your library": "Inizia la tua biblioteca",
   "Pick a book from your device to add it to your library.": "Scegli un libro dal tuo dispositivo per aggiungerlo alla tua biblioteca.",
   "Drop a book anywhere on this window, or pick one from your computer.": "Trascina un libro in qualsiasi punto di questa finestra, o sceglilo dal tuo computer.",
-  "Sign in to sync your library": "Accedi per sincronizzare la tua biblioteca"
+  "Sign in to sync your library": "Accedi per sincronizzare la tua biblioteca",
+  "Syncing…": "Sincronizzazione…",
+  "Synced": "Sincronizzato",
+  "Sync failed": "Sincronizzazione non riuscita"
 }

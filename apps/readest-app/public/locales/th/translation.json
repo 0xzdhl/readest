@@ -1387,5 +1387,8 @@
   "Start your library": "เริ่มต้นห้องสมุดของคุณ",
   "Pick a book from your device to add it to your library.": "เลือกหนังสือจากอุปกรณ์ของคุณเพื่อเพิ่มลงในห้องสมุดของคุณ",
   "Drop a book anywhere on this window, or pick one from your computer.": "วางหนังสือที่ใดก็ได้บนหน้าต่างนี้ หรือเลือกจากคอมพิวเตอร์ของคุณ",
-  "Sign in to sync your library": "ลงชื่อเข้าใช้เพื่อซิงค์ห้องสมุดของคุณ"
+  "Sign in to sync your library": "ลงชื่อเข้าใช้เพื่อซิงค์ห้องสมุดของคุณ",
+  "Syncing…": "กำลังซิงค์…",
+  "Synced": "ซิงค์แล้ว",
+  "Sync failed": "ซิงค์ล้มเหลว"
 }

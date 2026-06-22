@@ -1412,5 +1412,8 @@
   "Start your library": "உங்கள் நூலகத்தைத் தொடங்குங்கள்",
   "Pick a book from your device to add it to your library.": "உங்கள் நூலகத்தில் சேர்க்க உங்கள் சாதனத்திலிருந்து ஒரு புத்தகத்தைத் தேர்ந்தெடுக்கவும்.",
   "Drop a book anywhere on this window, or pick one from your computer.": "இந்த சாளரத்தில் எங்கேனும் ஒரு புத்தகத்தை விடவும், அல்லது உங்கள் கணினியிலிருந்து ஒன்றைத் தேர்ந்தெடுக்கவும்.",
-  "Sign in to sync your library": "உங்கள் நூலகத்தை ஒத்திசைக்க உள்நுழையவும்"
+  "Sign in to sync your library": "உங்கள் நூலகத்தை ஒத்திசைக்க உள்நுழையவும்",
+  "Syncing…": "ஒத்திசைக்கிறது…",
+  "Synced": "ஒத்திசைக்கப்பட்டது",
+  "Sync failed": "ஒத்திசைவு தோல்வியடைந்தது"
 }

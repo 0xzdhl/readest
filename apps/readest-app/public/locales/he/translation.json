@@ -1437,5 +1437,8 @@
   "Start your library": "התחילו את הספרייה שלכם",
   "Pick a book from your device to add it to your library.": "בחרו ספר מהמכשיר שלכם כדי להוסיף אותו לספרייה.",
   "Drop a book anywhere on this window, or pick one from your computer.": "שחררו ספר בכל מקום בחלון הזה, או בחרו אחד מהמחשב שלכם.",
-  "Sign in to sync your library": "התחברו לסנכרון הספרייה שלכם"
+  "Sign in to sync your library": "התחברו לסנכרון הספרייה שלכם",
+  "Syncing…": "מסנכרן…",
+  "Synced": "סונכרן",
+  "Sync failed": "הסנכרון נכשל"
 }

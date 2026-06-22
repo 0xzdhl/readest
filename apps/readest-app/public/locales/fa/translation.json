@@ -1412,5 +1412,8 @@
   "Start your library": "کتابخانه‌ی خود را آغاز کنید",
   "Pick a book from your device to add it to your library.": "از دستگاه خود کتابی انتخاب کنید تا به کتابخانه‌تان افزوده شود.",
   "Drop a book anywhere on this window, or pick one from your computer.": "کتابی را در هر جای این پنجره رها کنید، یا یکی را از رایانه‌ی خود انتخاب کنید.",
-  "Sign in to sync your library": "برای همگام‌سازی کتابخانه‌ی خود وارد شوید"
+  "Sign in to sync your library": "برای همگام‌سازی کتابخانه‌ی خود وارد شوید",
+  "Syncing…": "در حال همگام‌سازی…",
+  "Synced": "همگام‌سازی شد",
+  "Sync failed": "همگام‌سازی ناموفق بود"
 }

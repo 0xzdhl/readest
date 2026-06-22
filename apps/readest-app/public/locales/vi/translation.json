@@ -1387,5 +1387,8 @@
   "Start your library": "Bắt đầu thư viện của bạn",
   "Pick a book from your device to add it to your library.": "Chọn một cuốn sách từ thiết bị để thêm vào thư viện của bạn.",
   "Drop a book anywhere on this window, or pick one from your computer.": "Thả một cuốn sách vào bất kỳ đâu trên cửa sổ này, hoặc chọn một cuốn từ máy tính của bạn.",
-  "Sign in to sync your library": "Đăng nhập để đồng bộ thư viện của bạn"
+  "Sign in to sync your library": "Đăng nhập để đồng bộ thư viện của bạn",
+  "Syncing…": "Đang đồng bộ…",
+  "Synced": "Đã đồng bộ",
+  "Sync failed": "Đồng bộ thất bại"
 }

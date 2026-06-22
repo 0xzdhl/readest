@@ -1512,5 +1512,8 @@
   "Start your library": "ابدأ مكتبتك",
   "Pick a book from your device to add it to your library.": "اختر كتابًا من جهازك لإضافته إلى مكتبتك.",
   "Drop a book anywhere on this window, or pick one from your computer.": "أفلِت كتابًا في أي مكان على هذه النافذة، أو اختر واحدًا من حاسوبك.",
-  "Sign in to sync your library": "سجّل الدخول لمزامنة مكتبتك"
+  "Sign in to sync your library": "سجّل الدخول لمزامنة مكتبتك",
+  "Syncing…": "جارٍ المزامنة…",
+  "Synced": "تمت المزامنة",
+  "Sync failed": "فشلت المزامنة"
 }

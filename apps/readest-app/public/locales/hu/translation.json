@@ -1412,5 +1412,8 @@
   "Start your library": "Indítsa el a könyvtárát",
   "Pick a book from your device to add it to your library.": "Válasszon egy könyvet az eszközéről, hogy hozzáadja a könyvtárához.",
   "Drop a book anywhere on this window, or pick one from your computer.": "Húzzon egy könyvet bárhová ezen az ablakon, vagy válasszon egyet a számítógépéről.",
-  "Sign in to sync your library": "Jelentkezzen be a könyvtár szinkronizálásához"
+  "Sign in to sync your library": "Jelentkezzen be a könyvtár szinkronizálásához",
+  "Syncing…": "Szinkronizálás…",
+  "Synced": "Szinkronizálva",
+  "Sync failed": "A szinkronizálás sikertelen"
 }

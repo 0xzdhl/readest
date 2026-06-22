@@ -1412,5 +1412,8 @@
   "Start your library": "Kütüphanenizi başlatın",
   "Pick a book from your device to add it to your library.": "Kütüphanenize eklemek için cihazınızdan bir kitap seçin.",
   "Drop a book anywhere on this window, or pick one from your computer.": "Bu pencerede herhangi bir yere bir kitap bırakın veya bilgisayarınızdan birini seçin.",
-  "Sign in to sync your library": "Kütüphanenizi senkronize etmek için oturum açın"
+  "Sign in to sync your library": "Kütüphanenizi senkronize etmek için oturum açın",
+  "Syncing…": "Eşzleniyor…",
+  "Synced": "Eşzlendi",
+  "Sync failed": "Eşzleme başarısız"
 }

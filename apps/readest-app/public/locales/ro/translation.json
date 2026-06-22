@@ -1437,5 +1437,8 @@
   "Start your library": "Începe-ți biblioteca",
   "Pick a book from your device to add it to your library.": "Alege o carte de pe dispozitiv pentru a o adăuga în biblioteca ta.",
   "Drop a book anywhere on this window, or pick one from your computer.": "Lasă o carte oriunde în această fereastră sau alege una de pe computer.",
-  "Sign in to sync your library": "Conectează-te pentru a-ți sincroniza biblioteca"
+  "Sign in to sync your library": "Conectează-te pentru a-ți sincroniza biblioteca",
+  "Syncing…": "Se sincronizează…",
+  "Synced": "Sincronizat",
+  "Sync failed": "Sincronizarea a eșuat"
 }

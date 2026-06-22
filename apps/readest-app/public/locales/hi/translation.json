@@ -1412,5 +1412,8 @@
   "Start your library": "अपनी लाइब्रेरी शुरू करें",
   "Pick a book from your device to add it to your library.": "अपनी लाइब्रेरी में जोड़ने के लिए अपने डिवाइस से एक किताब चुनें।",
   "Drop a book anywhere on this window, or pick one from your computer.": "इस विंडो में कहीं भी एक किताब छोड़ें, या अपने कंप्यूटर से कोई एक चुनें।",
-  "Sign in to sync your library": "अपनी लाइब्रेरी सिंक करने के लिए साइन इन करें"
+  "Sign in to sync your library": "अपनी लाइब्रेरी सिंक करने के लिए साइन इन करें",
+  "Syncing…": "सिंक हो रहा है…",
+  "Synced": "सिंक हो गया",
+  "Sync failed": "सिंक विफल"
 }
