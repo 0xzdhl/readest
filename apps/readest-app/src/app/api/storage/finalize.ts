@@ -121,6 +121,14 @@ export const Route = createFileRoute('/api/storage/finalize')({
             await deleteStaging();
           }
 
+          // Reconcile content_hash on a fileKey conflict instead of dropping it
+          // (`onConflictDoNothing`). If a stale row for this fileKey already
+          // exists with content_hash=NULL (a legacy/failed/over-threshold
+          // upload), keeping it would point download at the per-user key — which
+          // has no object after the bytes were promoted to content/<sha> — and
+          // open would 404. `setWhere: isNull(content_hash)` heals only a stale
+          // NULL row and never demotes a legitimate existing content_hash (and
+          // never resurrects a soft-deleted row, since deleted_at is untouched).
           await tx
             .insert(files)
             .values({
@@ -130,7 +138,11 @@ export const Route = createFileRoute('/api/storage/finalize')({
               fileSize,
               contentHash,
             })
-            .onConflictDoNothing({ target: files.fileKey });
+            .onConflictDoUpdate({
+              target: files.fileKey,
+              set: { contentHash, fileSize, bookHash: bookHash ?? null },
+              setWhere: isNull(files.contentHash),
+            });
 
           return Response.json({ ok: true, contentHash, deduped });
         } catch (error) {
