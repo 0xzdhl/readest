@@ -149,10 +149,13 @@ describe('useProgressSync — applying remote progress', () => {
     h.getCFIFromXPointer.mockResolvedValue('');
   });
 
-  it('does not move the persisted location/progress backwards on a newer-but-earlier remote', async () => {
+  it('adopts a newer-but-earlier remote position (timestamp last-write-wins)', async () => {
     // Local is further ahead in the book (CFI .../4/4) than the remote
     // (.../4/2), but the remote row was written more recently (updatedAt 2000 >
-    // 1000). A pure updatedAt LWW would clobber the local position.
+    // 1000). Under last-write-wins the newer remote position must win even
+    // though it is EARLIER in the book — a deliberate backward seek must sync
+    // (Bug 4). The old CFI "never regress" veto kept local /4/4 and then
+    // re-pushed it, defeating the user's intent.
     h.config.location = 'epubcfi(/6/4!/4/4)';
     h.config.progress = [50, 100];
     h.config.updatedAt = 1000;
@@ -163,13 +166,12 @@ describe('useProgressSync — applying remote progress', () => {
       location: 'epubcfi(/6/4!/4/2)',
       progress: [5, 100] as [number, number],
       updatedAt: 2000,
-      // A non-positional field that LWW SHOULD adopt from the newer remote.
       lastModified: 2000,
     };
     h.syncedConfigs = [remote];
 
     // CFI.compare(a, b): negative when a is before b. Local (/4/4) is AFTER
-    // remote (/4/2), so local-vs-remote is positive (local NOT behind remote).
+    // remote (/4/2), so local-vs-remote is positive (remote is behind local).
     h.cfiCompare = (a: string) => (a === 'epubcfi(/6/4!/4/4)' ? 1 : -1);
 
     await act(async () => {
@@ -183,10 +185,9 @@ describe('useProgressSync — applying remote progress', () => {
       location: string;
       progress: [number, number];
     };
-    // The further-ahead local position must be preserved, not regressed to the
-    // earlier remote one.
-    expect(written.location).toBe('epubcfi(/6/4!/4/4)');
-    expect(written.progress).toEqual([50, 100]);
+    // The newer remote position wins, even though it is earlier in the book.
+    expect(written.location).toBe('epubcfi(/6/4!/4/2)');
+    expect(written.progress).toEqual([5, 100]);
   });
 
   it('adopts the remote location/progress when the remote is ahead', async () => {
