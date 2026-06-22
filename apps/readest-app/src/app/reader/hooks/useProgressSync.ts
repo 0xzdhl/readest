@@ -163,24 +163,31 @@ export const useProgressSync = (bookKey: string) => {
       const filteredSyncedConfig = Object.fromEntries(
         Object.entries(syncedConfig).filter(([_, value]) => value !== null && value !== undefined),
       );
-      // The persisted reading position (location/progress) must never move
-      // backwards: adopt the remote one only when it is strictly ahead of the
-      // local position (per CFI ordering) or when the local config has no
-      // position yet. Otherwise a remote row with a newer updatedAt but an
-      // earlier CFI would clobber a further-ahead local position via pure LWW,
-      // then get re-pushed — silently regressing progress.
-      const remoteIsAhead =
-        !configCFI || (!!remoteCFILocation && CFI.compare(configCFI, remoteCFILocation) < 0);
-      if (!remoteIsAhead) {
+      // Last-write-wins on the reading position: the most recently written
+      // config wins by updatedAt, even when its position is EARLIER in the book
+      // (a deliberate backward seek / re-read). The position fields
+      // (location/progress/xpointer) follow the same updatedAt winner as the
+      // rest of the config. The previous CFI "never move backwards" veto
+      // discarded a newer-but-earlier remote, then re-pushed the stale,
+      // further-ahead local position — so the furthest-read position always won
+      // and a deliberate backward sync oscillated (Bug 4).
+      const remoteWins = syncedConfig.updatedAt >= config.updatedAt;
+      if (!remoteWins) {
+        // Local position is at least as new; never let an older remote move it.
+        // xpointer travels with location/progress so the three never diverge.
         delete filteredSyncedConfig.location;
         delete filteredSyncedConfig.progress;
+        delete filteredSyncedConfig.xpointer;
       }
-      if (syncedConfig.updatedAt >= config.updatedAt) {
-        setConfig(bookKey, { ...config, ...filteredSyncedConfig });
-      } else {
-        setConfig(bookKey, { ...filteredSyncedConfig, ...config });
-      }
-      if (remoteCFILocation && configCFI) {
+      setConfig(
+        bookKey,
+        remoteWins ? { ...config, ...filteredSyncedConfig } : { ...filteredSyncedConfig, ...config },
+      );
+      // View nudge only (does NOT change what was persisted above): when the
+      // adopted remote position is strictly AHEAD in the book, move the live
+      // view forward and hint. Never yank the view backward mid-read — the
+      // config already holds the LWW winner, so the next open lands correctly.
+      if (remoteWins && remoteCFILocation && configCFI) {
         if (CFI.compare(configCFI, remoteCFILocation) < 0) {
           // While previewing a deep-link target, do NOT yank the view to the
           // remote position — the user came here to look at a specific
