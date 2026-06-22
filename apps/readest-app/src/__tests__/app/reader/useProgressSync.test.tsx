@@ -27,6 +27,7 @@ const h = vi.hoisted(() => {
         _op?: 'push' | 'pull' | 'both',
       ) => {},
     ),
+    syncBooks: vi.fn(async (_books?: unknown[], _op?: 'push' | 'pull' | 'both') => {}),
     getConfig: vi.fn(() => config),
     setConfig: vi.fn(),
     getBookData: vi.fn(
@@ -42,7 +43,11 @@ const h = vi.hoisted(() => {
 });
 
 vi.mock('@/hooks/useSync', () => ({
-  useSync: () => ({ syncedConfigs: h.syncedConfigs, syncConfigs: h.syncConfigs }),
+  useSync: () => ({
+    syncedConfigs: h.syncedConfigs,
+    syncConfigs: h.syncConfigs,
+    syncBooks: h.syncBooks,
+  }),
 }));
 vi.mock('@/context/AuthContext', () => ({ useAuth: () => ({ user: { id: 'u1' } }) }));
 vi.mock('@/hooks/useTranslation', () => ({ useTranslation: () => (s: string) => s }));
@@ -85,6 +90,13 @@ vi.mock('@/store/bookDataStore', () => ({
 vi.mock('@/store/settingsStore', () => ({
   useSettingsStore: () => ({ settings: { globalViewSettings: {} } }),
 }));
+vi.mock('@/store/libraryStore', () => ({
+  useLibraryStore: Object.assign(() => ({}), {
+    getState: () => ({
+      library: [{ hash: 'hash1', progress: [95, 100] as [number, number], updatedAt: 2000 }],
+    }),
+  }),
+}));
 vi.mock('@/store/readerStore', () => ({
   useReaderStore: Object.assign(
     () => ({
@@ -120,6 +132,26 @@ describe('useProgressSync — closing a book', () => {
     // One config pushed, carrying the current book hash.
     expect(pushes[0]![0]).toHaveLength(1);
     expect(pushes[0]![1]).toBe('hash1');
+  });
+
+  it('pushes the live book row to the books table alongside the config push', async () => {
+    // Regression: while device B reads, device A's library grid renders the
+    // progress badge from the `books` table — which the reader never pushed.
+    // The reader pushed only `book_configs`, so A stayed stale until B closed
+    // the book (library page's useBooksSync). The reader must now also push the
+    // current book row so mid-reading progress reaches another device's library.
+    renderHook(() => useProgressSync('hash1-0'));
+    h.syncConfigs.mockClear();
+    h.syncBooks.mockClear();
+
+    await act(async () => {
+      await eventDispatcher.dispatch('sync-book-progress', { bookKey: 'hash1-0' });
+    });
+
+    const bookPushes = h.syncBooks.mock.calls.filter((call) => call[1] === 'push');
+    expect(bookPushes.length).toBeGreaterThanOrEqual(1);
+    const pushedBooks = bookPushes[0]![0] as Array<{ hash: string }>;
+    expect(pushedBooks.some((b) => b.hash === 'hash1')).toBe(true);
   });
 
   it('still pulls to reconcile remote progress after pushing on close', async () => {

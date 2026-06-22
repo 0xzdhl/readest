@@ -3,6 +3,7 @@ import { useAuth } from '@/context/AuthContext';
 import { useSync } from '@/hooks/useSync';
 import { type BookConfig, FIXED_LAYOUT_FORMATS } from '@/domain/book';
 import { useBookDataStore } from '@/store/bookDataStore';
+import { useLibraryStore } from '@/store/libraryStore';
 import { useReaderStore } from '@/store/readerStore';
 import { useSettingsStore } from '@/store/settingsStore';
 import { useTranslation } from '@/hooks/useTranslation';
@@ -18,7 +19,7 @@ export const useProgressSync = (bookKey: string) => {
   const { getConfig, setConfig, getBookData } = useBookDataStore();
   const { getView, getProgress, setHoveredBookKey } = useReaderStore();
   const { settings } = useSettingsStore();
-  const { syncedConfigs, syncConfigs } = useSync(bookKey);
+  const { syncedConfigs, syncConfigs, syncBooks } = useSync(bookKey);
   const { user } = useAuth();
   const progress = getProgress(bookKey);
 
@@ -36,6 +37,21 @@ export const useProgressSync = (bookKey: string) => {
     );
     delete compressedConfig.booknotes;
     await syncConfigs([compressedConfig], bookHash, metaHash, 'push');
+    // Also push the live `books` row so another device's library grid reflects
+    // mid-reading progress. The reader otherwise pushes only `book_configs`;
+    // the `books` row (which renders the library progress badge) is pushed by
+    // useBooksSync on the library page, so a peer's library stayed stale until
+    // this device closed the book. `bookDataStore.saveConfig` stamps the live
+    // library book's `progress` + `updatedAt` with the same monotonic stamp as
+    // the config during reading, so the store book carries the current progress
+    // here. LWW-safe: the server books upsert gates on
+    // `excluded.updated_at > books.updated_at` and COALESCEs `uploaded_at`, so
+    // this push wins on the monotonic stamp without erasing the upload pointer.
+    // Non-fatal: syncBooks swallows its own errors (pushChanges try/catch), so
+    // a books-push failure never breaks the config flow. The reader never pulls
+    // books, so pushing here introduces no feedback loop.
+    const liveBook = useLibraryStore.getState().library.find((b) => b.hash === bookHash);
+    if (liveBook) await syncBooks([liveBook], 'push');
   };
 
   const pullConfig = async (bookKey: string) => {
