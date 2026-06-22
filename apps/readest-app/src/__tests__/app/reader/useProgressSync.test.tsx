@@ -1,6 +1,7 @@
 import { act, cleanup, renderHook } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { eventDispatcher } from '@/utils/event';
+import { SYNC_PROGRESS_INTERVAL_SEC } from '@/services/constants';
 
 // Shared mock surface for the hook's dependencies. The book is "open" with a
 // real reading position (progress[0] > 0) but its foliate view is already gone
@@ -356,5 +357,147 @@ describe('useProgressSync — applying remote progress', () => {
     };
     expect(written.location).toBe('epubcfi(/6/4!/4/8)');
     expect(written.progress).toEqual([80, 100]);
+  });
+});
+
+describe('useProgressSync — auto-push guard for the open-landing position', () => {
+  afterEach(() => {
+    cleanup();
+    vi.clearAllMocks();
+    vi.useRealTimers();
+    h.syncedConfigs = null;
+    h.cfiCompare = () => 0;
+    h.config.location = 'epubcfi(/6/4!/4/2)';
+    h.config.progress = [5, 100];
+    h.config.updatedAt = 1000;
+    h.getProgress.mockReturnValue({ location: 'epubcfi(/6/4!/4/2)' });
+    h.getBookData.mockReturnValue({ book: { metaHash: 'meta1', format: 'EPUB' } });
+    h.getView.mockReturnValue(null);
+  });
+
+  // A live foliate view is required for the auto-push path (syncConfig reads
+  // view.renderer to refresh the XPointer). FIXED-layout shortcut is avoided by
+  // keeping format EPUB; getContents returns empty so no XPointer work runs.
+  const mockView = {
+    renderer: { getContents: () => [], primaryIndex: 0 },
+    goTo: vi.fn(),
+  } as unknown as ReturnType<typeof h.getView>;
+
+  it('does NOT re-push the adopted open-landing position, but DOES push a later genuine relocate', async () => {
+    h.getView.mockReturnValue(mockView);
+    vi.useFakeTimers();
+    // Remote is newer and ahead — applyRemoteProgress adopts it on open. The
+    // live view then "relocates" to that adopted position (programmatic open
+    // landing), which must NOT trigger an auto-push. Only a subsequent relocate
+    // to a DIFFERENT location (genuine navigation) should push.
+    h.config.location = 'epubcfi(/6/4!/4/4)';
+    h.config.progress = [50, 100];
+    h.config.updatedAt = 1000;
+
+    const adoptedLocation = 'epubcfi(/6/4!/4/8)';
+    const remote = {
+      bookHash: 'hash1',
+      metaHash: 'meta1',
+      location: adoptedLocation,
+      progress: [80, 100] as [number, number],
+      updatedAt: 2000,
+    };
+    h.syncedConfigs = [remote];
+    // Local (/4/4) is BEFORE remote (/4/8): the remote location is ahead.
+    h.cfiCompare = (a: string) => (a === 'epubcfi(/6/4!/4/4)' ? -1 : 1);
+
+    // Initial progress is the (local) opened position.
+    h.getProgress.mockReturnValue({ location: 'epubcfi(/6/4!/4/4)' });
+
+    const { rerender } = renderHook(() => useProgressSync('hash1-0'));
+    // Let the pull-on-open effect + applyRemoteProgress run so the adopted
+    // location is recorded by the guard.
+    await act(async () => {
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+
+    // Drop the mount-time pull and any scheduled pushes so far.
+    h.syncConfigs.mockClear();
+    h.syncBooks.mockClear();
+
+    // The view now relocates to the ADOPTED position (programmatic landing).
+    h.getProgress.mockReturnValue({ location: adoptedLocation });
+    await act(async () => {
+      rerender();
+    });
+    // Flush the auto-push debounce.
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(SYNC_PROGRESS_INTERVAL_SEC * 1000 + 50);
+    });
+
+    // No push for the adopted open-landing position.
+    expect(h.syncConfigs.mock.calls.filter((c) => c[3] === 'push')).toHaveLength(0);
+    expect(h.syncBooks.mock.calls.filter((c) => c[1] === 'push')).toHaveLength(0);
+
+    // Now a genuine relocate to a DIFFERENT location must push config + books.
+    // getConfig still returns the shared config (progress[0] > 0), so syncConfig
+    // proceeds. configPulled is already true after the open pull.
+    h.config.location = 'epubcfi(/6/4!/4/16)';
+    h.getProgress.mockReturnValue({ location: 'epubcfi(/6/4!/4/16)' });
+    await act(async () => {
+      rerender();
+    });
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(SYNC_PROGRESS_INTERVAL_SEC * 1000 + 50);
+    });
+
+    expect(h.syncConfigs.mock.calls.filter((c) => c[3] === 'push').length).toBeGreaterThanOrEqual(1);
+    expect(h.syncBooks.mock.calls.filter((c) => c[1] === 'push').length).toBeGreaterThanOrEqual(1);
+  });
+
+  it('does NOT re-push the initial opened position on the first landing relocate', async () => {
+    vi.useFakeTimers();
+    h.getView.mockReturnValue(mockView);
+    // No remote adoption this time: the book opens at its local position. The
+    // view has no live position yet (getProgress → no location at mount); the
+    // first foliate 'relocate' then reports the OPENED position. The seed
+    // (getConfig().location) must suppress the auto-push for that first landing,
+    // even though it is the first time progress.location becomes truthy.
+    h.config.location = 'epubcfi(/6/4!/4/4)';
+    h.config.progress = [50, 100];
+    h.config.updatedAt = 1000;
+    // Empty pulled set: flips configPulled → true (so later relocates push) but
+    // adopts nothing, so the seed (not an adoption) is what guards the landing.
+    h.syncedConfigs = [];
+    // Mount with no live position so the auto-push effect does not run yet.
+    h.getProgress.mockReturnValue(null as unknown as { location: string });
+
+    const { rerender } = renderHook(() => useProgressSync('hash1-0'));
+    await act(async () => {
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+    h.syncConfigs.mockClear();
+    h.syncBooks.mockClear();
+
+    // First landing relocate reports the OPENED position for the first time.
+    h.getProgress.mockReturnValue({ location: 'epubcfi(/6/4!/4/4)' });
+    await act(async () => {
+      rerender();
+    });
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(SYNC_PROGRESS_INTERVAL_SEC * 1000 + 50);
+    });
+
+    expect(h.syncConfigs.mock.calls.filter((c) => c[3] === 'push')).toHaveLength(0);
+    expect(h.syncBooks.mock.calls.filter((c) => c[1] === 'push')).toHaveLength(0);
+
+    // A subsequent genuine relocate to a DIFFERENT page DOES push.
+    h.config.location = 'epubcfi(/6/4!/4/12)';
+    h.getProgress.mockReturnValue({ location: 'epubcfi(/6/4!/4/12)' });
+    await act(async () => {
+      rerender();
+    });
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(SYNC_PROGRESS_INTERVAL_SEC * 1000 + 50);
+    });
+
+    expect(h.syncConfigs.mock.calls.filter((c) => c[3] === 'push').length).toBeGreaterThanOrEqual(1);
   });
 });
