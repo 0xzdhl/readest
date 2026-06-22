@@ -15,6 +15,81 @@ import { debounce } from '@/utils/debounce';
 import { eventDispatcher } from '@/utils/event';
 import { getCurrentUserNamespace } from '@/services/userNamespace';
 
+/**
+ * Merge a synced (server) book onto the local copy that shares its hash.
+ *
+ * The base field merge mirrors the server's last-write-wins orientation: when
+ * the synced row is at least as new (`matchingBook.updatedAt >= oldBook.updatedAt`)
+ * the server fields win, otherwise the local fields win.
+ *
+ * The `deletedAt` (tombstone) field is then resolved SEPARATELY with the same
+ * LWW rule the server applies in `lwwSetWhere` (src/app/api/sync.ts): a delete
+ * only wins when it is a GENUINELY NEWER delete. This prevents a stale or
+ * cross-user-contaminated tombstone — whose `updatedAt` is not newer than the
+ * local book — from silently hiding a present, uploaded book (which
+ * `visibleLibrary.filter(!deletedAt)` would then drop, making it "disappear"
+ * on refresh until a clean pull re-merged it without the tombstone).
+ *
+ * Pure and exported for unit testing. The caller is responsible for stamping
+ * `syncedAt`.
+ */
+export const mergeSyncedBook = (oldBook: Book, matchingBook: Book): Book => {
+  const serverIsNewer = matchingBook.updatedAt >= oldBook.updatedAt;
+  const merged: Book = serverIsNewer
+    ? { ...oldBook, ...matchingBook }
+    : { ...matchingBook, ...oldBook };
+
+  // Resolve the tombstone independently with last-write-wins on deletedAt.
+  const localDeletedAt = oldBook.deletedAt ?? null;
+  const syncedDeletedAt = matchingBook.deletedAt ?? null;
+
+  if (syncedDeletedAt != null) {
+    // The synced row carries a tombstone. It may only DROP the local book when
+    // it is a genuinely newer delete (matchingBook at least as new AND its
+    // deletedAt strictly newer than any local delete). A stale or
+    // cross-user-contaminated tombstone whose updatedAt is not newer than the
+    // local book must NOT hide a present book.
+    const syncedDeleteWins =
+      serverIsNewer && syncedDeletedAt > (localDeletedAt ?? 0);
+    merged.deletedAt = syncedDeleteWins ? syncedDeletedAt : localDeletedAt;
+  } else if (serverIsNewer) {
+    // The synced row is the LWW winner and is LIVE (no tombstone): adopt its
+    // live state, which clears any older local delete (e.g. a re-uploaded book).
+    merged.deletedAt = null;
+  } else {
+    // Local is the LWW winner: keep the local book's own deletedAt.
+    merged.deletedAt = localDeletedAt;
+  }
+
+  return merged;
+};
+
+/**
+ * Reconcile the sync-processed library against the LIVE store state read at
+ * apply time, so a concurrent write that happened during `updateLibrary`'s
+ * awaits (cover downloads, etc.) can never be lost.
+ *
+ * `processed` is the array `updateLibrary` built from the (possibly stale)
+ * `liveLibrary` snapshot it captured at the start. `liveAtApply` is
+ * `useLibraryStore.getState().library` re-read immediately before committing.
+ *
+ * Guarantee: every book present in `liveAtApply` survives. For a shared hash
+ * the `processed` (already sync-merged) version wins; any book that exists
+ * live but is absent from `processed` (e.g. a book imported / uploaded
+ * concurrently) is appended rather than dropped. This is what stops a
+ * just-uploaded book from transiently DISAPPEARING when a sync apply commits a
+ * stale snapshot over it.
+ *
+ * Pure and exported for unit testing.
+ */
+export const reconcileSyncedLibrary = (processed: Book[], liveAtApply: Book[]): Book[] => {
+  const processedHashes = new Set(processed.map((book) => book.hash));
+  const liveOnly = liveAtApply.filter((book) => !processedHashes.has(book.hash));
+  // Processed books first (preserves the sync-ordered merge), then any live
+  // book the stale snapshot missed.
+  return [...processed, ...liveOnly];
+};
+
 export const useBooksSync = () => {
   const _ = useTranslation();
   const { user } = useAuth();
@@ -126,10 +201,8 @@ export const useBooksSync = () => {
             Effect.flatMap(CoverService, (c) => c.generateCoverImageUrl(oldBook)),
           );
         }
-        const mergedBook =
-          matchingBook.updatedAt >= oldBook.updatedAt
-            ? { ...oldBook, ...matchingBook, syncedAt: Date.now() }
-            : { ...matchingBook, ...oldBook, syncedAt: Date.now() };
+        const mergedBook = mergeSyncedBook(oldBook, matchingBook);
+        mergedBook.syncedAt = Date.now();
         return mergedBook;
       }
       return oldBook;
@@ -141,7 +214,14 @@ export const useBooksSync = () => {
       await runEffect(Effect.flatMap(CloudService, (c) => c.downloadBookCovers(batch)));
     }
 
-    const updatedLibrary = await Promise.all(liveLibrary.map(processOldBook));
+    // Reconcile against the LIVE store read at apply time (not the possibly
+    // stale `liveLibrary` snapshot captured before the cover-download awaits):
+    // a book imported/uploaded concurrently during those awaits must not be
+    // dropped by committing the stale set. See reconcileSyncedLibrary.
+    const updatedLibrary = reconcileSyncedLibrary(
+      await Promise.all(liveLibrary.map(processOldBook)),
+      useLibraryStore.getState().library,
+    );
     setLibrary(updatedLibrary);
     void runEffect(Effect.flatMap(LibraryRepository, (r) => r.save(updatedLibrary)));
 
@@ -170,8 +250,14 @@ export const useBooksSync = () => {
         await Promise.all(batch.map(processNewBook));
         const progress = Math.min((i + batchSize) / newBooks.length, 1);
         setSyncProgress(progress);
-        setLibrary([...updatedLibrary]);
-        void runEffect(Effect.flatMap(LibraryRepository, (r) => r.save(updatedLibrary)));
+        // Reconcile against live state at apply time so a concurrent write
+        // during the download/process awaits is preserved, not clobbered.
+        const committed = reconcileSyncedLibrary(
+          updatedLibrary,
+          useLibraryStore.getState().library,
+        );
+        setLibrary(committed);
+        void runEffect(Effect.flatMap(LibraryRepository, (r) => r.save(committed)));
       }
     } catch (err) {
       console.error('Error updating new books:', err);
