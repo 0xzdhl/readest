@@ -34,6 +34,13 @@ const computeMaxTimestamp = (records: BookDataRecord[]): number => {
   return maxTime;
 };
 
+export const countSyncedRecords = (
+  type: SyncType,
+  records: ReadonlyArray<{ deleted_at?: string | number | null; uploaded_at?: string | null }> | null,
+): number =>
+  records?.filter((rec) => !rec.deleted_at && (type !== 'books' || rec.uploaded_at != null)).length ??
+  0;
+
 const ONE_DAY_IN_MS = 24 * 60 * 60 * 1000;
 export function useSync(bookKey?: string) {
   const router = useRouter();
@@ -145,7 +152,7 @@ export function useSync(bookKey?: string) {
           }
           break;
       }
-      return records?.filter((rec) => !rec.deleted_at).length || 0;
+      return countSyncedRecords(type, records);
     } catch (err: unknown) {
       console.error(err);
       if (err instanceof Error) {
