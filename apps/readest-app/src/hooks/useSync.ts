@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useRouter } from '@tanstack/react-router';
 import { useSyncContext } from '@/context/SyncContext';
 import type { SyncData, SyncOp, SyncResult, SyncType } from '@/libs/sync';
@@ -12,6 +12,23 @@ import type { DBBook, DBBookConfig, DBBookNote } from '@/types/records';
 import type { Book, BookConfig, BookDataRecord, BookNote } from '@/domain/book';
 import { navigateToLogin } from '@/utils/nav';
 import { useReaderStore } from '@/store/readerStore';
+import { useAuth } from '@/context/AuthContext';
+
+/**
+ * Defense-in-depth wire-row filter. The server pull/push already scope by
+ * `eq(userId)`, but the DB may run as a superuser (local) or with RLS that can
+ * be bypassed; never let another user's record reach the local domain state.
+ * Rows with no `user_id` (legacy/local) are always kept; only a present,
+ * foreign `user_id` is dropped.
+ */
+const keepOwnUserRow = <T extends { user_id?: string | null }>(
+  rows: T[] | null | undefined,
+  userId: string | null | undefined,
+): T[] | undefined => {
+  if (!rows) return undefined;
+  if (!userId) return rows;
+  return rows.filter((row) => !row.user_id || row.user_id === userId);
+};
 
 const transformsFromDB = {
   books: transformBookFromDB,
@@ -44,6 +61,7 @@ export const countSyncedRecords = (
 const ONE_DAY_IN_MS = 24 * 60 * 60 * 1000;
 export function useSync(bookKey?: string) {
   const router = useRouter();
+  const { user } = useAuth();
   const { settings, setSettings, saveSettings } = useSettingsStore();
   const { getConfig, setConfig } = useBookDataStore();
   const { setIsSyncing } = useReaderStore();
@@ -57,6 +75,11 @@ export function useSync(bookKey?: string) {
   const [lastSyncedAtConfigs, setLastSyncedAtConfigs] = useState<number>(0);
   const [lastSyncedAtNotes, setLastSyncedAtNotes] = useState<number>(0);
   const [lastSyncedAtInited, setLastSyncedAtInited] = useState(false);
+  // Tracks which authenticated user id the in-memory cursors were initialised
+  // for. When the user changes (account switch / sign-out), the init effect
+  // must re-run so the cursors are re-read from the (per-switch reset) settings
+  // — otherwise the switched-in user would reuse the previous user's `since`.
+  const initedForUserRef = useRef<string | null | undefined>(undefined);
 
   const [syncing, setSyncing] = useState(false);
   // null means unsynced, empty array means synced no changes
@@ -80,7 +103,13 @@ export function useSync(bookKey?: string) {
   useEffect(() => {
     if (!settings.version) return;
     if (bookKey && !config?.location) return;
-    if (lastSyncedAtInited) return;
+    const userId = user?.id ?? null;
+    // Init once per user. Re-run the full init (re-reading the settings cursors
+    // and applying the same 3-day/one-day look-back logic) whenever the
+    // authenticated user id changes, but NOT on ordinary re-renders for the
+    // same user.
+    if (lastSyncedAtInited && initedForUserRef.current === userId) return;
+    initedForUserRef.current = userId;
 
     const lastSyncedBooksAt = settings.lastSyncedAtBooks ?? 0;
     const lastSyncedConfigsAt = config?.lastSyncedAtConfig ?? settings.lastSyncedAtConfigs ?? 0;
@@ -97,7 +126,7 @@ export function useSync(bookKey?: string) {
     );
     setLastSyncedAtInited(true);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [bookKey, settings, config]);
+  }, [bookKey, settings, config, user?.id]);
 
   // bookId is for configs and notes only, if bookId is provided, only pull changes for that book
   // and update the lastSyncedAt for that book in the book config
@@ -267,20 +296,20 @@ export function useSync(bookKey?: string) {
   useEffect(() => {
     if (!syncing && syncResult) {
       const { books: dbBooks, configs: dbBookConfigs, notes: dbBookNotes } = syncResult;
-      const books = dbBooks?.map((dbBook) =>
-        transformsFromDB['books'](dbBook as unknown as DBBook),
-      );
-      const configs = dbBookConfigs?.map((dbBookConfig) =>
-        transformsFromDB['configs'](dbBookConfig as unknown as DBBookConfig),
-      );
-      const notes = dbBookNotes?.map((dbBookNote) =>
-        transformsFromDB['notes'](dbBookNote as unknown as DBBookNote),
-      );
+      const userId = user?.id;
+      // Defense-in-depth: drop any wire row owned by a different user before it
+      // is transformed into domain state. Null-user_id rows are kept.
+      const ownBooks = keepOwnUserRow(dbBooks as unknown as DBBook[] | null, userId);
+      const ownConfigs = keepOwnUserRow(dbBookConfigs as unknown as DBBookConfig[] | null, userId);
+      const ownNotes = keepOwnUserRow(dbBookNotes as unknown as DBBookNote[] | null, userId);
+      const books = ownBooks?.map((dbBook) => transformsFromDB['books'](dbBook));
+      const configs = ownConfigs?.map((dbBookConfig) => transformsFromDB['configs'](dbBookConfig));
+      const notes = ownNotes?.map((dbBookNote) => transformsFromDB['notes'](dbBookNote));
       if (books) setSyncedBooks(books);
       if (configs) setSyncedConfigs(configs);
       if (notes) setSyncedNotes(notes);
     }
-  }, [syncResult, syncing]);
+  }, [syncResult, syncing, user?.id]);
 
   return {
     syncing: syncingBooks || syncingConfigs || syncingNotes,

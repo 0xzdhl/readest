@@ -30,13 +30,19 @@ export const mergeRemoteOpenPosition = (local: BookConfig, remote: BookConfig): 
   };
 };
 
-const pullRemoteConfig = async (book: Book): Promise<BookConfig | null> => {
+const pullRemoteConfig = async (book: Book, userId?: string): Promise<BookConfig | null> => {
   try {
     // since = 0 → always the book's latest config row, not an incremental delta.
     const result = await syncClient.pullChanges(0, 'configs', book.hash, book.metaHash);
     const rows = (result.configs ?? []) as unknown as DBBookConfig[];
     const match = rows.find(
-      (row) => !row.deleted_at && (row.book_hash === book.hash || row.meta_hash === book.metaHash),
+      (row) =>
+        !row.deleted_at &&
+        // Defense-in-depth: never adopt another user's reading position. Rows
+        // with no user_id (legacy/local) are kept; only a present, foreign
+        // user_id is rejected.
+        (!userId || !row.user_id || row.user_id === userId) &&
+        (row.book_hash === book.hash || row.meta_hash === book.metaHash),
     );
     return match ? transformBookConfigFromDB(match) : null;
   } catch {
@@ -51,11 +57,11 @@ const pullRemoteConfig = async (book: Book): Promise<BookConfig | null> => {
  * the book download / route navigation. No-op when progress sync is disabled.
  * Idempotent per bookHash while a pull is in flight.
  */
-export const prefetchBookProgress = (book: Book): void => {
+export const prefetchBookProgress = (book: Book, userId?: string): void => {
   if (!book.hash) return;
   if (!isSyncCategoryEnabled('progress')) return;
   if (prefetchCache.has(book.hash)) return;
-  prefetchCache.set(book.hash, pullRemoteConfig(book));
+  prefetchCache.set(book.hash, pullRemoteConfig(book, userId));
 };
 
 /**

@@ -75,6 +75,31 @@ vi.mock('@/store/bookDataStore', () => ({
   }),
 }));
 
+// Settings store — track cursor resets and assert non-cursor settings survive.
+type SettingsShape = {
+  version: number;
+  lastSyncedAtBooks: number;
+  lastSyncedAtConfigs: number;
+  lastSyncedAtNotes: number;
+  deviceId: string;
+  someOtherSetting: string;
+  [key: string]: unknown;
+};
+
+const settingsStoreState = {
+  settings: {} as SettingsShape,
+  setSettings: vi.fn<(s: SettingsShape) => void>((s) => {
+    settingsStoreState.settings = s;
+  }),
+  saveSettings: vi.fn<(s: SettingsShape) => Promise<void>>(async () => {}),
+};
+
+vi.mock('@/store/settingsStore', () => ({
+  useSettingsStore: Object.assign(() => settingsStoreState, {
+    getState: () => settingsStoreState,
+  }),
+}));
+
 // ---------------------------------------------------------------------------
 // Import the hook AFTER mocks are registered.
 // ---------------------------------------------------------------------------
@@ -93,6 +118,17 @@ function resetState() {
   resetForUserSwitchSpy.mockClear();
   clearAllSpy.mockClear();
   getCurrentUserNamespaceMock.mockReturnValue('local');
+  // Seed settings with non-zero cursors AND unrelated settings that must survive.
+  settingsStoreState.settings = {
+    version: 7,
+    lastSyncedAtBooks: 111,
+    lastSyncedAtConfigs: 222,
+    lastSyncedAtNotes: 333,
+    deviceId: 'device-xyz',
+    someOtherSetting: 'keep-me',
+  };
+  settingsStoreState.setSettings.mockClear();
+  settingsStoreState.saveSettings.mockClear();
 }
 
 // ---------------------------------------------------------------------------
@@ -216,5 +252,67 @@ describe('useUserScopedReset', () => {
     expect(clearAllSpy).toHaveBeenCalled();
     expect(resetForUserSwitchSpy).toHaveBeenCalled();
     expect(migrateIntoNamespaceMock).toHaveBeenCalledWith('local');
+  });
+
+  test('A->B switch resets ONLY the sync cursors to 0, preserving other settings', async () => {
+    useAuthMock.mockReturnValue({ user: { id: 'A' }, isLoading: false });
+    getCurrentUserNamespaceMock.mockReturnValue('A');
+
+    const { rerender } = renderHook(() => useUserScopedReset());
+
+    await act(async () => {
+      await Promise.resolve();
+    });
+
+    settingsStoreState.setSettings.mockClear();
+    settingsStoreState.saveSettings.mockClear();
+    getCurrentUserNamespaceMock.mockReturnValue('B');
+
+    useAuthMock.mockReturnValue({ user: { id: 'B' }, isLoading: false });
+    rerender();
+
+    await act(async () => {
+      await Promise.resolve();
+    });
+
+    // The three pull cursors are reset so user B does a full pull.
+    expect(settingsStoreState.settings.lastSyncedAtBooks).toBe(0);
+    expect(settingsStoreState.settings.lastSyncedAtConfigs).toBe(0);
+    expect(settingsStoreState.settings.lastSyncedAtNotes).toBe(0);
+
+    // Non-cursor settings must NOT be clobbered.
+    expect(settingsStoreState.settings.version).toBe(7);
+    expect(settingsStoreState.settings.deviceId).toBe('device-xyz');
+    expect(settingsStoreState.settings.someOtherSetting).toBe('keep-me');
+
+    // The reset must be persisted.
+    expect(settingsStoreState.saveSettings).toHaveBeenCalled();
+  });
+
+  test('signing out (A->null) also resets the sync cursors to 0', async () => {
+    useAuthMock.mockReturnValue({ user: { id: 'A' }, isLoading: false });
+    getCurrentUserNamespaceMock.mockReturnValue('A');
+
+    const { rerender } = renderHook(() => useUserScopedReset());
+
+    await act(async () => {
+      await Promise.resolve();
+    });
+
+    settingsStoreState.setSettings.mockClear();
+    settingsStoreState.saveSettings.mockClear();
+    getCurrentUserNamespaceMock.mockReturnValue('local');
+
+    useAuthMock.mockReturnValue({ user: null, isLoading: false });
+    rerender();
+
+    await act(async () => {
+      await Promise.resolve();
+    });
+
+    expect(settingsStoreState.settings.lastSyncedAtBooks).toBe(0);
+    expect(settingsStoreState.settings.lastSyncedAtConfigs).toBe(0);
+    expect(settingsStoreState.settings.lastSyncedAtNotes).toBe(0);
+    expect(settingsStoreState.settings.deviceId).toBe('device-xyz');
   });
 });
