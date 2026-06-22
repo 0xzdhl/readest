@@ -103,7 +103,7 @@ export const useProgressSync = (bookKey: string) => {
   };
 
   const handleSyncBookProgress = async (event: CustomEvent) => {
-    const { bookKey: syncBookKey } = event.detail;
+    const { bookKey: syncBookKey, manual } = event.detail;
     if (syncBookKey !== bookKey) return;
     // Drop any pending debounced auto-push first: once the book is closing the
     // view is torn down, so that timer would either never fire or fire stale.
@@ -112,9 +112,20 @@ export const useProgressSync = (bookKey: string) => {
     // Then pull to reconcile any newer remote progress (this path also backs
     // the manual "sync now" menu action, which benefits from pushing first).
     handleAutoSync.cancel();
-    await pushCurrentProgress(bookKey);
-    configPulled.current = false;
-    await pullConfig(bookKey);
+    try {
+      await pushCurrentProgress(bookKey);
+      configPulled.current = false;
+      await pullConfig(bookKey);
+      // Only the manual "sync now" click toasts — the close path stays silent.
+      if (manual) {
+        eventDispatcher.dispatch('toast', { type: 'success', message: _('Synced') });
+      }
+    } catch (error) {
+      console.error('Failed to sync book progress', error);
+      if (manual) {
+        eventDispatcher.dispatch('toast', { type: 'error', message: _('Sync failed') });
+      }
+    }
   };
 
   // Push the final position to the cloud when the book is closed, then pull.

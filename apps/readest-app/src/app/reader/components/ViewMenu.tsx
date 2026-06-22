@@ -23,7 +23,7 @@ import { getStyles } from '@/utils/style';
 import { navigateToLogin } from '@/utils/nav';
 import { eventDispatcher } from '@/utils/event';
 import { getMaxInlineSize } from '@/utils/config';
-import dayjs from 'dayjs';
+import { getSyncStatus } from '@/app/reader/utils/syncStatus';
 import { saveViewSettings } from '@/helpers/settings';
 import { tauriHandleToggleFullScreen } from '@/utils/window';
 import MenuItem from '@/components/MenuItem';
@@ -97,7 +97,9 @@ const ViewMenu: React.FC<ViewMenuProps> = ({
       navigateToLogin(router);
       setIsDropdownOpen?.(false);
     } else {
-      eventDispatcher.dispatch('sync-book-progress', { bookKey });
+      // `manual: true` so the listener toasts on completion/failure even if the
+      // menu has since closed. The book-close path dispatches without this flag.
+      eventDispatcher.dispatch('sync-book-progress', { bookKey, manual: true });
     }
   };
 
@@ -185,6 +187,18 @@ const ViewMenu: React.FC<ViewMenuProps> = ({
     config?.lastSyncedAtNotes || 0,
     config?.lastPushedAtConfig || 0,
     config?.lastPushedAtNotes || 0,
+  );
+
+  // Drive the sync menu item from the click-scoped lifecycle: in-flight spinner
+  // (viewState.syncing, now reactive for pulls too) → error → idle relative time.
+  const syncStatus = getSyncStatus(
+    {
+      signedIn: !!user,
+      syncing: !!viewState?.syncing,
+      error: viewState?.syncError ?? null,
+      lastSyncTime,
+    },
+    _,
   );
 
   return (
@@ -323,17 +337,9 @@ const ViewMenu: React.FC<ViewMenuProps> = ({
       <hr aria-hidden='true' className='border-base-300 my-1' />
 
       <MenuItem
-        label={
-          !user
-            ? _('Sign in to Sync')
-            : lastSyncTime
-              ? _('Synced {{time}}', {
-                  time: dayjs(lastSyncTime).fromNow(),
-                })
-              : _('Never synced')
-        }
-        Icon={user ? MdSync : MdSyncProblem}
-        iconClassName={user && viewState?.syncing ? 'animate-reverse-spin' : ''}
+        label={syncStatus.label}
+        Icon={syncStatus.problem ? MdSyncProblem : MdSync}
+        iconClassName={syncStatus.spinning ? 'animate-reverse-spin' : ''}
         onClick={handleSync}
         siblings={
           <button

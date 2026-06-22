@@ -478,7 +478,7 @@ input[type='range'].slider-input {
 }
 
 .animate-reverse-spin {
-  animation: spin-counterclockwise 1s linear;
+  animation: spin-counterclockwise 1s linear infinite;
 }
 
 [data-eink='true'] [class*='shadow-'] {

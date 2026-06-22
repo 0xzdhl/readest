@@ -45,6 +45,10 @@ interface ViewState {
   ribbonVisible: boolean;
   ttsEnabled: boolean;
   syncing: boolean;
+  /* Last sync error message for this view, or null when the last attempt
+     succeeded. Mirrored from useSync so the reader's sync menu item can show a
+     "Sync failed" state. */
+  syncError: string | null;
   gridInsets: Insets | null;
   /* True while the reader is showing a position requested by an external
      deep link (e.g. ?cfi=...) that the user hasn't yet confirmed by reading.
@@ -69,6 +73,7 @@ interface ReaderStore {
   setTTSEnabled: (key: string, enabled: boolean) => void;
   setIsLoading: (key: string, loading: boolean) => void;
   setIsSyncing: (key: string, syncing: boolean) => void;
+  setSyncError: (key: string, error: string | null) => void;
   setProgress: (
     key: string,
     location: string,
@@ -144,6 +149,7 @@ export const useReaderStore = create<ReaderStore>((set, get) => ({
           ribbonVisible: false,
           ttsEnabled: false,
           syncing: false,
+          syncError: null,
           gridInsets: null,
           previewMode: false,
           viewSettings: null,
@@ -288,6 +294,7 @@ export const useReaderStore = create<ReaderStore>((set, get) => ({
             ribbonVisible: false,
             ttsEnabled: false,
             syncing: false,
+            syncError: null,
             gridInsets: null,
             previewMode: false,
             viewSettings: { ...globalViewSettings, ...configViewSettings },
@@ -312,6 +319,7 @@ export const useReaderStore = create<ReaderStore>((set, get) => ({
             ribbonVisible: false,
             ttsEnabled: false,
             syncing: false,
+            syncError: null,
             gridInsets: null,
             previewMode: false,
             viewSettings: null,
@@ -465,6 +473,17 @@ export const useReaderStore = create<ReaderStore>((set, get) => ({
         [key]: {
           ...state.viewStates[key]!,
           syncing,
+        },
+      },
+    })),
+
+  setSyncError: (key: string, error: string | null) =>
+    set((state) => ({
+      viewStates: {
+        ...state.viewStates,
+        [key]: {
+          ...state.viewStates[key]!,
+          syncError: error,
         },
       },
     })),

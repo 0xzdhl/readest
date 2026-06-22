@@ -34,12 +34,17 @@ vi.mock('@/store/settingsStore', () => ({
   }),
 }));
 
+const bookDataState = {
+  config: null as { location?: string } | null,
+};
 vi.mock('@/store/bookDataStore', () => ({
-  useBookDataStore: () => ({ getConfig: () => null, setConfig: vi.fn() }),
+  useBookDataStore: () => ({ getConfig: () => bookDataState.config, setConfig: vi.fn() }),
 }));
 
+const setIsSyncingSpy = vi.fn<(key: string, syncing: boolean) => void>();
+const setSyncErrorSpy = vi.fn<(key: string, error: string | null) => void>();
 vi.mock('@/store/readerStore', () => ({
-  useReaderStore: () => ({ setIsSyncing: vi.fn() }),
+  useReaderStore: () => ({ setIsSyncing: setIsSyncingSpy, setSyncError: setSyncErrorSpy }),
 }));
 
 vi.mock('@/utils/nav', () => ({ navigateToLogin: vi.fn() }));
@@ -57,6 +62,8 @@ beforeEach(() => {
   settingsState.setSettings.mockClear();
   settingsState.saveSettings.mockClear();
   settingsState.settings.lastSyncedAtBooks = 0;
+  setIsSyncingSpy.mockReset();
+  bookDataState.config = null;
 });
 
 afterEach(() => {
@@ -91,5 +98,45 @@ describe('useSync pullChanges clock-drift on empty initial pull', () => {
     // timestamps are below FUTURE.
     expect(settingsState.settings.lastSyncedAtBooks).not.toBe(FUTURE);
     expect(settingsState.settings.lastSyncedAtBooks).toBeLessThanOrEqual(since);
+  });
+});
+
+describe('useSync mirrors the aggregate syncing flag to the reader store', () => {
+  test('a PULL flips setIsSyncing(true) then setIsSyncing(false)', async () => {
+    // A manual "sync now" is pull-dominated. Pulls flip syncingConfigs/Notes/
+    // Books, never the push-only `syncing` flag — so the mirrored reader-store
+    // flag must follow the AGGREGATE (syncingBooks || syncingConfigs ||
+    // syncingNotes), otherwise the reader icon never visibly spins.
+    bookDataState.config = { location: 'epubcfi(/6/4!/4/2)' };
+
+    // Resolve the pull on a deferred promise so the in-flight (true) state is
+    // observable before completion.
+    let resolvePull: ((value: Record<string, unknown[]>) => void) | undefined;
+    pullChangesSpy.mockImplementation(
+      () =>
+        new Promise<Record<string, unknown[]>>((resolve) => {
+          resolvePull = resolve;
+        }),
+    );
+
+    const bookKey = 'hash1-0';
+    const { result } = renderHook(() => useSync(bookKey));
+
+    // syncConfigs in 'pull' mode flips the configs flag → the aggregate.
+    let pullPromise: Promise<void> | undefined;
+    await act(async () => {
+      pullPromise = result.current.syncConfigs([], 'hash1', 'meta1', 'pull');
+      // allow the setSyncing(true) state update to flush
+      await Promise.resolve();
+    });
+
+    expect(setIsSyncingSpy).toHaveBeenCalledWith(bookKey, true);
+
+    await act(async () => {
+      resolvePull!({ configs: [] });
+      await pullPromise;
+    });
+
+    expect(setIsSyncingSpy).toHaveBeenCalledWith(bookKey, false);
   });
 });

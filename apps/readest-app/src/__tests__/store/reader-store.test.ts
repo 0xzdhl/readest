@@ -96,6 +96,7 @@ function seedViewState(key: string, overrides: Record<string, unknown> = {}) {
         ribbonVisible: false,
         ttsEnabled: false,
         syncing: false,
+        syncError: null,
         gridInsets: null,
         previewMode: false,
         viewSettings: null,

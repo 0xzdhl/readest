@@ -64,7 +64,7 @@ export function useSync(bookKey?: string) {
   const { user } = useAuth();
   const { settings, setSettings, saveSettings } = useSettingsStore();
   const { getConfig, setConfig } = useBookDataStore();
-  const { setIsSyncing } = useReaderStore();
+  const { setIsSyncing, setSyncError: mirrorSyncError } = useReaderStore();
   const config = bookKey ? getConfig(bookKey) : null;
 
   const [syncingBooks, setSyncingBooks] = useState(false);
@@ -94,11 +94,26 @@ export function useSync(bookKey?: string) {
 
   const { syncClient } = useSyncContext();
 
+  // Mirror the AGGREGATE in-flight state to the reader store so the sync icon
+  // spins for ANY operation. A manual "sync now" is pull-dominated, and pulls
+  // flip only syncingBooks/Configs/Notes — never the push-only `syncing` flag.
+  // Watching just `syncing` therefore left the mirrored flag (and the icon)
+  // dormant during a manual sync.
+  const isSyncingAggregate = syncingBooks || syncingConfigs || syncingNotes;
   useEffect(() => {
     if (!bookKey) return;
-    setIsSyncing(bookKey, syncing);
+    setIsSyncing(bookKey, isSyncingAggregate);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [bookKey, syncing]);
+  }, [bookKey, isSyncingAggregate]);
+
+  // Mirror the last sync error so the reader's sync menu item (which subscribes
+  // to the reader store) can present a "Sync failed" state without holding its
+  // own useSync instance.
+  useEffect(() => {
+    if (!bookKey) return;
+    mirrorSyncError(bookKey, syncError);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [bookKey, syncError]);
 
   useEffect(() => {
     if (!settings.version) return;
