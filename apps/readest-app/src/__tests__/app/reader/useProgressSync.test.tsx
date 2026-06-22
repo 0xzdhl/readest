@@ -171,6 +171,67 @@ describe('useProgressSync — closing a book', () => {
   });
 });
 
+describe('useProgressSync — manual sync feedback', () => {
+  afterEach(() => {
+    cleanup();
+    vi.clearAllMocks();
+    h.syncedConfigs = null;
+    h.cfiCompare = () => 0;
+    h.syncConfigs.mockResolvedValue(undefined);
+  });
+
+  it('toasts success when a MANUAL sync completes', async () => {
+    renderHook(() => useProgressSync('hash1-0'));
+    h.syncConfigs.mockClear();
+
+    const dispatchSpy = vi.spyOn(eventDispatcher, 'dispatch');
+    await act(async () => {
+      await eventDispatcher.dispatch('sync-book-progress', { bookKey: 'hash1-0', manual: true });
+    });
+
+    const toastCalls = dispatchSpy.mock.calls.filter((c) => c[0] === 'toast');
+    expect(toastCalls.length).toBeGreaterThanOrEqual(1);
+    const successToast = toastCalls.find(
+      (c) => (c[1] as { type?: string } | undefined)?.type === 'success',
+    );
+    expect(successToast).toBeDefined();
+    dispatchSpy.mockRestore();
+  });
+
+  it('does NOT toast on the close path (manual falsy)', async () => {
+    renderHook(() => useProgressSync('hash1-0'));
+    h.syncConfigs.mockClear();
+
+    const dispatchSpy = vi.spyOn(eventDispatcher, 'dispatch');
+    await act(async () => {
+      await eventDispatcher.dispatch('sync-book-progress', { bookKey: 'hash1-0' });
+    });
+
+    const toastCalls = dispatchSpy.mock.calls.filter((c) => c[0] === 'toast');
+    expect(toastCalls.length).toBe(0);
+    dispatchSpy.mockRestore();
+  });
+
+  it('toasts an error when a MANUAL sync fails', async () => {
+    renderHook(() => useProgressSync('hash1-0'));
+    h.syncConfigs.mockClear();
+    // Make the pull (and any push) reject to drive the error path.
+    h.syncConfigs.mockRejectedValue(new Error('network down'));
+
+    const dispatchSpy = vi.spyOn(eventDispatcher, 'dispatch');
+    await act(async () => {
+      await eventDispatcher.dispatch('sync-book-progress', { bookKey: 'hash1-0', manual: true });
+    });
+
+    const toastCalls = dispatchSpy.mock.calls.filter((c) => c[0] === 'toast');
+    const errorToast = toastCalls.find(
+      (c) => (c[1] as { type?: string } | undefined)?.type === 'error',
+    );
+    expect(errorToast).toBeDefined();
+    dispatchSpy.mockRestore();
+  });
+});
+
 describe('useProgressSync — applying remote progress', () => {
   afterEach(() => {
     cleanup();
