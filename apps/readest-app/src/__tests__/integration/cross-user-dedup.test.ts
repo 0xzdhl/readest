@@ -228,8 +228,8 @@ function makeUserAwareTx(userId: string, filesRows: FilesRow[]): DbTx {
     },
 
     insert: (_table: unknown) => ({
-      values: (vals: Omit<FilesRow, 'id' | 'deletedAt'>) => ({
-        onConflictDoNothing: (_opts?: unknown) => {
+      values: (vals: Omit<FilesRow, 'id' | 'deletedAt'>) => {
+        const insertIfAbsent = () => {
           const exists = filesRows.some((r) => r.fileKey === vals.fileKey);
           if (!exists) {
             filesRows.push({
@@ -239,8 +239,21 @@ function makeUserAwareTx(userId: string, filesRows: FilesRow[]): DbTx {
             });
           }
           return Promise.resolve(undefined);
-        },
-      }),
+        };
+        return {
+          onConflictDoNothing: (_opts?: unknown) => insertIfAbsent(),
+          // Mirror finalize's reconcile-on-conflict (setWhere: isNull(content_hash)):
+          // insert if absent, otherwise heal a stale NULL-contentHash row from `set`.
+          onConflictDoUpdate: (opts?: { set?: Partial<FilesRow> }) => {
+            const existing = filesRows.find((r) => r.fileKey === vals.fileKey);
+            if (!existing) return insertIfAbsent();
+            if (existing.contentHash == null && opts?.set) {
+              Object.assign(existing, opts.set);
+            }
+            return Promise.resolve(undefined);
+          },
+        };
+      },
     }),
 
     delete: (_table: unknown) => ({
