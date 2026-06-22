@@ -42,7 +42,12 @@ export const Route = createFileRoute('/api/storage/stats')({
           // precision; coerce to a JS number for the JSON wire.
           const totalSize = Number(totalsRow?.totalSize ?? 0);
 
-          const { usage, quota } = getStoragePlanData(user);
+          // `user.storage_usage_bytes` is never written (always 0), so derive
+          // the live usage from the same aggregate the caller just computed:
+          // SUM(files.file_size) WHERE deleted_at IS NULL. Keep `quota` from
+          // the plan (plan default + purchased) via getStoragePlanData.
+          const { quota } = getStoragePlanData(user);
+          const usage = totalSize;
           const usagePercentage = quota > 0 ? Math.round((usage / quota) * 100) : 0;
 
           const groupedRows = await tx

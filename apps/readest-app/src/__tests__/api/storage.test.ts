@@ -227,14 +227,46 @@ describe.skipIf(!url)('/api/storage/* (rlsMiddleware + RLS)', () => {
     const body = (await response.json()) as {
       totalFiles: number;
       totalSize: number;
+      usage: number;
+      quota: number;
+      usagePercentage: number;
       byBookHash: Array<{ bookHash: string | null; fileCount: number; totalSize: number }>;
     };
     expect(body.totalFiles).toBe(3);
     expect(body.totalSize).toBe(1600);
+    // `usage` must report the LIVE sum of the caller's files, NOT the dead
+    // `user.storage_usage_bytes` column (which `sessionFor` sets to 0). Before
+    // the fix `usage` came from that column and was 0.
+    expect(body.usage).toBe(1600);
+    // usagePercentage is recomputed from the live usage against the quota.
+    expect(body.usagePercentage).toBe(
+      body.quota > 0 ? Math.round((body.usage / body.quota) * 100) : 0,
+    );
     expect(body.byBookHash[0]?.bookHash).toBe('hash-X');
     expect(body.byBookHash[0]?.totalSize).toBe(1100);
     expect(body.byBookHash[1]?.bookHash).toBe('hash-Y');
     expect(body.byBookHash[1]?.totalSize).toBe(500);
+  });
+
+  it('stats: usagePercentage reflects live usage (non-zero) despite storage_usage_bytes = 0', async () => {
+    // Real-world scenario: ~108 MB used. The dead column stays 0 (see
+    // `sessionFor`), so a column-derived percentage would be 0. With the live
+    // SUM(file_size) the bar must show a non-zero percentage.
+    const liveUsed = 108 * 1024 * 1024; // ~113 MB
+    await adminClient`INSERT INTO files (user_id, book_hash, file_key, file_size)
+                      VALUES (${userA}, 'hash-big', ${userA + '/big.epub'}, ${liveUsed})`;
+    getSessionMock.mockResolvedValueOnce(sessionFor(userA));
+    const request = new Request('http://localhost/api/storage/stats', { method: 'GET' });
+    const response = await runRoute(statsModule.Route as RouteLike, 'GET', { request });
+    expect(response.status).toBe(200);
+    const body = (await response.json()) as {
+      usage: number;
+      quota: number;
+      usagePercentage: number;
+    };
+    expect(body.usage).toBe(liveUsed);
+    expect(body.usagePercentage).toBeGreaterThan(0);
+    expect(body.usagePercentage).toBe(Math.round((liveUsed / body.quota) * 100));
   });
 
   // ─── delete ──────────────────────────────────────────────────────────────
