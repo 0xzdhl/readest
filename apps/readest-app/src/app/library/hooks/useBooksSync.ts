@@ -120,6 +120,15 @@ export const useBooksSync = () => {
     async (fullRefresh = false, verbose = false) => {
       if (!user) return;
       if (isPullingRef.current) return;
+      // Namespace guard (mirrors getNewBooks / handleAutoSync / pushLibrary):
+      // during a half-completed account switch the in-memory library is still
+      // stamped with the PREVIOUS user's namespace while the namespace pointer
+      // has already moved. Pulling then would merge the wrong user's rows. The
+      // guard is evaluated against the freshly-loaded namespace, so it does NOT
+      // block the legitimate first pull on fresh login (where loadedNamespace
+      // === getCurrentUserNamespace() once the library has loaded).
+      const guardSt = useLibraryStore.getState();
+      if (!guardSt.libraryLoaded || guardSt.loadedNamespace !== getCurrentUserNamespace()) return;
       try {
         isPullingRef.current = true;
         const library = useLibraryStore.getState().library;

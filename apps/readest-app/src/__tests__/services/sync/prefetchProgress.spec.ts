@@ -25,7 +25,8 @@ import {
 const makeBook = (hash: string, metaHash = 'meta') =>
   ({ hash, metaHash }) as unknown as Parameters<typeof prefetchBookProgress>[0];
 
-const dbConfigRow = (hash: string, location: string) => ({
+const dbConfigRow = (hash: string, location: string, userId?: string) => ({
+  user_id: userId,
   book_hash: hash,
   meta_hash: 'meta',
   location,
@@ -192,5 +193,43 @@ describe('prefetch cache', () => {
     prefetchBookProgress(makeBook('h-dedupe'));
     expect(h.pullChanges).toHaveBeenCalledTimes(1);
     await takePrefetchedProgress('h-dedupe');
+  });
+
+  it('drops a config row that belongs to another user (cross-user guard)', async () => {
+    // Two rows for the SAME book hash but different owners. Only the caller's
+    // (userId='me') row may be adopted; the foreign row (userId='other') must
+    // never leak into the open position.
+    h.pullChanges.mockResolvedValue({
+      books: null,
+      notes: null,
+      configs: [
+        dbConfigRow('h-multi', 'epubcfi(/6/4!/4/OTHER)', 'other'),
+        dbConfigRow('h-multi', 'epubcfi(/6/4!/4/MINE)', 'me'),
+      ],
+    });
+    prefetchBookProgress(makeBook('h-multi'), 'me');
+    const cfg = await takePrefetchedProgress('h-multi');
+    expect(cfg?.location).toBe('epubcfi(/6/4!/4/MINE)');
+  });
+
+  it('returns null when the only matching row belongs to another user', async () => {
+    h.pullChanges.mockResolvedValue({
+      books: null,
+      notes: null,
+      configs: [dbConfigRow('h-foreign', 'epubcfi(/6/4!/4/OTHER)', 'other')],
+    });
+    prefetchBookProgress(makeBook('h-foreign'), 'me');
+    expect(await takePrefetchedProgress('h-foreign')).toBeNull();
+  });
+
+  it('keeps a row with no user_id (legacy/local) even when a userId is given', async () => {
+    h.pullChanges.mockResolvedValue({
+      books: null,
+      notes: null,
+      configs: [dbConfigRow('h-legacy', 'epubcfi(/6/4!/4/LEGACY)', undefined)],
+    });
+    prefetchBookProgress(makeBook('h-legacy'), 'me');
+    const cfg = await takePrefetchedProgress('h-legacy');
+    expect(cfg?.location).toBe('epubcfi(/6/4!/4/LEGACY)');
   });
 });

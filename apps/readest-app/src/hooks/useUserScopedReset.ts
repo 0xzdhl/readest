@@ -5,6 +5,7 @@ import { migrateIntoNamespace } from '@/application/services/library/userDataMig
 import { setCurrentUserNamespace, getCurrentUserNamespace } from '@/services/userNamespace';
 import { useLibraryStore } from '@/store/libraryStore';
 import { useBookDataStore } from '@/store/bookDataStore';
+import { useSettingsStore } from '@/store/settingsStore';
 
 /**
  * Effect-only hook.
@@ -47,6 +48,20 @@ export function useUserScopedReset(): void {
     // 2. Immediately drop the previous user's in-memory data.
     useBookDataStore.getState().clearAll();
     useLibraryStore.getState().resetForUserSwitch(); // flips libraryLoaded → false
+
+    // 2b. Reset ONLY the global incremental-pull cursors so the switched-in
+    //     user does a full pull. These three live in GLOBAL (not per-user)
+    //     settings; if left at the previous user's values, B's first
+    //     incremental pull reuses A's `since` and MISSES B's older rows. We
+    //     mutate just the three cursors in place and persist — every other
+    //     setting (device ids, view settings, ai, kosync, etc.) is untouched.
+    const settingsStore = useSettingsStore.getState();
+    const settings = settingsStore.settings;
+    settings.lastSyncedAtBooks = 0;
+    settings.lastSyncedAtConfigs = 0;
+    settings.lastSyncedAtNotes = 0;
+    settingsStore.setSettings(settings);
+    void settingsStore.saveSettings(settings);
 
     // 3. Run the migration asynchronously, then force a second
     //    resetForUserSwitch() so useLibrary (re)loads the migrated data even

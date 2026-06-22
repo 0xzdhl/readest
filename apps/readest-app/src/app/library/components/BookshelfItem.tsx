@@ -169,7 +169,7 @@ const BookshelfItem: React.FC<BookshelfItemProps> = ({
         // Kick off the cloud reading-progress pull now so it overlaps the book
         // download/navigation; the reader consumes it to open at the synced
         // position (see takePrefetchedProgress in initViewState).
-        if (user) prefetchBookProgress(book);
+        if (user) prefetchBookProgress(book, user.id);
         const available = await makeBookAvailable(book);
         if (!available) return;
         if (platformInfo.hasWindow && settings.openBookInNewWindow) {

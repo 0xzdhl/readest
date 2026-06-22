@@ -355,7 +355,7 @@ const Bookshelf: React.FC<BookshelfProps> = ({
     if (user) {
       for (const hash of selected) {
         const book = libraryBooks.find((b) => b.hash === hash);
-        if (book) prefetchBookProgress(book);
+        if (book) prefetchBookProgress(book, user.id);
       }
     }
     if (platformInfo.hasWindow && settings.openBookInNewWindow) {

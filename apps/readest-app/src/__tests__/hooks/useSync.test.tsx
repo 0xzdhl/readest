@@ -18,6 +18,10 @@ vi.mock('@/services/sync/syncCategories', () => ({
   isSyncCategoryEnabled: () => true,
 }));
 
+vi.mock('@/context/AuthContext', () => ({
+  useAuth: () => ({ user: { id: 'test-user' } }),
+}));
+
 const settingsState = {
   settings: { version: 1, lastSyncedAtBooks: 0, lastSyncedAtConfigs: 0, lastSyncedAtNotes: 0 },
   setSettings: vi.fn(),
